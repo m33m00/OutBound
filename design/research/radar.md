@@ -61,7 +61,7 @@ Note: no end date is announced, but the history shows they keep trimming the fre
    - Alaska: lat 50 to 72, lon -176 to -126
    - Hawaii: lat 15 to 26, lon -164 to -151
    - Caribbean: lat 10 to 25, lon -90 to -60 (covers SJU)
-2. **Raw MRMS files on AWS (`noaa-mrms-pds`, no account needed).** Raw GRIB2 files, a new one about every 2 minutes. Decoding GRIB2 and reprojecting needs heavy code. A Supabase Free Edge Function has tight CPU and memory limits (UNVERIFIED, from memory: roughly 2 s CPU and 256 MB; confirm in Supabase docs before relying on it). Not realistic in Deno there. It would need a separate worker. Not recommended.
+2. **Raw MRMS files on AWS (`noaa-mrms-pds`, no account needed).** Raw GRIB2 files, a new one about every 2 minutes. Decoding GRIB2 and reprojecting needs heavy code. A Supabase Free Edge Function has tight limits (VERIFIED 2026-10-14, https://supabase.com/docs/guides/functions/limits: max CPU time 2 s per request, async I/O waiting not counted; memory 256 MB; wall clock 150 s on Free; idle timeout 150 s; bundle 20 MB via CLI). Not realistic in Deno there. It would need a separate worker. Not recommended.
 3. **IEM NEXRAD composite.** Works as a lat/lon image too (240 KB at 2048x1024 in my test). Good backup for the lower 48 only. Alaska/Hawaii/PR not verified.
 
 nowCOAST (NOAA) looked like another option, but its help page returned 403 to my fetch, so I could not check its terms. Not pursued.
@@ -84,7 +84,7 @@ The globe is not a slippy map, so tiles are the wrong shape. A single lat/lon (e
 Mesh (A) is my suggestion for a first version.
 
 **Size and memory:**
-- Request 1536 or 2048 px wide per region (about 22 to 29 px per degree). Estimated decoded size at 2048-wide CONUS is 8 MB; all four regions together roughly 14 MB at 2048, about 8 MB at 1536. Unverified: Alaska, Hawaii and Caribbean image sizes were not tested (only their boxes were read), so these totals are estimates.
+- Request 1536 or 2048 px wide per region (about 22 to 29 px per degree). Estimated decoded size at 2048-wide CONUS is 8 MB; all four regions together roughly 14 MB at 2048, about 8 MB at 1536. Measured 2026-10-14 (one live request each, transparent PNG, a day with moderate weather): CONUS 1536x768 = 191 KB; Alaska 1536x676 = 48 KB; Caribbean 1536x768 = 51 KB; Hawaii 1536x1300 = 46 KB (shipped at 1024x866 = 22 KB). Sizes vary with how much rain is on the map. Decoded RGBA would be about 4.7 MB (CONUS), 4.2 MB (AK), 4.7 MB (Carib), 3.5 MB (HI at 1024), about 17 MB total if all four are on screen.
 - Network per refresh: about 0.4 to 0.6 MB total, and the app only re-downloads when `observedAt` changes.
 - Requests per view: 1 (JSON) plus up to 4 images, only when the frame changed.
 
@@ -92,7 +92,7 @@ Because MRMS covers only US regions, the rest of the globe shows no radar. That 
 
 ## Cost and Supabase Free limits
 
-- NOAA: no fee. Supabase Free limits (UNVERIFIED, from memory, not checked against Supabase docs: 1 GB storage, 5 GB egress per month, 500k function calls; confirm on the Supabase pricing page): at about 0.6 MB per full fetch, 5 GB covers roughly 8,000 full downloads per month. A friends beta is far below that. Store only the latest frame per region (overwrite), so storage stays under about 2 MB.
+- NOAA: no fee. Supabase Free limits (VERIFIED 2026-10-14, https://supabase.com/docs/guides/platform/billing-on-supabase: 500,000 Edge Function invocations, 5 GB egress, 1 GB storage per month; limits page https://supabase.com/docs/guides/functions/limits: 2 s CPU, 256 MB memory; no response-size limit listed; upload file-size limit not stated on those pages and not needed): at about 0.6 MB per full fetch, 5 GB covers roughly 8,000 full downloads per month. A friends beta is far below that. Store only the latest frame per region (overwrite), so storage stays under about 2 MB.
 - RainViewer: free, but 100 requests per IP per minute and tiles must be stitched or proxied, which is the gray area above.
 - Paid cap ($30/mo): neither option uses AeroDataBox money.
 
@@ -132,3 +132,7 @@ Recommendation: A. Free, no key, safe for a later public release, and the simple
 3. **Optional later: IEM fallback** inside the same function.
 
 John approved adding items 13 and 14 (2026-10-14).
+
+## Decision for backlog 13: pass-through, no Storage (2026-10-14)
+
+Verified limits show a pure pass-through fits: the function only awaits network I/O (not counted as CPU) and never decodes a PNG, a frame is 22 to 191 KB so memory is no issue, and 5 GB egress covers about 25,000 CONUS frames. Storage would add writes, cleanup and a second URL scheme for no gain. Cost of pass-through: every image view is egress through the function (CDN `Cache-Control` may absorb repeats, not guaranteed). Revisit only if egress nears 5 GB.
