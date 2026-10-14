@@ -6,8 +6,9 @@
  *   route picture  arcs; re-recorded on camera, routes, selection or theme
  *                  change, never touching the static pictures (routeLayer.ts)
  *   rim picture    limb and edge, cached per camera
- *   marks picture  home pins, origin dot, destination rings, labels (item 9);
- *                  above the rim so the limb never dims a label
+ *   marks picture  home pins, origin dot, destination rings, labels (item 9)
+ *                  and airport status badges (item 7); above the rim so the
+ *                  limb never dims a label
  *   legend         React Native view, only while a route is selected
  *
  * Gestures run on the JS thread (d3 projection and picture recording live
@@ -49,6 +50,7 @@ import { makeLiftedProjector } from './arcs';
 import { useMarkFonts } from './markFonts';
 import { markColors, marksSummary, markSet } from './marks';
 import { recordMarksLayer } from './marksLayer';
+import { statusColors, statusSet, statusSummary } from './status';
 
 const NO_ROUTES: readonly RouteLine[] = [];
 /** Finger travel that turns a touch into a drag instead of a tap (prototype: 6). */
@@ -65,6 +67,7 @@ export function GlobeMap({
   homeAirports,
   origin,
   destinations,
+  airportStatus,
   cameraTarget,
   insets,
   interactive = true,
@@ -226,16 +229,26 @@ export function GlobeMap({
     const [h, o, d] = JSON.parse(airportsKey);
     return marksSummary({ homeAirports: h, origin: o, destinations: d });
   }, [airportsKey]);
+  // Airport status (item 7): badges ride on the marks, so they share the picture.
+  const statusKey = JSON.stringify(airportStatus ?? []);
+  const statuses = useMemo(
+    () => statusSet(JSON.parse(statusKey) as NonNullable<typeof airportStatus>, marks, selectedRoute),
+    [statusKey, marks, selectedRoute],
+  );
+  const statusSpoken = useMemo(() => statusSummary(JSON.parse(statusKey)), [statusKey]);
+  const statusColorSet = useMemo(() => statusColors(palette), [palette]);
   const marksPicture = useMemo(() => {
-    if (!viewport || !camera || marks.length === 0) return null;
+    if (!viewport || !camera || (marks.length === 0 && statuses.length === 0)) return null;
     return recordMarksLayer({
       project: makeLiftedProjector(camera, viewport),
       viewport,
       marks,
       colors: markColorSet,
       fonts,
+      statuses,
+      statusColors: statusColorSet,
     });
-  }, [camera, viewport, marks, markColorSet, fonts]);
+  }, [camera, viewport, marks, markColorSet, fonts, statuses, statusColorSet]);
 
   // Tap handling reads the latest render through a ref (gestures are memoized).
   const handleTap = useCallback(
@@ -353,6 +366,7 @@ export function GlobeMap({
           accessibilityLabel={[
             hasRoutes ? `Globe map, ${drawn.length} routes.` : 'Globe map.',
             marksSpoken,
+            statusSpoken,
           ]
             .filter(Boolean)
             .join(' ')}
@@ -370,7 +384,6 @@ export function GlobeMap({
               {routeLayer ? <Picture picture={routeLayer.picture} /> : null}
               <Picture picture={layers.rim} />
               {marksPicture ? <Picture picture={marksPicture} /> : null}
-              {/* Later: airport status (item 7). */}
             </Canvas>
           ) : null}
         </View>

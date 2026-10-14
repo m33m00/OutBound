@@ -39,4 +39,47 @@ describe('ResultRow', () => {
     act(() => button.props.onPress());
     expect(onPress).toHaveBeenCalledWith(it.id);
   });
+
+  it('shows the delay badge and exposes details as a VoiceOver action', async () => {
+    const it = await fullItinerary();
+    const onImpact = jest.fn();
+    const impact = {
+      level: 'likelyDelays' as const,
+      asOf: new Date(NOW - 5 * 60_000).toISOString(),
+      stale: false,
+      stations: [
+        {
+          code: 'LAX',
+          role: 'destination' as const,
+          level: 'likelyDelays' as const,
+          reasons: [{ source: 'FAA' as const, text: 'Ground stop', level: 'likelyDelays' as const }],
+          asOf: new Date(NOW - 5 * 60_000).toISOString(),
+          stale: false,
+          noForecast: false,
+        },
+      ],
+    };
+    await act(async () => {
+      r = create(<ResultRow itinerary={it} selected={false} now={NOW} onPress={jest.fn()} impact={impact} onImpactPress={onImpact} />);
+    });
+    const root = r!.root;
+    const row = root.findAll((n) => n.props.accessibilityRole === 'button')[0];
+    expect(row.props.accessibilityLabel).toContain('Likely delays at LAX: Ground stop');
+    expect(row.props.accessibilityActions).toEqual([{ name: 'impact', label: 'Delay and weather details' }]);
+    act(() => row.props.onAccessibilityAction({ nativeEvent: { actionName: 'impact' } }));
+    expect(onImpact).toHaveBeenCalledWith(it.id);
+    const texts = root.findAll((n) => typeof n.props.children === 'string').map((n) => n.props.children);
+    expect(texts).toContain('Likely delays · 5m ago');
+    const pill = root.findAll((n) => n.props.hitSlop != null)[0];
+    expect(pill.props.hitSlop).toEqual({ top: 11, bottom: 11, left: 10, right: 10 });
+  });
+
+  it('shows Checking… while live data loads', async () => {
+    const it = await fullItinerary();
+    await act(async () => {
+      r = create(<ResultRow itinerary={it} selected={false} now={NOW} onPress={jest.fn()} impactLoading />);
+    });
+    const texts = r!.root.findAll((n) => typeof n.props.children === 'string').map((n) => n.props.children);
+    expect(texts).toContain('Checking…');
+  });
 });

@@ -3,7 +3,9 @@
  * the route layer: re-recorded per camera / selection / theme, never part of
  * the cached static globe. Cheap: a handful of circles and short strings.
  *
- * Marks are not tappable; route hit testing ignores them.
+ * Marks are not tappable; route hit testing ignores them. Airport status
+ * badges (item 7, status.ts) are drawn here too, on top of the marks, and
+ * count as label obstacles.
  */
 import {
   BlurStyle,
@@ -32,6 +34,15 @@ import {
   type MarkSpec,
   type ScreenMark,
 } from './marks';
+import {
+  STATUS_BADGE,
+  statusExtent,
+  statusShapePoints,
+  visibleStatus,
+  type ScreenStatus,
+  type StatusColors,
+  type StatusSpec,
+} from './status';
 
 export interface MarksLayerInput {
   project: LiftedProjector;
@@ -40,6 +51,9 @@ export interface MarksLayerInput {
   colors: MarkColors;
   /** Null while fonts load: marks draw, labels wait. */
   fonts: MarkFonts | null;
+  /** Airport status badges (item 7), from `statusSet`. */
+  statuses?: readonly StatusSpec[];
+  statusColors?: StatusColors;
 }
 
 function paint(color: string, style: PaintStyle, width = 0) {
@@ -101,9 +115,34 @@ function drawMark(canvas: SkCanvas, m: ScreenMark, c: MarkColors) {
   }
 }
 
-export function recordMarksLayer({ project, viewport, marks, colors, fonts }: MarksLayerInput): SkPicture | null {
+function drawStatus(canvas: SkCanvas, s: ScreenStatus, c: StatusColors) {
+  const pts = statusShapePoints(s.level, s.x, s.y);
+  const path = Skia.Path.Make();
+  path.addPoly(pts, true);
+  if (s.dim) {
+    // One layer so the halo does not show through the faded fill.
+    const layer = Skia.Paint();
+    layer.setAlphaf(STATUS_BADGE.dimAlpha);
+    canvas.saveLayer(layer);
+  }
+  canvas.drawPath(path, paint(c.halo, PaintStyle.Stroke, STATUS_BADGE.halo));
+  canvas.drawPath(path, paint(c.halo, PaintStyle.Fill));
+  canvas.drawPath(path, paint(s.level === 'caution' ? c.caution : c.likelyDelays, PaintStyle.Fill));
+  if (s.dim) canvas.restore();
+}
+
+export function recordMarksLayer({
+  project,
+  viewport,
+  marks,
+  colors,
+  fonts,
+  statuses = [],
+  statusColors,
+}: MarksLayerInput): SkPicture | null {
   const shown = visibleMarks(marks, project, viewport);
-  if (shown.length === 0) return null;
+  const badges = statusColors ? visibleStatus(statuses, project, viewport) : [];
+  if (shown.length === 0 && badges.length === 0) return null;
 
   const recorder = Skia.PictureRecorder();
   const canvas = recorder.beginRecording(Skia.XYWHRect(0, 0, viewport.width, viewport.height));
@@ -128,7 +167,10 @@ export function recordMarksLayer({ project, viewport, marks, colors, fonts }: Ma
     const placed = placeLabels(
       requests,
       labelBounds(viewport.width, viewport.insets),
-      shown.map((m) => ({ id: m.code, x: m.x, y: m.y, r: markExtent(m.kind) })),
+      [
+        ...shown.map((m) => ({ id: m.code, x: m.x, y: m.y, r: markExtent(m.kind) })),
+        ...badges.map((b) => ({ id: b.id, x: b.x, y: b.y, r: statusExtent(b.level) })),
+      ],
     );
     const fill = paint(colors.label, PaintStyle.Fill);
     placed.forEach((p, i) => {
@@ -142,6 +184,8 @@ export function recordMarksLayer({ project, viewport, marks, colors, fonts }: Ma
   }
 
   for (const m of shown) drawMark(canvas, m, colors);
+  // Badges last: they sit beside the marks (never over them), above labels.
+  if (statusColors) for (const b of badges) drawStatus(canvas, b, statusColors);
 
   return recorder.finishRecordingAsPicture();
 }

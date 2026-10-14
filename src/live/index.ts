@@ -25,3 +25,13 @@ export {
   type ImpactReason,
   type ImpactSource,
 } from './impact';
+export {
+  routeImpacts,
+  useRouteImpacts,
+  type ImpactLevel,
+  type RouteImpact,
+  type RouteImpactsResult,
+  type StationImpact,
+  type UseRouteImpactsOptions,
+} from './routeImpacts';
+export { sampleRouteImpacts } from './fixtures/sampleRouteImpacts';

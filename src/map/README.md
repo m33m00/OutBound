@@ -28,7 +28,7 @@ Two cached Skia Pictures, re-recorded only when camera, size, theme or gesture s
 1. base: space, atmosphere glow, ocean, land, country borders, US state lines
 2. routes picture (item 4): re-recorded on camera, routes, selection or theme change; a selection change does not touch 1 or 3. Includes the selected route's chevrons.
 3. rim: limb darkening and globe edge
-4. marks picture (item 9): dynamic like 2, drawn above the rim so the limb never dims a label. Airport status (item 7) will join it.
+4. marks picture (item 9): dynamic like 2, drawn above the rim so the limb never dims a label. Airport status badges (item 7, `status.ts`) are drawn in it too, after the marks, and act as label obstacles.
 
 While a finger is moving or the camera is flying, the base layer is recorded in "fast" mode, as the prototype does: lower projection precision, 110m data only, no state lines. They come back when the gesture ends. Natural Earth 50m replaces 110m when the globe radius is more than 2.1 view widths.
 

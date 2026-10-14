@@ -2,6 +2,7 @@ import { forwardRef, type ReactNode } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { Itinerary } from '@/engine';
+import type { RouteImpact } from '@/live';
 import { shortDate } from '@/search/dates';
 import type { SearchState } from '@/search/useRouteSearch';
 import { minTapTarget, radius, spacing, textStyles, useColors } from '@/theme';
@@ -21,6 +22,12 @@ export interface ResultsPanelProps {
   onTomorrow: (() => void) | null;
   /** Leave-by card for the selected route (fixed above the list). */
   selectedCard?: ReactNode;
+  /** Delay/weather impact per itinerary id (item 7). */
+  impacts?: Record<string, RouteImpact>;
+  impactsLoading?: boolean;
+  onImpactPress?: (id: string) => void;
+  /** Label shown while impacts are dev sample data. */
+  sampleImpacts?: boolean;
 }
 
 export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(function ResultsPanel(p, ref) {
@@ -39,7 +46,7 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
         style={styles.back}>
         <Text style={[textStyles.heading, { color: c.accent }]}>‹ Search</Text>
       </Pressable>
-      <SampleLabel />
+      <SampleLabel text={p.sampleImpacts ? 'Sample flights and delays' : undefined} />
     </View>
   );
 
@@ -96,7 +103,15 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
         ListHeaderComponent={header}
         ItemSeparatorComponent={() => <View style={styles.sep} />}
         renderItem={({ item }) => (
-          <ResultRow itinerary={item} selected={item.id === p.selectedId} now={p.now} onPress={p.onSelect} />
+          <ResultRow
+            itinerary={item}
+            selected={item.id === p.selectedId}
+            now={p.now}
+            onPress={p.onSelect}
+            impact={p.impacts?.[item.id]}
+            impactLoading={p.impactsLoading}
+            onImpactPress={p.onImpactPress}
+          />
         )}
         onScrollToIndexFailed={() => {}}
         ListEmptyComponent={
@@ -119,11 +134,11 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
 });
 
 /** Shown wherever sample data appears, until the schedule DB lands. */
-export function SampleLabel() {
+export function SampleLabel({ text = 'Sample flights' }: { text?: string }) {
   const c = useColors();
   return (
     <View style={[styles.sample, { backgroundColor: c.surface2 }]}>
-      <Text style={[textStyles.small, { color: c.muted }]}>Sample flights</Text>
+      <Text style={[textStyles.small, { color: c.muted }]}>{text}</Text>
     </View>
   );
 }

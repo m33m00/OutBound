@@ -9,7 +9,7 @@
  * camera fit and fly-to, legend while a route is selected.
  * Item 9: home pins, origin dot, destination rings, IATA labels (flip
  * left near the right edge), direction chevrons on the selected route.
- * Accepted but not drawn yet: airport status (item 7).
+ * Item 7: airport status badges (Caution diamond, Likely delays triangle).
  */
 import type { StyleProp, ViewStyle } from 'react-native';
 
@@ -58,7 +58,7 @@ export interface MapAirport {
   coord: LonLat;
 }
 
-/** Disruption level shown on an airport (DECISIONS.md "Weather"). Later: item 7. */
+/** Disruption level shown on an airport (DECISIONS.md "Weather"). */
 export type AirportStatusLevel = 'caution' | 'likelyDelays';
 
 export interface AirportStatusMark {
@@ -118,7 +118,14 @@ export interface GlobeMapProps {
    * selected, its other airports (connections) get small rings and labels.
    */
   destinations?: readonly MapAirport[];
-  /** Later: item 7. */
+  /**
+   * Airports with a disruption badge (item 7): pass the stations on the
+   * drawn routes that have a badge. Caution = violet diamond, Likely
+   * delays = magenta triangle, drawn up-left of the airport's mark (or on
+   * the airport when it has none). One entry per code; if a code repeats,
+   * the worst level wins. While a route is selected, badges off that route
+   * dim. Not tappable. Also read in the accessibility label.
+   */
   airportStatus?: readonly AirportStatusMark[];
   /**
    * Applied whenever its value changes (fly-to, or jump with Reduce Motion).

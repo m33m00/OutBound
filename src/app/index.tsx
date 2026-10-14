@@ -4,6 +4,7 @@ import { FlatList, Pressable, StyleSheet, Text, View, type LayoutChangeEvent } f
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AIRPORTS, addDays, localDate, toRouteLine, type Itinerary } from '@/engine';
+import { sampleRouteImpacts, useRouteImpacts } from '@/live';
 import { GlobeMap, type MapAirport } from '@/map';
 import { dateChips } from '@/search/dates';
 import { useRouteSearch } from '@/search/useRouteSearch';
@@ -12,6 +13,7 @@ import { AirportPicker } from '@/ui/AirportPicker';
 import { useSettings } from '@/settings/SettingsProvider';
 import { changedFilters, DEFAULT_FILTERS, homeAirports, type SearchFilters } from '@/settings/settings';
 import { FiltersModal } from '@/ui/FiltersModal';
+import { ImpactSheet } from '@/ui/ImpactSheet';
 import { LeaveByCard } from '@/ui/LeaveByCard';
 import { useCurrentLocation } from '@/ui/useCurrentLocation';
 import { ResultsPanel } from '@/ui/ResultsPanel';
@@ -78,6 +80,20 @@ export default function HomeScreen() {
 
   const results = useMemo(() => (state.status === 'done' ? state.results : []), [state]);
   const routes = useMemo(() => results.map((it) => toRouteLine(it, airport)), [results]);
+
+  // Delay/weather badges (item 7). Until the live functions are deployed the
+  // hook reports 'off'; dev builds then show clearly labeled sample impacts.
+  const live = useRouteImpacts(results);
+  const sampleImpacts = __DEV__ && live.state === 'off';
+  const impacts = useMemo(
+    () => (sampleImpacts ? sampleRouteImpacts(results) : live),
+    [sampleImpacts, results, live],
+  );
+  const [impactFor, setImpactFor] = useState<string | null>(null);
+  const statusMarks = useMemo(
+    () => impacts.airports.map((a) => ({ ...mark(a.code), level: a.level })),
+    [impacts.airports],
+  );
 
   const runSearch = useCallback(
     (d = date, to = destination) => {
@@ -155,6 +171,7 @@ export default function HomeScreen() {
           homeAirports={homeMarks}
           origin={markOrigin ? mark(markOrigin) : null}
           destinations={markDestinations}
+          airportStatus={statusMarks}
           selectedRouteId={selectedId}
           onSelectRoute={select}
           insets={{ bottom: snaps[sheetIndex] }}
@@ -192,6 +209,10 @@ export default function HomeScreen() {
                   reset();
                 }}
                 onRetry={() => runSearch(state.request.date)}
+                impacts={impacts.byId}
+                impactsLoading={!sampleImpacts && live.state === 'loading'}
+                onImpactPress={setImpactFor}
+                sampleImpacts={sampleImpacts}
                 selectedCard={
                   firstLeg ? (
                     <LeaveByCard
@@ -232,6 +253,14 @@ export default function HomeScreen() {
           setPicking(null);
         }}
         onClose={() => setPicking(null)}
+      />
+      <ImpactSheet
+        visible={impactFor !== null}
+        title="Delays and weather"
+        impact={impactFor ? (impacts.byId[impactFor] ?? null) : null}
+        now={now}
+        sample={sampleImpacts}
+        onClose={() => setImpactFor(null)}
       />
       <FiltersModal
         visible={filtersOpen}

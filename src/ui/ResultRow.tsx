@@ -1,11 +1,14 @@
-import { memo, type ReactNode } from 'react';
+import { memo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { Itinerary, SeatTier } from '@/engine';
+import type { RouteImpact } from '@/live';
 import { formatDuration, nearbyNotes, rowAccessibilityLabel, rowTimes, seatText, stopsText } from '@/search/format';
+import { impactSummary } from '@/search/impactText';
 import { radius, spacing, textStyles, useColors, type ColorToken } from '@/theme';
 
 import { AirlinePill } from './AirlinePill';
+import { ImpactBadge } from './ImpactBadge';
 
 /** Tier text and fill tokens; color is never the only signal (word + number). */
 const TIER_FG: Record<SeatTier, ColorToken> = {
@@ -30,19 +33,36 @@ export interface ResultRowProps {
   selected: boolean;
   now: number;
   onPress: (id: string) => void;
-  /** Delay/weather badges (Q-001), filled in backlog item 7. */
-  badges?: ReactNode;
+  /** Delay/weather impact (Q-001, item 7); undefined while not available. */
+  impact?: RouteImpact;
+  /** Live data still loading for the first time. */
+  impactLoading?: boolean;
+  onImpactPress?: (id: string) => void;
 }
 
-export const ResultRow = memo(function ResultRow({ itinerary: it, selected, now, onPress, badges }: ResultRowProps) {
+export const ResultRow = memo(function ResultRow({
+  itinerary: it,
+  selected,
+  now,
+  onPress,
+  impact,
+  impactLoading,
+  onImpactPress,
+}: ResultRowProps) {
   const c = useColors();
   const t = rowTimes(it);
+  const hasImpact = impact != null && impact.level !== 'none';
+  const label = [rowAccessibilityLabel(it, now), hasImpact ? impactSummary(impact, now) : ''].filter(Boolean).join('. ');
   return (
     <Pressable
       onPress={() => onPress(it.id)}
       accessibilityRole="button"
       accessibilityState={{ selected }}
-      accessibilityLabel={rowAccessibilityLabel(it, now)}
+      accessibilityLabel={label}
+      accessibilityActions={hasImpact ? [{ name: 'impact', label: 'Delay and weather details' }] : undefined}
+      onAccessibilityAction={(e) => {
+        if (e.nativeEvent.actionName === 'impact') onImpactPress?.(it.id);
+      }}
       accessibilityHint={selected ? 'Tap to clear the route from the globe' : 'Shows this route on the globe'}
       style={[
         styles.row,
@@ -62,7 +82,11 @@ export const ResultRow = memo(function ResultRow({ itinerary: it, selected, now,
             {t.plusDays ? <Text style={[textStyles.small, { color: c.muted }]}> {t.plusDays}</Text> : null}
           </Text>
           <View style={styles.badgeSlot} testID="badge-slot">
-            {badges}
+            {hasImpact ? (
+              <ImpactBadge impact={impact} now={now} onPress={() => onImpactPress?.(it.id)} />
+            ) : impactLoading ? (
+              <Text style={[textStyles.small, { color: c.faint }]}>Checking…</Text>
+            ) : null}
           </View>
         </View>
         <View style={styles.line}>
@@ -129,6 +153,7 @@ const styles = StyleSheet.create({
     gap: spacing.group,
   },
   badgeSlot: {
+    flexShrink: 1,
     flexDirection: 'row',
     gap: 4,
     minHeight: 20,
