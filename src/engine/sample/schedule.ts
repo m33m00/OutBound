@@ -1,0 +1,42 @@
+/**
+ * SAMPLE DATA. Made-up schedule for development until the schedule DB
+ * exists. Airline IATA codes only; flight numbers are invented.
+ * [airline, number, from, to, local departure "HH:MM", block minutes]
+ */
+export const SAMPLE_SCHEDULE: readonly (readonly [string, string, string, string, string, number])[] = [
+  ['AA', '1201', 'BNA', 'DFW', '06:10', 125],
+  ['AA', '1203', 'BNA', 'DFW', '11:40', 125],
+  ['AA', '1205', 'BNA', 'DFW', '16:15', 125],
+  ['AA', '2310', 'BNA', 'CLT', '07:00', 85],
+  ['AA', '2312', 'BNA', 'CLT', '13:20', 85],
+  ['DL', '1450', 'BNA', 'ATL', '06:45', 75],
+  ['DL', '1452', 'BNA', 'ATL', '12:30', 75],
+  ['UA', '520', 'BNA', 'ORD', '07:15', 105],
+  ['UA', '522', 'BNA', 'DEN', '08:05', 175],
+  ['WN', '311', 'BNA', 'DAL', '07:30', 120],
+  ['WN', '313', 'BNA', 'DAL', '14:05', 120],
+  ['WN', '890', 'BNA', 'LAX', '09:15', 265],
+  ['AA', '2401', 'DFW', 'LAX', '09:30', 200],
+  ['AA', '2403', 'DFW', 'LAX', '14:45', 200],
+  ['AA', '2405', 'DFW', 'LAX', '19:20', 200],
+  ['AA', '1610', 'DFW', 'PHX', '10:05', 150],
+  ['AA', '1612', 'DFW', 'SEA', '10:40', 260],
+  ['WN', '1720', 'DAL', 'LAX', '10:55', 205],
+  ['WN', '1722', 'DAL', 'PHX', '16:40', 150],
+  ['AA', '700', 'CLT', 'LAX', '09:55', 330],
+  ['AA', '702', 'CLT', 'DFW', '15:30', 220],
+  ['DL', '820', 'ATL', 'LAX', '09:20', 290],
+  ['DL', '822', 'ATL', 'SEA', '14:00', 340],
+  ['DL', '824', 'ATL', 'MIA', '10:15', 120],
+  ['UA', '1180', 'ORD', 'LAX', '10:10', 270],
+  ['UA', '1182', 'ORD', 'DEN', '10:30', 160],
+  ['UA', '1440', 'DEN', 'LAX', '11:25', 150],
+  ['UA', '1442', 'DEN', 'LAX', '14:50', 150],
+  ['UA', '1444', 'DEN', 'SEA', '13:10', 180],
+  ['AA', '1820', 'PHX', 'LAX', '13:15', 80],
+  ['AA', '1822', 'PHX', 'LAX', '18:30', 80],
+  ['AA', '300', 'LGA', 'ORD', '07:00', 165],
+  ['AA', '302', 'LGA', 'DFW', '08:00', 245],
+  ['AA', '1900', 'MIA', 'DFW', '08:30', 205],
+  ['AA', '1960', 'SEA', 'LAX', '17:00', 165],
+];
