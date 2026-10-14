@@ -28,6 +28,8 @@ export interface WeatherConfig {
     gustLikelyAtOrAbove: number;
     gustCautionAtOrAbove: number;
     sustainedCautionAtOrAbove: number;
+    /** Sustained wind at or above this is Likely delays (Q-029). */
+    sustainedLikelyAtOrAbove: number;
   };
   /** Highest level a TEMPO / PROB group may produce (they are not prevailing). */
   temporaryMaxLevel: 'caution' | 'likelyDelays';
@@ -50,7 +52,7 @@ export interface WeatherConfig {
 export const WEATHER_CONFIG: WeatherConfig = {
   ceilingFt: { likelyBelow: 500, cautionBelow: 1000 },
   visSm: { likelyBelowHalf: 0.5, likelyBelow: 1, cautionBelow: 3, fogCautionBelow: 2 },
-  windKt: { gustLikelyAtOrAbove: 40, gustCautionAtOrAbove: 30, sustainedCautionAtOrAbove: 25 },
+  windKt: { gustLikelyAtOrAbove: 40, gustCautionAtOrAbove: 30, sustainedCautionAtOrAbove: 25, sustainedLikelyAtOrAbove: 40 },
   temporaryMaxLevel: 'caution',
   cacheMs: { metar: 5 * 60 * 1000, taf: 15 * 60 * 1000 },
   destinationPadMs: 60 * 60 * 1000,

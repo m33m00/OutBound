@@ -158,6 +158,10 @@ A) No weather badge beyond the forecast window (recommended; NWS can be its own 
 Recommendation: A, because it keeps item 5 small.
 Answer: John (2026-10-14), option A. NWS longer-range forecast can be its own later item.
 
+### Q-029 Weather edge cases left open by Q-027  (Answered 2026-10-14)
+Context: Q-027 did not settle freezing drizzle, ice pellets, blowing snow, sustained high wind or airports without an ICAO mapping. Main session recommended defaults; John adopted them all.
+Answer: John (2026-10-14), adopted the recommendations. Freezing rain any intensity = Likely delays; light freezing drizzle = Caution, moderate/heavy = Likely delays. Ice pellets light = Caution, moderate/heavy = Likely delays (changes build). Blowing snow = Caution (visibility rules can raise it). Sustained wind >=40 kt without gusts = Likely delays (changes build). No ICAO mapping (non-US other than HNL/ANC/SJU) = no weather badge for now. Follow-up for live-ops: update the weather classifier and config for ice pellets and sustained wind. Does not block backlog 7.
+
 Provisional defaults for backlog 3 (not John-decided; John may override any time):
 - FAA cache TTL 5 min server-side; serve stale on FAA error.
 - One national NAS feed fetch, filtered on read.

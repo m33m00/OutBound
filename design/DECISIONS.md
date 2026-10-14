@@ -52,6 +52,12 @@ Condensed from the project docs: MVP decisions (through v8.8), design direction 
 - METAR/TAF to badge (Q-027, 2026-10-14, John: A, ceilings + storms + wind + winter). VFR/MVFR alone never shows a badge. All thresholds live in one config file, tunable after testing.
   - Caution (violet): IFR (ceiling 500 to <1,000 ft or vis 1 to <3 mi); thunderstorm nearby (VCTS); gust >=30 kt or sustained wind >=25 kt; any snow/ice pellets or freezing precip (light); fog with vis <2 mi.
   - Likely delays (magenta): LIFR (ceiling <500 ft or vis <1 mi); thunderstorm at the airport; gust >=40 kt; moderate/heavy snow; any freezing rain/ice; vis <1/2 mi.
+- Weather edge cases (Q-029, 2026-10-14, John adopted the recommendations; refines Q-027 where it differs, newest wins):
+  - Freezing rain at any intensity = Likely delays. Freezing drizzle: light = Caution; moderate/heavy = Likely delays. ~~Q-027 "any freezing rain/ice = Likely delays" for drizzle (superseded 2026-10-14).~~
+  - Ice pellets: light = Caution; moderate or heavy = Likely delays (build had moderate = Caution; build must change).
+  - Blowing snow = Caution; the visibility rules still raise it if visibility drops.
+  - Sustained wind >=40 kt without gusts = Likely delays (build must change). Sustained 25 to <40 kt stays Caution.
+  - Airports with no known ICAO mapping (non-US other than HNL/ANC/SJU) = no weather badge for now.
 - Forecast range (Q-028, 2026-10-14, John: A): no weather badge beyond the TAF window. NWS longer-range forecast can be its own later item.
 - Provisional defaults for backlog item 5 (not John-decided; John may override):
   - G1: one Edge Function per source (live-faa-status as built; new live-weather) plus ONE client combining layer: worst of FAA and weather wins (Likely delays > Caution > none), reasons tagged by source, asOf = oldest input. useAirportStatus contract unchanged.

@@ -201,10 +201,11 @@ function wxFindings(token: string, visSm: number | null, cfg: WeatherConfig): Fi
     else out.push({ level: intensity === 'light' ? 'caution' : 'likelyDelays', label: 'Freezing drizzle' });
   }
   if (t.includes('PL')) {
+    // Q-029: light = Caution; moderate and heavy = Likely delays.
     out.push(
-      intensity === 'heavy'
-        ? { level: 'likelyDelays', label: 'Heavy ice pellets' }
-        : { level: 'caution', label: 'Ice pellets' },
+      intensity === 'light'
+        ? { level: 'caution', label: 'Light ice pellets' }
+        : { level: 'likelyDelays', label: intensity === 'heavy' ? 'Heavy ice pellets' : 'Ice pellets' },
     );
   }
   if (t.includes('SN') || t.includes('SG')) {
@@ -238,8 +239,13 @@ export function classifyConditions(
       level: c.gustKt >= cfg.windKt.gustLikelyAtOrAbove ? 'likelyDelays' : 'caution',
       label: `Gusts ${Math.round(c.gustKt)} kt`,
     });
-  } else if (c.windKt !== null && c.windKt >= cfg.windKt.sustainedCautionAtOrAbove) {
-    found.push({ level: 'caution', label: `Strong wind ${Math.round(c.windKt)} kt` });
+  }
+  if (c.windKt !== null && c.windKt >= cfg.windKt.sustainedCautionAtOrAbove) {
+    // Q-029: sustained >= 40 kt is Likely delays, 25 to <40 kt is Caution. Skip the Caution label when a gust finding already covers it.
+    const likely = c.windKt >= cfg.windKt.sustainedLikelyAtOrAbove;
+    if (likely || c.gustKt === null || c.gustKt < cfg.windKt.gustCautionAtOrAbove) {
+      found.push({ level: likely ? 'likelyDelays' : 'caution', label: `Strong wind ${Math.round(c.windKt)} kt` });
+    }
   }
   for (const tok of c.wx) found.push(...wxFindings(tok, c.visSm, cfg));
 
