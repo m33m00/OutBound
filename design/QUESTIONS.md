@@ -109,11 +109,30 @@ Answer: John (2026-10-14). Until invite-code login exists, live Edge Functions a
 ### Q-018 Deselecting a route on the globe  (Answered 2026-10-14)
 Answer: John (2026-10-14). Tapping empty space while a route is selected deselects it (back to the all-gray overview) and pulls the camera back out.
 
+### Q-019 FAA general delay of 60+ minutes  (Answered 2026-10-14)
+Context: Q-015 did not say what a general arrival/departure delay of 60+ min shows.
+Answer: John (2026-10-14). 60+ min = Likely delays. Under 60 min stays Caution. Replaces the provisional default.
+
+### Q-020 FAA airport closures with future dates  (Answered 2026-10-14)
+Context: The FAA feed gives closure Start/Reopen without a year, so future-dated closures cannot be reliably told apart.
+Answer: John (2026-10-14). Any closure the FAA lists shows Likely delays; no attempt to filter future-dated ones. Early badges are acceptable.
+
+### Q-021 Solid/dashed on gray overview and ghost lines  (Answered 2026-10-14)
+Context: Backlog 4. "Solid = reported; dashed = estimate/typical/unknown" and "Legend only while a route is selected." As built (like the v9.1 prototype), only the selected route uses solid/dashed; the gray overview lines and faint ghosts are always solid. Non-blocking.
+A) Keep as built: solid/dashed only on the selected route  B) Also dash non-reported legs in the gray overview and ghosts
+Recommendation: A; with no legend shown in the overview, dashes there are unexplained noise, and thin gray dashes are hard to read.
+Answer: John (2026-10-14), option A. Overview and ghost lines are always solid thin gray; solid/dashed applies only to the selected route.
+
+### Q-022 Meaning of the 28pt line hit area  (Answered 2026-10-14)
+Context: Backlog 4. "Map line hit area 28pt." As built (like the v9.1 prototype), a tap counts if it lands within 28pt of the line on either side (a 56pt-wide band). The other reading is a 28pt-wide band (14pt each side). Non-blocking; one constant.
+A) Keep as built: within 28pt of the line  B) 28pt-wide band (14pt each side)
+Recommendation: A; arcs are thin and overlap, and the selected route is preferred when in range, so the larger area is forgiving without stealing taps.
+Answer: John (2026-10-14), option A. May be tightened after on-device testing.
+
 Provisional defaults for backlog 3 (not John-decided; John may override any time):
 - FAA cache TTL 5 min server-side; serve stale on FAA error.
 - One national NAS feed fetch, filtered on read.
 - Every value carries an as-of timestamp.
-- General delay of 60+ min = Likely delays.
 - Chevrons: item 9 (item 4 ships arcs without chevrons).
 
 Provisional engine defaults (Backlog 1, as built, not yet decisions; John may override any time):

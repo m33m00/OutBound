@@ -36,7 +36,8 @@ Condensed from the project docs: MVP decisions (through v8.8), design direction 
 - Flight status (AeroDataBox) only for flights a user opens or is traveling on.
 - FAA NAS status (free) for ground stops, ground delays, airport delays.
 - FAA status to badge (Q-015, 2026-10-14): ground stop, ground delay program or airport closure = Likely delays (magenta); general arrival/departure delay under 60 min = Caution (violet); no FAA event = no badge.
-  - Provisional (not John-decided): general delay of 60+ min = Likely delays. The proposal did not state it explicitly.
+  - General arrival/departure delay of 60+ min = Likely delays (Q-019, 2026-10-14). Under 60 min stays Caution. ~~Provisional, not John-decided (superseded 2026-10-14).~~
+  - Airport closures (Q-020, 2026-10-14): any closure the FAA lists shows Likely delays. No filtering of future-dated closures (feed gives Start/Reopen without a year); early badges are accepted.
 - Provisional defaults for backlog item 3 (not John-decided; John may override): FAA cache TTL 5 min server-side; serve stale data on FAA error; one national NAS feed fetch, filtered on read; every value carries an as-of timestamp.
 - Weather: aviationweather.gov METAR/TAF near departure, NWS further out; radar via RainViewer or NOAA MRMS (terms to confirm).
 - Weather impact shows disruption only; Caution (violet) / Likely delays (magenta). Station = destination for nonstops, connection airport for connections.
@@ -48,9 +49,11 @@ Condensed from the project docs: MVP decisions (through v8.8), design direction 
 - Globe v1 (P0): land/ocean, state lines, colored arcs, tap to select, camera fly-to. Polish (P1): day/night, spin-in, flight preview, radar.
 - Results: top 10 routes of current sort; overview in thin neutral gray; selected route in tier color per leg with direction chevrons; others faint ghosts; tap a ghost selects earliest-arriving option on that path.
 - Line styles: solid = reported; dashed = estimate/typical/unknown. Legend only while a route is selected.
+- Q-021 (2026-10-14): overview and ghost lines are always solid thin gray; solid/dashed styling applies only to the selected route (when the legend shows).
 - Deselect (Q-018, 2026-10-14): tapping empty space while a route is selected deselects it (back to the all-gray overview) and pulls the camera back out.
 - Chevrons scope (provisional, not John-decided): direction chevrons ship in backlog item 9; item 4 ships arcs without chevrons.
-- Map line hit area 28pt. Camera fits the real route box above the panel.
+- Q-022 (2026-10-14): map line hit area 28pt = a tap within 28pt of a drawn line counts; if several routes are in range the selected route wins, otherwise the nearest. May be tightened after on-device testing.
+- Camera fits the real route box above the panel.
 - Removed: city lights, terrain, clock/time slider, weather key.
 
 ## Design system
