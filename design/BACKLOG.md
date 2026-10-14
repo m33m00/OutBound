@@ -18,4 +18,4 @@ Each item names its owner. One item per work session. spec-keeper runs a pre-fli
 | 11 | Globe polish: day/night, spin-in, flight preview | globe-porter | P1 | Later |
 | 12 | Leave-by card + tester settings screen (airport buffer, default 75 min; Q-003) | main | P0 | Done |
 | 13 | `live-radar` Edge Function: latest NOAA MRMS frame per region (CONUS, AK, HI, Caribbean) as a cached lat/lon PNG with observedAt; polite fetching, stale fallback | live-ops | P1 | Done (deployed 2026-10-14) |
-| 14 | Radar overlay on the globe (Skia mesh/shader from lat/lon image), on/off toggle, age shown, hidden past 30 min; no time slider or color key | globe-porter | P1 | After 13 |
+| 14 | Radar overlay on the globe (Skia mesh/shader from lat/lon image), on/off toggle, age shown, hidden past 30 min; no time slider or color key | globe-porter | P1 | Done |
