@@ -46,7 +46,8 @@ Condensed from the project docs: MVP decisions (through v8.8), design direction 
 - FAA NAS status (free) for ground stops, ground delays, airport delays.
 - FAA status to badge (Q-015, 2026-10-14): ground stop, ground delay program or airport closure = Likely delays (magenta); general arrival/departure delay under 60 min = Caution (violet); no FAA event = no badge.
   - General arrival/departure delay of 60+ min = Likely delays (Q-019, 2026-10-14). Under 60 min stays Caution. ~~Provisional, not John-decided (superseded 2026-10-14).~~
-  - Airport closures (Q-020, 2026-10-14): any closure the FAA lists shows Likely delays. No filtering of future-dated closures (feed gives Start/Reopen without a year); early badges are accepted.
+  - ~~Airport closures (Q-020, 2026-10-14): any closure the FAA lists shows Likely delays.~~ (closure rule superseded 2026-10-14 by Q-030). Still true: no filtering of future-dated closures (feed gives Start/Reopen without a year); early badges are accepted.
+  - Airport closures (Q-030, 2026-10-14, John: A): FAA closures show Likely delays only when the whole airport is closed. Closures limited to private/GA, non-scheduled, or by-permission (PPR) flights, and runway/taxiway-only closures, are ignored. Ground stops, ground delay programs and general delays unchanged. (Trigger: LAX "AD AP CLSD TO NON SKED TRANSIENT GA ACFT ... until May 2027".)
 - Provisional defaults for backlog item 3 (not John-decided; John may override): FAA cache TTL 5 min server-side; serve stale data on FAA error; one national NAS feed fetch, filtered on read; every value carries an as-of timestamp.
 - Weather: aviationweather.gov METAR/TAF near departure, NWS further out; radar via RainViewer or NOAA MRMS (terms to confirm).
 - METAR/TAF to badge (Q-027, 2026-10-14, John: A, ceilings + storms + wind + winter). VFR/MVFR alone never shows a badge. All thresholds live in one config file, tunable after testing.
@@ -111,6 +112,8 @@ Source in code: `src/theme/colors.ts`, `src/theme/typography.ts`. Values are lig
 - Dev machine: MacBook Pro (Apple silicon). iPhone via Expo Go; iOS Simulator optional.
 - Supabase (Postgres, auth with invite codes, Edge Functions). iOS first via TestFlight.
 - Supabase plan (Q-016, 2026-10-14): Free plan, US East region for the beta. Upgrade to Pro ($25/mo) before testers rely on it (free projects pause after a week idle). Pro is not in the Floor estimate below until then.
+  - Region note (2026-10-14): the Supabase project was created in US West (Oregon, us-west-2), not US East as planned in Q-016. Edge Functions run at the edge, so they are unaffected; database region matters only once tables are added. Flag for John: recreate in US East before data lands, or accept US West?
+  - Deployed 2026-10-14: live-faa-status and live-weather, to project bpiwqsdnngfdmrczpieb.
 - Budget: Floor ~$9–18/mo + $99/yr Apple. Paid-API cap $30/mo, alert $24, estimates pause at cap.
 
 ## Not in the MVP

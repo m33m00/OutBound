@@ -162,6 +162,12 @@ Answer: John (2026-10-14), option A. NWS longer-range forecast can be its own la
 Context: Q-027 did not settle freezing drizzle, ice pellets, blowing snow, sustained high wind or airports without an ICAO mapping. Main session recommended defaults; John adopted them all.
 Answer: John (2026-10-14), adopted the recommendations. Freezing rain any intensity = Likely delays; light freezing drizzle = Caution, moderate/heavy = Likely delays. Ice pellets light = Caution, moderate/heavy = Likely delays (changes build). Blowing snow = Caution (visibility rules can raise it). Sustained wind >=40 kt without gusts = Likely delays (changes build). No ICAO mapping (non-US other than HNL/ANC/SJU) = no weather badge for now. Follow-up for live-ops: update the weather classifier and config for ice pellets and sustained wind. Does not block backlog 7.
 
+### Q-030 Partial FAA airport closures  (Answered 2026-10-14)
+Context: The live FAA feed listed LAX "AD AP CLSD TO NON SKED TRANSIENT GA ACFT ... until May 2027". Under Q-020 that would show Likely delays at LAX for months.
+A) Only full closures show Likely delays (recommended)  B) Partial closures = Caution  C) Keep as is (Q-020)
+Recommendation: A.
+Answer: John (2026-10-14), option A. FAA closures show Likely delays only when the whole airport is closed. Closures limited to private/GA, non-scheduled, or by-permission (PPR) flights, and runway/taxiway-only closures, are ignored. Ground stops, ground delay programs and general delays unchanged. Supersedes the closure part of Q-020.
+
 Provisional defaults for backlog 3 (not John-decided; John may override any time):
 - FAA cache TTL 5 min server-side; serve stale on FAA error.
 - One national NAS feed fetch, filtered on read.
