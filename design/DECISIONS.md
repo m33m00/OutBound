@@ -49,7 +49,9 @@ Condensed from the project docs: MVP decisions (through v8.8), design direction 
   - ~~Airport closures (Q-020, 2026-10-14): any closure the FAA lists shows Likely delays.~~ (closure rule superseded 2026-10-14 by Q-030). Still true: no filtering of future-dated closures (feed gives Start/Reopen without a year); early badges are accepted.
   - Airport closures (Q-030, 2026-10-14, John: A): FAA closures show Likely delays only when the whole airport is closed. Closures limited to private/GA, non-scheduled, or by-permission (PPR) flights, and runway/taxiway-only closures, are ignored. Ground stops, ground delay programs and general delays unchanged. (Trigger: LAX "AD AP CLSD TO NON SKED TRANSIENT GA ACFT ... until May 2027".)
 - Provisional defaults for backlog item 3 (not John-decided; John may override): FAA cache TTL 5 min server-side; serve stale data on FAA error; one national NAS feed fetch, filtered on read; every value carries an as-of timestamp.
-- Weather: aviationweather.gov METAR/TAF near departure, NWS further out; radar via RainViewer or NOAA MRMS (terms to confirm).
+- Weather: aviationweather.gov METAR/TAF near departure, NWS further out.
+- Radar source (Q-031, 2026-10-14, John: A): NOAA MRMS via the NWS GeoServer WMS (free, keyless, public domain). ~~"RainViewer or NOAA MRMS (terms to confirm)" (superseded 2026-10-14).~~ Research: `design/research/radar.md`.
+  - Provisional (not John-decided): be polite to NWS (respect refresh, request only needed regions, back off on failure); stale rule = show last frame with its age, hide overlay when older than 30 min (config); radar never feeds badge logic; no time slider, no color key; on/off toggle.
 - METAR/TAF to badge (Q-027, 2026-10-14, John: A, ceilings + storms + wind + winter). VFR/MVFR alone never shows a badge. All thresholds live in one config file, tunable after testing.
   - Caution (violet): IFR (ceiling 500 to <1,000 ft or vis 1 to <3 mi); thunderstorm nearby (VCTS); gust >=30 kt or sustained wind >=25 kt; any snow/ice pellets or freezing precip (light); fog with vis <2 mi.
   - Likely delays (magenta): LIFR (ceiling <500 ft or vis <1 mi); thunderstorm at the airport; gust >=40 kt; moderate/heavy snow; any freezing rain/ice; vis <1/2 mi.
@@ -73,7 +75,7 @@ Condensed from the project docs: MVP decisions (through v8.8), design direction 
 
 ## Map
 - Custom 3D globe: d3-geo + @shopify/react-native-skia behind a swappable map module; must run in Expo Go.
-- Globe v1 (P0): land/ocean, state lines, colored arcs, tap to select, camera fly-to. Polish (P1): day/night, spin-in, flight preview, radar.
+- Globe v1 (P0): land/ocean, state lines, colored arcs, tap to select, camera fly-to. Polish (P1): day/night, spin-in, flight preview, radar (NOAA MRMS, Q-031, 2026-10-14; on/off toggle, no time slider or color key).
 - Results: top 10 routes of current sort; overview in thin neutral gray; selected route in tier color per leg with direction chevrons; others faint ghosts; tap a ghost selects earliest-arriving option on that path.
 - Line styles: solid = reported; dashed = estimate/typical/unknown. Legend only while a route is selected.
 - Q-021 (2026-10-14): overview and ghost lines are always solid thin gray; solid/dashed styling applies only to the selected route (when the legend shows).

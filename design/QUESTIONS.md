@@ -168,6 +168,12 @@ A) Only full closures show Likely delays (recommended)  B) Partial closures = Ca
 Recommendation: A.
 Answer: John (2026-10-14), option A. FAA closures show Likely delays only when the whole airport is closed. Closures limited to private/GA, non-scheduled, or by-permission (PPR) flights, and runway/taxiway-only closures, are ignored. Ground stops, ground delay programs and general delays unchanged. Supersedes the closure part of Q-020.
 
+### Q-031 Radar source  (Answered 2026-10-14)
+Context: Backlog 10 research (design/research/radar.md). Radar is P1 polish and visual only.
+A) NOAA MRMS via the NWS GeoServer WMS (opengeo.ncep.noaa.gov): free, public domain, keyless, ~2-min frames, CONUS/Alaska/Hawaii/Caribbean/Guam, ready-made lat/lon images (recommended)  B) RainViewer: free tier personal/educational only, cut three times since Aug 2025, Web Mercator tiles, paid for public release  C) Defer radar
+Recommendation: A, because it is free, safe for a later public release and the simplest to draw on the globe.
+Answer: John (2026-10-14), option A (NOAA). Unblocks new backlog items 13 and 14. Provisional defaults (not John-decided): polite to NWS (respect refresh, request only needed regions, back off on failure); stale rule = show last frame with its age, hide overlay older than 30 min (config); radar never feeds badge logic; no time slider, no color key; on/off toggle.
+
 Provisional defaults for backlog 3 (not John-decided; John may override any time):
 - FAA cache TTL 5 min server-side; serve stale on FAA error.
 - One national NAS feed fetch, filtered on read.

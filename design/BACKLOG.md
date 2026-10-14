@@ -14,6 +14,8 @@ Each item names its owner. One item per work session. spec-keeper runs a pre-fli
 | 7 | Delay and weather badges on every results row and airports on the globe | live-ops → globe-porter | P0 | Done |
 | 8 | Flight status for opened flights (AeroDataBox) with unit logging toward the spend cap | live-ops | P0 | Needs AeroDataBox key |
 | 9 | Map marks: home house pin, origin dot, destination rings, label flipping, chevrons | globe-porter | P0 | Done |
-| 10 | Radar tile source (RainViewer vs NOAA MRMS; confirm terms) | live-ops | P1 | Ready (research) |
+| 10 | Radar tile source (RainViewer vs NOAA MRMS; confirm terms) | live-ops | P1 | Done (research; Q-031: NOAA) |
 | 11 | Globe polish: day/night, spin-in, flight preview | globe-porter | P1 | Later |
 | 12 | Leave-by card + tester settings screen (airport buffer, default 75 min; Q-003) | main | P0 | Done |
+| 13 | `live-radar` Edge Function: latest NOAA MRMS frame per region (CONUS, AK, HI, Caribbean) as a cached lat/lon PNG with observedAt; polite fetching, stale fallback | live-ops | P1 | Ready |
+| 14 | Radar overlay on the globe (Skia mesh/shader from lat/lon image), on/off toggle, age shown, hidden past 30 min; no time slider or color key | globe-porter | P1 | After 13 |
