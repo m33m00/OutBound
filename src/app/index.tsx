@@ -1,11 +1,12 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { GlobeMap } from '@/map';
 import { minTapTarget, radius, spacing, textStyles, useColors } from '@/theme';
 
 /**
  * Placeholder home. DECISIONS.md: no tabs; top bar = wordmark, Requests pill,
- * Profile. Search and the globe replace the body in later backlog items.
+ * Profile. Temporary globe preview fills the body until search (item 6).
  */
 export default function HomeScreen() {
   const c = useColors();
@@ -33,10 +34,7 @@ export default function HomeScreen() {
       </View>
 
       <View style={styles.body}>
-        <Text style={[textStyles.title, { color: c.text }]}>Find a way home</Text>
-        <Text style={[textStyles.body, { color: c.muted }]}>
-          Route search and the globe are on the way.
-        </Text>
+        <GlobeMap />
       </View>
     </SafeAreaView>
   );
@@ -65,8 +63,5 @@ const styles = StyleSheet.create({
   },
   body: {
     flex: 1,
-    justifyContent: 'center',
-    paddingHorizontal: spacing.page,
-    gap: spacing.group,
   },
 });
