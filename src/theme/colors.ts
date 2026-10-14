@@ -1,9 +1,8 @@
 /**
  * Ice Mix color tokens, light and dark.
  *
- * Confirmed in design/DECISIONS.md: `accent` (ink blue) and `youText` (amber).
- * Everything else is PROVISIONAL, copied from the Ice Mix look in
- * reference/globe-prototype-v9.1.html until John confirms (see QUESTIONS.md).
+ * All values confirmed in design/DECISIONS.md (originally from the Ice Mix
+ * look in reference/globe-prototype-v9.1.html; Q-004).
  */
 
 export type ColorScheme = 'light' | 'dark';
@@ -20,15 +19,15 @@ export const colors = {
     // Text
     text: '#101824',
     muted: '#56657a',
-    // Prototype #66758a fails 4.5:1 on surface2; nudged darker to pass.
+    // Darker than the prototype #66758a to meet 4.5:1 (Q-006).
     faint: '#606f84',
 
-    // Primary (confirmed)
+    // Primary
     accent: '#1d3d84',
     onAccent: '#ffffff',
     accentSoft: '#e7ecf6',
 
-    // "You" only (confirmed text color)
+    // "You" only
     you: '#c46a10',
     youText: '#9a5200',
     youBg: '#fcecd9',

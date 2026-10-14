@@ -52,6 +52,23 @@ Condensed from the project docs: MVP decisions (through v8.8), design direction 
 - Buttons Title Case (Find Routes, Get Home); body sentence case. No tabs; top bar = wordmark, Requests pill, Profile.
 - Airline badges: colored pill + plane glyph + IATA code. No logos.
 
+### Theme tokens (confirmed 2026-10-13, Q-004/5/6; John may revise after seeing it on device)
+Source in code: `src/theme/colors.ts`, `src/theme/typography.ts`. Values are light / dark.
+- Surfaces: bg #f6f8fb / #0b1119; surface #ffffff / #111a25; surface2 #eef2f7 / #172231; line #dfe5ec / #1f2c3b; line2 #cbd4de / #2a3a4d.
+- Text: text #101824 / #e8eef5; muted #56657a / #9cadc0; faint #606f84 / #8d9db0 (light faint darkened from prototype #66758a to pass 4.5:1, Q-006).
+- Accent: #1d3d84 / #9bb8ef; onAccent #ffffff / #0a1530; accentSoft #e7ecf6 / #17233b.
+- You (amber): you #c46a10 / #ffb25a; youText #9a5200 / #ffc27a; youBg #fcecd9 / #2c1d10.
+- Tiers (mark | bg | text-on-bg), light then dark:
+  - Wide open: #0b7f6a | #dcf3ee | #08594a / #2fd1b0 | #0d2a25 | #8ff0dc
+  - Good: #1f9e6a | #e2f5ec | #11613f / #3bd08f | #10271d | #9af0c7
+  - Okay: #7f9a1d | #eef4d8 | #4d5e0f / #c3d64a | #232a10 | #dbe98f
+  - Tight: #c9861a | #fbf0dc | #7a4f08 / #f0b541 | #2a2313 | #ffd98c
+  - Full: #d8474a | #fbe5e5 | #8f2426 / #ff6b6b | #2c1618 | #ffb9b9
+  - Unknown: #8a94a6 | #eceff4 | #4c5568 / #8792a8 | #1c2230 | #b8c0d0
+- Weather: Caution violet #5b4bd6 (bg #ebe8fd) / #b7adff (bg #201c40); Likely delays magenta #a3269a (bg #f9e2f6) / #f283e8 (bg #3a1533).
+- Fonts: Big Shoulders Display 600/700/800; Manrope 400/500/600/700.
+- Type scale (size/line height): title 29/32 Display, uppercase, tracking .02em; number 22/26 Display 800; wordmark 17/20 Display, uppercase, tracking .16em; heading 16/22 Manrope 700; body 14/20 Manrope 400; bodyStrong 14/20 Manrope 600; button 15/20 Manrope 700; small 12/16 Manrope 500.
+
 ## Tech
 - Fresh project created 2026-10-13 on John's Mac with `create-expo-app@latest` (latest Expo SDK; 57 at time of writing) + TypeScript + Expo Router. The earlier Windows v0 codebase was a test and is not used.
 - Dev machine: MacBook Pro (Apple silicon). iPhone via Expo Go; iOS Simulator optional.

@@ -3,8 +3,7 @@ import type { TextStyle } from 'react-native';
 import { fonts } from './fonts';
 
 /**
- * Type scale. PROVISIONAL: sizes come from the v9.1 prototype's Ice Mix look;
- * DECISIONS.md does not set a scale yet (see QUESTIONS.md).
+ * Type scale, confirmed in DECISIONS.md (Q-004; from the Ice Mix prototype).
  * Display styles are always uppercase (Big Shoulders rule in DECISIONS.md).
  */
 export const textStyles = {

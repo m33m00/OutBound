@@ -12,7 +12,7 @@ import {
 
 /**
  * Big Shoulders Display (uppercase display) + Manrope (body), per DECISIONS.md.
- * Weights are the ones the v9.1 prototype loads (provisional).
+ * Weights confirmed in DECISIONS.md (Q-005).
  *
  * In React Native each weight is its own family name, so pick a family
  * instead of setting `fontWeight`.
