@@ -1,4 +1,4 @@
-import { forwardRef } from 'react';
+import { forwardRef, type ReactNode } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { Itinerary } from '@/engine';
@@ -19,6 +19,8 @@ export interface ResultsPanelProps {
   onLoosen: () => void;
   /** Null when tomorrow is past the 0-7 day window. */
   onTomorrow: (() => void) | null;
+  /** Leave-by card for the selected route (fixed above the list). */
+  selectedCard?: ReactNode;
 }
 
 export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(function ResultsPanel(p, ref) {
@@ -85,6 +87,7 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
   return (
     <View style={styles.fill}>
       {topRow}
+      {p.selectedCard ? <View style={[styles.pad, styles.card]}>{p.selectedCard}</View> : null}
       <FlatList
         ref={ref}
         data={results}
@@ -127,6 +130,7 @@ export function SampleLabel() {
 
 const styles = StyleSheet.create({
   fill: { flex: 1 },
+  card: { paddingBottom: spacing.group },
   pad: { paddingHorizontal: spacing.page },
   sample: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: radius.sm },
   list: { paddingHorizontal: spacing.page, paddingBottom: spacing.page * 2 },

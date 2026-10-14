@@ -5,6 +5,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
+import { SettingsProvider } from '@/settings/SettingsProvider';
 import { colors, fontAssets, useColorSchemeName } from '@/theme';
 
 SplashScreen.preventAutoHideAsync();
@@ -36,10 +37,12 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <ThemeProvider value={navTheme}>
-        <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
-        <Stack screenOptions={{ headerShown: false }} />
-      </ThemeProvider>
+      <SettingsProvider>
+        <ThemeProvider value={navTheme}>
+          <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
+          <Stack screenOptions={{ headerShown: false }} />
+        </ThemeProvider>
+      </SettingsProvider>
     </GestureHandlerRootView>
   );
 }

@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -8,7 +9,11 @@ import { dateChips } from '@/search/dates';
 import { useRouteSearch } from '@/search/useRouteSearch';
 import { minTapTarget, radius, spacing, textStyles, useColors } from '@/theme';
 import { AirportPicker } from '@/ui/AirportPicker';
-import { DEFAULT_FILTERS, FiltersModal, type SearchFilters } from '@/ui/FiltersModal';
+import { useSettings } from '@/settings/SettingsProvider';
+import { changedFilters, DEFAULT_FILTERS, type SearchFilters } from '@/settings/settings';
+import { FiltersModal } from '@/ui/FiltersModal';
+import { LeaveByCard } from '@/ui/LeaveByCard';
+import { useCurrentLocation } from '@/ui/useCurrentLocation';
 import { ResultsPanel } from '@/ui/ResultsPanel';
 import { SearchPanel } from '@/ui/SearchPanel';
 import { Sheet } from '@/ui/Sheet';
@@ -31,7 +36,11 @@ export default function HomeScreen() {
   const [origin, setOrigin] = useState<string | null>(DEFAULT_ORIGIN);
   const [destination, setDestination] = useState<string | null>(DEFAULT_DESTINATION);
   const [picking, setPicking] = useState<'origin' | 'destination' | null>(null);
+  const { settings, update: updateSettings } = useSettings();
   const [filters, setFilters] = useState<SearchFilters>(DEFAULT_FILTERS);
+  // Each search starts from the saved defaults (Settings).
+  useEffect(() => setFilters(settings.search), [settings.search]);
+  const { location, status: locationStatus, request: requestLocation } = useCurrentLocation(settings.useLocation);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [bodyHeight, setBodyHeight] = useState(0);
@@ -85,9 +94,9 @@ export default function HomeScreen() {
   );
 
   const onBodyLayout = (e: LayoutChangeEvent) => setBodyHeight(e.nativeEvent.layout.height);
-  const filtersChanged = (Object.keys(DEFAULT_FILTERS) as (keyof SearchFilters)[]).filter(
-    (k) => filters[k] !== DEFAULT_FILTERS[k],
-  ).length;
+  const filtersChanged = changedFilters(filters, settings.search);
+  const selected = results.find((r) => r.id === selectedId);
+  const firstLeg = selected?.legs[0].flight;
   const lastChip = chips[chips.length - 1].date;
 
   return (
@@ -104,8 +113,9 @@ export default function HomeScreen() {
             <Text style={[textStyles.bodyStrong, { color: c.accent }]}>Requests</Text>
           </Pressable>
           <Pressable
+            onPress={() => router.push('/settings')}
             accessibilityRole="button"
-            accessibilityLabel="Profile"
+            accessibilityLabel="Profile and settings"
             style={[styles.pill, { backgroundColor: c.surface2 }]}>
             <Text style={[textStyles.bodyStrong, { color: c.text }]}>Profile</Text>
           </Pressable>
@@ -150,6 +160,21 @@ export default function HomeScreen() {
                   reset();
                 }}
                 onRetry={() => runSearch(state.request.date)}
+                selectedCard={
+                  firstLeg ? (
+                    <LeaveByCard
+                      airport={AIRPORTS[firstLeg.from]}
+                      departUtc={firstLeg.departUtc}
+                      bufferMin={settings.bufferMin}
+                      now={now}
+                      location={location}
+                      locationStatus={locationStatus}
+                      onUseLocation={async () => {
+                        if (await requestLocation()) updateSettings({ useLocation: true });
+                      }}
+                    />
+                  ) : null
+                }
                 onLoosen={() => setFiltersOpen(true)}
                 onTomorrow={
                   state.request.date < lastChip
@@ -179,6 +204,7 @@ export default function HomeScreen() {
       <FiltersModal
         visible={filtersOpen}
         filters={filters}
+        defaults={settings.search}
         onChange={setFilters}
         onClose={() => {
           setFiltersOpen(false);

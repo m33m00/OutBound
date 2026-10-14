@@ -32,6 +32,12 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 76
         }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "OutBound uses your location to estimate when to leave for the airport."
+        }
       ]
     ],
     "experiments": {
