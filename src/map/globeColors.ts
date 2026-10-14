@@ -3,7 +3,8 @@
  * globe), so they live here, mapped from the active theme:
  * - Taken from the theme: space = `bg`, state lines = `text` at 40%.
  * - Taken from reference/globe-prototype-v9.1.html (Ice Mix uses the base
- *   :root / dark values): ocean gradient, land, land edge, atmosphere, limb.
+ *   :root / dark values): ocean gradient, land, land edge, atmosphere, limb,
+ *   route ground shadow (--route-shadow).
  * Pure: pass the scheme and palette from `useColorSchemeName()` / `useColors()`.
  */
 import type { ColorScheme, Palette } from '@/theme';
@@ -27,6 +28,9 @@ export interface GlobeColors {
   atmosphere: Rgb;
   /** Darkening toward the globe edge (color with alpha). */
   limb: string;
+  /** Ground shadow under the selected route arc: RGB and base alpha. */
+  routeShadow: Rgb;
+  routeShadowAlpha: number;
 }
 
 /** Prototype-only values, per scheme. */
@@ -38,6 +42,8 @@ const globeOnly = {
     landEdge: '#c4cdc3',
     atmosphere: [120, 170, 230] as Rgb,
     limb: 'rgba(40,60,90,0.18)',
+    routeShadow: [20, 40, 70] as Rgb,
+    routeShadowAlpha: 0.18,
   },
   dark: {
     oceanHi: '#1d4266',
@@ -46,6 +52,8 @@ const globeOnly = {
     landEdge: '#2a4a50',
     atmosphere: [90, 160, 255] as Rgb,
     limb: 'rgba(0,0,0,0.45)',
+    routeShadow: [0, 0, 0] as Rgb,
+    routeShadowAlpha: 0.45,
   },
 } as const;
 
@@ -80,5 +88,7 @@ export function globeColors(scheme: ColorScheme, palette: Palette): GlobeColors 
     stateLineHi: rgba(hexToRgb(palette.text), STATE_LINE_ALPHA_HI),
     atmosphere: g.atmosphere,
     limb: g.limb,
+    routeShadow: g.routeShadow,
+    routeShadowAlpha: g.routeShadowAlpha,
   };
 }

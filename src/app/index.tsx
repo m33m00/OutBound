@@ -1,12 +1,12 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { GlobeMap } from '@/map';
+import { GlobeMap, devSampleRoutes } from '@/map';
 import { minTapTarget, radius, spacing, textStyles, useColors } from '@/theme';
 
 /**
  * Placeholder home. DECISIONS.md: no tabs; top bar = wordmark, Requests pill,
- * Profile. Temporary globe preview fills the body until search (item 6).
+ * Profile. Temporary globe preview with sample routes until search (item 6).
  */
 export default function HomeScreen() {
   const c = useColors();
@@ -34,7 +34,8 @@ export default function HomeScreen() {
       </View>
 
       <View style={styles.body}>
-        <GlobeMap />
+        {/* Sample routes are dev-only: they have no age and must never look like real data. */}
+        <GlobeMap routes={__DEV__ ? devSampleRoutes : undefined} />
       </View>
     </SafeAreaView>
   );

@@ -3,10 +3,12 @@ import {
   LAT_LIMIT,
   MAX_RADIUS_FACTOR,
   MIN_RADIUS_FACTOR,
+  FIT_PADDING,
   cameraForTarget,
   clampLat,
   clampRadius,
   defaultCamera,
+  fitCameraToPoints,
   fitRadius,
   globeOrigin,
   isOnFrontSide,
@@ -101,14 +103,14 @@ describe('cameraForTarget', () => {
     expect(cam.center).toEqual([-160, LAT_LIMIT]);
   });
 
-  it('v1 fit stub: centroid of the points, current zoom kept', () => {
+  it('fit frames the route box between the points, ignoring the current zoom', () => {
     const cur = { center: [0, 0] as const, radius: 777 };
     const cam = cameraForTarget(
       { kind: 'fit', points: [[-97.04, 32.9], [-87.9, 41.98]] },
       vp,
       cur,
     );
-    expect(cam.radius).toBe(777);
+    expect(cam.radius).not.toBe(777);
     expect(cam.center[0]).toBeGreaterThan(-97.04);
     expect(cam.center[0]).toBeLessThan(-87.9);
     expect(cam.center[1]).toBeGreaterThan(32.9);
@@ -146,5 +148,74 @@ describe('projection', () => {
   it('switches to 50m detail above 2.1 view widths', () => {
     expect(wantsHighDetail({ ...cam, radius: 840 }, 400)).toBe(false);
     expect(wantsHighDetail({ ...cam, radius: 841 }, 400)).toBe(true);
+  });
+});
+
+describe('fitCameraToPoints (route box above the panel)', () => {
+  const DFW = [-97.04, 32.9] as const;
+  const LGA = [-73.87, 40.78] as const;
+  const SEA = [-122.31, 47.45] as const;
+  const MIA = [-80.29, 25.8] as const;
+
+  /** Screen box of points under a camera. */
+  function box(cam: { center: readonly [number, number]; radius: number }, pts: readonly (readonly [number, number])[]) {
+    const proj = projectionFor(cam, vp);
+    const xs: number[] = [];
+    const ys: number[] = [];
+    for (const p of pts) {
+      const q = proj([p[0], p[1]])!;
+      xs.push(q[0]);
+      ys.push(q[1]);
+    }
+    return { x0: Math.min(...xs), x1: Math.max(...xs), y0: Math.min(...ys), y1: Math.max(...ys) };
+  }
+
+  it('returns null with no points', () => {
+    expect(fitCameraToPoints([], vp)).toBeNull();
+  });
+
+  it('keeps every point inside the visible area minus padding', () => {
+    const pts = [DFW, LGA, SEA, MIA];
+    const cam = fitCameraToPoints(pts, vp)!;
+    const b = box(cam, pts);
+    const eps = 0.5;
+    expect(b.x0).toBeGreaterThanOrEqual(vp.insets.left + FIT_PADDING - eps);
+    expect(b.x1).toBeLessThanOrEqual(vp.width - vp.insets.right - FIT_PADDING + eps);
+    expect(b.y0).toBeGreaterThanOrEqual(vp.insets.top + FIT_PADDING - eps);
+    expect(b.y1).toBeLessThanOrEqual(vp.height - vp.insets.bottom - FIT_PADDING + eps);
+  });
+
+  it('fills the limiting side and centers the box in the visible area', () => {
+    const pts = [DFW, LGA];
+    const cam = fitCameraToPoints(pts, vp)!;
+    const b = box(cam, pts);
+    const o = globeOrigin(vp);
+    // Wide, short route: width is the limiting side.
+    expect(b.x1 - b.x0).toBeCloseTo(vp.width - 2 * FIT_PADDING, 0);
+    expect((b.x0 + b.x1) / 2).toBeCloseTo(o.x, 0);
+    expect((b.y0 + b.y1) / 2).toBeCloseTo(o.y, 0);
+  });
+
+  it('a bigger bottom panel zooms out and moves the frame up', () => {
+    const pts = [DFW, LGA, MIA];
+    const small: Viewport = { ...vp, insets: normalizeInsets({ top: 60, bottom: 200 }) };
+    const big: Viewport = { ...vp, insets: normalizeInsets({ top: 60, bottom: 600 }) };
+    const a = fitCameraToPoints(pts, small)!;
+    const b = fitCameraToPoints(pts, big)!;
+    expect(b.radius).toBeLessThan(a.radius);
+    expect(globeOrigin(big).y).toBeLessThan(globeOrigin(small).y);
+  });
+
+  it('clamps a tiny box to the max zoom', () => {
+    const cam = fitCameraToPoints([DFW, [-97.03, 32.91]], vp)!;
+    expect(cam.radius).toBe(vp.width * MAX_RADIUS_FACTOR);
+  });
+
+  it('works across the antimeridian', () => {
+    const HNL = [-157.92, 21.32] as const;
+    const NRT = [140.39, 35.77] as const;
+    const cam = fitCameraToPoints([HNL, NRT], vp)!;
+    expect(Math.abs(cam.center[0])).toBeGreaterThan(150);
+    expect(Number.isFinite(cam.radius)).toBe(true);
   });
 });

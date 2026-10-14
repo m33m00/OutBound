@@ -92,10 +92,64 @@ export function pinchCamera(
   return { center: current.center, radius: clampRadius(startRadius * scale, width) };
 }
 
+/** Space kept between a fitted route box and the visible area's edges, in pt. */
+export const FIT_PADDING = 32;
+
+/** Screen box of `coords` on a unit orthographic globe centered on `center`. */
+function unitBox(coords: readonly [number, number][], center: [number, number]) {
+  const unit = geoOrthographic().rotate([-center[0], -center[1], 0]).scale(1).translate([0, 0]);
+  let x0 = Infinity;
+  let x1 = -Infinity;
+  let y0 = Infinity;
+  let y1 = -Infinity;
+  for (const c of coords) {
+    const q = unit(c);
+    if (!q) continue;
+    x0 = Math.min(x0, q[0]);
+    x1 = Math.max(x1, q[0]);
+    y0 = Math.min(y0, q[1]);
+    y1 = Math.max(y1, q[1]);
+  }
+  return Number.isFinite(x0) ? { unit, x0, x1, y0, y1 } : null;
+}
+
+/** Re-centering passes; the box center converges in 2-3 for real routes. */
+const FIT_PASSES = 4;
+
 /**
- * Camera for a target. 'fit' is a v1 stub: centroid of the points at the
- * current radius (real route-box fit and fly-to arrive in item 4).
+ * Camera that frames `points` inside the visible area (v9.1 prototype fitCam):
+ * project the points around a center, measure the real screen box, center on
+ * the box (not the centroid), and pick the radius that fits width and height
+ * separately. Unlike the prototype, the re-centering is repeated: moving the
+ * center changes the projected box, and a single pass can overflow the
+ * padding by several points. Radius is clamped to the zoom limits.
  */
+export function fitCameraToPoints(points: readonly LonLat[], vp: Viewport): GlobeCamera | null {
+  if (points.length === 0) return null;
+  const coords = points.map((p) => [p[0], p[1]] as [number, number]);
+  const mid = geoCentroid({ type: 'MultiPoint', coordinates: coords });
+  let center: [number, number] =
+    Number.isFinite(mid[0]) && Number.isFinite(mid[1]) ? [mid[0], mid[1]] : coords[0];
+  let box = unitBox(coords, center);
+  if (!box) return null;
+  for (let i = 0; i < FIT_PASSES; i++) {
+    const c = box.unit.invert?.([(box.x0 + box.x1) / 2, (box.y0 + box.y1) / 2]);
+    if (!c || !Number.isFinite(c[0]) || !Number.isFinite(c[1])) break;
+    const next = unitBox(coords, [c[0], c[1]]);
+    if (!next) break;
+    center = [c[0], c[1]];
+    box = next;
+  }
+  const { width, height, insets } = vp;
+  const visW = Math.max(1, width - insets.left - insets.right - 2 * FIT_PADDING);
+  const visH = Math.max(1, height - insets.top - insets.bottom - 2 * FIT_PADDING);
+  const dx = Math.max(0.004, box.x1 - box.x0);
+  const dy = Math.max(0.004, box.y1 - box.y0);
+  const radius = clampRadius(Math.min(visW / dx, visH / dy), width);
+  return { center: [normalizeLon(center[0]), clampLat(center[1])], radius };
+}
+
+/** Camera for a target. 'fit' with no points keeps the current camera. */
 export function cameraForTarget(
   target: CameraTarget,
   vp: Viewport,
@@ -108,13 +162,7 @@ export function cameraForTarget(
       radius: clampRadius(fitRadius(vp) * zoom, vp.width),
     };
   }
-  const radius = current?.radius ?? fitRadius(vp);
-  if (target.points.length === 0) return current ?? defaultCamera(vp);
-  const [lon, lat] = geoCentroid({
-    type: 'MultiPoint',
-    coordinates: target.points.map((p) => [p[0], p[1]]),
-  });
-  return { center: [normalizeLon(lon), clampLat(lat)], radius };
+  return fitCameraToPoints(target.points, vp) ?? current ?? defaultCamera(vp);
 }
 
 /** Use Natural Earth 50m instead of 110m once zoomed in this far. */
