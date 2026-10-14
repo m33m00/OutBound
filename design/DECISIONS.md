@@ -8,9 +8,11 @@ Condensed from the project docs: MVP decisions (through v8.8), design direction 
 - Southwest policy review: no longer a hard gate for the friends beta (2026-10-13). Still true: no airline trademarks or logos, in-app "follow your airline's rules on sharing loads" notice stays.
 - Real-time status, FAA delays and weather move up from v1.5 into the MVP (2026-10-13).
 - Hard rule: no scraping airline websites or employee portals.
+- Headline (Q-001, 2026-10-13): seat availability and live data (status, FAA delays, weather) are equal; both shown on every result row.
 
 ## Search
 - 0–7 days out. Max stops 0–3, default 3. Connections min 60 min same airline / 90 switching; max layover 4h. All adjustable.
+- Leave-by card airport buffer (Q-003, 2026-10-13): tester setting, default 75 min before departure.
 - Nearby airports on: DAL↔DFW plus 3–4 metros testers fly; max ground transfer 60 min.
 - Sort default: earliest arrival; tie-break fewer stops, then best availability. Full routes stay in time order, grayed with a red edge (2026-10-06). Best bet is an optional sort.
 - Own schedule DB from daily AeroDataBox pulls (~30 airports). No live calls per search.

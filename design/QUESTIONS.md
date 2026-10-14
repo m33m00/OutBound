@@ -2,22 +2,22 @@
 
 Agents add questions here; John answers inline (or in a GitHub issue later). spec-keeper moves answers into DECISIONS.md.
 
-### Q-001 Headline feature  (Open)
+### Q-001 Headline feature  (Answered 2026-10-13)
 Context: Real-time status, FAA delays and weather moved into the MVP on 2026-10-13. The build order depends on what leads.
 A) Seat availability stays the headline; live data supports it
 B) Equal: both shown on every result
 C) Routing + live status/weather lead; seat availability is secondary
 Recommendation: B. Live data is free or already paid for, and both fit on a result row.
-Answer:
+Answer: B (2026-10-13). Equal: seat availability and live data (status, FAA delays, weather) both shown on every result row.
 
 ### Q-002 Remove react-native-maps?  (Answered 2026-10-13)
 Answer: Moot. Starting a fresh project on the Mac; the old test code isn't used.
 
-### Q-003 Airport buffer for the leave-by card  (Open)
+### Q-003 Airport buffer for the leave-by card  (Answered 2026-10-13)
 Context: Default is "be at the airport 75 min before departure".
 A) Keep 75 min  B) 60 min  C) Tester setting with 75 default
 Recommendation: C.
-Answer:
+Answer: C (2026-10-13). Tester setting, default 75 min.
 
 ### Q-004 Theme tokens beyond accent and amber  (Answered 2026-10-13)
 Context: DECISIONS.md confirms only accent (#1D3D84/#9BB8EF) and amber you-text (#9A5200/#FFC27A). Backlog 0 proceeded with provisional values copied from the Ice Mix look in the v9.1 prototype (surfaces, text, tier, weather violet #5b4bd6/#b7adff, magenta #a3269a/#f283e8, type scale) in src/theme/, marked provisional. Non-blocking.
