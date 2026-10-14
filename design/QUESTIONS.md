@@ -186,6 +186,30 @@ A) Standard NOAA colors, marks always draw above radar (recommended)  B) Recolor
 Recommendation: A, because it is the familiar weather look and marks stay distinct by layering.
 Answer: John (2026-10-14), option A. Recorded in DECISIONS.md (Map, radar; also noted by "Amber = you only"). Provisional opacity and caption recorded there as not John-decided.
 
+### Q-034 Flight preview content  (Answered 2026-10-14)
+Context: Backlog 11 globe polish. What the flight preview shows.
+A) Plane only (recommended)  B) Plane + moving night  C) Skip
+Recommendation: A.
+Answer: John (2026-10-14), option B: a plane flies the selected route and day/night shifts to the flight's scheduled times. This partly brings back a moving sky clock; the user-controlled time slider stays removed. Recorded in DECISIONS.md (Map).
+
+### Q-035 Flight preview trigger  (Answered 2026-10-14)
+Context: How the preview starts.
+A) Button only (recommended)  B) Auto once + button  C) Auto every time
+Recommendation: A.
+Answer: John (2026-10-14), option A. Recorded in DECISIONS.md (Map).
+
+### Q-036 Spin-in intro  (Answered 2026-10-14)
+Context: How often the globe spin-in plays.
+A) Every app launch (recommended)  B) First launch only  C) Once per day
+Recommendation: A.
+Answer: John (2026-10-14), option A. Skipped under Reduce Motion; any touch stops it. Recorded in DECISIONS.md (Map).
+
+### Q-037 Day/night look  (Answered 2026-10-14)
+Context: How day/night is drawn on the globe.
+A) Shading + soft dusk + subtle sun glow (recommended)  B) Also sun disc + labels  C) Shading only
+Recommendation: A.
+Answer: John (2026-10-14), option A. Recorded in DECISIONS.md (Map). Provisional details there are not John-decided.
+
 Provisional defaults for backlog 3 (not John-decided; John may override any time):
 - FAA cache TTL 5 min server-side; serve stale on FAA error.
 - One national NAS feed fetch, filtered on read.

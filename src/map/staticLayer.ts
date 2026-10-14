@@ -21,7 +21,7 @@ import {
 } from '@shopify/react-native-skia';
 import type { GeoPermissibleObjects, GeoProjection } from 'd3-geo';
 
-import { globeOrigin, projectionFor, wantsHighDetail, type GlobeCamera, type Viewport } from './camera';
+import { cameraOrigin, projectionFor, wantsHighDetail, type GlobeCamera, type Viewport } from './camera';
 import { getBaseGeo, getStateLines } from './geo';
 import { rgba, type GlobeColors } from './globeColors';
 import { svgPath } from './paths';
@@ -73,7 +73,7 @@ function record(viewport: Viewport, draw: (canvas: SkCanvas) => void): SkPicture
 
 export function recordBaseLayer({ camera, viewport, colors, fast }: LayerInput): SkPicture {
   return record(viewport, (canvas) => {
-    const { x: cx, y: cy } = globeOrigin(viewport);
+    const { x: cx, y: cy } = cameraOrigin(camera, viewport);
     const R = camera.radius;
     const hi = !fast && wantsHighDetail(camera, viewport.width);
     const projection = projectionFor(camera, viewport, fast);
@@ -136,7 +136,7 @@ export function recordBaseLayer({ camera, viewport, colors, fast }: LayerInput):
 
 export function recordRimLayer({ camera, viewport, colors }: LayerInput): SkPicture {
   return record(viewport, (canvas) => {
-    const { x: cx, y: cy } = globeOrigin(viewport);
+    const { x: cx, y: cy } = cameraOrigin(camera, viewport);
     const R = camera.radius;
 
     const limb = Skia.Paint();

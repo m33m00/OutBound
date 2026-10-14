@@ -3,6 +3,9 @@
  *
  * Layers (back to front):
  *   base picture   static globe, cached per camera (staticLayer.ts)
+ *   night picture  day/night shading + sun highlight (item 11), one shader
+ *                  draw; re-recorded on camera, size, scheme or when the sun
+ *                  moved 0.1 deg (nightLayer.ts)
  *   radar picture  NOAA radar meshes (item 14); own layer, re-recorded on
  *                  camera, size, scheme or radar frame change (radarLayer.ts)
  *   route picture  arcs; re-recorded on camera, routes, selection or theme
@@ -11,22 +14,30 @@
  *   marks picture  home pins, origin dot, destination rings, labels (item 9)
  *                  and airport status badges (item 7); above the rim so the
  *                  limb never dims a label
+ *   plane          flight preview plane (item 11): a glyph picture recorded
+ *                  once per accent, moved by a Reanimated shared value
+ *                  transform each frame (no React re-render per frame)
  *   legend         React Native view, only while a route is selected
+ *
+ * Item 11 also adds the launch spin-in (spinIn.ts) and the flight preview
+ * (preview.ts, useFlightPreview.ts). Radar is hidden while a preview plays.
  *
  * Gestures run on the JS thread (d3 projection and picture recording live
  * there): pan rotates, pinch zooms, a tap (no movement) selects a route or
  * clears the selection. Camera targets fly (flyTo.ts) unless Reduce Motion
  * is on, then they jump.
  */
-import { Canvas, Picture } from '@shopify/react-native-skia';
+import { Canvas, Group, Picture } from '@shopify/react-native-skia';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  AppState,
   StyleSheet,
   View,
   type AccessibilityActionEvent,
   type LayoutChangeEvent,
 } from 'react-native';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
+import { useSharedValue } from 'react-native-reanimated';
 
 import { useColors, useColorSchemeName } from '@/theme';
 
@@ -38,7 +49,7 @@ import {
   type GlobeCamera,
   type Viewport,
 } from './camera';
-import { easeCubicInOut, interpolateCamera, planCameraMove } from './flyTo';
+import { easeCubicInOut, FLY_MS, interpolateCamera, planRetarget, sameCamera, type RunningFlight } from './flyTo';
 import { routeFrameTarget } from './framing';
 import { globeColors } from './globeColors';
 import { hitTestRoutes } from './hitTest';
@@ -49,7 +60,13 @@ import { recordBaseLayer, recordRimLayer } from './staticLayer';
 import { canvasLayerOrder, RADAR, radarKey, radarSummary, type CanvasLayerName } from './radar';
 import { makeRadarImageCache, recordRadarLayer } from './radarLayer';
 import type { CameraTarget, GlobeMapProps, RouteLine } from './types';
-import { useReduceMotion } from './useReduceMotion';
+import { useReduceMotionStatus } from './useReduceMotion';
+import { recordNightLayer } from './nightLayer';
+import { planePose, type PreviewSample } from './preview';
+import { planeTransform, recordPlaneGlyph, type PlaneTransform } from './previewLayer';
+import { markSpinInDone, shouldSpinIn, SPIN_IN, spinStartCamera } from './spinIn';
+import { NIGHT_THEME, SKY_IDLE_TICK_MS, sunFromKey, sunKey, sunPosition } from './sun';
+import { useFlightPreview } from './useFlightPreview';
 import { makeLiftedProjector } from './arcs';
 import { useMarkFonts } from './markFonts';
 import { markColors, marksSummary, markSet } from './marks';
@@ -73,6 +90,8 @@ export function GlobeMap({
   destinations,
   airportStatus,
   radar,
+  preview,
+  onPreviewState,
   cameraTarget,
   insets,
   interactive = true,
@@ -82,7 +101,7 @@ export function GlobeMap({
   const palette = useColors();
   const scheme = useColorSchemeName();
   const colors = useMemo(() => globeColors(scheme, palette), [scheme, palette]);
-  const reduceMotion = useReduceMotion();
+  const { reduce: reduceMotion, known: reduceKnown } = useReduceMotionStatus();
   const reduceRef = useRef(reduceMotion);
   useEffect(() => {
     reduceRef.current = reduceMotion;
@@ -112,6 +131,8 @@ export function GlobeMap({
   const cameraRef = useRef<GlobeCamera | null>(null);
   const frameRef = useRef<number | null>(null);
   const flightRef = useRef<number | null>(null);
+  /** Where the running flight ends, when it ends (performance clock), and if it is the spin-in. */
+  const flightTargetRef = useRef<RunningFlight | null>(null);
   const commit = useCallback((next: GlobeCamera) => {
     cameraRef.current = next;
     if (frameRef.current != null) return;
@@ -120,10 +141,21 @@ export function GlobeMap({
       setCamera(cameraRef.current);
     });
   }, []);
-  const stopFlight = useCallback(() => {
+  /**
+   * Stop a running flight where it is. With `snapSpin`, a running spin-in
+   * jumps to where it was heading instead (its raised, small globe must not
+   * stay on screen after a touch).
+   */
+  const stopFlight = useCallback((snapSpin = false) => {
     if (flightRef.current == null) return;
     cancelAnimationFrame(flightRef.current);
     flightRef.current = null;
+    const target = flightTargetRef.current;
+    flightTargetRef.current = null;
+    if (snapSpin && target?.spin) {
+      cameraRef.current = target.to;
+      setCamera(target.to);
+    }
     setFlying(false);
   }, []);
   useEffect(
@@ -134,11 +166,12 @@ export function GlobeMap({
     [],
   );
 
-  const flyTo = useCallback((to: GlobeCamera, durationMs: number) => {
+  const flyTo = useCallback((to: GlobeCamera, durationMs: number, spin = false) => {
     const from = cameraRef.current;
     if (!from) return;
     let t0: number | null = null;
     setFlying(true);
+    flightTargetRef.current = { to, endsAt: performance.now() + durationMs, spin };
     const step = (now: number) => {
       if (t0 == null) t0 = now;
       const t = Math.min(1, (now - t0) / durationMs);
@@ -149,6 +182,7 @@ export function GlobeMap({
         flightRef.current = requestAnimationFrame(step);
       } else {
         flightRef.current = null;
+        flightTargetRef.current = null;
         setFlying(false);
       }
     };
@@ -160,23 +194,58 @@ export function GlobeMap({
   const targetKey = JSON.stringify(cameraTarget ?? autoTarget);
   const lastTargetKey = useRef<string | null>(null);
   useEffect(() => {
-    if (!viewport) return;
+    // Wait for Reduce Motion to be known so the spin-in never flashes.
+    if (!viewport || !reduceKnown) return;
     const target = JSON.parse(targetKey) as CameraTarget;
     const next = cameraForTarget(target, viewport, cameraRef.current);
     // Only a new target flies; a layout or inset change just re-frames.
     const isNewTarget = lastTargetKey.current !== targetKey;
     lastTargetKey.current = targetKey;
-    stopFlight();
-    const plan = isNewTarget
-      ? planCameraMove(cameraRef.current, next, reduceRef.current)
-      : ({ animate: false } as const);
-    if (plan.animate) {
-      flyTo(next, plan.durationMs);
-    } else {
+
+    // First camera: launch spin-in (once per app launch, item 11).
+    if (!cameraRef.current) {
+      const spin = shouldSpinIn({ reduceMotion: reduceRef.current, ...viewport });
+      markSpinInDone();
+      if (spin) {
+        const start = spinStartCamera(next, viewport);
+        cameraRef.current = start;
+        setCamera(start);
+        flyTo(next, SPIN_IN.durationMs, true);
+        return;
+      }
       cameraRef.current = next;
       setCamera(next);
+      return;
     }
-  }, [targetKey, viewport, flyTo, stopFlight]);
+
+    // A new target (selection, deselect, fit) cancels a running spin-in and
+    // flies from where it is; a re-frame mid-flight keeps flying (flyTo.ts).
+    const plan = planRetarget({
+      isNewTarget,
+      from: cameraRef.current,
+      to: next,
+      running: flightTargetRef.current,
+      reduceMotion: reduceRef.current,
+      nowMs: performance.now(),
+    });
+    stopFlight();
+    if (plan.kind === 'jump') {
+      cameraRef.current = next;
+      setCamera(next);
+    } else {
+      flyTo(next, plan.durationMs, plan.spin);
+    }
+  }, [targetKey, viewport, reduceKnown, flyTo, stopFlight]);
+
+  // Reduce Motion switched on mid-flight (or the spin-in): jump to the end.
+  useEffect(() => {
+    if (!reduceMotion) return;
+    const running = flightTargetRef.current;
+    if (!running) return;
+    stopFlight();
+    cameraRef.current = running.to;
+    setCamera(running.to);
+  }, [reduceMotion, stopFlight]);
 
   const onLayout = useCallback((e: LayoutChangeEvent) => {
     const { width, height } = e.nativeEvent.layout;
@@ -285,7 +354,88 @@ export function GlobeMap({
     if (!viewport || !camera || radarImages.length === 0) return null;
     return recordRadarLayer({ camera, viewport, layers: radarImages, opacity: RADAR.opacity[scheme] });
   }, [camera, viewport, radarImages, scheme]);
-  const radarSpoken = radarSummary(radarImages.length);
+
+  // Flight preview (item 11): button-triggered by the screen, never automatic.
+  const fitRoute = useCallback(
+    (routeId: string) => {
+      const vp = viewport;
+      const from = cameraRef.current;
+      if (!vp || !from) return;
+      // Reuse the selection fit; the camera does not chase the plane.
+      const to = cameraForTarget(routeFrameTarget(routes, routeId), vp, from);
+      stopFlight(true);
+      const cur = cameraRef.current ?? from;
+      if (sameCamera(cur, to)) return;
+      flyTo(to, FLY_MS);
+    },
+    [viewport, routes, stopFlight, flyTo],
+  );
+  // Preview plane: Skia reads these shared values on the UI thread, so a
+  // frame only updates a transform; GlobeMap does not re-render per frame.
+  const planeXform = useSharedValue<PlaneTransform>([{ translateX: 0 }, { translateY: 0 }, { rotate: 0 }]);
+  const planeOpacity = useSharedValue(0);
+  const viewportRef = useRef(viewport);
+  useEffect(() => {
+    viewportRef.current = viewport;
+  }, [viewport]);
+  const onPreviewFrame = useCallback(
+    (sample: PreviewSample | null) => {
+      const cam = cameraRef.current;
+      const vp = viewportRef.current;
+      const pose = sample && cam && vp ? planePose(sample, makeLiftedProjector(cam, vp)) : null;
+      if (pose) planeXform.value = planeTransform(pose);
+      planeOpacity.value = pose ? 1 : 0;
+    },
+    [planeXform, planeOpacity],
+  );
+  const flight = useFlightPreview({
+    preview,
+    routes,
+    selectedId,
+    reduceMotion,
+    onPreviewState,
+    onStart: fitRoute,
+    onFrame: onPreviewFrame,
+  });
+  const previewing = flight.active;
+  const radarSpoken = previewing ? null : radarSummary(radarImages.length);
+
+  // Day/night (item 11): real time, ticking at most once a minute (and on
+  // return to the foreground); during a preview, the simulated time.
+  const [clockMs, setClockMs] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setClockMs(Date.now()), SKY_IDLE_TICK_MS);
+    const sub = AppState.addEventListener('change', (st) => {
+      if (st === 'active') setClockMs(Date.now());
+    });
+    return () => {
+      clearInterval(id);
+      sub.remove();
+    };
+  }, []);
+  // Keyed on the sun rounded to 0.1 deg, so a clock tick that does not move
+  // the sun that far re-records nothing.
+  const skyKey = sunKey(sunPosition(flight.skyUtc ?? clockMs));
+  const nightPicture = useMemo(() => {
+    if (!viewport || !camera) return null;
+    return recordNightLayer({ camera, viewport, sun: sunFromKey(skyKey), theme: NIGHT_THEME[scheme] });
+  }, [camera, viewport, skyKey, scheme]);
+
+  // Plane glyph: recorded once per accent color, only mounted while playing.
+  const planeGlyph = useMemo(() => recordPlaneGlyph(palette.accent), [palette.accent]);
+
+  // Any touch on the map stops the spin-in (snapping to its end) and the
+  // preview. A tap that only stopped a preview does nothing else.
+  const cancelPreview = flight.cancel;
+  const swallowTap = useRef(false);
+  const onTouchDown = useCallback(() => {
+    if (flightTargetRef.current?.spin) stopFlight(true);
+    if (cancelPreview()) swallowTap.current = true;
+  }, [stopFlight, cancelPreview]);
+  const touchRef = useRef(onTouchDown);
+  useEffect(() => {
+    touchRef.current = onTouchDown;
+  }, [onTouchDown]);
 
   // Tap handling reads the latest render through a ref (gestures are memoized).
   const handleTap = useCallback(
@@ -307,6 +457,7 @@ export function GlobeMap({
   const width = size?.width ?? 0;
   const gesture = useMemo(() => {
     const begin = () => {
+      touchRef.current();
       stopFlight();
       active.current += 1;
       setMoving(true);
@@ -360,9 +511,14 @@ export function GlobeMap({
       .enabled(interactive)
       .maxDistance(TAP_SLOP)
       .maxDuration(TAP_MAX_MS)
+      .onBegin(() => touchRef.current())
       .onEnd((e, success) => {
-        if (!success || active.current > 0) return;
+        if (!success || active.current > 0 || swallowTap.current) return;
         tapRef.current(e.x, e.y);
+      })
+      // Reset after every touch sequence (also when a pan won).
+      .onFinalize(() => {
+        swallowTap.current = false;
       });
     return Gesture.Race(Gesture.Simultaneous(pan, pinch), tap);
   }, [commit, interactive, width, stopFlight]);
@@ -398,6 +554,7 @@ export function GlobeMap({
         <View
           style={styles.fill}
           onLayout={onLayout}
+          onTouchStart={onTouchDown}
           accessible
           accessibilityRole={hasRoutes ? 'adjustable' : 'image'}
           accessibilityLabel={[
@@ -419,20 +576,29 @@ export function GlobeMap({
           {layers ? (
             <Canvas style={styles.fill}>
               {canvasLayerOrder({
+                night: nightPicture != null,
                 radar: radarPicture != null,
                 routes: routeLayer != null,
                 marks: marksPicture != null,
+                plane: previewing && planeGlyph != null,
+                previewing,
               }).map((name: CanvasLayerName) => {
-                const picture =
-                  name === 'base'
-                    ? layers.base
-                    : name === 'radar'
-                      ? radarPicture
-                      : name === 'routes'
-                        ? routeLayer?.picture
-                        : name === 'rim'
-                          ? layers.rim
-                          : marksPicture;
+                const picture = {
+                  base: layers.base,
+                  night: nightPicture,
+                  radar: radarPicture,
+                  routes: routeLayer?.picture,
+                  rim: layers.rim,
+                  marks: marksPicture,
+                  plane: null,
+                }[name];
+                if (name === 'plane') {
+                  return planeGlyph ? (
+                    <Group key={name} transform={planeXform} opacity={planeOpacity}>
+                      <Picture picture={planeGlyph} />
+                    </Group>
+                  ) : null;
+                }
                 return picture ? <Picture key={name} picture={picture} /> : null;
               })}
             </Canvas>

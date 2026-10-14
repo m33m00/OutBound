@@ -88,6 +88,16 @@ Condensed from the project docs: MVP decisions (through v8.8), design direction 
 - Q-022 (2026-10-14): map line hit area 28pt = a tap within 28pt of a drawn line counts; if several routes are in range the selected route wins, otherwise the nearest. May be tightened after on-device testing.
 - Camera fits the real route box above the panel.
 - Removed: city lights, terrain, clock/time slider, weather key.
+- Flight preview (Q-034/035, 2026-10-14, John: B + A): a plane flies the selected route and day/night shifts to the flight's scheduled times (a moving sky clock during the preview only; no user-controlled time slider). Started by a button only, never automatically.
+- Spin-in (Q-036, 2026-10-14, John: A): plays on every app launch; skipped under Reduce Motion; any touch stops it.
+- Day/night (Q-037, 2026-10-14, John: A): night shading + soft dusk + subtle sun glow. No sun disc, no labels.
+  - Provisional (not John-decided): radar is hidden during a preview and restored after (radar is a "now" picture); preview labeled "Preview · {simulated local time}" so it never implies a live aircraft (live positions not in MVP); whole trip in one go with prototype timings; Reduce Motion disables preview with "Preview is off because Reduce Motion is on."; day/night recomputed at most about once a minute when idle; night drawn under radar.
+  - Provisional (not John-decided, 2026-10-14): a touch during the spin-in snaps to the final view (no freeze mid-spin).
+  - Provisional (2026-10-14): a tap that only stops a preview does nothing else (no select/deselect); drags still rotate.
+  - Provisional (2026-10-14): spin-in plays once per app launch (per JS runtime); a remounted globe does not replay it. Clarifies Q-036 "every app launch".
+  - Provisional (2026-10-14): sun highlight fades out near the globe's edge (prototype switched it off abruptly) to avoid a pop during preview.
+  - Provisional (2026-10-14): dusk band peak alpha 0.13 (prototype value). Day/night drawn with a Skia RuntimeEffect shader; if it fails to compile, only the sun highlight shows.
+  - Provisional (2026-10-14): preview HUD shows simulated time in the phone's time zone ("Preview · 9:40 PM your time") with a progress bar and Stop. Refines the earlier "{simulated local time}" label.
 
 ## Design system
 - Ice Mix: Big Shoulders Display (uppercase) + Manrope. Primary ink blue #1D3D84 / #9BB8EF. Amber = "you" only (UI marks, not the radar picture; Q-033, 2026-10-14); amber text #9A5200 / #FFC27A.

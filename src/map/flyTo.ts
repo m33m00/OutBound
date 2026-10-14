@@ -24,13 +24,17 @@ export function interpolateCamera(from: GlobeCamera, to: GlobeCamera, e: number)
   if (dLon > 180) dLon -= 360;
   if (dLon < -180) dLon += 360;
   const bump = Math.sin(Math.PI * e) * FLY_ZOOM_BUMP;
-  return {
+  const cam: GlobeCamera = {
     center: [
       normalizeLon(from.center[0] + dLon * e),
       from.center[1] + (to.center[1] - from.center[1]) * e,
     ],
     radius: (from.radius + (to.radius - from.radius) * e) * (1 - bump),
   };
+  const y0 = from.offsetY ?? 0;
+  const y1 = to.offsetY ?? 0;
+  if (y0 !== 0 || y1 !== 0) cam.offsetY = y0 + (y1 - y0) * e;
+  return cam;
 }
 
 export type CameraMove = { animate: false } | { animate: true; durationMs: number };
@@ -45,7 +49,8 @@ export function sameCamera(a: GlobeCamera, b: GlobeCamera): boolean {
   return (
     dLon < SAME_DEG &&
     Math.abs(a.center[1] - b.center[1]) < SAME_DEG &&
-    Math.abs(a.radius - b.radius) < SAME_RADIUS
+    Math.abs(a.radius - b.radius) < SAME_RADIUS &&
+    Math.abs((a.offsetY ?? 0) - (b.offsetY ?? 0)) < SAME_RADIUS
   );
 }
 
@@ -60,4 +65,46 @@ export function planCameraMove(
 ): CameraMove {
   if (reduceMotion || !from || sameCamera(from, to)) return { animate: false };
   return { animate: true, durationMs: FLY_MS };
+}
+
+/** A flight in progress: where it ends, when (ms clock) and if it is the launch spin-in. */
+export interface RunningFlight {
+  to: GlobeCamera;
+  endsAt: number;
+  spin: boolean;
+}
+
+export type RetargetPlan =
+  | { kind: 'jump' }
+  | { kind: 'fly'; durationMs: number; spin: false }
+  | { kind: 'continue'; durationMs: number; spin: boolean };
+
+/**
+ * What a camera target effect does when a camera already exists:
+ * - a NEW target (route selected, deselected, fit): cancel any running
+ *   flight, the spin-in included, and fly from where the camera is now
+ *   (FLY_MS; the spin's raised offset flies back to 0), or jump under
+ *   Reduce Motion;
+ * - the same target re-framed (layout or panel change) mid-flight: keep
+ *   flying to the re-framed camera for the time left (a spin stays a spin);
+ * - otherwise jump.
+ */
+export function planRetarget(input: {
+  isNewTarget: boolean;
+  from: GlobeCamera;
+  to: GlobeCamera;
+  running: RunningFlight | null;
+  reduceMotion: boolean;
+  nowMs: number;
+}): RetargetPlan {
+  const { isNewTarget, from, to, running, reduceMotion, nowMs } = input;
+  if (isNewTarget) {
+    const plan = planCameraMove(from, to, reduceMotion);
+    return plan.animate ? { kind: 'fly', durationMs: plan.durationMs, spin: false } : { kind: 'jump' };
+  }
+  if (running && !reduceMotion) {
+    const left = running.endsAt - nowMs;
+    if (left > 50) return { kind: 'continue', durationMs: left, spin: running.spin };
+  }
+  return { kind: 'jump' };
 }

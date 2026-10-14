@@ -20,17 +20,29 @@ The globe. Screens import only from `@/map` (`GlobeMap` and its types), never Sk
 - `marks.ts`: pure mark logic (item 9): which marks show, label placement (flip/nudge), chevron geometry, mark colors, accessibility summary.
 - `markFonts.ts`: loads Big Shoulders Display (600/700) into Skia from the bundled theme font files.
 - `marksLayer.ts`: records marks and labels as a Skia Picture.
-- `useReduceMotion.ts`: live Reduce Motion setting.
+- `useReduceMotion.ts`: live Reduce Motion setting (plus `known`, so the spin-in waits for it).
+- `sun.ts`: pure sun position, night/dusk alpha curve, sun keying and sky throttle (item 11).
+- `nightLayer.ts`: records day/night (RuntimeEffect shader) and the sun highlight as a Skia Picture.
+- `spinIn.ts`: launch spin-in start camera and once-per-launch rule.
+- `preview.ts`: pure flight preview timeline, plane pose and run state machine.
+- `useFlightPreview.ts`: preview frame loop and React state.
+- `previewLayer.ts`: records the plane glyph once per accent; per frame only a transform changes (Reanimated shared value read by Skia, no React re-render).
 - `devSampleRoutes.ts`: hardcoded sample routes for previews (`<GlobeMap routes={devSampleRoutes} />`).
 
 ## Rendering
-Two cached Skia Pictures, re-recorded only when camera, size, theme or gesture state changes:
+Cached Skia Pictures (see also Polish below for night and plane), re-recorded only when camera, size, theme or gesture state changes:
 1. base: space, atmosphere glow, ocean, land, country borders, US state lines
 2. routes picture (item 4): re-recorded on camera, routes, selection or theme change; a selection change does not touch 1 or 3. Includes the selected route's chevrons.
 3. rim: limb darkening and globe edge
 4. marks picture (item 9): dynamic like 2, drawn above the rim so the limb never dims a label. Airport status badges (item 7, `status.ts`) are drawn in it too, after the marks, and act as label obstacles.
 
 While a finger is moving or the camera is flying, the base layer is recorded in "fast" mode, as the prototype does: lower projection precision, 110m data only, no state lines. They come back when the gesture ends. Natural Earth 50m replaces 110m when the globe radius is more than 2.1 view widths.
+
+## Polish (item 11)
+- Layer order: base, night, radar, routes, rim, marks, plane. Night is under radar so radar colors are never tinted (Q-033).
+- Day/night: one RuntimeEffect shader draw over the globe (per-pixel sphere normal dotted with the view-space sun), same curve as the prototype; plus a white 16% sun highlight (0.55 R) that fades near the limb. No sun disc, labels or city lights (Q-037). Re-recorded on camera/size/theme change and when the sun moved 0.1 deg; the real-time clock ticks once a minute and on return to the foreground. Shown under Reduce Motion (static).
+- Spin-in: once per app launch on the first layout: rotated +150/+18 deg, radius 0.36 min(W, H), center at 0.36 H, then 2100 ms cubic in/out to the first camera. Any touch snaps to the end. Skipped under Reduce Motion.
+- Flight preview: `preview` prop (selected route + nonce). Plane flies every leg (2600 ms + 3000 ms/rad, 900 ms waits, 450 ms delay, 2600 ms hold), the sky follows `departUtc`/`arriveUtc` at ~9 Hz (real time if any leg lacks times), radar hidden while playing, camera fits the route once. `onPreviewState` at most ~5 Hz. Any touch, deselect, route change, null or a new nonce cancels; a tap that only stopped a preview does nothing else. Reduce Motion: reported 'cancelled' with simUtc null.
 
 ## Prototype features not drawn in v1
 - Graticule (faint lat/long grid), lakes, timezone lines, stars: not in item 2's scope; open question for John.

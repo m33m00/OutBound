@@ -14,7 +14,7 @@
  */
 import { geoDistance, geoInterpolate, geoRotation } from 'd3-geo';
 
-import { globeOrigin, type GlobeCamera, type Viewport } from './camera';
+import { cameraOrigin, type GlobeCamera, type Viewport } from './camera';
 import type { LonLat, RouteLeg } from './types';
 
 export interface ArcSample {
@@ -73,7 +73,7 @@ const RAD = Math.PI / 180;
 /** Projects lifted points for one camera. Build once per camera, reuse for all legs. */
 export function makeLiftedProjector(camera: GlobeCamera, vp: Viewport) {
   const rotate = geoRotation([-camera.center[0], -camera.center[1], 0]);
-  const o = globeOrigin(vp);
+  const o = cameraOrigin(camera, vp);
   const R = camera.radius;
   return (ll: LonLat, lift: number): { x: number; y: number; visible: boolean } => {
     const [lon, lat] = rotate([ll[0], ll[1]]);

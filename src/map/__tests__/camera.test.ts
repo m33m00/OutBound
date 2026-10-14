@@ -1,4 +1,5 @@
 import {
+  cameraOrigin,
   DEFAULT_CENTER,
   LAT_LIMIT,
   MAX_RADIUS_FACTOR,
@@ -217,5 +218,13 @@ describe('fitCameraToPoints (route box above the panel)', () => {
     const cam = fitCameraToPoints([HNL, NRT], vp)!;
     expect(Math.abs(cam.center[0])).toBeGreaterThan(150);
     expect(Number.isFinite(cam.radius)).toBe(true);
+  });
+});
+
+describe('cameraOrigin', () => {
+  it('is the globe origin shifted by offsetY (spin-in only)', () => {
+    const vp2: Viewport = { width: 400, height: 800, insets: { top: 0, right: 0, bottom: 200, left: 0 } };
+    expect(cameraOrigin({ center: [0, 0], radius: 100 }, vp2)).toEqual(globeOrigin(vp2));
+    expect(cameraOrigin({ center: [0, 0], radius: 100, offsetY: -40 }, vp2)).toEqual({ x: 200, y: 260 });
   });
 });

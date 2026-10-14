@@ -11,6 +11,7 @@
  * left near the right edge), direction chevrons on the selected route.
  * Item 7: airport status badges (Caution diamond, Likely delays triangle).
  * Item 14: radar overlay (one lat/lon image per region, drawn as a mesh).
+ * Item 11: day/night shading, launch spin-in, flight preview.
  */
 import type { StyleProp, ViewStyle } from 'react-native';
 
@@ -37,6 +38,13 @@ export interface RouteLeg {
   toCode: string;
   tier: SeatTier;
   source: LineSource;
+  /**
+   * Scheduled departure / arrival, epoch ms (UTC). Optional; only the flight
+   * preview reads them, to move day/night with the flight. If any leg of a
+   * route lacks them, the preview keeps the sky at real time.
+   */
+  departUtc?: number;
+  arriveUtc?: number;
 }
 
 /**
@@ -105,6 +113,28 @@ export type CameraTarget =
   | { kind: 'center'; center: LonLat; zoom?: number }
   | { kind: 'fit'; points: readonly LonLat[] };
 
+/** Flight preview phases reported through `onPreviewState`. */
+export type MapPreviewPhase = 'playing' | 'done' | 'cancelled';
+
+export interface MapPreviewState {
+  routeId: string;
+  phase: MapPreviewPhase;
+  /**
+   * Simulated time the sky shows (epoch ms), from the legs' departUtc /
+   * arriveUtc; null when the route has no times (the sky stays at real time)
+   * or when the preview never started.
+   */
+  simUtc: number | null;
+  /** Share of the trip flown, 0..1. */
+  progress: number;
+}
+
+/** Ask the map to play a flight preview. A new nonce restarts it. */
+export interface MapPreviewRequest {
+  routeId: string;
+  nonce: number;
+}
+
 export interface GlobeMapProps {
   /**
    * Routes in the current sort order. The first MAP_ROUTE_LIMIT (10) are
@@ -160,6 +190,23 @@ export interface GlobeMapProps {
    * the overview box of the drawn routes, else the default view.
    */
   cameraTarget?: CameraTarget;
+  /**
+   * Flight preview (item 11, button only, never automatic). Set to the
+   * SELECTED route's id with a new nonce to play: the camera fits the route,
+   * a plane flies every leg in one go and day/night follows the flight's
+   * scheduled times. Radar is hidden while it plays and restored after.
+   * Any touch on the map, a selection change, a different request or null
+   * cancels it. Under Reduce Motion nothing plays: `onPreviewState` gets
+   * 'cancelled' with simUtc null right away. A request for a route that is
+   * not selected is also reported 'cancelled'.
+   */
+  preview?: MapPreviewRequest | null;
+  /**
+   * Preview progress for a HUD drawn by the screen (the map draws no text).
+   * Called on start, at most ~5 times a second while playing, and once with
+   * 'done' or 'cancelled'.
+   */
+  onPreviewState?: (state: MapPreviewState) => void;
   /** UI covering the map; the camera frames inside what is left. */
   insets?: Partial<MapInsets>;
   /** Drag/pinch enabled. Default true. */

@@ -201,6 +201,21 @@ describe('RadarImageCache', () => {
 });
 
 describe('canvasLayerOrder', () => {
+  it('puts night under radar and the preview plane on top; hides radar while previewing', () => {
+    expect(
+      canvasLayerOrder({ night: true, radar: true, routes: true, marks: true, plane: true }),
+    ).toEqual(['base', 'night', 'radar', 'routes', 'rim', 'marks', 'plane']);
+    expect(
+      canvasLayerOrder({ night: true, radar: true, routes: true, marks: true, plane: true, previewing: true }),
+    ).toEqual(['base', 'night', 'routes', 'rim', 'marks', 'plane']);
+    expect(canvasLayerOrder({ night: true, radar: true, routes: false, marks: false, previewing: false })).toEqual([
+      'base',
+      'night',
+      'radar',
+      'rim',
+    ]);
+  });
+
   it('puts radar above the static base and below routes, rim and marks', () => {
     expect(canvasLayerOrder({ radar: true, routes: true, marks: true })).toEqual([
       'base',

@@ -22,6 +22,9 @@ export function toRouteLine(
       toCode: flight.to,
       tier: seats.tier,
       source: seats.source,
+      // Scheduled times, for the flight preview's moving day/night (item 11).
+      departUtc: flight.departUtc,
+      arriveUtc: flight.arriveUtc,
     })),
   };
 }

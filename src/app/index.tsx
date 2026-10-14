@@ -15,6 +15,8 @@ import { changedFilters, DEFAULT_FILTERS, homeAirports, type SearchFilters } fro
 import { FiltersModal } from '@/ui/FiltersModal';
 import { ImpactSheet } from '@/ui/ImpactSheet';
 import { LeaveByCard } from '@/ui/LeaveByCard';
+import { PreviewControl, type PreviewPhase } from '@/ui/PreviewControl';
+import { useReducedMotion } from '@/ui/useReducedMotion';
 import { useCurrentLocation } from '@/ui/useCurrentLocation';
 import { ResultsPanel } from '@/ui/ResultsPanel';
 import { SearchPanel } from '@/ui/SearchPanel';
@@ -92,6 +94,20 @@ export default function HomeScreen() {
     [sampleImpacts, results, live],
   );
   const [impactFor, setImpactFor] = useState<string | null>(null);
+
+  // Flight preview (item 11; button only, Q-035): plane + moving night (Q-034).
+  const reduceMotion = useReducedMotion();
+  const [preview, setPreview] = useState<{ routeId: string; nonce: number } | null>(null);
+  const [previewInfo, setPreviewInfo] = useState<{ phase: PreviewPhase; simUtc: number | null; progress: number }>({
+    phase: 'idle',
+    simUtc: null,
+    progress: 0,
+  });
+  useEffect(() => {
+    // A different (or no) route resets the preview.
+    setPreview(null);
+    setPreviewInfo({ phase: 'idle', simUtc: null, progress: 0 });
+  }, [selectedId]);
 
   // Radar overlay (items 13-14): on by default, remembered (Q-032).
   const radar = useRadarLayers(settings.radarOn, now);
@@ -178,6 +194,10 @@ export default function HomeScreen() {
           destinations={markDestinations}
           airportStatus={statusMarks}
           radar={radar.layers}
+          preview={preview}
+          onPreviewState={(s) =>
+            setPreviewInfo({ phase: s.phase, simUtc: s.simUtc, progress: s.progress })
+          }
           selectedRouteId={selectedId}
           onSelectRoute={select}
           insets={{ bottom: snaps[sheetIndex] }}
@@ -228,17 +248,36 @@ export default function HomeScreen() {
                 sampleImpacts={sampleImpacts}
                 selectedCard={
                   firstLeg ? (
-                    <LeaveByCard
-                      airport={AIRPORTS[firstLeg.from]}
-                      departUtc={firstLeg.departUtc}
-                      bufferMin={settings.bufferMin}
-                      now={now}
-                      location={location}
-                      locationStatus={locationStatus}
-                      onUseLocation={async () => {
-                        if (await requestLocation()) updateSettings({ useLocation: true });
-                      }}
-                    />
+                    <View style={styles.selectedCard}>
+                      <LeaveByCard
+                        airport={AIRPORTS[firstLeg.from]}
+                        departUtc={firstLeg.departUtc}
+                        bufferMin={settings.bufferMin}
+                        now={now}
+                        location={location}
+                        locationStatus={locationStatus}
+                        onUseLocation={async () => {
+                          if (await requestLocation()) updateSettings({ useLocation: true });
+                        }}
+                      />
+                      <PreviewControl
+                        phase={previewInfo.phase}
+                        simUtc={previewInfo.simUtc}
+                        progress={previewInfo.progress}
+                        onPlay={() => {
+                          if (reduceMotion) {
+                            setPreviewInfo({ phase: 'reduceMotion', simUtc: null, progress: 0 });
+                            return;
+                          }
+                          setPreview({ routeId: selectedId!, nonce: Date.now() });
+                          setPreviewInfo({ phase: 'playing', simUtc: null, progress: 0 });
+                        }}
+                        onStop={() => {
+                          setPreview(null);
+                          setPreviewInfo({ phase: 'idle', simUtc: null, progress: 0 });
+                        }}
+                      />
+                    </View>
                   ) : null
                 }
                 onLoosen={() => setFiltersOpen(true)}
@@ -312,5 +351,8 @@ const styles = StyleSheet.create({
   },
   body: {
     flex: 1,
+  },
+  selectedCard: {
+    gap: spacing.group,
   },
 });

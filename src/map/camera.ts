@@ -12,6 +12,12 @@ export interface GlobeCamera {
   center: LonLat;
   /** Sphere radius in pt. */
   radius: number;
+  /**
+   * Vertical shift of the globe center from `globeOrigin`, in pt. Only the
+   * launch spin-in (item 11) uses it; it is 0/undefined otherwise and
+   * flies back to 0 with the spin.
+   */
+  offsetY?: number;
 }
 
 export interface Viewport {
@@ -60,6 +66,12 @@ export function globeOrigin(vp: Viewport): { x: number; y: number } {
     x: insets.left + Math.max(0, width - insets.left - insets.right) / 2,
     y: insets.top + Math.max(0, height - insets.top - insets.bottom) / 2,
   };
+}
+
+/** Screen point of the globe center for a camera (globeOrigin + offsetY). */
+export function cameraOrigin(camera: GlobeCamera, vp: Viewport): { x: number; y: number } {
+  const o = globeOrigin(vp);
+  return camera.offsetY ? { x: o.x, y: o.y + camera.offsetY } : o;
 }
 
 /** Radius for zoom 1 in this viewport. */
@@ -175,7 +187,7 @@ export function wantsHighDetail(camera: GlobeCamera, width: number): boolean {
  * gesture is moving (prototype: 2 vs 0.4).
  */
 export function projectionFor(camera: GlobeCamera, vp: Viewport, fast = false): GeoProjection {
-  const o = globeOrigin(vp);
+  const o = cameraOrigin(camera, vp);
   return geoOrthographic()
     .rotate([-camera.center[0], -camera.center[1], 0])
     .scale(camera.radius)

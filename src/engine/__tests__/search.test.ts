@@ -229,6 +229,8 @@ describe('toRouteLine', () => {
       toCode: 'DFW',
       tier: 'good',
       source: 'estimate',
+      departUtc: it.legs[0].flight.departUtc,
+      arriveUtc: it.legs[0].flight.arriveUtc,
     });
     expect(line.legs[1]).toMatchObject({ tier: 'unknown', source: 'unknown' });
   });
