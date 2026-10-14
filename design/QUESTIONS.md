@@ -36,3 +36,40 @@ Context: Prototype light faint text #66758a is 4.17:1 on surface2 and 4.41:1 on 
 A) Accept #606f84  B) Keep #66758a but never use faint on surface2/bg
 Recommendation: A.
 Answer: A (2026-10-13). Light faint text = #606f84.
+
+### Q-007 Space color behind the globe  (Open)
+Context: Backlog 2 (globe v1). As built, the space behind the globe is the app background token `bg` (#f6f8fb light / #0b1119 dark). The prototype used its own space color (#e9eef4 light / #05080e dark). Non-blocking.
+A) Keep `bg` token (as built)  B) Use prototype space color (#e9eef4 / #05080e)
+Recommendation: A, so the globe blends with the rest of the app; revisit after seeing it on device.
+Answer: (John)
+
+### Q-008 Prototype grid, lakes, timezone lines, stars  (Open)
+Context: Backlog 2 omitted the prototype's faint lat/long grid, lakes, timezone lines and stars. As built: all out. Non-blocking.
+A) Leave all out for good  B) Bring back grid and lakes in a later item; timezone lines and stars stay out  C) Bring all back later
+Recommendation: A for now; add a backlog item only if the globe feels bare on device.
+Answer: (John)
+
+### Q-009 Default globe view before search  (Open)
+Context: With no camera target from search, the globe shows the continental US centered at [-97, 38], zoom 1, globe centered (as built). The prototype framed center latitude 20 with the globe pushed low. Non-blocking.
+A) Keep as built  B) Prototype framing (lat 20, globe pushed low)  C) Other (John specifies)
+Recommendation: A, until the search/result layout shows how much screen the globe gets.
+Answer: (John)
+
+### Q-010 Geography data sources  (Open)
+Context: For the record, backlog 2 uses Natural Earth (public domain) via the world-atlas package (ISC license) for land and borders, and US Census cartographic boundaries (public domain) via us-atlas (ISC) for state lines. Non-blocking.
+A) Confirm  B) Use different sources (John specifies)
+Recommendation: A. All are free to use with no attribution required.
+Answer: (John)
+
+### Q-011 Globe color values  (Open, pending confirmation)
+Context: Not yet decided. Globe colors as built (light / dark), taken from the prototype or chosen by globe-porter. Confirm after seeing on device:
+- Ocean highlight #d5e3ee / #1d4266
+- Ocean edge #aac0d3 / #0b1a2c
+- Land #f4f5ef / #4a767c
+- Coast and borders #c4cdc3 / #2a4a50
+- Atmosphere rgb(120,170,230) / rgb(90,160,255)
+- Limb darkening rgba(40,60,90,.18) / rgba(0,0,0,.45)
+- State lines: theme text color at 40%
+A) Confirm all as built  B) Keep provisional until John reviews on device  C) John supplies changes
+Recommendation: B, then A or C after seeing it on the phone.
+Answer: (John)
