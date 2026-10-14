@@ -146,6 +146,18 @@ Answer: John (2026-10-14). Saved on the phone (AsyncStorage) now; move to the ac
 Context: Backlog 9 (map marks) and search. How the app knows where "home" is.
 Answer: John (2026-10-14), option B: one main home plus optional extra homes, set in Settings (Profile). Nearby-group airports of the main home are added automatically. See DECISIONS.md (Home airports). Provisional defaults listed there.
 
+### Q-027 Weather badge thresholds  (Answered 2026-10-14)
+Context: Backlog 5 (METAR/TAF). What METAR/TAF conditions map to Caution vs Likely delays.
+A) Ceilings + storms + wind + winter (recommended): the thresholds in the Answer line below.  B) Ceilings + storms only: Caution = IFR or storms nearby; Likely delays = LIFR, heavy storms, freezing rain or heavy snow; wind ignored.  C) John gives his own thresholds.
+Recommendation: A.
+Answer: John (2026-10-14), option A. Caution = IFR (ceiling 500 to <1,000 ft or vis 1 to <3 mi), VCTS, gust >=30 kt or sustained wind >=25 kt, any snow/ice pellets or freezing precip (light), fog with vis <2 mi. Likely delays = LIFR (ceiling <500 ft or vis <1 mi), thunderstorm at the airport, gust >=40 kt, moderate/heavy snow, any freezing rain/ice, vis <1/2 mi. VFR/MVFR alone never shows a badge. All thresholds in one config file, tunable after testing. Unblocks backlog 5 (not edited here).
+
+### Q-028 Weather beyond the TAF window  (Answered 2026-10-14)
+Context: Backlog 5. TAFs cover about 24-30 h; flights further out have no METAR/TAF forecast.
+A) No weather badge beyond the forecast window (recommended; NWS can be its own item later).  B) Add NWS forecast now for days 2-7 with simpler rules (storms, snow, ice only).
+Recommendation: A, because it keeps item 5 small.
+Answer: John (2026-10-14), option A. NWS longer-range forecast can be its own later item.
+
 Provisional defaults for backlog 3 (not John-decided; John may override any time):
 - FAA cache TTL 5 min server-side; serve stale on FAA error.
 - One national NAS feed fetch, filtered on read.

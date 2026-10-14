@@ -49,6 +49,17 @@ Condensed from the project docs: MVP decisions (through v8.8), design direction 
   - Airport closures (Q-020, 2026-10-14): any closure the FAA lists shows Likely delays. No filtering of future-dated closures (feed gives Start/Reopen without a year); early badges are accepted.
 - Provisional defaults for backlog item 3 (not John-decided; John may override): FAA cache TTL 5 min server-side; serve stale data on FAA error; one national NAS feed fetch, filtered on read; every value carries an as-of timestamp.
 - Weather: aviationweather.gov METAR/TAF near departure, NWS further out; radar via RainViewer or NOAA MRMS (terms to confirm).
+- METAR/TAF to badge (Q-027, 2026-10-14, John: A, ceilings + storms + wind + winter). VFR/MVFR alone never shows a badge. All thresholds live in one config file, tunable after testing.
+  - Caution (violet): IFR (ceiling 500 to <1,000 ft or vis 1 to <3 mi); thunderstorm nearby (VCTS); gust >=30 kt or sustained wind >=25 kt; any snow/ice pellets or freezing precip (light); fog with vis <2 mi.
+  - Likely delays (magenta): LIFR (ceiling <500 ft or vis <1 mi); thunderstorm at the airport; gust >=40 kt; moderate/heavy snow; any freezing rain/ice; vis <1/2 mi.
+- Forecast range (Q-028, 2026-10-14, John: A): no weather badge beyond the TAF window. NWS longer-range forecast can be its own later item.
+- Provisional defaults for backlog item 5 (not John-decided; John may override):
+  - G1: one Edge Function per source (live-faa-status as built; new live-weather) plus ONE client combining layer: worst of FAA and weather wins (Likely delays > Caution > none), reasons tagged by source, asOf = oldest input. useAirportStatus contract unchanged.
+  - G2: stations: nonstop = destination; with connections = each connection airport plus final destination; origin not evaluated. Row badge = worst across stations. ICAO = 'K'+IATA in contiguous US, explicit map for others (HNL=PHNL, ANC=PANC, SJU=TJSJ). No data = no badge, not an error.
+  - G3: time window: destination = scheduled arrival +/-1 h; connection = arrival to next departure. Within ~2 h of now, also use latest METAR (worst of observed and forecast). Beyond the TAF valid period = no badge (Q-028).
+  - G4: cache METAR 5 min, TAF 15 min server-side; serve stale on upstream error and flag it; one batched request per station list; observed/issued timestamps on every value, shown as age in the app.
+  - G5: rate limiting reuses item 3's per-client limiter for anon-key calls.
+  - G6: response per station: level, short plain-word reasons, observed/forecast time, asOf, raw ceiling/visibility/wind values (for retuning thresholds), stale flag.
 - Weather impact shows disruption only; Caution (violet) / Likely delays (magenta). Station = destination for nonstops, connection airport for connections.
 - All third-party calls go through Supabase Edge Functions with caching. Keys server-side only.
 - Edge Function access (Q-017, 2026-10-14): until invite-code login exists, live Edge Functions accept calls with the app's public anon key, with rate limiting. Require login once auth lands.

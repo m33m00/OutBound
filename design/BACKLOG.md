@@ -9,7 +9,7 @@ Each item names its owner. One item per work session. spec-keeper runs a pre-fli
 | 2 | `src/map/` with the `GlobeMap` interface + Globe v1: orthographic Skia globe, land/ocean, state lines, cached static layer | globe-porter | P0 | Done |
 | 3 | FAA NAS status Edge Function + cache + `useAirportStatus` hook (fixtures in tests) | live-ops | P0 | Built; deploy pending (needs Supabase project) |
 | 4 | Arcs with tier colors and line styles, tap to select (28pt), camera fly-to, top 10 routes | globe-porter | P0 | Done |
-| 5 | METAR/TAF Edge Function + disruption classifier (Caution / Likely delays) | live-ops | P0 | After 3 |
+| 5 | METAR/TAF Edge Function + disruption classifier (Caution / Likely delays) | live-ops | P0 | Built; deploy pending (needs Supabase project) |
 | 6 | Search + results screens wired to the engine and globe; each result row shows the seat tier and reserves a slot for delay/weather badges (Q-001), filled in item 7 | main | P0 | Done |
 | 7 | Delay and weather badges on every results row and airports on the globe | live-ops → globe-porter | P0 | After 3, 4, 5 |
 | 8 | Flight status for opened flights (AeroDataBox) with unit logging toward the spend cap | live-ops | P0 | Needs AeroDataBox key |
