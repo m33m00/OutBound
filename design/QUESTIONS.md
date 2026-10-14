@@ -73,3 +73,32 @@ Context: Not yet decided. Globe colors as built (light / dark), taken from the p
 A) Confirm all as built  B) Keep provisional until John reviews on device  C) John supplies changes
 Recommendation: B, then A or C after seeing it on the phone.
 Answer: (John)
+
+### Q-012 Nearby airports list and ground-transfer minutes  (Open)
+Context: Backlog 1 (itinerary engine). As built: only the confirmed DAL<->DFW group is active, with a provisional 35 min ground transfer. Nearby airports apply at the origin and destination ends only, never mid-route. Each result records requested airport, used airport and ground transfer minutes. Non-blocking.
+A) Activate these candidate metros: NYC (JFK/LGA/EWR), Chicago (ORD/MDW), LA (LAX/BUR/SNA/LGB/ONT), Washington (DCA/IAD/BWI). John also gives transfer minutes per group (or approves defaults I propose).
+B) John supplies his own list and transfer minutes per group.
+C) Keep DAL<->DFW only for now.
+Recommendation: A, with John editing the transfer minutes; nearby is useful for standby travelers in big metros.
+Answer: (John)
+
+### Q-013 "Best availability" tie-break and extra sorts  (Open)
+Context: Backlog 1. As built: ties are broken by route tier, meaning the weakest reported/estimate leg, ranked wide > good > okay > tight > full > unknown. The optional "Most seats" and "Best bet" sorts are not built. Non-blocking.
+A) Keep the tie-break as built; no extra sorts
+B) Keep tie-break; add Most seats and Best bet sorts later (John defines "Best bet")
+C) Different tie-break (John specifies)
+Recommendation: A for now; revisit after seeing real results on device.
+Answer: (John)
+
+### Q-014 Typical-load legs and route tier  (Open)
+Context: Backlog 1. As built: legs with only typical-load data map to tier 'unknown' with source 'typical'. They are neutral: ignored for route color and for availability ranking. Non-blocking.
+A) Keep as built  B) Count typical loads as a weak signal in ranking and color (John specifies weight)
+Recommendation: A; typical data is not live, so it should not drive color.
+Answer: (John)
+
+Provisional engine defaults (Backlog 1, as built, not yet decisions; John may override any time):
+- Max total trip 24h.
+- Connections must be at the same airport.
+- No airport repeated in an itinerary.
+- Intermediate stops cannot be an origin or destination group airport.
+- Search date = local calendar date at the origin, 0 to 7 days out; departed flights excluded.
