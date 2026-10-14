@@ -51,6 +51,41 @@ export function levelForEvents(events: readonly FaaEvent[]): AirportStatusLevel 
   return events.some((e) => levelForEvent(e) === 'likelyDelays') ? 'likelyDelays' : 'caution';
 }
 
+// ---- Closure classification (Q-030) ----
+
+/** A NOTAM-style phrase meaning the whole airport is closed ("AD AP CLSD" = aerodrome/airport closed). */
+export const FULL_CLOSURE_MARKERS: readonly RegExp[] = [/\bAD\s+AP\s+CLSD\b/i, /\bAIRPORT\s+CLSD\b/i];
+
+/**
+ * Closed to ALL aircraft counts as a full closure even with an exception (e.g. "EXC MEDEVAC"):
+ * scheduled air carriers are still shut out. Checked before the restriction patterns.
+ */
+export const CLOSED_TO_ALL: readonly RegExp[] = [/\bCLSD\s+TO\s+ALL\s+(?:ACFT|AIRCRAFT|TRAFFIC|OPS|OPNS)\b/i];
+
+/**
+ * Qualifiers meaning this is a restriction, not a full closure (scheduled air carrier ops continue).
+ * Any match -> NOT a full closure. Conservative: when in doubt, do not badge.
+ */
+export const CLOSURE_RESTRICTION_PATTERNS: readonly RegExp[] = [
+  /\bCLSD\s+TO\b/i, // closed to a class of aircraft/users
+  /\bNON\s*SKED\b/i,
+  /\bTRANSIENT\b/i,
+  /\bGA\b/i,
+  /\bPPR\b/i,
+  /\bEXC(?:EPT)?\b/i, // exempts some operations
+  /\bRWY\b/i,
+  /\bTWY\b/i,
+  /\bAPRON\b/i,
+  /\bRAMP\b/i,
+];
+
+/** True only when the FAA text says the whole airport is closed to scheduled ops. */
+export function isFullAirportClosure(reason: string): boolean {
+  if (!FULL_CLOSURE_MARKERS.some((re) => re.test(reason))) return false;
+  if (CLOSED_TO_ALL.some((re) => re.test(reason))) return true;
+  return !CLOSURE_RESTRICTION_PATTERNS.some((re) => re.test(reason));
+}
+
 // ---- XML parsing (tiny, dependency-free; the FAA feed is flat and regular) ----
 
 function decode(s: string): string {
@@ -125,6 +160,7 @@ export function parseNasXml(xml: string, fetchedAtIso: string): FaaSnapshot {
       }
     } else if (name.includes('closure')) {
       for (const a of blocks(dt, 'Airport')) {
+        if (!isFullAirportClosure(tag(a, 'Reason') ?? '')) continue; // Q-030: restrictions are not badged
         add(tag(a, 'ARPT'), { type: 'closure', reason: tag(a, 'Reason') ?? '', endsAt: tag(a, 'Reopen') });
       }
     } else if (name.includes('arrival') || name.includes('departure')) {

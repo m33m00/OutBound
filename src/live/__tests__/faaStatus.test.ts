@@ -3,6 +3,7 @@ import emptyXml from '../fixtures/nas-status-empty';
 import {
   allowRequest,
   getSnapshot,
+  isFullAirportClosure,
   levelForEvent,
   parseMinutes,
   parseNasXml,
@@ -89,5 +90,35 @@ describe('allowRequest', () => {
     expect(allowRequest(b, 'ip', 1000, 3)).toBe(false);
     expect(allowRequest(b, 'other', 1000, 3)).toBe(true);
     expect(allowRequest(b, 'ip', 60_000, 3)).toBe(true);
+  });
+});
+
+const LAX_REASON =
+  '!LAX 05/277 LAX AD AP CLSD TO NON SKED TRANSIENT GA ACFT EXC 24HR PPR CTC ATLANTIC AVIATION 310-258-9884 OR SIGNATURE AVIATION 310-410-9605 2605271826-2705281600';
+
+describe('isFullAirportClosure (Q-030)', () => {
+  it('real LAX GA restriction -> ignored', () => expect(isFullAirportClosure(LAX_REASON)).toBe(false));
+  it('plain full closure -> true', () =>
+    expect(isFullAirportClosure('!JFK 10/123 JFK AD AP CLSD 2610140400-2610140600')).toBe(true));
+  it('daily-window full closure (SNA) -> true', () =>
+    expect(isFullAirportClosure('!SNA 10/016 SNA AD AP CLSD DLY 0630-1315 2610130630-2610171315')).toBe(true));
+  it('runway/taxiway/apron only -> false', () => {
+    expect(isFullAirportClosure('!ORD 10/001 ORD RWY 10L/28R CLSD 2610140400-2610140600')).toBe(false);
+    expect(isFullAirportClosure('!ORD 10/002 ORD AD AP TWY B CLSD')).toBe(false);
+    expect(isFullAirportClosure('!ORD 10/003 ORD AD AP APRON CLSD')).toBe(false);
+  });
+  it('closed to all aircraft except medevac -> true (effectively full)', () =>
+    expect(isFullAirportClosure('!XYZ 10/004 XYZ AD AP CLSD TO ALL ACFT EXC MEDEVAC')).toBe(true));
+  it('other exemptions/qualifiers -> false', () => {
+    expect(isFullAirportClosure('!XYZ 10/005 XYZ AD AP CLSD EXC SKED AIR CARRIER')).toBe(false);
+    expect(isFullAirportClosure('!XYZ 10/006 XYZ AD AP CLSD TO HEAVY ACFT')).toBe(false);
+  });
+  it('non-closure text -> false', () => expect(isFullAirportClosure('')).toBe(false));
+  it('parser drops restriction closures but keeps full ones', () => {
+    const xml = (a: string, r: string) =>
+      `<Delay_type><Name>Airport Closures</Name><Airport_Closure_List><Airport><ARPT>${a}</ARPT><Reason>${r}</Reason><Reopen>May 28 at 16:00 UTC.</Reopen></Airport></Airport_Closure_List></Delay_type>`;
+    const s = parseNasXml(`<X>${xml('LAX', LAX_REASON)}${xml('JFK', '!JFK 10/123 JFK AD AP CLSD 2610140400-2610140600')}</X>`, NOW);
+    expect(s.airports.LAX).toBeUndefined();
+    expect(s.airports.JFK.level).toBe('likelyDelays');
   });
 });
