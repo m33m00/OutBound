@@ -142,6 +142,10 @@ Answer: John (2026-10-14). Airport buffer (default 75, range 30-180, step 5; ran
 Context: Backlog 12. Where settings are stored before login exists.
 Answer: John (2026-10-14). Saved on the phone (AsyncStorage) now; move to the account when login exists.
 
+### Q-026 Home airports  (Answered 2026-10-14)
+Context: Backlog 9 (map marks) and search. How the app knows where "home" is.
+Answer: John (2026-10-14), option B: one main home plus optional extra homes, set in Settings (Profile). Nearby-group airports of the main home are added automatically. See DECISIONS.md (Home airports). Provisional defaults listed there.
+
 Provisional defaults for backlog 3 (not John-decided; John may override any time):
 - FAA cache TTL 5 min server-side; serve stale on FAA error.
 - One national NAS feed fetch, filtered on read.

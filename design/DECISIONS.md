@@ -17,6 +17,11 @@ Condensed from the project docs: MVP decisions (through v8.8), design direction 
   - Provisional (v9.1 prototype details, John chose the approach): location requested only on "Use Location" tap (card) or "Use my location" toggle (settings), never at launch; location fresh for 20 min; within 400 km: drive min = round((km x 1.3 / 55 x 60 + 10) / 5) x 5; within 3 km: "You're at {AP}"; no fresh location or out of range: "Be at {AP} by {time}" with "{buffer} min before departure to list and clear security"; late on the day: "Leave now".
 - Settings (Q-024, 2026-10-14), reached from the Profile button: airport buffer (default 75, step 5, range 30-180 provisional), "Use my location", and search defaults (max stops, same-airline and switching connection minimums, longest layover, nearby airports, longest ground transfer). The Filters panel starts from the saved defaults.
 - Settings persistence (Q-025, 2026-10-14): saved on the phone (AsyncStorage) now; move to the account when login exists.
+- Home airports (Q-026, 2026-10-14): one main home airport plus optional extra homes, set in Settings (Profile). Airports in the same nearby group as the main home (today DAL↔DFW, NEARBY_GROUPS) are added as homes automatically.
+  - Search "From" starts at the main home.
+  - "Get Home" button on search: shown when a main home is set and From is not one of your homes; sets To = main home and searches.
+  - Map: home airports are amber house pins (main = filled pin, others = outline pins); amber stays "you" only.
+  - Provisional (not John-decided): auto-added homes come from the engine's nearby groups, not a distance threshold; with no home set, search shows a hint to set one in Profile; marks are not tappable; label placement = generic right/left flip with overlap nudge; chevrons at t=0.2/0.66/0.88 per selected leg.
 - Nearby airports on: DAL↔DFW plus 3–4 metros testers fly; max ground transfer 60 min.
 - Sort default: earliest arrival; tie-break fewer stops, then best availability. Full routes stay in time order, grayed with a red edge (2026-10-06). Best bet is an optional sort.
 - Own schedule DB from daily AeroDataBox pulls (~30 airports). No live calls per search.

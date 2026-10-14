@@ -13,7 +13,7 @@ Each item names its owner. One item per work session. spec-keeper runs a pre-fli
 | 6 | Search + results screens wired to the engine and globe; each result row shows the seat tier and reserves a slot for delay/weather badges (Q-001), filled in item 7 | main | P0 | Done |
 | 7 | Delay and weather badges on every results row and airports on the globe | live-ops → globe-porter | P0 | After 3, 4, 5 |
 | 8 | Flight status for opened flights (AeroDataBox) with unit logging toward the spend cap | live-ops | P0 | Needs AeroDataBox key |
-| 9 | Map marks: home house pin, origin dot, destination rings, label flipping, chevrons | globe-porter | P0 | After 4 |
+| 9 | Map marks: home house pin, origin dot, destination rings, label flipping, chevrons | globe-porter | P0 | Done |
 | 10 | Radar tile source (RainViewer vs NOAA MRMS; confirm terms) | live-ops | P1 | Ready (research) |
 | 11 | Globe polish: day/night, spin-in, flight preview | globe-porter | P1 | Later |
 | 12 | Leave-by card + tester settings screen (airport buffer, default 75 min; Q-003) | main | P0 | Done |
