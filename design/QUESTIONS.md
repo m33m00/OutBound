@@ -129,6 +129,19 @@ A) Keep as built: within 28pt of the line  B) 28pt-wide band (14pt each side)
 Recommendation: A; arcs are thin and overlap, and the selected route is preferred when in range, so the larger area is forgiving without stealing taps.
 Answer: John (2026-10-14), option A. May be tightened after on-device testing.
 
+### Q-023 Leave-by travel time  (Answered 2026-10-14)
+Context: Backlog 12. How the Leave-by card knows when to leave.
+A) Drive-time setting  B) "Be at" only card  C) Phone location
+Answer: John (2026-10-14), option C, phone location. Details follow the v9.1 prototype and are provisional: location asked only on "Use Location" tap (card) or "Use my location" toggle (settings), never at launch; fresh for 20 min; within 400 km drive = round((km x 1.3 / 55 x 60 + 10) / 5) x 5 min; within 3 km = "You're at {AP}"; no fresh location or out of range = "Be at {AP} by {time}" with "{buffer} min before departure to list and clear security"; late on the day = "Leave now". Card is for the selected route's first leg, times in the departure airport's local time.
+
+### Q-024 Settings scope  (Answered 2026-10-14)
+Context: Backlog 12. What the settings screen holds.
+Answer: John (2026-10-14). Airport buffer (default 75, range 30-180, step 5; range provisional), "Use my location", and search defaults (max stops, same-airline and switching connection minimums, longest layover, nearby airports, longest ground transfer). Filters panel starts from saved defaults. Reached from the Profile button.
+
+### Q-025 Settings persistence  (Answered 2026-10-14)
+Context: Backlog 12. Where settings are stored before login exists.
+Answer: John (2026-10-14). Saved on the phone (AsyncStorage) now; move to the account when login exists.
+
 Provisional defaults for backlog 3 (not John-decided; John may override any time):
 - FAA cache TTL 5 min server-side; serve stale on FAA error.
 - One national NAS feed fetch, filtered on read.

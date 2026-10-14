@@ -16,4 +16,4 @@ Each item names its owner. One item per work session. spec-keeper runs a pre-fli
 | 9 | Map marks: home house pin, origin dot, destination rings, label flipping, chevrons | globe-porter | P0 | After 4 |
 | 10 | Radar tile source (RainViewer vs NOAA MRMS; confirm terms) | live-ops | P1 | Ready (research) |
 | 11 | Globe polish: day/night, spin-in, flight preview | globe-porter | P1 | Later |
-| 12 | Leave-by card + tester settings screen (airport buffer, default 75 min; Q-003) | main | P0 | After 6 |
+| 12 | Leave-by card + tester settings screen (airport buffer, default 75 min; Q-003) | main | P0 | Done |

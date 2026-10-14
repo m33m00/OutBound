@@ -13,6 +13,10 @@ Condensed from the project docs: MVP decisions (through v8.8), design direction 
 ## Search
 - 0–7 days out. Max stops 0–3, default 3. Connections min 60 min same airline / 90 switching; max layover 4h. All adjustable.
 - Leave-by card airport buffer (Q-003, 2026-10-13): tester setting, default 75 min before departure.
+  - Leave-by travel time (Q-023, 2026-10-14): uses phone location. Card is for the selected route's first leg, times in the departure airport's local time.
+  - Provisional (v9.1 prototype details, John chose the approach): location requested only on "Use Location" tap (card) or "Use my location" toggle (settings), never at launch; location fresh for 20 min; within 400 km: drive min = round((km x 1.3 / 55 x 60 + 10) / 5) x 5; within 3 km: "You're at {AP}"; no fresh location or out of range: "Be at {AP} by {time}" with "{buffer} min before departure to list and clear security"; late on the day: "Leave now".
+- Settings (Q-024, 2026-10-14), reached from the Profile button: airport buffer (default 75, step 5, range 30-180 provisional), "Use my location", and search defaults (max stops, same-airline and switching connection minimums, longest layover, nearby airports, longest ground transfer). The Filters panel starts from the saved defaults.
+- Settings persistence (Q-025, 2026-10-14): saved on the phone (AsyncStorage) now; move to the account when login exists.
 - Nearby airports on: DAL↔DFW plus 3–4 metros testers fly; max ground transfer 60 min.
 - Sort default: earliest arrival; tie-break fewer stops, then best availability. Full routes stay in time order, grayed with a red edge (2026-10-06). Best bet is an optional sort.
 - Own schedule DB from daily AeroDataBox pulls (~30 airports). No live calls per search.
