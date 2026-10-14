@@ -18,3 +18,21 @@ Context: Default is "be at the airport 75 min before departure".
 A) Keep 75 min  B) 60 min  C) Tester setting with 75 default
 Recommendation: C.
 Answer:
+
+### Q-004 Theme tokens beyond accent and amber  (Open)
+Context: DECISIONS.md confirms only accent (#1D3D84/#9BB8EF) and amber you-text (#9A5200/#FFC27A). Backlog 0 proceeded with provisional values copied from the Ice Mix look in the v9.1 prototype (surfaces, text, tier, weather violet #5b4bd6/#b7adff, magenta #a3269a/#f283e8, type scale) in src/theme/, marked provisional. Non-blocking.
+A) Confirm prototype values as-is  B) Keep provisional; John reviews on device first  C) John supplies values
+Recommendation: A, after John sees it on his phone.
+Answer:
+
+### Q-005 Font weights  (Open)
+Context: Using the prototype's loaded weights: Big Shoulders Display 600/700/800, Manrope 400/500/600/700. Non-blocking.
+A) Confirm  B) Other weights
+Recommendation: A.
+Answer:
+
+### Q-006 Light-theme "faint" text contrast fix  (Open)
+Context: Prototype light faint text #66758a is 4.17:1 on surface2 and 4.41:1 on bg, failing the >=4.5:1 rule. Implemented as #606f84 (4.55 / 4.81). Non-blocking.
+A) Accept #606f84  B) Keep #66758a but never use faint on surface2/bg
+Recommendation: A.
+Answer:
