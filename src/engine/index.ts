@@ -7,6 +7,6 @@ export { createMemoryProvider } from './memoryProvider';
 export { createSampleProvider } from './sample/sampleProvider';
 export { DEFAULT_SEARCH_OPTIONS, MAX_DAYS_OUT, compareItineraries, searchItineraries } from './search';
 export { legSeats, routeTier, tierForNetSeats, tierRank } from './seats';
-export { localDate, zonedToUtc } from './time';
+export { addDays, localDate, zonedToUtc } from './time';
 export { toRouteLine } from './toRouteLine';
 export type * from './types';
