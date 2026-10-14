@@ -3,7 +3,7 @@
  * moves to the account when login exists. Values are clamped on read so a
  * bad or old saved value can't break search.
  */
-import { DEFAULT_SEARCH_OPTIONS, type SearchOptions } from '@/engine';
+import { AIRPORTS, airportsNear, DEFAULT_SEARCH_OPTIONS, type SearchOptions } from '@/engine';
 
 /** The search settings people can adjust (DECISIONS.md: "All adjustable"). */
 export type SearchFilters = Pick<
@@ -34,7 +34,14 @@ export const LIMITS = {
   maxGroundTransferMin: { min: 15, max: 120, step: 15 },
 } as const;
 
+/** Home airports (Q-026): one main home plus optional extras. */
+export interface Homes {
+  main: string | null;
+  extras: string[];
+}
+
 export interface Settings {
+  homes: Homes;
   /** Be at the airport this long before departure (Q-003, default 75). */
   bufferMin: number;
   /** Use phone location for the leave-by drive estimate (Q-023). */
@@ -43,7 +50,12 @@ export interface Settings {
   search: SearchFilters;
 }
 
-export const DEFAULT_SETTINGS: Settings = { bufferMin: 75, useLocation: false, search: DEFAULT_FILTERS };
+export const DEFAULT_SETTINGS: Settings = {
+  homes: { main: null, extras: [] },
+  bufferMin: 75,
+  useLocation: false,
+  search: DEFAULT_FILTERS,
+};
 
 export const SETTINGS_KEY = 'outbound.settings.v1';
 
@@ -61,7 +73,14 @@ export function parseSettings(raw: unknown): Settings {
   const s = (o.search && typeof o.search === 'object' ? o.search : {}) as Record<string, unknown>;
   const d = DEFAULT_FILTERS;
   const stops = typeof s.maxStops === 'number' ? Math.round(s.maxStops) : d.maxStops;
+  const h = (o.homes && typeof o.homes === 'object' ? o.homes : {}) as Record<string, unknown>;
+  const known = (v: unknown): v is string => typeof v === 'string' && v in AIRPORTS;
+  const main = known(h.main) ? h.main : null;
+  const extras = Array.isArray(h.extras)
+    ? [...new Set(h.extras.filter(known))].filter((code) => code !== main)
+    : [];
   return {
+    homes: { main, extras },
     bufferMin: num(o.bufferMin, DEFAULT_SETTINGS.bufferMin, LIMITS.bufferMin),
     useLocation: bool(o.useLocation, DEFAULT_SETTINGS.useLocation),
     search: {
@@ -78,4 +97,23 @@ export function parseSettings(raw: unknown): Settings {
 /** How many search filters differ from `base`. */
 export function changedFilters(f: SearchFilters, base: SearchFilters = DEFAULT_FILTERS): number {
   return (Object.keys(base) as (keyof SearchFilters)[]).filter((k) => f[k] !== base[k]).length;
+}
+
+export interface HomeAirport {
+  code: string;
+  main: boolean;
+  /** Added automatically: same nearby group as the main home (Q-026). */
+  auto: boolean;
+}
+
+/** All home airports, main first, then nearby-group airports, then extras. */
+export function homeAirports(homes: Homes): HomeAirport[] {
+  if (!homes.main) return homes.extras.map((code) => ({ code, main: false, auto: false }));
+  const out: HomeAirport[] = [{ code: homes.main, main: true, auto: false }];
+  // Unlimited transfer: every airport in the main home's group counts.
+  for (const [code] of airportsNear(homes.main, Infinity).slice(1)) out.push({ code, main: false, auto: true });
+  for (const code of homes.extras) {
+    if (!out.some((h) => h.code === code)) out.push({ code, main: false, auto: false });
+  }
+  return out;
 }

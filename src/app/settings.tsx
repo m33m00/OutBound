@@ -1,10 +1,13 @@
 import { router } from 'expo-router';
+import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useSettings } from '@/settings/SettingsProvider';
-import { LIMITS } from '@/settings/settings';
+import { AIRPORTS } from '@/engine';
+import { homeAirports, LIMITS } from '@/settings/settings';
 import { minTapTarget, radius, spacing, textStyles, useColors } from '@/theme';
+import { AirportPicker } from '@/ui/AirportPicker';
 import { Button } from '@/ui/Buttons';
 import { FiltersForm } from '@/ui/FiltersForm';
 import { Stepper } from '@/ui/Stepper';
@@ -15,6 +18,9 @@ export default function SettingsScreen() {
   const c = useColors();
   const { settings, update, reset } = useSettings();
   const { status, request } = useCurrentLocation(false);
+  const [picking, setPicking] = useState<'main' | 'extra' | null>(null);
+  const { homes } = settings;
+  const homeList = homeAirports(homes);
 
   const setUseLocation = async (on: boolean) => {
     if (!on) return update({ useLocation: false });
@@ -37,6 +43,42 @@ export default function SettingsScreen() {
         <Text style={[textStyles.title, { color: c.text }]} accessibilityRole="header">
           Settings
         </Text>
+
+        <View style={[styles.group, { backgroundColor: c.surface, borderColor: c.line }]}>
+          <Text style={[textStyles.heading, { color: c.text }]}>Homes</Text>
+          <Text style={[textStyles.small, { color: c.muted }]}>
+            Search starts from your main home, and Get Home takes you back to it.
+          </Text>
+          {homeList.length === 0 ? (
+            <Text style={[textStyles.body, { color: c.text }]}>No home airport yet.</Text>
+          ) : (
+            homeList.map((h) => (
+              <View key={h.code} style={styles.row}>
+                <Text style={[textStyles.number, styles.code, { color: c.text }]}>{h.code}</Text>
+                <View style={styles.label}>
+                  <Text style={[textStyles.body, { color: c.text }]}>{AIRPORTS[h.code]?.name}</Text>
+                  <Text style={[textStyles.small, { color: c.muted }]}>
+                    {h.main ? 'Main home' : h.auto ? 'Nearby, added automatically' : 'Also home'}
+                  </Text>
+                </View>
+                {h.main ? (
+                  <Button label="Change" kind="secondary" onPress={() => setPicking('main')} />
+                ) : h.auto ? null : (
+                  <Button
+                    label="Remove"
+                    kind="secondary"
+                    accessibilityLabel={`Remove ${h.code} from homes`}
+                    onPress={() => update({ homes: { ...homes, extras: homes.extras.filter((x) => x !== h.code) } })}
+                  />
+                )}
+              </View>
+            ))
+          )}
+          <View style={styles.buttons}>
+            {homes.main ? null : <Button label="Set Main Home" onPress={() => setPicking('main')} />}
+            <Button label="Add Airport" kind="secondary" onPress={() => setPicking('extra')} />
+          </View>
+        </View>
 
         <View style={[styles.group, { backgroundColor: c.surface, borderColor: c.line }]}>
           <Text style={[textStyles.heading, { color: c.text }]}>Leave-by</Text>
@@ -77,6 +119,19 @@ export default function SettingsScreen() {
         <Button label="Reset to Defaults" kind="secondary" onPress={reset} />
         <Text style={[textStyles.small, { color: c.muted }]}>Saved on this phone.</Text>
       </ScrollView>
+      <AirportPicker
+        visible={picking !== null}
+        title={picking === 'main' ? 'Main home' : 'Add home'}
+        onPick={(code) => {
+          if (picking === 'main') {
+            update({ homes: { main: code, extras: homes.extras.filter((x) => x !== code) } });
+          } else if (code !== homes.main && !homes.extras.includes(code)) {
+            update({ homes: { ...homes, extras: [...homes.extras, code] } });
+          }
+          setPicking(null);
+        }}
+        onClose={() => setPicking(null)}
+      />
     </SafeAreaView>
   );
 }
@@ -94,4 +149,6 @@ const styles = StyleSheet.create({
   },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.group, minHeight: minTapTarget },
   label: { flex: 1 },
+  code: { width: 52 },
+  buttons: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.group },
 });

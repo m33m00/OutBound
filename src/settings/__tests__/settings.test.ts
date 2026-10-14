@@ -1,4 +1,4 @@
-import { changedFilters, DEFAULT_FILTERS, DEFAULT_SETTINGS, parseSettings } from '../settings';
+import { changedFilters, DEFAULT_FILTERS, DEFAULT_SETTINGS, homeAirports, parseSettings } from '../settings';
 
 describe('parseSettings', () => {
   it('gives defaults for nothing or junk', () => {
@@ -13,6 +13,7 @@ describe('parseSettings', () => {
 
   it('keeps valid saved values', () => {
     const saved = {
+      homes: { main: 'DFW', extras: ['ORD'] },
       bufferMin: 90,
       useLocation: true,
       search: { ...DEFAULT_FILTERS, maxStops: 1, nearbyAirports: false, maxLayoverMin: 300 },
@@ -40,5 +41,35 @@ describe('changedFilters', () => {
     expect(changedFilters({ ...DEFAULT_FILTERS, maxStops: 1, nearbyAirports: false })).toBe(2);
     const saved = { ...DEFAULT_FILTERS, maxStops: 1 };
     expect(changedFilters(saved, saved)).toBe(0);
+  });
+});
+
+describe('homes (Q-026)', () => {
+  it('defaults to no home', () => {
+    expect(DEFAULT_SETTINGS.homes).toEqual({ main: null, extras: [] });
+  });
+
+  it('drops unknown airports, duplicates and an extra equal to main', () => {
+    expect(parseSettings({ homes: { main: 'XXX', extras: ['LAX', 'LAX', 'ZZZ'] } }).homes).toEqual({
+      main: null,
+      extras: ['LAX'],
+    });
+    expect(parseSettings({ homes: { main: 'DFW', extras: ['DFW', 'ORD'] } }).homes).toEqual({
+      main: 'DFW',
+      extras: ['ORD'],
+    });
+  });
+
+  it('lists main first, adds same-group nearby airports, then extras', () => {
+    expect(homeAirports({ main: 'DFW', extras: ['ORD', 'DAL'] })).toEqual([
+      { code: 'DFW', main: true, auto: false },
+      { code: 'DAL', main: false, auto: true },
+      { code: 'ORD', main: false, auto: false },
+    ]);
+    expect(homeAirports({ main: 'BNA', extras: [] })).toEqual([{ code: 'BNA', main: true, auto: false }]);
+  });
+
+  it('works with extras but no main', () => {
+    expect(homeAirports({ main: null, extras: ['SEA'] })).toEqual([{ code: 'SEA', main: false, auto: false }]);
   });
 });

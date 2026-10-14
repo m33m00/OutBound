@@ -6,6 +6,8 @@
  *   route picture  arcs; re-recorded on camera, routes, selection or theme
  *                  change, never touching the static pictures (routeLayer.ts)
  *   rim picture    limb and edge, cached per camera
+ *   marks picture  home pins, origin dot, destination rings, labels (item 9);
+ *                  above the rim so the limb never dims a label
  *   legend         React Native view, only while a route is selected
  *
  * Gestures run on the JS thread (d3 projection and picture recording live
@@ -43,6 +45,10 @@ import { drawnRoutes, nextSelection, routeSpokenName } from './routeModel';
 import { recordBaseLayer, recordRimLayer } from './staticLayer';
 import type { CameraTarget, GlobeMapProps, RouteLine } from './types';
 import { useReduceMotion } from './useReduceMotion';
+import { makeLiftedProjector } from './arcs';
+import { useMarkFonts } from './markFonts';
+import { markColors, marksSummary, markSet } from './marks';
+import { recordMarksLayer } from './marksLayer';
 
 const NO_ROUTES: readonly RouteLine[] = [];
 /** Finger travel that turns a touch into a drag instead of a tap (prototype: 6). */
@@ -56,6 +62,9 @@ export function GlobeMap({
   routes = NO_ROUTES,
   selectedRouteId,
   onSelectRoute,
+  homeAirports,
+  origin,
+  destinations,
   cameraTarget,
   insets,
   interactive = true,
@@ -200,6 +209,34 @@ export function GlobeMap({
     });
   }, [camera, viewport, palette, scheme, colors, drawn, selectedId]);
 
+  // Marks (item 9): dynamic like routes, not part of the cached globe. Props
+  // are keyed by value so a new array with the same airports re-records nothing.
+  const fonts = useMarkFonts();
+  const markColorSet = useMemo(() => markColors(scheme, palette), [scheme, palette]);
+  const airportsKey = JSON.stringify([homeAirports ?? [], origin ?? null, destinations ?? []]);
+  const marks = useMemo(() => {
+    const [h, o, d] = JSON.parse(airportsKey) as [
+      NonNullable<typeof homeAirports>,
+      typeof origin,
+      NonNullable<typeof destinations>,
+    ];
+    return markSet({ homeAirports: h, origin: o, destinations: d, selectedRoute });
+  }, [airportsKey, selectedRoute]);
+  const marksSpoken = useMemo(() => {
+    const [h, o, d] = JSON.parse(airportsKey);
+    return marksSummary({ homeAirports: h, origin: o, destinations: d });
+  }, [airportsKey]);
+  const marksPicture = useMemo(() => {
+    if (!viewport || !camera || marks.length === 0) return null;
+    return recordMarksLayer({
+      project: makeLiftedProjector(camera, viewport),
+      viewport,
+      marks,
+      colors: markColorSet,
+      fonts,
+    });
+  }, [camera, viewport, marks, markColorSet, fonts]);
+
   // Tap handling reads the latest render through a ref (gestures are memoized).
   const handleTap = useCallback(
     (x: number, y: number) => {
@@ -313,7 +350,12 @@ export function GlobeMap({
           onLayout={onLayout}
           accessible
           accessibilityRole={hasRoutes ? 'adjustable' : 'image'}
-          accessibilityLabel={hasRoutes ? `Globe map, ${drawn.length} routes` : 'Globe map'}
+          accessibilityLabel={[
+            hasRoutes ? `Globe map, ${drawn.length} routes.` : 'Globe map.',
+            marksSpoken,
+          ]
+            .filter(Boolean)
+            .join(' ')}
           accessibilityValue={
             hasRoutes
               ? { text: selectedRoute ? `Selected ${routeSpokenName(selectedRoute)}` : 'No route selected' }
@@ -326,8 +368,9 @@ export function GlobeMap({
             <Canvas style={styles.fill}>
               <Picture picture={layers.base} />
               {routeLayer ? <Picture picture={routeLayer.picture} /> : null}
-              {/* Later: marks (item 9), airport status (item 7) between routes and rim. */}
               <Picture picture={layers.rim} />
+              {marksPicture ? <Picture picture={marksPicture} /> : null}
+              {/* Later: airport status (item 7). */}
             </Canvas>
           ) : null}
         </View>

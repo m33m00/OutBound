@@ -21,6 +21,10 @@ export interface SearchPanelProps {
   /** How many filters differ from the defaults. */
   filtersChanged: number;
   onFind: () => void;
+  /** Shown when away from home: To = main home, then search (Q-026). */
+  onGetHome?: () => void;
+  /** Shown when no main home is set yet. */
+  onSetHome?: () => void;
 }
 
 function AirportCard({ label, code, onPress }: { label: string; code: string | null; onPress: () => void }) {
@@ -82,6 +86,15 @@ export function SearchPanel(p: SearchPanelProps) {
         <AirportCard label="To" code={p.destination} onPress={p.onPickDestination} />
       </View>
 
+      {p.onGetHome ? (
+        <Button label="Get Home" kind="secondary" onPress={p.onGetHome} accessibilityLabel="Get Home: search to your main home" />
+      ) : null}
+      {p.onSetHome ? (
+        <Pressable onPress={p.onSetHome} accessibilityRole="button" style={styles.hint}>
+          <Text style={[textStyles.small, { color: c.accent }]}>Set your home airport in Profile ›</Text>
+        </Pressable>
+      ) : null}
+
       <View style={styles.actions}>
         <Button
           label={p.filtersChanged ? `Filters (${p.filtersChanged})` : 'Filters'}
@@ -121,4 +134,5 @@ const styles = StyleSheet.create({
   },
   actions: { flexDirection: 'row', gap: spacing.group },
   find: { flex: 1 },
+  hint: { minHeight: minTapTarget, justifyContent: 'center' },
 });

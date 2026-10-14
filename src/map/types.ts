@@ -7,7 +7,9 @@
  * drag to rotate, pinch to zoom.
  * Item 4: route arcs (overview, selected, ghosts), tap to select, route-box
  * camera fit and fly-to, legend while a route is selected.
- * Accepted but not drawn yet: marks (item 9), airport status (item 7).
+ * Item 9: home pins, origin dot, destination rings, IATA labels (flip
+ * left near the right edge), direction chevrons on the selected route.
+ * Accepted but not drawn yet: airport status (item 7).
  */
 import type { StyleProp, ViewStyle } from 'react-native';
 
@@ -50,7 +52,7 @@ export interface RouteLine {
   legs: readonly RouteLeg[];
 }
 
-/** An airport mark (home pin, origin dot, destination ring). Later: item 9. */
+/** An airport mark (home pin, origin dot, destination ring). Marks are not tappable. */
 export interface MapAirport {
   code: string;
   coord: LonLat;
@@ -103,11 +105,18 @@ export interface GlobeMapProps {
    * tapped while a route is selected (Q-018).
    */
   onSelectRoute?: (routeId: string | null) => void;
-  /** Later: item 9. */
+  /**
+   * Home airport(s), in order. The first is the amber house pin; further
+   * homes are an outline pin. Homes within ~100 km share one pin labeled
+   * "JFK/LGA". A home code gets no origin dot or destination ring.
+   */
   homeAirports?: readonly MapAirport[];
-  /** Later: item 9. */
+  /** Filled accent dot. */
   origin?: MapAirport | null;
-  /** Later: item 9. */
+  /**
+   * Requested destination(s): hollow accent rings. While a route is
+   * selected, its other airports (connections) get small rings and labels.
+   */
   destinations?: readonly MapAirport[];
   /** Later: item 7. */
   airportStatus?: readonly AirportStatusMark[];

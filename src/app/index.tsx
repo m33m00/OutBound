@@ -4,13 +4,13 @@ import { FlatList, Pressable, StyleSheet, Text, View, type LayoutChangeEvent } f
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AIRPORTS, addDays, localDate, toRouteLine, type Itinerary } from '@/engine';
-import { GlobeMap } from '@/map';
+import { GlobeMap, type MapAirport } from '@/map';
 import { dateChips } from '@/search/dates';
 import { useRouteSearch } from '@/search/useRouteSearch';
 import { minTapTarget, radius, spacing, textStyles, useColors } from '@/theme';
 import { AirportPicker } from '@/ui/AirportPicker';
 import { useSettings } from '@/settings/SettingsProvider';
-import { changedFilters, DEFAULT_FILTERS, type SearchFilters } from '@/settings/settings';
+import { changedFilters, DEFAULT_FILTERS, homeAirports, type SearchFilters } from '@/settings/settings';
 import { FiltersModal } from '@/ui/FiltersModal';
 import { LeaveByCard } from '@/ui/LeaveByCard';
 import { useCurrentLocation } from '@/ui/useCurrentLocation';
@@ -18,7 +18,7 @@ import { ResultsPanel } from '@/ui/ResultsPanel';
 import { SearchPanel } from '@/ui/SearchPanel';
 import { Sheet } from '@/ui/Sheet';
 
-/** Sample-data default route so a search works on first open (no home airport yet; item 9). */
+/** Sample-data route used until a main home is set (Q-026). */
 const DEFAULT_ORIGIN = 'BNA';
 const DEFAULT_DESTINATION = 'LAX';
 /** Peek height above the home indicator. */
@@ -26,6 +26,7 @@ const PEEK = 132;
 const SHEET = { peek: 0, half: 1, full: 2 } as const;
 
 const airport = (code: string) => AIRPORTS[code];
+const mark = (code: string): MapAirport => ({ code, coord: [AIRPORTS[code].lon, AIRPORTS[code].lat] });
 
 /**
  * Home: globe behind a bottom sheet holding search, then results.
@@ -41,6 +42,12 @@ export default function HomeScreen() {
   // Each search starts from the saved defaults (Settings).
   useEffect(() => setFilters(settings.search), [settings.search]);
   const { location, status: locationStatus, request: requestLocation } = useCurrentLocation(settings.useLocation);
+  const homes = useMemo(() => homeAirports(settings.homes), [settings.homes]);
+  const mainHome = settings.homes.main;
+  // Search "From" starts at the main home (Q-026).
+  useEffect(() => {
+    if (mainHome) setOrigin(mainHome);
+  }, [mainHome]);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [bodyHeight, setBodyHeight] = useState(0);
@@ -73,14 +80,34 @@ export default function HomeScreen() {
   const routes = useMemo(() => results.map((it) => toRouteLine(it, airport)), [results]);
 
   const runSearch = useCallback(
-    (d = date) => {
-      if (!origin || !destination) return;
+    (d = date, to = destination) => {
+      if (!origin || !to) return;
       setSelectedId(null);
       setSheetIndex(SHEET.half);
-      search({ origin, destination, date: d }, filters);
+      search({ origin, destination: to, date: d }, filters);
     },
     [origin, destination, date, filters, search],
   );
+
+  // Get Home: shown when away from every home (Q-026).
+  const awayFromHome = mainHome != null && origin != null && !homes.some((h) => h.code === origin);
+  const getHome = () => {
+    if (!mainHome) return;
+    setDestination(mainHome);
+    runSearch(date, mainHome);
+  };
+
+  // Map marks (item 9): homes (main first), the search origin, and the requested
+  // destination plus any nearby airport a result actually lands at.
+  const homeMarks = useMemo(() => homes.map((h) => mark(h.code)), [homes]);
+  const searched = state.status === 'idle' ? null : state.request;
+  const markOrigin = searched?.origin ?? origin;
+  const markDestinations = useMemo(() => {
+    const to = searched?.destination ?? destination;
+    const codes = new Set(to ? [to] : []);
+    for (const r of results) codes.add(r.destination);
+    return [...codes].map(mark);
+  }, [searched, destination, results]);
 
   const select = useCallback(
     (id: string | null) => {
@@ -125,6 +152,9 @@ export default function HomeScreen() {
       <View style={styles.body} onLayout={onBodyLayout}>
         <GlobeMap
           routes={routes}
+          homeAirports={homeMarks}
+          origin={markOrigin ? mark(markOrigin) : null}
+          destinations={markDestinations}
           selectedRouteId={selectedId}
           onSelectRoute={select}
           insets={{ bottom: snaps[sheetIndex] }}
@@ -147,6 +177,8 @@ export default function HomeScreen() {
                 onFilters={() => setFiltersOpen(true)}
                 filtersChanged={filtersChanged}
                 onFind={() => runSearch()}
+                onGetHome={awayFromHome ? getHome : undefined}
+                onSetHome={mainHome ? undefined : () => router.push('/settings')}
               />
             ) : (
               <ResultsPanel
