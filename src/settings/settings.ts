@@ -46,6 +46,8 @@ export interface Settings {
   bufferMin: number;
   /** Use phone location for the leave-by drive estimate (Q-023). */
   useLocation: boolean;
+  /** Radar overlay on the globe; on by default, remembered (Q-032). */
+  radarOn: boolean;
   /** Defaults the Filters panel starts from. */
   search: SearchFilters;
 }
@@ -54,6 +56,7 @@ export const DEFAULT_SETTINGS: Settings = {
   homes: { main: null, extras: [] },
   bufferMin: 75,
   useLocation: false,
+  radarOn: true,
   search: DEFAULT_FILTERS,
 };
 
@@ -83,6 +86,7 @@ export function parseSettings(raw: unknown): Settings {
     homes: { main, extras },
     bufferMin: num(o.bufferMin, DEFAULT_SETTINGS.bufferMin, LIMITS.bufferMin),
     useLocation: bool(o.useLocation, DEFAULT_SETTINGS.useLocation),
+    radarOn: bool(o.radarOn, DEFAULT_SETTINGS.radarOn),
     search: {
       maxStops: Math.min(3, Math.max(0, stops)),
       minConnectSameAirlineMin: num(s.minConnectSameAirlineMin, d.minConnectSameAirlineMin, LIMITS.minConnectSameAirlineMin),

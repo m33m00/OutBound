@@ -10,6 +10,7 @@
  * Item 9: home pins, origin dot, destination rings, IATA labels (flip
  * left near the right edge), direction chevrons on the selected route.
  * Item 7: airport status badges (Caution diamond, Likely delays triangle).
+ * Item 14: radar overlay (one lat/lon image per region, drawn as a mesh).
  */
 import type { StyleProp, ViewStyle } from 'react-native';
 
@@ -65,6 +66,23 @@ export interface AirportStatusMark {
   code: string;
   coord: LonLat;
   level: AirportStatusLevel;
+}
+
+/**
+ * One radar image for one region (backlog item 14). The image is plate
+ * carree (EPSG:4326 / CRS:84): x linear in longitude, y linear in latitude,
+ * north at the top, covering exactly `bbox`. PNG, RGBA, transparent where
+ * there is no echo. Visual only; never used for hit testing or badges.
+ */
+export interface RadarLayer {
+  /** 'conus' | 'ak' | 'hi' | 'carib'. One image per region; cache key with observedAt. */
+  region: string;
+  /** Lon/lat degrees. If east < west the box crosses the antimeridian. */
+  bbox: readonly [west: number, south: number, east: number, north: number];
+  /** ISO time of the radar frame. The image is decoded once per region + observedAt. */
+  observedAt: string;
+  /** Encoded PNG bytes. Only read when region or observedAt changes. */
+  bytes: Uint8Array;
 }
 
 /** Screen space covered by other UI (top bar, bottom panel, map buttons), in pt. */
@@ -127,6 +145,15 @@ export interface GlobeMapProps {
    * dim. Not tappable. Also read in the accessibility label.
    */
   airportStatus?: readonly AirportStatusMark[];
+  /**
+   * Radar overlay (item 14), one entry per region. Drawn above land, ocean
+   * and state lines, below arcs, chevrons, marks and badges, at a fixed
+   * opacity. Static (no animation). undefined or [] draws nothing. The
+   * screen owns the on/off toggle, the age label and hiding stale frames:
+   * pass only what should show. A new array with the same region +
+   * observedAt values does not decode again.
+   */
+  radar?: readonly RadarLayer[];
   /**
    * Applied whenever its value changes (fly-to, or jump with Reduce Motion).
    * When undefined, the map frames itself: the selected route's box, else

@@ -18,7 +18,9 @@ import { LeaveByCard } from '@/ui/LeaveByCard';
 import { useCurrentLocation } from '@/ui/useCurrentLocation';
 import { ResultsPanel } from '@/ui/ResultsPanel';
 import { SearchPanel } from '@/ui/SearchPanel';
+import { RadarButton } from '@/ui/RadarButton';
 import { Sheet } from '@/ui/Sheet';
+import { useRadarLayers } from '@/ui/useRadarLayers';
 
 /** Sample-data route used until a main home is set (Q-026). */
 const DEFAULT_ORIGIN = 'BNA';
@@ -90,6 +92,9 @@ export default function HomeScreen() {
     [sampleImpacts, results, live],
   );
   const [impactFor, setImpactFor] = useState<string | null>(null);
+
+  // Radar overlay (items 13-14): on by default, remembered (Q-032).
+  const radar = useRadarLayers(settings.radarOn, now);
   const statusMarks = useMemo(
     () => impacts.airports.map((a) => ({ ...mark(a.code), level: a.level })),
     [impacts.airports],
@@ -172,10 +177,18 @@ export default function HomeScreen() {
           origin={markOrigin ? mark(markOrigin) : null}
           destinations={markDestinations}
           airportStatus={statusMarks}
+          radar={radar.layers}
           selectedRouteId={selectedId}
           onSelectRoute={select}
           insets={{ bottom: snaps[sheetIndex] }}
         />
+        {radar.available ? (
+          <RadarButton
+            on={settings.radarOn}
+            caption={radar.caption}
+            onToggle={() => updateSettings({ radarOn: !settings.radarOn })}
+          />
+        ) : null}
         {bodyHeight > 0 ? (
           <Sheet snaps={snaps} index={sheetIndex} onIndexChange={setSheetIndex}>
             {state.status === 'idle' ? (

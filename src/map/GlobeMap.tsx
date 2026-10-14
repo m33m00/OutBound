@@ -3,6 +3,8 @@
  *
  * Layers (back to front):
  *   base picture   static globe, cached per camera (staticLayer.ts)
+ *   radar picture  NOAA radar meshes (item 14); own layer, re-recorded on
+ *                  camera, size, scheme or radar frame change (radarLayer.ts)
  *   route picture  arcs; re-recorded on camera, routes, selection or theme
  *                  change, never touching the static pictures (routeLayer.ts)
  *   rim picture    limb and edge, cached per camera
@@ -44,6 +46,8 @@ import { RouteLegend } from './RouteLegend';
 import { recordRouteLayer, type RouteLayer } from './routeLayer';
 import { drawnRoutes, nextSelection, routeSpokenName } from './routeModel';
 import { recordBaseLayer, recordRimLayer } from './staticLayer';
+import { canvasLayerOrder, RADAR, radarKey, radarSummary, type CanvasLayerName } from './radar';
+import { makeRadarImageCache, recordRadarLayer } from './radarLayer';
 import type { CameraTarget, GlobeMapProps, RouteLine } from './types';
 import { useReduceMotion } from './useReduceMotion';
 import { makeLiftedProjector } from './arcs';
@@ -68,6 +72,7 @@ export function GlobeMap({
   origin,
   destinations,
   airportStatus,
+  radar,
   cameraTarget,
   insets,
   interactive = true,
@@ -250,6 +255,38 @@ export function GlobeMap({
     });
   }, [camera, viewport, marks, markColorSet, fonts, statuses, statusColorSet]);
 
+  // Radar (item 14): decoded once per region + observedAt, drawn as its own
+  // picture between the static base and the routes. Not used for hit tests.
+  const radarCache = useRef<ReturnType<typeof makeRadarImageCache> | null>(null);
+  if (!radarCache.current) radarCache.current = makeRadarImageCache();
+  const radarLayersKey = radarKey(radar);
+  const [radarEpoch, setRadarEpoch] = useState(0);
+  const radarImages = useMemo(
+    () => radarCache.current!.sync(radarLayersKey ? radar : undefined),
+    // Keyed by value (region + observedAt + bbox): a new array with the
+    // same frames neither decodes nor re-records.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [radarLayersKey, radarEpoch],
+  );
+  const radarCleared = useRef(false);
+  useEffect(() => {
+    // Remount after an unmount cleanup (dev Strict Mode): decode again.
+    if (radarCleared.current) {
+      radarCleared.current = false;
+      setRadarEpoch((e) => e + 1);
+    }
+    const cache = radarCache.current;
+    return () => {
+      cache?.clear();
+      radarCleared.current = true;
+    };
+  }, []);
+  const radarPicture = useMemo(() => {
+    if (!viewport || !camera || radarImages.length === 0) return null;
+    return recordRadarLayer({ camera, viewport, layers: radarImages, opacity: RADAR.opacity[scheme] });
+  }, [camera, viewport, radarImages, scheme]);
+  const radarSpoken = radarSummary(radarImages.length);
+
   // Tap handling reads the latest render through a ref (gestures are memoized).
   const handleTap = useCallback(
     (x: number, y: number) => {
@@ -367,6 +404,7 @@ export function GlobeMap({
             hasRoutes ? `Globe map, ${drawn.length} routes.` : 'Globe map.',
             marksSpoken,
             statusSpoken,
+            radarSpoken,
           ]
             .filter(Boolean)
             .join(' ')}
@@ -380,10 +418,23 @@ export function GlobeMap({
           onAccessibilityAction={onA11yAction}>
           {layers ? (
             <Canvas style={styles.fill}>
-              <Picture picture={layers.base} />
-              {routeLayer ? <Picture picture={routeLayer.picture} /> : null}
-              <Picture picture={layers.rim} />
-              {marksPicture ? <Picture picture={marksPicture} /> : null}
+              {canvasLayerOrder({
+                radar: radarPicture != null,
+                routes: routeLayer != null,
+                marks: marksPicture != null,
+              }).map((name: CanvasLayerName) => {
+                const picture =
+                  name === 'base'
+                    ? layers.base
+                    : name === 'radar'
+                      ? radarPicture
+                      : name === 'routes'
+                        ? routeLayer?.picture
+                        : name === 'rim'
+                          ? layers.rim
+                          : marksPicture;
+                return picture ? <Picture key={name} picture={picture} /> : null;
+              })}
             </Canvas>
           ) : null}
         </View>

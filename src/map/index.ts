@@ -17,6 +17,7 @@ export {
   type LonLat,
   type MapAirport,
   type MapInsets,
+  type RadarLayer,
   type RouteLeg,
   type RouteLine,
   type SeatTier,

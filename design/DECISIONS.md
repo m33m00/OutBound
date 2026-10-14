@@ -52,6 +52,10 @@ Condensed from the project docs: MVP decisions (through v8.8), design direction 
 - Weather: aviationweather.gov METAR/TAF near departure, NWS further out.
 - Radar source (Q-031, 2026-10-14, John: A): NOAA MRMS via the NWS GeoServer WMS (free, keyless, public domain). ~~"RainViewer or NOAA MRMS (terms to confirm)" (superseded 2026-10-14).~~ Research: `design/research/radar.md`.
   - Provisional (not John-decided): be polite to NWS (respect refresh, request only needed regions, back off on failure); stale rule = show last frame with its age, hide overlay when older than 30 min (config); radar never feeds badge logic; no time slider, no color key; on/off toggle.
+  - Radar default (Q-032, 2026-10-14, John: A): Radar overlay is on by default; the on/off map button's choice is remembered on the phone with the other settings (Q-025).
+  - Provisional (main session defaults, not John-decided): app requests all four regions while radar is on (server only refetches from NWS when a frame changes, so NWS load does not grow with app users); toggle is a 44pt map button at the globe's top-right; caption "Radar 4m ago · NOAA/NWS"; overlay hidden past 30 min or when unavailable ("Radar unavailable").
+  - Radar colors (Q-033, 2026-10-14, John: A): radar keeps NOAA's standard reflectivity colors (green, yellow/orange, red/magenta), unaltered. Home pins, route lines, marks and delay badges always draw above the radar so they stay distinct. "Amber = you only" and "magenta = Likely delays" apply to UI marks, not to the radar picture.
+  - Provisional (not John-decided, tune on device): radar opacity light 0.6 / dark 0.5; first lever if route lines get lost is lowering light opacity to ~0.5. Caption "Radar 4m ago · NOAA/NWS"; full credit "Radar: NOAA/NWS MRMS" goes in a future About section.
 - METAR/TAF to badge (Q-027, 2026-10-14, John: A, ceilings + storms + wind + winter). VFR/MVFR alone never shows a badge. All thresholds live in one config file, tunable after testing.
   - Caution (violet): IFR (ceiling 500 to <1,000 ft or vis 1 to <3 mi); thunderstorm nearby (VCTS); gust >=30 kt or sustained wind >=25 kt; any snow/ice pellets or freezing precip (light); fog with vis <2 mi.
   - Likely delays (magenta): LIFR (ceiling <500 ft or vis <1 mi); thunderstorm at the airport; gust >=40 kt; moderate/heavy snow; any freezing rain/ice; vis <1/2 mi.
@@ -86,7 +90,7 @@ Condensed from the project docs: MVP decisions (through v8.8), design direction 
 - Removed: city lights, terrain, clock/time slider, weather key.
 
 ## Design system
-- Ice Mix: Big Shoulders Display (uppercase) + Manrope. Primary ink blue #1D3D84 / #9BB8EF. Amber = "you" only; amber text #9A5200 / #FFC27A.
+- Ice Mix: Big Shoulders Display (uppercase) + Manrope. Primary ink blue #1D3D84 / #9BB8EF. Amber = "you" only (UI marks, not the radar picture; Q-033, 2026-10-14); amber text #9A5200 / #FFC27A.
 - Follows phone light/dark. Contrast ≥4.5:1; tier colors only as large numbers or fills.
 - Tap targets ≥44pt. Spacing: 16 page, 12 section, 8 in groups, rows 10/12; radius 12/14/26.
 - Buttons Title Case (Find Routes, Get Home); body sentence case. No tabs; top bar = wordmark, Requests pill, Profile.

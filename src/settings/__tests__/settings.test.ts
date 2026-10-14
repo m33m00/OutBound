@@ -16,6 +16,7 @@ describe('parseSettings', () => {
       homes: { main: 'DFW', extras: ['ORD'] },
       bufferMin: 90,
       useLocation: true,
+      radarOn: false,
       search: { ...DEFAULT_FILTERS, maxStops: 1, nearbyAirports: false, maxLayoverMin: 300 },
     };
     expect(parseSettings(JSON.parse(JSON.stringify(saved)))).toEqual(saved);
@@ -71,5 +72,13 @@ describe('homes (Q-026)', () => {
 
   it('works with extras but no main', () => {
     expect(homeAirports({ main: null, extras: ['SEA'] })).toEqual([{ code: 'SEA', main: false, auto: false }]);
+  });
+});
+
+describe('radar setting (Q-032)', () => {
+  it('is on by default and remembered', () => {
+    expect(DEFAULT_SETTINGS.radarOn).toBe(true);
+    expect(parseSettings({ radarOn: false }).radarOn).toBe(false);
+    expect(parseSettings({ radarOn: 'no' }).radarOn).toBe(true);
   });
 });

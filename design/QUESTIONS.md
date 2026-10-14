@@ -174,6 +174,18 @@ A) NOAA MRMS via the NWS GeoServer WMS (opengeo.ncep.noaa.gov): free, public dom
 Recommendation: A, because it is free, safe for a later public release and the simplest to draw on the globe.
 Answer: John (2026-10-14), option A (NOAA). Unblocks new backlog items 13 and 14. Provisional defaults (not John-decided): polite to NWS (respect refresh, request only needed regions, back off on failure); stale rule = show last frame with its age, hide overlay older than 30 min (config); radar never feeds badge logic; no time slider, no color key; on/off toggle.
 
+### Q-032 Radar default and persistence  (Answered 2026-10-14)
+Context: Radar overlay (backlog 14) needs a default state and whether the on/off choice sticks.
+A) On, remembered (recommended)  B) Off by default, remembered  C) On, not remembered
+Recommendation: A.
+Answer: John (2026-10-14), option A. Recorded in DECISIONS.md (Map). Unblocks backlog 14 (radar overlay) on this point; the setting is stored with the other settings (Q-025). Main-session provisional defaults (not John-decided) are listed in DECISIONS.md.
+
+### Q-033 Radar colors vs. amber/magenta marks  (Answered 2026-10-14)
+Context: NOAA radar uses orange/red/magenta, which could be confused with amber ("you") and magenta (Likely delays) UI marks.
+A) Standard NOAA colors, marks always draw above radar (recommended)  B) Recolor radar to a palette with no amber/magenta  C) Single blue scale
+Recommendation: A, because it is the familiar weather look and marks stay distinct by layering.
+Answer: John (2026-10-14), option A. Recorded in DECISIONS.md (Map, radar; also noted by "Amber = you only"). Provisional opacity and caption recorded there as not John-decided.
+
 Provisional defaults for backlog 3 (not John-decided; John may override any time):
 - FAA cache TTL 5 min server-side; serve stale on FAA error.
 - One national NAS feed fetch, filtered on read.
