@@ -96,6 +96,26 @@ A) Keep as built  B) Count typical loads as a weak signal in ranking and color (
 Recommendation: A; typical data is not live, so it should not drive color.
 Answer: (John)
 
+### Q-015 FAA status to badge mapping  (Answered 2026-10-14)
+Context: Backlog 3 (FAA NAS status) needs a rule for which FAA events show which badge.
+Answer: John (2026-10-14). Ground stop, ground delay program or airport closure = Likely delays (magenta). General arrival/departure delay under 60 min = Caution (violet). No FAA event = no badge. General delay of 60+ min was not stated; provisional default is Likely delays (not John-decided). Unblocks backlog 3.
+
+### Q-016 Supabase plan and region  (Answered 2026-10-14)
+Answer: John (2026-10-14). Free plan, US East region for the beta. Upgrade to Pro ($25/mo) before testers rely on it, since free projects pause after a week idle.
+
+### Q-017 Edge Function access before login exists  (Answered 2026-10-14)
+Answer: John (2026-10-14). Until invite-code login exists, live Edge Functions accept calls with the app's public anon key, with rate limiting. Require login once auth lands. Unblocks backlog 3.
+
+### Q-018 Deselecting a route on the globe  (Answered 2026-10-14)
+Answer: John (2026-10-14). Tapping empty space while a route is selected deselects it (back to the all-gray overview) and pulls the camera back out.
+
+Provisional defaults for backlog 3 (not John-decided; John may override any time):
+- FAA cache TTL 5 min server-side; serve stale on FAA error.
+- One national NAS feed fetch, filtered on read.
+- Every value carries an as-of timestamp.
+- General delay of 60+ min = Likely delays.
+- Chevrons: item 9 (item 4 ships arcs without chevrons).
+
 Provisional engine defaults (Backlog 1, as built, not yet decisions; John may override any time):
 - Max total trip 24h.
 - Connections must be at the same airport.

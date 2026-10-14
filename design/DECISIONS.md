@@ -1,6 +1,6 @@
 # OutBound — Confirmed decisions (agent source of truth)
 
-Condensed from the project docs: MVP decisions (through v8.8), design direction (through v9.1, 2026-10-10), plus John's updates on 2026-10-13. Newest dated rule wins. Only John changes this file's rules; spec-keeper records them.
+Condensed from the project docs: MVP decisions (through v8.8), design direction (through v9.1, 2026-10-10), plus John's updates on 2026-10-13 and 2026-10-14. Newest dated rule wins. Only John changes this file's rules; spec-keeper records them.
 
 ## Scope (updated 2026-10-13)
 - Personal/friends project. No monetization planned for now.
@@ -35,15 +35,21 @@ Condensed from the project docs: MVP decisions (through v8.8), design direction 
 ## Real-time layer (2026-10-13)
 - Flight status (AeroDataBox) only for flights a user opens or is traveling on.
 - FAA NAS status (free) for ground stops, ground delays, airport delays.
+- FAA status to badge (Q-015, 2026-10-14): ground stop, ground delay program or airport closure = Likely delays (magenta); general arrival/departure delay under 60 min = Caution (violet); no FAA event = no badge.
+  - Provisional (not John-decided): general delay of 60+ min = Likely delays. The proposal did not state it explicitly.
+- Provisional defaults for backlog item 3 (not John-decided; John may override): FAA cache TTL 5 min server-side; serve stale data on FAA error; one national NAS feed fetch, filtered on read; every value carries an as-of timestamp.
 - Weather: aviationweather.gov METAR/TAF near departure, NWS further out; radar via RainViewer or NOAA MRMS (terms to confirm).
 - Weather impact shows disruption only; Caution (violet) / Likely delays (magenta). Station = destination for nonstops, connection airport for connections.
 - All third-party calls go through Supabase Edge Functions with caching. Keys server-side only.
+- Edge Function access (Q-017, 2026-10-14): until invite-code login exists, live Edge Functions accept calls with the app's public anon key, with rate limiting. Require login once auth lands.
 
 ## Map
 - Custom 3D globe: d3-geo + @shopify/react-native-skia behind a swappable map module; must run in Expo Go.
 - Globe v1 (P0): land/ocean, state lines, colored arcs, tap to select, camera fly-to. Polish (P1): day/night, spin-in, flight preview, radar.
 - Results: top 10 routes of current sort; overview in thin neutral gray; selected route in tier color per leg with direction chevrons; others faint ghosts; tap a ghost selects earliest-arriving option on that path.
 - Line styles: solid = reported; dashed = estimate/typical/unknown. Legend only while a route is selected.
+- Deselect (Q-018, 2026-10-14): tapping empty space while a route is selected deselects it (back to the all-gray overview) and pulls the camera back out.
+- Chevrons scope (provisional, not John-decided): direction chevrons ship in backlog item 9; item 4 ships arcs without chevrons.
 - Map line hit area 28pt. Camera fits the real route box above the panel.
 - Removed: city lights, terrain, clock/time slider, weather key.
 
@@ -75,6 +81,7 @@ Source in code: `src/theme/colors.ts`, `src/theme/typography.ts`. Values are lig
 - Fresh project created 2026-10-13 on John's Mac with `create-expo-app@latest` (latest Expo SDK; 57 at time of writing) + TypeScript + Expo Router. The earlier Windows v0 codebase was a test and is not used.
 - Dev machine: MacBook Pro (Apple silicon). iPhone via Expo Go; iOS Simulator optional.
 - Supabase (Postgres, auth with invite codes, Edge Functions). iOS first via TestFlight.
+- Supabase plan (Q-016, 2026-10-14): Free plan, US East region for the beta. Upgrade to Pro ($25/mo) before testers rely on it (free projects pause after a week idle). Pro is not in the Floor estimate below until then.
 - Budget: Floor ~$9–18/mo + $99/yr Apple. Paid-API cap $30/mo, alert $24, estimates pause at cap.
 
 ## Not in the MVP
