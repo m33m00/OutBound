@@ -41,3 +41,6 @@ example
 # generated native folders
 /ios
 /android
+
+# Supabase app config (public anon key still stays out of git)
+.env
