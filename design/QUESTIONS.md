@@ -74,7 +74,7 @@ A) Confirm all as built  B) Keep provisional until John reviews on device  C) Jo
 Recommendation: B, then A or C after seeing it on the phone.
 Answer: (John)
 
-### Q-012 Nearby airports list and ground-transfer minutes  (Open)
+### Q-012 Nearby airports list and ground-transfer minutes  (Open; candidate-metro list superseded 2026-10-21 by Q-048; transfer minutes now see Q-052)
 Context: Backlog 1 (itinerary engine). As built: only the confirmed DAL<->DFW group is active, with a provisional 35 min ground transfer. Nearby airports apply at the origin and destination ends only, never mid-route. Each result records requested airport, used airport and ground transfer minutes. Non-blocking.
 A) Activate these candidate metros: NYC (JFK/LGA/EWR), Chicago (ORD/MDW), LA (LAX/BUR/SNA/LGB/ONT), Washington (DCA/IAD/BWI). John also gives transfer minutes per group (or approves defaults I propose).
 B) John supplies his own list and transfer minutes per group.
@@ -263,16 +263,36 @@ Context: Friend-tester feedback: the Filters button's purpose is not clear at a 
 A) Add an SF Symbol icon like the tab bar  B) Leave as is
 Answer: John (2026-10-21), option A. Recorded in DECISIONS.md (Design system). Unblocks backlog 20.
 
-### Q-047 No-results panel and departed/status display  (Open)
+### Q-047 No-results panel and departed/status display  (Answered 2026-10-21)
 Context: John does not want a second panel when there are no flights. Wants a discreet notice only if the market truly has no flights that day; otherwise show flights including ones that may have departed, marked scheduled / departed / canceled / delayed. Conflicts: DECISIONS.md fetches AeroDataBox flight status only for flights a user opens or travels on ($30/mo cap), and the engine drops departed flights (Search date rule). Main session is asking John.
 A) Show departed flights from the schedule DB with a time-based "may have departed" label; status words (delayed/canceled) only when a flight is opened  B) Also fetch live status for all listed flights (breaks the opened-flights-only rule; cost risk)  C) Other (John specifies)
 Recommendation: A, because it needs no extra paid calls.
-Answer: (John)
+Answer: John (2026-10-21), option B and more (live status on every row). (1) No flights in the market that day: banner "No Flights Found on Selected Date", dismissible with X, no results panel. (2) Flights exist but filters hide all: banner like "3 routes hidden by your filters · Show Them", dismissible with X. (3) Departed flights shown, mixed in by time (supersedes the engine dropping departed flights). (4) Live status on every result row, each flight fetched once into the shared server cache (supersedes "status only for opened flights" and Q-039 option A). Cost/cap: see Q-049. Tags: see Q-050. Unblocks backlog 21.
 
-### Q-048 Airport search by metro area  (Open)
-Context: Typing "DAL" should offer "Dallas area" (all Dallas airports) or DAL (Love Field) alone. Relates to the Nearby airports filter (DAL<->DFW group, NEARBY_GROUPS). Under discussion with John; no decision yet.
-A) Offer metro "area" entries built from NEARBY_GROUPS  B) Separate metro list  C) Other (John specifies)
-Recommendation: A, so one list drives both.
+### Q-048 Airport areas (metro groupings)  (Answered 2026-10-21)
+Context: Typing "DAL" should offer all Dallas airports or Love Field alone. Relates to the Nearby airports filter (NEARBY_GROUPS).
+A) Metro "area" entries in the picker built from NEARBY_GROUPS  B) Separate metro list  C) Other (John specifies)
+Recommendation: A.
+Answer: John (2026-10-21), option C: an Area toggle on the From and To cards instead of picker entries. (8) Toggle top-right of each card, only when the airport belongs to an area. Off: outline gray pill "+ Area". On: solid accent-blue pill "All Dallas"; card lists every airport in the area in small wrapping text (e.g. LAX · BUR · LGB · SNA · ONT). (9) Areas = IATA metropolitan city groupings as major airlines use, limited to cities with 2+ airports in the app's data. (10) "Nearby airports" filter removed (supersedes the "Nearby airports on" default). (11) Default off, then remembered per airport. (12) Picker shows airports only, no area rows. (13) Get Home always searches all airports in the home's area. Unblocks backlog 22. Partly supersedes Q-012 option A (candidate metros).
+
+### Q-049 App spend cap for AeroDataBox  (Answered 2026-10-21)
+Context: Live status on every row (Q-047) raises call volume against the $30 cap / $24 alert / pause-at-cap rules.
+A) Keep the cap  B) No cap for now, keep usage logging  C) Raise the cap
+Recommendation: B only if the plan itself bounds spend.
+Answer: John (2026-10-21), option B: NO app spend cap for now ("we will address this later"). Supersedes the $30 cap, $24 alert and pause-at-cap rules; `api_usage` logging stays. Fact: AeroDataBox flat plans below Mega have no overage, so the subscribed plan bounds spend. Cost estimates (unit cost per call unverified): shared cache with live status only within 6h of departure about $7.50-15/mo for 5-50 users; every row shared about $15-37.50/mo. Notes in `design/research/flight-status-cost.md`.
+
+### Q-050 Row status tags  (Answered 2026-10-21)
+Context: How flight status looks on result rows (Q-047).
+Answer: John (2026-10-21). (5) Scheduled = no tag. "Delayed 25m" violet (existing Caution color) with old time struck through. Departed = gray tag, row dimmed. Canceled = red (existing most-severe delay color), time struck through. Amber stays "you" only. (6) Routes with a canceled leg stay in their normal time position. (7) A delay that breaks a connection shows a "Connection at risk" tag at the connecting airport.
+
+### Q-051 Default origin from location  (Answered 2026-10-21)
+Context: Search From currently starts at the main home; location is only requested on "Use Location" tap.
+Answer: John (2026-10-21). (14) Default origin = nearest airport to the user, however far. First launch shows the app's own card "Start searches from the airport nearest you?" Allow / Not Now; iOS prompt only after Allow; Not Now = never asked at launch again, can enable in Profile. Origin refreshes on app open if location is older than 20 min; never overwrites an airport the user picked while the app is open. (15) Location off: main home, else last searched origin, else empty with the existing hint. Supersedes "location requested only on Use Location tap ... never at launch" (Q-023 provisional). Unblocks backlog 23.
+
+### Q-052 Fate of "Longest ground transfer" setting  (Open)
+Context: With the Nearby airports filter removed (Q-048), the "Longest ground transfer" stepper (default 60, Settings and Filters) only mattered when nearby was on. Area toggle includes every airport in the area, so the limit may be moot. Non-blocking: backlog 22 can leave the stepper hidden.
+A) Remove it  B) Keep it, applied to area airports  C) John specifies
+Recommendation: A, because the toggle already says "all airports".
 Answer: (John)
 
 Provisional defaults for backlog 3 (not John-decided; John may override any time):
@@ -286,4 +306,4 @@ Provisional engine defaults (Backlog 1, as built, not yet decisions; John may ov
 - Connections must be at the same airport.
 - No airport repeated in an itinerary.
 - Intermediate stops cannot be an origin or destination group airport.
-- Search date = local calendar date at the origin, 0 to 7 days out; departed flights excluded.
+- Search date = local calendar date at the origin, 0 to 7 days out; ~~departed flights excluded~~ (superseded 2026-10-21 by Q-047: departed flights shown).

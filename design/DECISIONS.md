@@ -15,15 +15,33 @@ Condensed from the project docs: MVP decisions (through v8.8), design direction 
 - 0–7 days out. Max stops 0–3, default 3. Connections min 60 min same airline / 90 switching; max layover 4h. All adjustable.
 - Leave-by card airport buffer (Q-003, 2026-10-13): tester setting, default 75 min before departure.
   - Leave-by travel time (Q-023, 2026-10-14): uses phone location. Card is for the selected route's first leg, times in the departure airport's local time.
-  - Provisional (v9.1 prototype details, John chose the approach): location requested only on "Use Location" tap (card) or "Use my location" toggle (settings), never at launch; location fresh for 20 min; within 400 km: drive min = round((km x 1.3 / 55 x 60 + 10) / 5) x 5; within 3 km: "You're at {AP}"; no fresh location or out of range: "Be at {AP} by {time}" with "{buffer} min before departure to list and clear security"; late on the day: "Leave now".
-- Settings (Q-024, 2026-10-14), reached from the Profile button: airport buffer (default 75, step 5, range 30-180 provisional), "Use my location", and search defaults (max stops, same-airline and switching connection minimums, longest layover, nearby airports, longest ground transfer). The Filters panel starts from the saved defaults.
+  - Provisional (v9.1 prototype details, John chose the approach): ~~location requested only on "Use Location" tap (card) or "Use my location" toggle (settings), never at launch~~ (superseded 2026-10-21 by Q-051: one launch-time opt-in card, see Default origin); location fresh for 20 min; within 400 km: drive min = round((km x 1.3 / 55 x 60 + 10) / 5) x 5; within 3 km: "You're at {AP}"; no fresh location or out of range: "Be at {AP} by {time}" with "{buffer} min before departure to list and clear security"; late on the day: "Leave now".
+- Settings (Q-024, 2026-10-14), reached from the Profile button: airport buffer (default 75, step 5, range 30-180 provisional), "Use my location", and search defaults (max stops, same-airline and switching connection minimums, longest layover, ~~nearby airports~~ (superseded 2026-10-21 by Q-048: replaced by the per-card Area toggle), longest ground transfer (fate open, Q-052)). The Filters panel starts from the saved defaults.
 - Settings persistence (Q-025, 2026-10-14): saved on the phone (AsyncStorage) now; move to the account when login exists.
 - Home airports (Q-026, 2026-10-14): one main home airport plus optional extra homes, set in Settings (Profile). Airports in the same nearby group as the main home (today DAL↔DFW, NEARBY_GROUPS) are added as homes automatically.
-  - Search "From" starts at the main home.
-  - "Get Home" button on search: shown when a main home is set and From is not one of your homes; sets To = main home and searches.
+  - Search "From" starts at the main home (when location is off or unavailable; otherwise nearest airport, Q-051, 2026-10-21).
+  - "Get Home" button on search: shown when a main home is set and From is not one of your homes; sets To = main home and searches. Always searches all airports in the home's area (Q-048, 2026-10-21).
   - Map: home airports are amber house pins (main = filled pin, others = outline pins); amber stays "you" only.
   - Provisional (not John-decided): auto-added homes come from the engine's nearby groups, not a distance threshold; with no home set, search shows a hint to set one in Profile; marks are not tappable; label placement = generic right/left flip with overlap nudge; chevrons at t=0.2/0.66/0.88 per selected leg.
-- Nearby airports on: DAL↔DFW plus 3–4 metros testers fly; max ground transfer 60 min.
+- ~~Nearby airports on: DAL↔DFW plus 3–4 metros testers fly; max ground transfer 60 min.~~ (superseded 2026-10-21 by Q-048: the "Nearby airports" filter is removed; see Airport areas)
+- Airport areas (Q-048, 2026-10-21, John), backlog 22:
+  - Area toggle at the top-right of the From and To cards, shown only when the airport belongs to an area. Off: outline gray pill "+ Area". On: solid accent-blue pill "All Dallas"; the card then lists every airport in the area in small wrapping text (e.g. LAX · BUR · LGB · SNA · ONT).
+  - Areas = IATA metropolitan city groupings as major airlines use them, limited to cities with 2+ airports in the app's data (today only Dallas: DAL, DFW).
+  - Toggle default off, then remembered per airport (last choice). Picker list shows airports only, no area rows.
+  - Get Home always searches all airports in the home's area.
+  - Supersedes the "Nearby airports on" default and the Q-012 candidate-metro list (NEARBY_GROUPS stays only as the data source until replaced by area data).
+- Default origin (Q-051, 2026-10-21, John), backlog 23:
+  - Default origin = nearest airport to the user, however far. First launch shows the app's own card "Start searches from the airport nearest you?" with Allow / Not Now; the iOS location prompt appears only after Allow. Not Now = never asked at launch again; can be enabled in Profile.
+  - Origin refreshes on app open if the saved location is older than 20 min; it never overwrites an airport the user picked while the app is open.
+  - Location off: main home, else last searched origin, else empty with the existing hint.
+  - Supersedes "Search From starts at the main home" when location is on.
+- Missing-results display (Q-047, 2026-10-21, John), backlog 21:
+  - No flights at all in the market that day: banner "No Flights Found on Selected Date", dismissible with X; no results panel opens.
+  - Flights exist but filters hide all: banner like "3 routes hidden by your filters · Show Them", dismissible with X.
+  - Departed flights are shown, mixed in by time. ~~Engine drops departed flights.~~ (superseded 2026-10-21 by Q-047)
+  - Routes with a canceled leg stay in their normal time position.
+- Row status tags (Q-050, 2026-10-21, John): Scheduled = no tag. "Delayed 25m" in violet (existing Caution color), old time struck through. Departed = gray tag and row dimmed. Canceled = red (existing most-severe delay color), time struck through. Amber stays "you" only.
+  - A delay that breaks a connection shows a "Connection at risk" tag at the connecting airport.
 - Sort default: earliest arrival; tie-break fewer stops, then best availability. Full routes stay in time order, grayed with a red edge (2026-10-06). Best bet is an optional sort.
 - Own schedule DB from daily AeroDataBox pulls (~30 airports). No live calls per search.
 
@@ -43,7 +61,9 @@ Condensed from the project docs: MVP decisions (through v8.8), design direction 
 - At-airport shortcut (within ~4 km): "At DFW? Report a load" → departures → report.
 
 ## Real-time layer (2026-10-13)
-- Flight status (AeroDataBox) only for flights a user opens or is traveling on.
+- ~~Flight status (AeroDataBox) only for flights a user opens or is traveling on.~~ (superseded 2026-10-21 by Q-047)
+- Live status on every result row (Q-047, 2026-10-21, John). Each flight's status is fetched once into the shared server cache. Works with fixtures until the AeroDataBox key is added. Cost note: `design/research/flight-status-cost.md`.
+  - App spend cap (Q-049, 2026-10-21, John): NO app spend cap for now ("we will address this later"). Usage logging (`api_usage`) stays. Fact: AeroDataBox flat plans below Mega have no overage, so the subscribed plan bounds spend.
 - FAA NAS status (free) for ground stops, ground delays, airport delays.
 - FAA status to badge (Q-015, 2026-10-14): ground stop, ground delay program or airport closure = Likely delays (magenta); general arrival/departure delay under 60 min = Caution (violet); no FAA event = no badge.
   - General arrival/departure delay of 60+ min = Likely delays (Q-019, 2026-10-14). Under 60 min stays Caution. ~~Provisional, not John-decided (superseded 2026-10-14).~~
@@ -76,13 +96,13 @@ Condensed from the project docs: MVP decisions (through v8.8), design direction 
   - G6: response per station: level, short plain-word reasons, observed/forecast time, asOf, raw ceiling/visibility/wind values (for retuning thresholds), stale flag.
 - Weather impact shows disruption only; Caution (violet) / Likely delays (magenta). Station = destination for nonstops, connection airport for connections.
 - Provisional for backlog item 8, flight status (2026-10-21; main session defaults, not John-decided; John may override):
-  - Function `live-flight-status`; shared cache keyed by flight number + date; called only for flights the user opened or is traveling on.
+  - Function `live-flight-status`; shared cache keyed by flight number + date; ~~called only for flights the user opened or is traveling on~~ (superseded 2026-10-21 by Q-047: every listed flight, fetched once into the shared cache).
   - Cache TTL by time to departure: >48h 6h; 24-48h 2h; <24h 30m; <3h 15m. Client refresh cooldown 2 min. Serve stale on upstream error, flagged.
   - Fields: scheduled/estimated/actual times + delay minutes; departure and arrival gate + terminal; status (scheduled, delayed, departed, arrived, canceled, diverted); asOf + provider time.
-  - Usage: `api_usage` table, monthly sum. Schedule pulls count toward the same $30 cap (see Budget). Warn at $24; at $30 refuse new AeroDataBox calls and serve cached/stale data flagged "paused". Unit price is a placeholder until the exact price is read from the plan page at signup.
-  - UI: status shown as text in a flight-detail sheet opened by tapping a leg.
+  - Usage: `api_usage` table, monthly sum. ~~Schedule pulls count toward the same $30 cap (see Budget). Warn at $24; at $30 refuse new AeroDataBox calls and serve cached/stale data flagged "paused".~~ (cap, alert and pause superseded 2026-10-21 by Q-049; usage logging stays.) Unit price is a placeholder until the exact price is read from the plan page at signup.
+  - UI: status shown as text in a flight-detail sheet opened by tapping a leg (still available; row tags added by Q-050).
 - John-decided for backlog item 8 (2026-10-21):
-  - Canceled/diverted (and all flight status) is text only in the flight sheet; no row badge (Q-039, option A).
+  - ~~Canceled/diverted (and all flight status) is text only in the flight sheet; no row badge (Q-039, option A).~~ (superseded 2026-10-21 by Q-047 and Q-050: status shows on every row)
   - Provider plan: lowest paid AeroDataBox tier on API.market/RapidAPI (Q-040, option A). Unit price placeholder stays until read from the plan page at signup.
 - All third-party calls go through Supabase Edge Functions with caching. Keys server-side only.
 - Edge Function access (Q-017, 2026-10-14): until invite-code login exists, live Edge Functions accept calls with the app's public anon key, with rate limiting. Require login once auth lands.
@@ -150,7 +170,7 @@ Source in code: `src/theme/colors.ts`, `src/theme/typography.ts`. Values are lig
   - Region (Q-038, 2026-10-21, John: A): keep US West (Oregon, us-west-2) for the database; no recreate. Supabase has no US Central region (closest is us-east-2 Ohio). Supersedes the US East plan in Q-016.
   - ~~Region note (2026-10-14): project created in us-west-2, not US East as planned; flag for John whether to recreate in US East or accept US West.~~ (resolved 2026-10-21 by Q-038)
   - Deployed 2026-10-14: live-faa-status and live-weather, to project bpiwqsdnngfdmrczpieb.
-- Budget: Floor ~$9–18/mo + $99/yr Apple. Paid-API cap $30/mo, alert $24, estimates pause at cap.
+- Budget: Floor ~$9–18/mo + $99/yr Apple. ~~Paid-API cap $30/mo, alert $24, estimates pause at cap.~~ (superseded 2026-10-21 by Q-049: no app spend cap for now; usage logging stays.)
 
 ## Not in the MVP
 Boarding-pass scan, trip log, Watching, contributor priority, eligibility filtering, "from here" map, wayfinding, WN/DL/AS seat maps. Live aircraft positions (OpenSky) = P1.
