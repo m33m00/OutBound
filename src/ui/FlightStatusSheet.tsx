@@ -67,8 +67,8 @@ export function FlightStatusSheet({ flight, now, onClose, liveOptions }: FlightS
           {loading && !response ? <ActivityIndicator accessibilityLabel="Loading flight status" /> : null}
           {response && !status ? (
             <Text style={[textStyles.body, { color: c.text }]}>
-              {response.state === 'paused'
-                ? 'Live flight status is paused for now.'
+              {response.state === 'unavailable'
+                ? "Couldn't get flight status. Try again in a moment."
                 : "The airline data source doesn't list this flight yet."}
             </Text>
           ) : null}

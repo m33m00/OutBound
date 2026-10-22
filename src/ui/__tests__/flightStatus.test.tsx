@@ -38,11 +38,12 @@ describe('flight status text', () => {
     expect(placeText(status.arrival)).toBe('Terminal A');
     expect(placeText({ ...status.arrival, terminal: null })).toBe('Gate not posted yet');
   });
-  it('age line always present, with stale and paused reasons', () => {
+  it('age line always present, with the stale reason and never a spend-cap pause (Q-049)', () => {
     const r: FlightStatusResponse = { flightNumber: 'DL2210', date: '2026-10-22', state: 'ok', stale: false, paused: false, fetchedAt: new Date(NOW - 4 * 60_000).toISOString(), status };
     expect(ageText(r, NOW)).toBe('Updated 4m ago');
     expect(ageText({ ...r, stale: true }, NOW)).toBe('Updated 4m ago · may be out of date');
-    expect(ageText({ ...r, stale: true, paused: true }, NOW)).toContain('paused');
+    expect(ageText({ ...r, stale: true, paused: true }, NOW)).toBe('Updated 4m ago · may be out of date');
+    expect(ageText({ ...r, paused: true }, NOW)).not.toContain('paused');
   });
 });
 

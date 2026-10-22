@@ -1,3 +1,4 @@
+import { SymbolView } from 'expo-symbols';
 import { memo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -5,7 +6,8 @@ import type { Flight, Itinerary, SeatTier } from '@/engine';
 import type { RouteImpact } from '@/live';
 import { formatDuration, nearbyNotes, rowAccessibilityLabel, rowTimes, seatText, stopsText } from '@/search/format';
 import { impactSummary } from '@/search/impactText';
-import { radius, spacing, textStyles, useColors, type ColorToken } from '@/theme';
+import type { LegStatusView, LegTagKind, RowStatus } from '@/search/statusTags';
+import { fonts, radius, spacing, textStyles, useColors, type ColorToken } from '@/theme';
 
 import { AirlinePill } from './AirlinePill';
 import { ImpactBadge } from './ImpactBadge';
@@ -40,6 +42,50 @@ export interface ResultRowProps {
   onImpactPress?: (id: string) => void;
   /** Opens flight status for one leg (item 8). Text only; never feeds the row badge. */
   onLegPress?: (flight: Flight) => void;
+  /** Live status tags per leg (Q-050); kept separate from the impact badge. */
+  status?: RowStatus;
+}
+
+/**
+ * Status tag colors (Q-050). Delayed = violet Caution fill; Departed /
+ * Arrived = gray; Canceled / Diverted = canceled red (provisional, pending
+ * John). Amber is never used here ("you" only). Words always carry the state.
+ */
+type Tone = 'delayed' | 'gone' | 'canceled';
+const TONE: Record<LegTagKind, Tone> = {
+  delayed: 'delayed',
+  departed: 'gone',
+  arrived: 'gone',
+  canceled: 'canceled',
+  diverted: 'canceled',
+};
+const TONE_FG: Record<Tone, ColorToken> = { delayed: 'caution', gone: 'muted', canceled: 'canceledFg' };
+const TONE_BG: Record<Tone, ColorToken> = { delayed: 'cautionBg', gone: 'surface2', canceled: 'canceledBg' };
+
+function StatusTag({ label, tone }: { label: string; tone: Tone }) {
+  const c = useColors();
+  return (
+    <View
+      style={[styles.statusTag, { backgroundColor: c[TONE_BG[tone]], borderColor: tone === 'gone' ? c.line2 : c[TONE_BG[tone]] }]}>
+      {/* Icon keeps Canceled / Diverted from reading as a Full-tier red edge; the word stays. */}
+      {tone === 'canceled' ? (
+        <SymbolView name="xmark.circle" size={12} tintColor={c[TONE_FG[tone]]} fallback={null} />
+      ) : null}
+      <Text style={[textStyles.small, styles.tagWord, { color: c[TONE_FG[tone]] }]}>{label}</Text>
+    </View>
+  );
+}
+
+/** Leg departure time: struck through when delayed or canceled, with the new time after it. */
+function LegTime({ view }: { view: LegStatusView }) {
+  const c = useColors();
+  if (!view.struck) return null;
+  return (
+    <Text style={[textStyles.small, { color: c.muted }]}>
+      <Text style={styles.struck}>{view.scheduledText}</Text>
+      {view.newText ? <Text style={{ color: c.text }}> {view.newText}</Text> : null}
+    </Text>
+  );
 }
 
 export const ResultRow = memo(function ResultRow({
@@ -51,11 +97,22 @@ export const ResultRow = memo(function ResultRow({
   impactLoading,
   onImpactPress,
   onLegPress,
+  status,
 }: ResultRowProps) {
   const c = useColors();
   const t = rowTimes(it);
   const hasImpact = impact != null && impact.level !== 'none';
-  const label = [rowAccessibilityLabel(it, now), hasImpact ? impactSummary(impact, now) : ''].filter(Boolean).join('. ');
+  const label = [
+    rowAccessibilityLabel(it, now),
+    ...(status?.spoken ?? []),
+    hasImpact ? impactSummary(impact, now) : '',
+  ]
+    .filter(Boolean)
+    .join('. ');
+  const first = status?.legs[0];
+  // Departed rows are dimmed with a gray fill and edge; text keeps 4.5:1.
+  const dimmed = !!status?.dimmed;
+  const timeColor = dimmed ? c.muted : c.text;
   return (
     <Pressable
       onPress={() => onPress(it.id)}
@@ -71,17 +128,29 @@ export const ResultRow = memo(function ResultRow({
         styles.row,
         {
           // Full routes stay in time order, grayed with a red edge; text keeps full contrast.
-          backgroundColor: selected ? c.accentSoft : it.isFull ? c.surface2 : c.surface,
+          backgroundColor: selected ? c.accentSoft : it.isFull || dimmed ? c.surface2 : c.surface,
           borderColor: selected ? c.accent : it.isFull ? c.full : c.line,
         },
         (selected || it.isFull) && styles.strongBorder,
       ]}>
       {/* Route color = weakest leg. */}
-      <View style={[styles.edge, { backgroundColor: c[it.tier] }]} />
+      <View style={[styles.edge, { backgroundColor: dimmed ? c.unknown : c[it.tier] }]} />
       <View style={styles.content}>
         <View style={styles.line}>
-          <Text style={[textStyles.number, { color: c.text }]}>
-            {t.depart} – {t.arrive}
+          <Text style={[textStyles.number, { color: timeColor }]} testID="row-times">
+            {status?.canceled ? (
+              <Text style={styles.struck}>
+                {t.depart} – {t.arrive}
+              </Text>
+            ) : first?.struck && first.newText ? (
+              <>
+                <Text style={[styles.struck, { color: c.muted }]}>{t.depart}</Text> {first.newText} – {t.arrive}
+              </>
+            ) : (
+              <>
+                {t.depart} – {t.arrive}
+              </>
+            )}
             {t.plusDays ? <Text style={[textStyles.small, { color: c.muted }]}> {t.plusDays}</Text> : null}
           </Text>
           <View style={styles.badgeSlot} testID="badge-slot">
@@ -100,10 +169,15 @@ export const ResultRow = memo(function ResultRow({
             {stopsText(it)} · {formatDuration(it.totalMin)}
           </Text>
         </View>
-        {it.legs.map((leg) => {
+        {it.legs.map((leg, i) => {
+          const view = status?.legs[i];
+          const risk = status?.risks.find((r) => r.index === i);
           const body = (
             <>
               <AirlinePill airline={leg.flight.airline} flightNumber={leg.flight.flightNumber} />
+              {view?.tag ? <StatusTag label={view.tag.label} tone={TONE[view.tag.kind]} /> : null}
+              {/* Leg 0's struck / new time is in the top time line; show it once. */}
+              {view && i > 0 ? <LegTime view={view} /> : null}
               <View
                 style={[
                   styles.tierChip,
@@ -119,18 +193,31 @@ export const ResultRow = memo(function ResultRow({
               </View>
             </>
           );
-          return onLegPress ? (
+          const line = onLegPress ? (
             <Pressable
-              key={leg.flight.id}
               onPress={() => onLegPress(leg.flight)}
               accessibilityRole="button"
-              accessibilityLabel={`Flight status, ${leg.flight.airline} ${leg.flight.flightNumber}, ${leg.flight.from} to ${leg.flight.to}`}
+              accessibilityLabel={[
+                `Flight status, ${leg.flight.airline} ${leg.flight.flightNumber}, ${leg.flight.from} to ${leg.flight.to}`,
+                view?.tag?.spoken,
+              ]
+                .filter(Boolean)
+                .join(', ')}
               style={[styles.legLine, styles.legTap]}>
               {body}
             </Pressable>
           ) : (
-            <View key={leg.flight.id} style={styles.legLine}>
-              {body}
+            <View style={styles.legLine}>{body}</View>
+          );
+          return (
+            <View key={leg.flight.id} style={styles.legBlock}>
+              {line}
+              {/* At the connecting airport, i.e. after the inbound leg (Q-050). */}
+              {risk ? (
+                <View style={styles.legLine}>
+                  <StatusTag label={`Connection at risk · ${risk.airport}`} tone="delayed" />
+                </View>
+              ) : null}
             </View>
           );
         })}
@@ -186,6 +273,21 @@ const styles = StyleSheet.create({
   legTap: {
     minHeight: 44,
   },
+  legBlock: {
+    gap: 6,
+  },
+  statusTag: {
+    flexShrink: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+  },
+  tagWord: { fontFamily: fonts.bodySemiBold },
+  struck: { textDecorationLine: 'line-through' },
   tierChip: {
     flexShrink: 1,
     paddingHorizontal: 8,

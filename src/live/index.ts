@@ -1,6 +1,8 @@
 export { useAirportStatus, type UseAirportStatusResult, type UseAirportStatusOptions } from './useAirportStatus';
 export { useAirportWeather, type UseAirportWeatherResult, type UseAirportWeatherOptions } from './useAirportWeather';
 export { useFlightStatus, clearFlightStatusMemo, type UseFlightStatusResult, type UseFlightStatusOptions } from './useFlightStatus';
+export { useFlightStatuses, clearFlightStatusesMemo, type UseFlightStatusesResult, type UseFlightStatusesOptions } from './useFlightStatuses';
+export { sampleFlightStatus, sampleFlightStatuses } from './fixtures/sampleFlightStatuses';
 export { useRadar, type UseRadarResult, type UseRadarOptions } from './useRadar';
 export {
   fetchRadar,
@@ -47,6 +49,10 @@ export {
 export { sampleRouteImpacts } from './fixtures/sampleRouteImpacts';
 export {
   fetchFlightStatus,
+  fetchFlightStatuses,
+  dedupeLookups,
+  BATCH_MAX,
+  type FlightStatusEntry,
   flightLookupKey,
   refreshAllowed,
   CLIENT_COOLDOWN_MS,

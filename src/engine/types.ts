@@ -108,6 +108,19 @@ export interface Itinerary {
   isFull: boolean;
 }
 
+/** Search results plus what explains an empty list (Q-047). */
+export interface SearchOutcome {
+  /** Top routes under the filters in use. */
+  results: Itinerary[];
+  /**
+   * Only when `results` is empty: routes the filters hid (found with the
+   * loosest filters). 0 = the market has no flights that day.
+   */
+  hiddenCount: number;
+  /** Top hidden routes, for "Show Them" (this search only). */
+  hiddenResults: Itinerary[];
+}
+
 export interface SearchRequest {
   origin: string;
   destination: string;

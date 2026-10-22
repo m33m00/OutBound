@@ -1,12 +1,15 @@
 import {
+  allowLookups,
   cacheExpiry,
-  capState,
   createUsageTracker,
   mapState,
   monthKey,
   newFlightCache,
+  parseBatchBody,
   parseFlightRequest,
   parseFlightStatus,
+  requestKey,
+  resolveFlightBatch,
   resolveFlightStatus,
   type FlightRequest,
   type UsageStore,
@@ -104,52 +107,42 @@ describe('cacheExpiry (TTL by time to departure)', () => {
   });
 });
 
-describe('spend cap', () => {
-  const u = CFG.usage;
-  const unitsFor = (usd: number) => Math.round(usd / u.unitPriceUsd);
-  it('ok below the alert, alert at $24, paused when the next call would pass $30', () => {
-    expect(capState(0).state).toBe('ok');
-    expect(capState(unitsFor(u.alertAtUsd) - 1).state).toBe('ok');
-    expect(capState(unitsFor(u.alertAtUsd)).state).toBe('alert');
-    const lastOk = unitsFor(u.monthlyCapUsd) - u.unitsPerCall;
-    expect(capState(lastOk).state).toBe('alert');
-    expect(capState(lastOk + 1).state).toBe('paused');
-    expect(capState(unitsFor(u.monthlyCapUsd) + 100).state).toBe('paused');
-  });
-  it('monthKey is UTC YYYY-MM', () => {
+describe('monthKey', () => {
+  it('is UTC YYYY-MM', () => {
     expect(monthKey(Date.UTC(2026, 9, 31, 23, 59))).toBe('2026-10');
     expect(monthKey(Date.UTC(2026, 10, 1))).toBe('2026-11');
   });
 });
 
-describe('usage tracker', () => {
-  it('records through the store and logs the alert once', async () => {
+describe('usage tracker (no cap, Q-049)', () => {
+  it('writes one row per record and never warns or refuses, however high the count', async () => {
     const rows: unknown[] = [];
-    const store: UsageStore = { monthUnits: async () => 0, record: async (r) => void rows.push(r) };
+    const store: UsageStore = { record: async (r) => void rows.push(r) };
     const log = jest.fn();
     const t = createUsageTracker(store, log);
-    await t.record(NOW, Math.round(CFG.usage.alertAtUsd / CFG.usage.unitPriceUsd));
-    await t.record(NOW, 0);
-    expect(rows).toHaveLength(2);
+    for (let i = 0; i < 5000; i++) await t.record(NOW);
+    expect(rows).toHaveLength(5000);
     expect(rows[0]).toEqual({ provider: CFG.usage.provider, endpoint: CFG.usage.endpoint, units: CFG.usage.unitsPerCall, month: '2026-10' });
-    expect(log.mock.calls.filter((c) => String(c[0]).startsWith('WARNING'))).toHaveLength(1);
+    expect(log.mock.calls.filter((c) => /WARNING|cap|paused/i.test(String(c[0])))).toHaveLength(0);
+    expect(t.unitsThisMonth(NOW)).toBe(5000 * CFG.usage.unitsPerCall);
   });
   it('a missing table does not break counting (falls back to memory, logs once)', async () => {
-    const store: UsageStore = {
-      monthUnits: async () => { throw new Error('api_usage read 404'); },
-      record: async () => { throw new Error('api_usage write 404'); },
-    };
+    const store: UsageStore = { record: async () => { throw new Error('api_usage write 404'); } };
     const log = jest.fn();
     const t = createUsageTracker(store, log);
-    expect(await t.unitsThisMonth(NOW)).toBe(0);
-    await t.record(NOW, 0);
-    expect(await t.unitsThisMonth(NOW)).toBe(CFG.usage.unitsPerCall);
+    await t.record(NOW);
+    await t.record(NOW);
+    expect(t.unitsThisMonth(NOW)).toBe(2 * CFG.usage.unitsPerCall);
     expect(log.mock.calls.filter((c) => String(c[0]).includes('unavailable'))).toHaveLength(1);
   });
   it('works with no store at all', async () => {
     const t = createUsageTracker(null);
-    await t.record(NOW, 0);
-    expect(await t.unitsThisMonth(NOW)).toBe(CFG.usage.unitsPerCall);
+    await t.record(NOW);
+    expect(t.unitsThisMonth(NOW)).toBe(CFG.usage.unitsPerCall);
+  });
+  it('config has no cap or alert values', () => {
+    expect(Object.keys(CFG.usage)).not.toEqual(expect.arrayContaining(['monthlyCapUsd']));
+    expect(Object.keys(CFG.usage)).not.toEqual(expect.arrayContaining(['alertAtUsd']));
   });
 });
 
@@ -168,7 +161,7 @@ describe('resolveFlightStatus', () => {
     expect(a.status?.state).toBe('scheduled');
     await resolveFlightStatus(deps, req({ departMs: NOW + 30 * H }), NOW + 10 * 60_000);
     expect(up).toHaveBeenCalledTimes(1);
-    expect(await deps.usage.unitsThisMonth(NOW)).toBe(CFG.usage.unitsPerCall);
+    expect(deps.usage.unitsThisMonth(NOW)).toBe(CFG.usage.unitsPerCall);
   });
 
   it('refetches after the TTL', async () => {
@@ -207,7 +200,7 @@ describe('resolveFlightStatus', () => {
     const deps = setup(jest.fn(async () => ({ status: 429, body: null })));
     const s = await resolveFlightStatus(deps, req(), NOW);
     expect(s).toMatchObject({ state: 'unavailable', status: null });
-    expect(await deps.usage.unitsThisMonth(NOW)).toBe(0);
+    expect(deps.usage.unitsThisMonth(NOW)).toBe(0);
   });
 
   it('404 is not_found and is cached', async () => {
@@ -218,26 +211,110 @@ describe('resolveFlightStatus', () => {
     expect(up).toHaveBeenCalledTimes(1);
   });
 
-  it('at the cap: no upstream call; cached value comes back flagged stale + paused, or nothing', async () => {
-    const full: UsageStore = { monthUnits: async () => Math.round(CFG.usage.monthlyCapUsd / CFG.usage.unitPriceUsd), record: async () => {} };
+  it('no cap: any amount of prior usage never pauses or blocks a call', async () => {
     const up = ok();
-    const deps = setup(up, full);
-    const none = await resolveFlightStatus(deps, req(), NOW);
-    expect(none).toMatchObject({ state: 'paused', paused: true, status: null });
-    expect(up).not.toHaveBeenCalled();
-
-    // seed a cache entry from a different, un-capped tracker, then expire it
-    const seeded = { ...setup(ok()), usage: deps.usage };
-    seeded.cache.entries.set('AA100|2026-10-22|', { status: parseFlightStatus(F.ADB_ON_TIME, req()), fetchedAtMs: NOW - 10 * H, expiresMs: NOW - 1 });
-    const s = await resolveFlightStatus(seeded, req(), NOW);
-    expect(s).toMatchObject({ state: 'paused', paused: true, stale: true });
-    expect(s.status?.flightNumber).toBe('AA100');
-    expect(s.fetchedAt).toBe(new Date(NOW - 10 * H).toISOString());
+    const deps = setup(up);
+    for (let i = 0; i < 20_000; i++) await deps.usage.record(NOW);
+    const r = await resolveFlightStatus(deps, req(), NOW);
+    expect(r).toMatchObject({ state: 'ok', paused: false, stale: false });
+    expect(up).toHaveBeenCalledTimes(1);
   });
 
   it('a broken usage table never blocks status', async () => {
-    const broken: UsageStore = { monthUnits: async () => { throw new Error('no table'); }, record: async () => { throw new Error('no table'); } };
+    const broken: UsageStore = { record: async () => { throw new Error('no table'); } };
     const s = await resolveFlightStatus(setup(ok(), broken), req(), NOW);
     expect(s.state).toBe('ok');
+  });
+});
+
+describe('batch', () => {
+  const ok = (body: unknown = F.ADB_ON_TIME) => jest.fn(async () => ({ status: 200, body }));
+  const mk = (up: jest.Mock, rows: unknown[] = []) => ({
+    cache: newFlightCache(),
+    usage: createUsageTracker({ record: async (r) => void rows.push(r) }),
+    fetchUpstream: up,
+  });
+  const body = (n: number, extra: Record<string, unknown> = {}) => ({
+    flights: Array.from({ length: n }, (_, i) => ({ flight: `AA${100 + i}`, date: '2026-10-22', from: 'ORD', dep: T2 + H, ...extra })),
+  });
+
+  it('parseBatchBody: 1..batchMax items, bad items become null, bad shapes are rejected', () => {
+    expect(parseBatchBody(body(3), NOW)?.items.every(Boolean)).toBe(true);
+    expect(parseBatchBody(body(CFG.batchMax), NOW)?.items).toHaveLength(CFG.batchMax);
+    expect(parseBatchBody(body(CFG.batchMax + 1), NOW)).toBeNull();
+    expect(parseBatchBody({ flights: [] }, NOW)).toBeNull();
+    expect(parseBatchBody({}, NOW)).toBeNull();
+    expect(parseBatchBody(null, NOW)).toBeNull();
+    expect(parseBatchBody({ flights: [{ flight: 'nope', date: '2026-10-22' }, 7] }, NOW)?.items).toEqual([null, null]);
+  });
+
+  it('a full list is one answer per input position, in order, one upstream call + one usage row per flight', async () => {
+    const rows: unknown[] = [];
+    const up = ok();
+    const parsed = parseBatchBody(body(CFG.batchMax), NOW)!;
+    const out = await resolveFlightBatch(mk(up, rows), parsed.items, NOW);
+    expect(out).toHaveLength(CFG.batchMax);
+    expect(out.map((r) => r.key)).toEqual(parsed.items.map((r) => requestKey(r!)));
+    expect(up).toHaveBeenCalledTimes(CFG.batchMax);
+    expect(rows).toHaveLength(CFG.batchMax);
+  });
+
+  it('dedupes by flight + date + origin; a repeat batch inside the TTL costs nothing', async () => {
+    const rows: unknown[] = [];
+    const up = ok();
+    const deps = mk(up, rows);
+    const dup = parseBatchBody({ flights: [...body(2).flights, ...body(2).flights, { ...body(1).flights[0], from: 'JFK' }] }, NOW)!;
+    const first = await resolveFlightBatch(deps, dup.items, NOW);
+    expect(first).toHaveLength(5);
+    expect(first[0].key).toBe(first[2].key);
+    expect(up).toHaveBeenCalledTimes(3); // AA100 ORD, AA101 ORD, AA100 JFK
+    await resolveFlightBatch(deps, dup.items, NOW + 60_000);
+    expect(up).toHaveBeenCalledTimes(3);
+    expect(rows).toHaveLength(3);
+  });
+
+  it('TTL tiers apply per flight inside a batch (refetch only the expired tier)', async () => {
+    const far = [{ ...F.ADB_ON_TIME[0], departure: { ...F.ADB_ON_TIME[0].departure, scheduledTime: { utc: '2026-10-26 14:00Z' } } }];
+    const up = jest.fn(async (r: { flightNumber: string }) => ({ status: 200, body: r.flightNumber === 'AA2' ? far : F.ADB_ON_TIME }));
+    const deps = mk(up as unknown as jest.Mock);
+    const items = parseBatchBody({ flights: [{ flight: 'AA1', date: '2026-10-22' }, { flight: 'AA2', date: '2026-10-22' }] }, NOW)!.items;
+    await resolveFlightBatch(deps, items, T2); // AA1 departs in 2h (15m tier), AA2 in days (hours tier)
+    expect(up).toHaveBeenCalledTimes(2);
+    await resolveFlightBatch(deps, items, T2 + CFG.ttlTiers[0].ttlMs + 1); // only AA1 expired
+    expect(up).toHaveBeenCalledTimes(3);
+  });
+
+  it('one failing flight does not fail the batch; cached ones come back stale', async () => {
+    const up = jest.fn(async (r: { flightNumber: string }) => {
+      if (r.flightNumber === 'AA101') throw new Error('boom');
+      return { status: 200, body: F.ADB_ON_TIME };
+    });
+    const out = await resolveFlightBatch(mk(up as unknown as jest.Mock), parseBatchBody(body(2), NOW)!.items, NOW);
+    expect(out[0]).toMatchObject({ state: 'ok', stale: false });
+    expect(out[1]).toMatchObject({ state: 'unavailable', status: null });
+  });
+
+  it('invalid items come back as state invalid; upstream concurrency is bounded', async () => {
+    let live = 0;
+    let peak = 0;
+    const up = jest.fn(async () => {
+      live++;
+      peak = Math.max(peak, live);
+      await new Promise((r) => setTimeout(r, 1));
+      live--;
+      return { status: 200, body: F.ADB_ON_TIME };
+    });
+    const items = [...parseBatchBody(body(20), NOW)!.items, null];
+    const out = await resolveFlightBatch(mk(up as unknown as jest.Mock), items, NOW);
+    expect(out[20]).toMatchObject({ state: 'invalid', key: '' });
+    expect(peak).toBeLessThanOrEqual(CFG.batchConcurrency);
+  });
+
+  it('allowLookups: a full list fits, three fit per minute, the fourth waits; window resets', () => {
+    const b = new Map<string, { windowStart: number; count: number }>();
+    expect(CFG.lookupsPerMin).toBeGreaterThanOrEqual(CFG.batchMax * 3);
+    for (let i = 0; i < 3; i++) expect(allowLookups(b, 'ip', NOW, CFG.batchMax, CFG.lookupsPerMin)).toBe(true);
+    expect(allowLookups(b, 'ip', NOW, CFG.batchMax, CFG.lookupsPerMin)).toBe(false);
+    expect(allowLookups(b, 'ip', NOW + 60_000, CFG.batchMax, CFG.lookupsPerMin)).toBe(true);
   });
 });

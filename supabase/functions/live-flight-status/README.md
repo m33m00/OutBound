@@ -1,23 +1,31 @@
 # live-flight-status
 
-Status for ONE flight the user opened or is traveling on (AeroDataBox). Never per search, never bulk (DECISIONS.md).
+Flight status (AeroDataBox) for every result row (Q-047) and for the opened flight. Single GET and batch POST share one in-memory cache.
 
 ## Design (provisional, not John-decided; all numbers in `../_shared/flightStatusConfig.ts`)
 - Shared in-memory cache keyed by flight number + date + origin. TTL by time to departure: >48h 6h, 24-48h 2h, <24h 30m, <3h 15m
   (never runs past the next tier boundary). Arrived or canceled flights: 30m.
 - Upstream failure or non-200/404: serve the cached value with `stale: true`; 30 s backoff before asking again. No cache: 502.
-- Spend: each paid call logs a row in `api_usage` (provider, endpoint, units, month, ts). Month sum >= alert ($24) logs a warning;
-  the next call that would pass $30 is refused and the response is `state: "paused"` (cached value, `stale: true`, or none).
-  If `api_usage` is missing or errors, status still works and usage is counted in memory only (a lower bound; logged once).
-  Unit price and units per call are PLACEHOLDERS until the AeroDataBox plan is chosen.
-- Rate limit: 20 req/min per IP (shared `allowRequest`), anon key through the gateway, CORS like the other functions.
+- Usage (Q-049): NO app spend cap, no alert, no pause (the AeroDataBox plan bounds spend). Each UPSTREAM call logs one row in
+  `api_usage` (provider, endpoint, units, month, ts); cache hits log nothing. If `api_usage` is missing or errors, status still
+  works (logged once). Unit price and units per call are PLACEHOLDERS until the plan is chosen.
+- Batch: duplicates (flight + date + origin) share one lookup; up to 8 upstream calls in flight at once. A failing item does not
+  fail the batch: it comes back `state: "unavailable"` (or cached with `stale: true`).
+- Rate limit: per IP, 30 requests/min and 120 lookups/min (a batch of N costs N; `lookupsPerMin` in the config), anon key
+  through the gateway, CORS like the other functions.
 - Dates accepted: 2 days back to 10 days ahead.
 
-## Contract
+## Batch contract (the app uses this)
+`POST /functions/v1/live-flight-status` with the same headers, JSON body `{ "flights": [ { "flight": "AA123", "date": "2026-10-22", "from": "ORD", "dep": 1761141600000 }, ... ] }`
+(1 to 40 items; `from`/`dep` optional). Response `{ results: [...], asOf }`, one result per input position, in order:
+`{ key: "AA123|2026-10-22|ORD", ...single response below }`. An invalid item yields `state: "invalid"` with an empty key.
+400 bad body / empty / over 40, 429 rate limit. `fetchedAt` on each result is the age to show.
+
+## Single contract
 `GET /functions/v1/live-flight-status?flight=AA123&date=2026-10-22&from=ORD&dep=<departure epoch ms>` with `apikey` and
 `Authorization: Bearer <anon key>`. `date` is the local departure date; `from` and `dep` are optional (leg pick, cache time).
 ```
-{ flightNumber, date, state: "ok"|"not_found"|"paused", stale, paused, fetchedAt /* ISO, the age shown */,
+{ flightNumber, date, state: "ok"|"not_found"|"unavailable", stale, paused /* always false, retired by Q-049 */, fetchedAt /* ISO, the age shown */,
   status: null | { flightNumber, state: "scheduled"|"delayed"|"departed"|"arrived"|"canceled"|"diverted",
     departure|arrival: { airport, scheduledUtc, estimatedUtc, actualUtc, delayMin, terminal, gate }, providerUpdatedAt } }
 ```

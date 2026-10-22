@@ -1,6 +1,6 @@
 import { createMemoryProvider } from '../memoryProvider';
 import { createSampleProvider } from '../sample/sampleProvider';
-import { searchItineraries } from '../search';
+import { searchItineraries, searchRoutes } from '../search';
 import { toRouteLine } from '../toRouteLine';
 import type { Flight, SearchOptions, SeatReport } from '../types';
 
@@ -116,10 +116,10 @@ describe('searchItineraries: dates', () => {
     expect(ids(await search(overnight, 'SEA', 'PHX'))).toEqual(['a+b']);
   });
 
-  it('excludes flights that already left', async () => {
-    const f = [flight('gone', 'AA', 'BNA', 'LAX', '06:00', 260), flight('ok', 'AA', 'BNA', 'LAX', '18:00', 260)];
+  it('keeps flights that already left, mixed in by time (Q-047)', async () => {
+    const f = [flight('ok', 'AA', 'BNA', 'LAX', '18:00', 260), flight('gone', 'AA', 'BNA', 'LAX', '06:00', 260)];
     const nowLocal8am = Date.UTC(2026, 9, 20, 13, 0); // 08:00 CDT
-    expect(ids(await search(f, 'BNA', 'LAX', { now: nowLocal8am }))).toEqual(['ok']);
+    expect(ids(await search(f, 'BNA', 'LAX', { now: nowLocal8am }))).toEqual(['gone', 'ok']);
   });
 
   it('only searches 0-7 days out', async () => {
@@ -223,6 +223,44 @@ describe('searchItineraries: sort and limit', () => {
       ['typical', 'unknown'],
     ]);
     expect(it.tier).toBe('wide');
+  });
+});
+
+describe('searchRoutes: empty-result reasons (Q-047)', () => {
+  const run = (flights: Flight[], options: Partial<SearchOptions>, loose: Partial<SearchOptions> = {}) =>
+    searchRoutes(createMemoryProvider(flights, {}), { origin: 'BNA', destination: 'LAX', date: DATE }, { now: NOW, ...options }, loose);
+  const oneStop = [flight('a', 'AA', 'BNA', 'DFW', '08:00', 120), flight('b', 'AA', 'DFW', 'LAX', '11:00', 180)];
+
+  it('returns results and nothing hidden when the filters leave routes', async () => {
+    const out = await run([flight('A', 'AA', 'BNA', 'LAX', '09:00', 260), ...oneStop], { maxStops: 0 });
+    expect(ids(out.results)).toEqual(['A']);
+    expect(out).toMatchObject({ hiddenCount: 0, hiddenResults: [] });
+  });
+
+  it('counts routes the filters hid and returns them for Show Them', async () => {
+    const twoRoutes = [...oneStop, flight('c', 'AA', 'DFW', 'LAX', '12:00', 180)];
+    const out = await run(twoRoutes, { maxStops: 0 }, { maxStops: 3 });
+    expect(out.results).toEqual([]);
+    expect(out.hiddenCount).toBe(2);
+    expect(ids(out.hiddenResults)).toEqual(['a+b', 'a+c']);
+  });
+
+  it('uses the loose values for the second pass (shorter connections)', async () => {
+    const tight = [flight('a', 'AA', 'BNA', 'DFW', '08:00', 120), flight('b', 'AA', 'DFW', 'LAX', '10:40', 180)];
+    expect((await run(tight, {})).hiddenCount).toBe(0);
+    expect((await run(tight, {}, { minConnectSameAirlineMin: 30 })).hiddenCount).toBe(1);
+  });
+
+  it('reports 0 hidden when the market has no flights that day', async () => {
+    const out = await run([flight('X', 'AA', 'BNA', 'LAX', '09:00', 260, '2026-10-21')], { maxStops: 0 }, { maxStops: 3 });
+    expect(out).toEqual({ results: [], hiddenCount: 0, hiddenResults: [] });
+  });
+
+  it('caps hidden results at the limit but counts them all', async () => {
+    const many = [flight('a', 'AA', 'BNA', 'DFW', '08:00', 120), ...[0, 1, 2].map((i) => flight(`b${i}`, 'AA', 'DFW', 'LAX', `1${1 + i}:00`, 180))];
+    const out = await run(many, { maxStops: 0, limit: 2 }, { maxStops: 3 });
+    expect(out.hiddenCount).toBe(3);
+    expect(out.hiddenResults).toHaveLength(2);
   });
 });
 

@@ -295,6 +295,14 @@ A) Remove it  B) Keep it, applied to area airports  C) John specifies
 Recommendation: A, because the toggle already says "all airports".
 Answer: John (2026-10-21), option A. Remove the setting from Filters and Settings; per-area transfer minutes stay as internal data.
 
+### Q-053 Canceled tag color  (Open)
+Context: Q-050 said Canceled is "red, the existing most-severe delay color", but the most-severe delay color is magenta (Likely delays) and the only red in the app is the Full seat tier. The main session's earlier summary to John misstated the existing color. Backlog 21 shipped provisionally with a dedicated red.
+A) Magenta (likelyDelays token)
+B) Full-tier red (#d8474a / #ff6b6b family)
+C) Dedicated red token, as built: light #c8102e text-mark / #fde0e3 bg / #9e0d24 text; dark #ff4d5e / #3a1018 / #ffa3ad; plus xmark.circle icon
+Recommendation: C, because red reads as canceled at a glance, stays distinct from the Full seat tier and from magenta weather/FAA badges, and the icon keeps it from relying on color alone.
+Answer: (John)
+
 Provisional defaults for backlog 3 (not John-decided; John may override any time):
 - FAA cache TTL 5 min server-side; serve stale on FAA error.
 - One national NAS feed fetch, filtered on read.

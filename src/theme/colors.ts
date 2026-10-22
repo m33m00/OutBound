@@ -57,6 +57,13 @@ export const colors = {
     cautionBg: '#ebe8fd',
     likelyDelays: '#a3269a',
     likelyDelaysBg: '#f9e2f6',
+
+    // Canceled / diverted row tag (Q-050). Provisional, pending John: magenta
+    // likelyDelays, the Full-tier red, or this dedicated red (kept distinct
+    // from Full so a canceled flight never reads as a full one).
+    canceled: '#c8102e',
+    canceledBg: '#fde0e3',
+    canceledFg: '#9e0d24',
   },
   dark: {
     bg: '#0b1119',
@@ -100,6 +107,11 @@ export const colors = {
     cautionBg: '#201c40',
     likelyDelays: '#f283e8',
     likelyDelaysBg: '#3a1533',
+
+    // Provisional, pending John (see light).
+    canceled: '#ff4d5e',
+    canceledBg: '#3a1018',
+    canceledFg: '#ffa3ad',
   },
 } as const;
 

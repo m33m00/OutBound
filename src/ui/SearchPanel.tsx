@@ -32,6 +32,8 @@ export interface SearchPanelProps {
   onSetHome?: () => void;
   /** First-launch location card (Q-051), shown above the dates when given. */
   locationCard?: ReactNode;
+  /** Empty-results notice (Q-047), shown under Find Routes. */
+  banner?: ReactNode;
 }
 
 interface AirportCardProps {
@@ -249,6 +251,7 @@ export function SearchPanel(p: SearchPanelProps) {
           style={styles.find}
         />
       </View>
+      {p.banner}
     </ScrollView>
   );
 }

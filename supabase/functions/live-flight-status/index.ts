@@ -1,12 +1,16 @@
 // Deno Edge Function. Excluded from the app's tsc (see tsconfig.json).
-// GET /live-flight-status?flight=AA123&date=2026-10-22&from=ORD&dep=1760400000000  ->  FlightStatusResponse
-//   Only for flights a user opens or travels on. One shared cache per flight + date. Key stays in the
-//   AERODATABOX_API_KEY secret. Never called in tests; the pure logic is in ../_shared/flightStatus.ts.
+// GET  /live-flight-status?flight=AA123&date=2026-10-22&from=ORD&dep=1760400000000  ->  FlightStatusResponse
+// POST /live-flight-status  { flights: [{flight,date,from,dep}, ...up to 40] }       ->  { results: [{key, ...FlightStatusResponse}], asOf }
+//   Every result row (Q-047). One shared cache per flight + date + origin; each flight costs one upstream call per
+//   TTL. No spend cap (Q-049); every upstream call logs one api_usage row. Key stays in the AERODATABOX_API_KEY secret. Never called in tests; the pure logic is in ../_shared/flightStatus.ts.
 import { allowRequest } from '../_shared/faaStatus.ts';
 import {
   createUsageTracker,
   newFlightCache,
+  allowLookups,
+  parseBatchBody,
   parseFlightRequest,
+  resolveFlightBatch,
   resolveFlightStatus,
   type FlightRequest,
   type UsageStore,
@@ -20,10 +24,12 @@ declare const Deno: {
 
 const cache = newFlightCache();
 const buckets = new Map<string, { windowStart: number; count: number }>();
+const lookupBuckets = new Map<string, { windowStart: number; count: number }>();
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, apikey, content-type, x-client-info',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
 };
 const json = (body: unknown, status = 200, extra: Record<string, string> = {}) =>
   new Response(JSON.stringify(body), {
@@ -38,13 +44,6 @@ function usageStore(): UsageStore | null {
   if (!url || !key) return null;
   const headers = { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' };
   return {
-    async monthUnits(provider, month) {
-      const q = `select=units&provider=eq.${encodeURIComponent(provider)}&month=eq.${encodeURIComponent(month)}`;
-      const res = await fetch(`${url}/rest/v1/api_usage?${q}`, { headers });
-      if (!res.ok) throw new Error(`api_usage read ${res.status}`); // 404 = table not created yet
-      const rows = (await res.json()) as { units: number }[];
-      return rows.reduce((n, r) => n + (Number(r.units) || 0), 0);
-    },
     async record(row) {
       const res = await fetch(`${url}/rest/v1/api_usage`, {
         method: 'POST',
@@ -70,24 +69,42 @@ async function fetchUpstream(req: FlightRequest) {
   return { status: 200, body: await res.json() };
 }
 
+const log = (m: string) => console.log(`[live-flight-status] ${m}`);
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: CORS });
-  if (req.method !== 'GET') return json({ error: 'method_not_allowed' }, 405);
+  if (req.method !== 'GET' && req.method !== 'POST') return json({ error: 'method_not_allowed' }, 405);
 
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0].trim() ?? 'unknown';
-  if (!allowRequest(buckets, ip, Date.now(), CFG.rateLimitPerMin)) {
+  const now = Date.now();
+  if (!allowRequest(buckets, ip, now, CFG.rateLimitPerMin)) {
     return json({ error: 'rate_limited' }, 429, { 'Retry-After': '60' });
   }
+  const deps = { cache, usage, fetchUpstream, log };
 
-  const now = Date.now();
+  if (req.method === 'POST') {
+    let body: unknown;
+    try {
+      body = await req.json();
+    } catch {
+      return json({ error: 'bad_json' }, 400);
+    }
+    const parsed = parseBatchBody(body, now);
+    if (!parsed) return json({ error: 'flights_array_1_to_' + CFG.batchMax }, 400);
+    if (!allowLookups(lookupBuckets, ip, now, parsed.items.length, CFG.lookupsPerMin)) {
+      return json({ error: 'rate_limited' }, 429, { 'Retry-After': '60' });
+    }
+    const results = await resolveFlightBatch(deps, parsed.items, now);
+    return json({ results, asOf: new Date().toISOString() }, 200, { 'Cache-Control': 'private, max-age=60' });
+  }
+
+  if (!allowLookups(lookupBuckets, ip, now, 1, CFG.lookupsPerMin)) {
+    return json({ error: 'rate_limited' }, 429, { 'Retry-After': '60' });
+  }
   const fr = parseFlightRequest(new URL(req.url).searchParams, now);
   if (!fr) return json({ error: 'flight_and_date_required' }, 400);
 
-  const out = await resolveFlightStatus(
-    { cache, usage, fetchUpstream, log: (m) => console.log(`[live-flight-status] ${m}`) },
-    fr,
-    now,
-  );
+  const out = await resolveFlightStatus(deps, fr, now);
   if (out.state === 'unavailable') return json({ error: 'upstream_unavailable' }, 502);
   return json(out, 200, { 'Cache-Control': 'private, max-age=60' });
 });

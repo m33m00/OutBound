@@ -35,6 +35,8 @@ const textPairs: [ColorToken, ColorToken][] = [
   ['unknownFg', 'unknownBg'],
   ['caution', 'cautionBg'],
   ['likelyDelays', 'likelyDelaysBg'],
+  // Row status tags (Q-050): canceled red is provisional, pending John.
+  ['canceledFg', 'canceledBg'],
 ];
 
 describe('Ice Mix colors', () => {
@@ -47,6 +49,14 @@ describe('Ice Mix colors', () => {
 
   it('defines the same tokens in light and dark', () => {
     expect(Object.keys(colors.dark).sort()).toEqual(Object.keys(colors.light).sort());
+  });
+
+  it.each(['light', 'dark'] as const)('%s: provisional canceled red is not the Full-tier red', (scheme) => {
+    const p = colors[scheme];
+    expect([p.canceled, p.canceledBg, p.canceledFg]).not.toContain(p.full);
+    expect(p.canceled).not.toBe(p.full);
+    expect(p.canceledFg).not.toBe(p.fullFg);
+    expect(p.canceledBg).not.toBe(p.fullBg);
   });
 
   describe.each(['light', 'dark'] as const)('%s', (scheme) => {

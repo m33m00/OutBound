@@ -7,6 +7,7 @@ import type {
   Itinerary,
   LegSeats,
   SearchOptions,
+  SearchOutcome,
   SearchRequest,
 } from './types';
 
@@ -41,12 +42,42 @@ export function compareItineraries(a: Itinerary, b: Itinerary): number {
 
 /**
  * Find itineraries from `origin` to `destination` with 0-3 stops, departing
- * on the request's local date. Reads only from the provider.
+ * on the request's local date. Reads only from the provider. Flights that
+ * already left are kept, mixed in by time (Q-047); live status marks them.
  */
 export async function searchItineraries(
   provider: FlightDataProvider,
   request: SearchRequest,
   options: Partial<SearchOptions> = {},
+): Promise<Itinerary[]> {
+  const all = await findAll(provider, request, options);
+  return all.slice(0, options.limit ?? DEFAULT_SEARCH_OPTIONS.limit);
+}
+
+/**
+ * Search plus what the app needs when nothing shows (Q-047). When the
+ * filters (`options`) leave no routes, the same search runs again with
+ * `looseOptions` (the loosest filter values) to tell "the market has no
+ * flights that day" (hiddenCount 0) from "your filters hid N routes".
+ */
+export async function searchRoutes(
+  provider: FlightDataProvider,
+  request: SearchRequest,
+  options: Partial<SearchOptions> = {},
+  looseOptions: Partial<SearchOptions> = {},
+): Promise<SearchOutcome> {
+  const limit = options.limit ?? DEFAULT_SEARCH_OPTIONS.limit;
+  const results = (await findAll(provider, request, options)).slice(0, limit);
+  if (results.length) return { results, hiddenCount: 0, hiddenResults: [] };
+  const loose = await findAll(provider, request, { ...options, ...looseOptions });
+  return { results, hiddenCount: loose.length, hiddenResults: loose.slice(0, limit) };
+}
+
+/** Every matching itinerary, sorted, before the result limit. */
+async function findAll(
+  provider: FlightDataProvider,
+  request: SearchRequest,
+  options: Partial<SearchOptions>,
 ): Promise<Itinerary[]> {
   const opt: SearchOptions = { ...DEFAULT_SEARCH_OPTIONS, now: Date.now(), ...options };
   const originAirport = provider.getAirport(request.origin);
@@ -104,7 +135,6 @@ export async function searchItineraries(
     const airport = provider.getAirport(code);
     if (!airport) continue;
     for (const f of await departuresFrom(code)) {
-      if (f.departUtc <= opt.now) continue;
       if (localDate(f.departUtc, airport.tz) !== request.date) continue;
       if (f.to === code || (ends.has(f.to) && !destinations.has(f.to))) continue;
       if ((f.arriveUtc - f.departUtc) / MIN > opt.maxTripMin) continue;
@@ -153,5 +183,5 @@ export async function searchItineraries(
     }),
   );
 
-  return itineraries.sort(compareItineraries).slice(0, opt.limit);
+  return itineraries.sort(compareItineraries);
 }

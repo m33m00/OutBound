@@ -40,8 +40,20 @@ Condensed from the project docs: MVP decisions (through v8.8), design direction 
   - Flights exist but filters hide all: banner like "3 routes hidden by your filters · Show Them", dismissible with X.
   - Departed flights are shown, mixed in by time. ~~Engine drops departed flights.~~ (superseded 2026-10-21 by Q-047)
   - Routes with a canceled leg stay in their normal time position.
+  - Provisional, as built in backlog 21 (2026-10-21; not John-decided; John may override):
+    - "Show Them" lists the routes filters hid using the loosest filter values (`LOOSE_FILTERS` in `src/search/useRouteSearch.ts`), for this search only; saved filters unchanged; note "Showing routes your filters hid, for this search only."
+    - "No Flights Found" = zero routes even with the loosest filters.
+    - Banners clear when date, From or To change, or on X.
 - Row status tags (Q-050, 2026-10-21, John): Scheduled = no tag. "Delayed 25m" in violet (existing Caution color), old time struck through. Departed = gray tag and row dimmed. Canceled = red (existing most-severe delay color), time struck through. Amber stays "you" only.
   - A delay that breaks a connection shows a "Connection at risk" tag at the connecting airport.
+  - Provisional, as built in backlog 21 (2026-10-21; not John-decided; John may override):
+    - Arrived shown like Departed (gray). Diverted shown like Canceled, labeled "Diverted".
+    - No live status = no tag and no dimming (never guess Departed from the schedule).
+    - Connection at risk: only from live estimates, when the connection is below the min connection and below schedule; skipped once the onward leg has departed; never shown next to canceled/diverted.
+    - Delayed time: old struck through, new shown once (top line for leg 0).
+    - Dimmed row = gray fill/edge + muted time (not opacity, for contrast).
+    - Canceled color open: Q-050 said "existing most-severe delay color" (magenta, likelyDelays) but also "red"; the only existing red is the Full seat tier. Built a dedicated red: light #c8102e / #fde0e3 / #9e0d24, dark #ff4d5e / #3a1018 / #ffa3ad, plus xmark.circle icon. See Q-053.
+    - "Sample status" label while statuses are sample. While flights are sample data the app always uses sample statuses (`useFlightStatuses` with config null).
 - Sort default: earliest arrival; tie-break fewer stops, then best availability. Full routes stay in time order, grayed with a red edge (2026-10-06). Best bet is an optional sort.
 - Own schedule DB from daily AeroDataBox pulls (~30 airports). No live calls per search.
 
@@ -64,6 +76,7 @@ Condensed from the project docs: MVP decisions (through v8.8), design direction 
 - ~~Flight status (AeroDataBox) only for flights a user opens or is traveling on.~~ (superseded 2026-10-21 by Q-047)
 - Live status on every result row (Q-047, 2026-10-21, John). Each flight's status is fetched once into the shared server cache. Works with fixtures until the AeroDataBox key is added. Cost note: `design/research/flight-status-cost.md`.
   - App spend cap (Q-049, 2026-10-21, John): NO app spend cap for now ("we will address this later"). Usage logging (`api_usage`) stays. Fact: AeroDataBox flat plans below Mega have no overage, so the subscribed plan bounds spend.
+  - Provisional, as built in backlog 21 (2026-10-21; not John-decided): Q-049 cap/alert/paused logic removed from server and UI, `api_usage` logging kept. Batch route POST `live-flight-status` takes up to 40 lookups per call; limit 120 lookups/min per IP.
 - FAA NAS status (free) for ground stops, ground delays, airport delays.
 - FAA status to badge (Q-015, 2026-10-14): ground stop, ground delay program or airport closure = Likely delays (magenta); general arrival/departure delay under 60 min = Caution (violet); no FAA event = no badge.
   - General arrival/departure delay of 60+ min = Likely delays (Q-019, 2026-10-14). Under 60 min stays Caution. ~~Provisional, not John-decided (superseded 2026-10-14).~~

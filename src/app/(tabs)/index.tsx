@@ -3,13 +3,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FlatList, StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { AIRPORTS, addDays, localDate, toRouteLine, type Flight, type Itinerary } from '@/engine';
-import { sampleRouteImpacts, useRouteImpacts } from '@/live';
+import { AIRPORTS, localDate, toRouteLine, type Flight, type Itinerary } from '@/engine';
+import { sampleRouteImpacts, useFlightStatuses, useRouteImpacts } from '@/live';
 import { GlobeMap, type MapAirport } from '@/map';
 import { nearestAirport } from '@/search/airports';
 import { searchRequest } from '@/search/areas';
 import { dateChips } from '@/search/dates';
 import { chooseOrigin, showLocationCard } from '@/search/origin';
+import { resultsBanner, rowStatus, statusLookups } from '@/search/statusTags';
 import { SAMPLE_TZ, useRouteSearch } from '@/search/useRouteSearch';
 import { minTapTarget, spacing, textStyles, useColors } from '@/theme';
 import { AirportPicker } from '@/ui/AirportPicker';
@@ -23,6 +24,7 @@ import { PreviewControl, type PreviewPhase } from '@/ui/PreviewControl';
 import { useReducedMotion } from '@/ui/useReducedMotion';
 import { useSharedLocation } from '@/ui/LocationProvider';
 import { LocationOptInCard } from '@/ui/LocationOptInCard';
+import { ResultsBanner } from '@/ui/ResultsBanner';
 import { ResultsPanel } from '@/ui/ResultsPanel';
 import { SearchPanel } from '@/ui/SearchPanel';
 import { RadarButton } from '@/ui/RadarButton';
@@ -35,6 +37,7 @@ const PEEK = 132;
 const SHEET = { peek: 0, half: 1, full: 2 } as const;
 
 const airport = (code: string) => AIRPORTS[code];
+const SAMPLE_STATUS_OPTIONS = { config: null } as const;
 const mark = (code: string): MapAirport => ({ code, coord: [AIRPORTS[code].lon, AIRPORTS[code].lat] });
 
 /**
@@ -100,7 +103,24 @@ export default function HomeScreen() {
     return () => clearInterval(t);
   }, []);
 
-  const results = useMemo(() => (state.status === 'done' ? state.results : []), [state]);
+  // Empty search (Q-047): a banner under Find Routes instead of a results
+  // panel. "Show Them" lists the hidden routes for this search only; the
+  // saved filters don't change. The banner goes away as soon as the date,
+  // From or To no longer match the search it describes.
+  const bannerCurrent =
+    state.status === 'done' &&
+    state.request.date === date &&
+    state.request.origin === origin &&
+    state.request.destination === destination;
+  const emptyBanner = state.status === 'done' ? resultsBanner(state) : null;
+  const banner = bannerCurrent ? emptyBanner : null;
+  const [showHidden, setShowHidden] = useState(false);
+  useEffect(() => setShowHidden(false), [state]);
+  const showResults = state.status !== 'idle' && (!emptyBanner || showHidden);
+  const results = useMemo(
+    () => (state.status !== 'done' ? [] : showHidden ? state.hiddenResults : state.results),
+    [state, showHidden],
+  );
   const routes = useMemo(() => results.map((it) => toRouteLine(it, airport)), [results]);
 
   // Delay/weather badges (item 7). Until the live functions are deployed the
@@ -110,6 +130,14 @@ export default function HomeScreen() {
   const impacts = useMemo(
     () => (sampleImpacts ? sampleRouteImpacts(results) : live),
     [sampleImpacts, results, live],
+  );
+  // Live status tags on every row (Q-047, Q-050): one lookup per distinct flight.
+  const lookups = useMemo(() => statusLookups(results), [results]);
+  // Flights are sample data until the schedule DB lands, so their statuses are too.
+  const flightStatuses = useFlightStatuses(lookups, SAMPLE_STATUS_OPTIONS);
+  const rowStatuses = useMemo(
+    () => Object.fromEntries(results.map((it) => [it.id, rowStatus(it, flightStatuses.byKey, filters)])),
+    [results, flightStatuses.byKey, filters],
   );
   const [impactFor, setImpactFor] = useState<string | null>(null);
   const [statusFlight, setStatusFlight] = useState<Flight | null>(null);
@@ -191,7 +219,6 @@ export default function HomeScreen() {
   const filtersChanged = changedFilters(filters, settings.search);
   const selected = results.find((r) => r.id === selectedId);
   const firstLeg = selected?.legs[0].flight;
-  const lastChip = chips[chips.length - 1].date;
 
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: c.bg }]} edges={['top']}>
@@ -226,7 +253,7 @@ export default function HomeScreen() {
         ) : null}
         {bodyHeight > 0 ? (
           <Sheet snaps={snaps} index={sheetIndex} onIndexChange={setSheetIndex}>
-            {state.status === 'idle' ? (
+            {!showResults ? (
               <SearchPanel
                 chips={chips}
                 date={date}
@@ -257,6 +284,11 @@ export default function HomeScreen() {
                     />
                   ) : null
                 }
+                banner={
+                  banner ? (
+                    <ResultsBanner banner={banner} onShow={() => setShowHidden(true)} onDismiss={reset} />
+                  ) : null
+                }
               />
             ) : (
               <ResultsPanel
@@ -275,6 +307,9 @@ export default function HomeScreen() {
                 onImpactPress={setImpactFor}
                 onLegPress={setStatusFlight}
                 sampleImpacts={sampleImpacts}
+                statuses={rowStatuses}
+                sampleStatus={flightStatuses.sample && results.length > 0}
+                showingHidden={showHidden}
                 selectedCard={
                   firstLeg ? (
                     <View style={styles.selectedCard}>
@@ -308,16 +343,6 @@ export default function HomeScreen() {
                       />
                     </View>
                   ) : null
-                }
-                onLoosen={() => setFiltersOpen(true)}
-                onTomorrow={
-                  state.request.date < lastChip
-                    ? () => {
-                        const next = addDays(state.request.date, 1);
-                        setDate(next);
-                        rerun(next);
-                      }
-                    : null
                 }
               />
             )}

@@ -4,6 +4,7 @@ import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from '
 import type { Flight, Itinerary } from '@/engine';
 import type { RouteImpact } from '@/live';
 import { shortDate } from '@/search/dates';
+import type { RowStatus } from '@/search/statusTags';
 import type { SearchState } from '@/search/useRouteSearch';
 import { minTapTarget, radius, spacing, textStyles, useColors } from '@/theme';
 
@@ -17,9 +18,6 @@ export interface ResultsPanelProps {
   onSelect: (id: string) => void;
   onBack: () => void;
   onRetry: () => void;
-  onLoosen: () => void;
-  /** Null when tomorrow is past the 0-7 day window. */
-  onTomorrow: (() => void) | null;
   /** Leave-by card for the selected route (fixed above the list). */
   selectedCard?: ReactNode;
   /** Delay/weather impact per itinerary id (item 7). */
@@ -30,12 +28,18 @@ export interface ResultsPanelProps {
   onLegPress?: (flight: Flight) => void;
   /** Label shown while impacts are dev sample data. */
   sampleImpacts?: boolean;
+  /** Live status tags per itinerary id (Q-050). */
+  statuses?: Record<string, RowStatus>;
+  /** Label shown while flight statuses are sample data. */
+  sampleStatus?: boolean;
+  /** "Show Them": routes the filters hid, shown for this search only (Q-047). */
+  showingHidden?: boolean;
 }
 
 export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(function ResultsPanel(p, ref) {
   const c = useColors();
   const { request } = p.state;
-  const results = p.state.status === 'done' ? p.state.results : [];
+  const results = p.state.status !== 'done' ? [] : p.showingHidden ? p.state.hiddenResults : p.state.results;
   const full = results.filter((r) => r.isFull).length;
 
   // Fixed above the list so the sample-data label never scrolls away.
@@ -48,7 +52,10 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
         style={styles.back}>
         <Text style={[textStyles.heading, { color: c.accent }]}>‹ Search</Text>
       </Pressable>
-      <SampleLabel text={p.sampleImpacts ? 'Sample flights and delays' : undefined} />
+      <View style={styles.labels}>
+        <SampleLabel text={p.sampleImpacts ? 'Sample flights and delays' : undefined} />
+        {p.sampleStatus ? <SampleLabel text="Sample status" /> : null}
+      </View>
     </View>
   );
 
@@ -63,6 +70,9 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
           ? ` · ${results.length} ${results.length === 1 ? 'route' : 'routes'}${full ? `, ${full} full` : ''}`
           : ''}
       </Text>
+      {p.showingHidden ? (
+        <Text style={[textStyles.small, { color: c.muted }]}>Showing routes your filters hid, for this search only.</Text>
+      ) : null}
     </View>
   );
 
@@ -114,18 +124,10 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
             impactLoading={p.impactsLoading}
             onImpactPress={p.onImpactPress}
             onLegPress={p.onLegPress}
+            status={p.statuses?.[item.id]}
           />
         )}
         onScrollToIndexFailed={() => {}}
-        ListEmptyComponent={
-          <View style={styles.state}>
-            <Text style={[textStyles.body, { color: c.text }]}>No routes found for this day.</Text>
-            <View style={styles.emptyActions}>
-              <Button label="Loosen Filters" kind="secondary" onPress={p.onLoosen} />
-              {p.onTomorrow ? <Button label="Search Tomorrow" onPress={p.onTomorrow} /> : null}
-            </View>
-          </View>
-        }
         ListFooterComponent={
           <Text style={[textStyles.small, styles.footer, { color: c.muted }]}>
             Follow your airline’s rules on sharing loads.
@@ -157,6 +159,6 @@ const styles = StyleSheet.create({
   back: { minHeight: minTapTarget, justifyContent: 'center', paddingRight: spacing.page },
   sep: { height: spacing.group },
   state: { paddingVertical: spacing.page, gap: spacing.section, alignItems: 'flex-start' },
-  emptyActions: { flexDirection: 'row', gap: spacing.group },
+  labels: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-end', gap: 4, flexShrink: 1 },
   footer: { paddingTop: spacing.section },
 });

@@ -3,7 +3,7 @@ import type { AirportStatus, LiveFaaStatusResponse } from '../../supabase/functi
 export type { AirportStatus, LiveFaaStatusResponse };
 export type { AirportStatusLevel, FaaEvent, FaaEventType } from '../../supabase/functions/_shared/faaStatus';
 
-export type Fetcher = (url: string, init?: { headers?: Record<string, string> }) => Promise<{
+export type Fetcher = (url: string, init?: { headers?: Record<string, string>; method?: string; body?: string }) => Promise<{
   ok: boolean;
   status: number;
   json(): Promise<unknown>;

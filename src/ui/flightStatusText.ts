@@ -40,10 +40,9 @@ export function placeText(m: Movement): string {
   return parts.length ? parts.join(' · ') : 'Gate not posted yet';
 }
 
-/** Age line, always shown: "Updated 4m ago", with the stale / paused reason when it applies. */
+/** Age line, always shown: "Updated 4m ago", with the stale reason when it applies. No spend cap, so no "paused" (Q-049). */
 export function ageText(r: FlightStatusResponse, now: number): string {
   const age = r.fetchedAt ? `Updated ${formatAge(Date.parse(r.fetchedAt), now)}` : 'Not updated yet';
-  if (r.paused) return `${age} · live updates are paused for now`;
   if (r.stale) return `${age} · may be out of date`;
   return age;
 }
