@@ -28,8 +28,12 @@ const flight = (id: string, from: string, to: string, time: string, min: number,
 };
 const seats = (s: Partial<LegSeats>): LegSeats => ({ source: 'reported', tier: 'good', netSeats: 22, asOf: NOW, ...s });
 
-async function itinerary(flights: Flight[], origin: string, destination: string, reports = {}) {
-  const [it] = await searchItineraries(createMemoryProvider(flights, reports), { origin, destination, date: DATE }, { now: NOW });
+async function itinerary(flights: Flight[], origin: string, destination: string, reports = {}, originArea = false) {
+  const [it] = await searchItineraries(
+    createMemoryProvider(flights, reports),
+    { origin, destination, date: DATE, originArea },
+    { now: NOW },
+  );
   return it;
 }
 
@@ -87,9 +91,14 @@ describe('row text', () => {
     expect(rowTimes(it)).toEqual({ depart: '9:00 PM', arrive: '6:40 AM', plusDays: '+1' });
   });
 
-  it('notes nearby airports', async () => {
-    const it = await itinerary([flight('1', 'DAL', 'LAX', '09:00', 200)], 'DFW', 'LAX');
+  it('notes area airports', async () => {
+    const it = await itinerary([flight('1', 'DAL', 'LAX', '09:00', 200)], 'DFW', 'LAX', {}, true);
     expect(nearbyNotes(it)).toEqual(['Leaves from DAL, 35 min from DFW']);
+  });
+
+  it('says "near" when an area pair has no transfer time yet', async () => {
+    const it = await itinerary([flight('1', 'DAL', 'LAX', '09:00', 200)], 'DFW', 'LAX', {}, true);
+    expect(nearbyNotes({ ...it, originTransferMin: null })).toEqual(['Leaves from DAL, near DFW']);
   });
 
   it('builds a full VoiceOver label', async () => {

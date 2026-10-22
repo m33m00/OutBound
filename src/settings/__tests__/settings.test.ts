@@ -17,7 +17,8 @@ describe('parseSettings', () => {
       bufferMin: 90,
       useLocation: true,
       radarOn: false,
-      search: { ...DEFAULT_FILTERS, maxStops: 1, nearbyAirports: false, maxLayoverMin: 300 },
+      search: { ...DEFAULT_FILTERS, maxStops: 1, maxLayoverMin: 300 },
+      areaOn: { DAL: true, DFW: false },
     };
     expect(parseSettings(JSON.parse(JSON.stringify(saved)))).toEqual(saved);
   });
@@ -39,7 +40,7 @@ describe('parseSettings', () => {
 describe('changedFilters', () => {
   it('counts differences from the saved defaults', () => {
     expect(changedFilters(DEFAULT_FILTERS)).toBe(0);
-    expect(changedFilters({ ...DEFAULT_FILTERS, maxStops: 1, nearbyAirports: false })).toBe(2);
+    expect(changedFilters({ ...DEFAULT_FILTERS, maxStops: 1, maxLayoverMin: 300 })).toBe(2);
     const saved = { ...DEFAULT_FILTERS, maxStops: 1 };
     expect(changedFilters(saved, saved)).toBe(0);
   });
@@ -61,7 +62,7 @@ describe('homes (Q-026)', () => {
     });
   });
 
-  it('lists main first, adds same-group nearby airports, then extras', () => {
+  it('lists main first, adds the rest of its area, then extras', () => {
     expect(homeAirports({ main: 'DFW', extras: ['ORD', 'DAL'] })).toEqual([
       { code: 'DFW', main: true, auto: false },
       { code: 'DAL', main: false, auto: true },
@@ -80,5 +81,30 @@ describe('radar setting (Q-032)', () => {
     expect(DEFAULT_SETTINGS.radarOn).toBe(true);
     expect(parseSettings({ radarOn: false }).radarOn).toBe(false);
     expect(parseSettings({ radarOn: 'no' }).radarOn).toBe(true);
+  });
+});
+
+describe('old settings (Q-048, Q-052)', () => {
+  it('loads saved nearbyAirports and maxGroundTransferMin without crashing, ignoring them', () => {
+    const old = {
+      bufferMin: 90,
+      search: { maxStops: 2, nearbyAirports: false, maxGroundTransferMin: 45, maxLayoverMin: 300 },
+    };
+    const s = parseSettings(JSON.parse(JSON.stringify(old)));
+    expect(s.search).toEqual({ ...DEFAULT_FILTERS, maxStops: 2, maxLayoverMin: 300 });
+    expect(s.bufferMin).toBe(90);
+    expect(s.areaOn).toEqual({});
+  });
+});
+
+describe('area toggle memory (Q-048)', () => {
+  it('is off by default', () => {
+    expect(DEFAULT_SETTINGS.areaOn).toEqual({});
+  });
+
+  it('remembers the last choice per airport and drops junk', () => {
+    const s = parseSettings({ areaOn: { DAL: true, DFW: false, XXX: true, ORD: 'yes' } });
+    expect(s.areaOn).toEqual({ DAL: true, DFW: false });
+    expect(parseSettings({ areaOn: 'nope' }).areaOn).toEqual({});
   });
 });

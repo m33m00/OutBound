@@ -23,31 +23,84 @@ export const AIRPORTS: Record<string, Airport> = Object.fromEntries(
   ).map(([code, name, lon, lat, tz]) => [code, { code, name, lon, lat, tz }]),
 );
 
-export interface NearbyGroup {
-  airports: readonly string[];
-  /** Ground transfer between any two airports in the group, minutes. */
-  transferMin: number;
+/**
+ * Airport areas (Q-048): IATA metropolitan city groupings as major airlines
+ * use them. Primary airport first; the card lists them in this order.
+ * Only airports in the app's data count, and an area needs 2+ of them, so
+ * most rows stay dormant until their airports are added (today: Dallas).
+ * Groupings marked "unsure" have no single official IATA metro code; they
+ * follow how airline booking sites group the city.
+ */
+export const AREA_TABLE: readonly { city: string; airports: readonly string[] }[] = [
+  // United States
+  { city: 'Dallas', airports: ['DAL', 'DFW'] }, // IATA DFW; order per DECISIONS.md example
+  { city: 'Houston', airports: ['IAH', 'HOU'] }, // IATA HOU
+  { city: 'Chicago', airports: ['ORD', 'MDW'] }, // IATA CHI
+  { city: 'New York', airports: ['JFK', 'LGA', 'EWR'] }, // IATA NYC
+  { city: 'Washington', airports: ['IAD', 'DCA', 'BWI'] }, // IATA WAS
+  { city: 'Los Angeles', airports: ['LAX', 'BUR', 'LGB', 'SNA', 'ONT'] }, // unsure: no IATA metro code
+  { city: 'Bay Area', airports: ['SFO', 'OAK', 'SJC'] }, // unsure: no IATA metro code
+  { city: 'Miami', airports: ['MIA', 'FLL'] }, // unsure: some airlines add PBI
+  { city: 'Orlando', airports: ['MCO', 'SFB'] }, // unsure: IATA ORL; SFB inclusion varies
+  // Canada and Latin America
+  { city: 'Toronto', airports: ['YYZ', 'YTZ'] }, // IATA YTO
+  { city: 'Mexico City', airports: ['MEX', 'NLU'] }, // unsure: NLU grouping varies
+  { city: 'São Paulo', airports: ['GRU', 'CGH', 'VCP'] }, // IATA SAO
+  { city: 'Rio de Janeiro', airports: ['GIG', 'SDU'] }, // IATA RIO
+  { city: 'Buenos Aires', airports: ['EZE', 'AEP'] }, // IATA BUE
+  // Europe
+  { city: 'London', airports: ['LHR', 'LGW', 'STN', 'LTN', 'LCY', 'SEN'] }, // IATA LON
+  { city: 'Paris', airports: ['CDG', 'ORY'] }, // IATA PAR (BVA unsure, left out)
+  { city: 'Milan', airports: ['MXP', 'LIN', 'BGY'] }, // IATA MIL
+  { city: 'Rome', airports: ['FCO', 'CIA'] }, // IATA ROM
+  { city: 'Stockholm', airports: ['ARN', 'BMA'] }, // IATA STO
+  { city: 'Istanbul', airports: ['IST', 'SAW'] }, // unsure: IATA IST city code
+  // Asia
+  { city: 'Tokyo', airports: ['HND', 'NRT'] }, // IATA TYO
+  { city: 'Osaka', airports: ['KIX', 'ITM'] }, // IATA OSA
+  { city: 'Seoul', airports: ['ICN', 'GMP'] }, // IATA SEL
+  { city: 'Shanghai', airports: ['PVG', 'SHA'] }, // IATA SHA
+  { city: 'Beijing', airports: ['PEK', 'PKX'] }, // IATA BJS
+  { city: 'Taipei', airports: ['TPE', 'TSA'] }, // IATA TPE
+  { city: 'Bangkok', airports: ['BKK', 'DMK'] }, // IATA BKK
+];
+
+/**
+ * Ground transfer between two area airports, minutes, keyed "AAA-BBB" in
+ * alphabetical order. Internal data for the "Leaves from DAL, 35 min from
+ * DFW" notes. 35 is provisional (Q-012/Q-052); pairs not listed are unknown.
+ */
+const TRANSFER_MIN: Record<string, number> = { 'DAL-DFW': 35 };
+
+export interface Area {
+  city: string;
+  /** Airports in the app's data, table order. Always 2+. */
+  airports: string[];
+}
+
+/** The area `code` belongs to, counting only airports in `known`; null if under 2. */
+export function areaFor(code: string, known: Readonly<Record<string, unknown>> = AIRPORTS): Area | null {
+  const row = AREA_TABLE.find((a) => a.airports.includes(code));
+  if (!row || !(code in known)) return null;
+  const airports = row.airports.filter((c) => c in known);
+  return airports.length >= 2 ? { city: row.city, airports } : null;
+}
+
+/** Ground transfer minutes between two airports: 0 for the same one, null if unknown. */
+export function transferMin(a: string, b: string): number | null {
+  if (a === b) return 0;
+  return TRANSFER_MIN[a < b ? `${a}-${b}` : `${b}-${a}`] ?? null;
 }
 
 /**
- * Nearby airport groups. DECISIONS.md confirms DAL<->DFW only; other metros
- * and all transfer times are pending John (Q-012). 35 min is provisional.
+ * One end of a search as [code, transferMin] pairs: the requested airport
+ * (transfer 0) first, plus the rest of its area when `wholeArea` is on.
  */
-export const NEARBY_GROUPS: readonly NearbyGroup[] = [{ airports: ['DAL', 'DFW'], transferMin: 35 }];
-
-/**
- * The requested airport (transfer 0) plus nearby airports within
- * `maxTransferMin`, as [code, transferMin] pairs.
- */
-export function airportsNear(
-  code: string,
-  maxTransferMin: number,
-  groups: readonly NearbyGroup[] = NEARBY_GROUPS,
-): [string, number][] {
-  const out: [string, number][] = [[code, 0]];
-  for (const g of groups) {
-    if (!g.airports.includes(code) || g.transferMin > maxTransferMin) continue;
-    for (const other of g.airports) if (other !== code) out.push([other, g.transferMin]);
+export function endAirports(code: string, wholeArea: boolean): [string, number | null][] {
+  const out: [string, number | null][] = [[code, 0]];
+  if (!wholeArea) return out;
+  for (const other of areaFor(code)?.airports ?? []) {
+    if (other !== code) out.push([other, transferMin(code, other)]);
   }
   return out;
 }

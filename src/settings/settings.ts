@@ -3,17 +3,16 @@
  * moves to the account when login exists. Values are clamped on read so a
  * bad or old saved value can't break search.
  */
-import { AIRPORTS, airportsNear, DEFAULT_SEARCH_OPTIONS, type SearchOptions } from '@/engine';
+import { AIRPORTS, areaFor, DEFAULT_SEARCH_OPTIONS, type SearchOptions } from '@/engine';
 
-/** The search settings people can adjust (DECISIONS.md: "All adjustable"). */
+/**
+ * The search settings people can adjust (DECISIONS.md: "All adjustable").
+ * The old "Nearby airports" switch and "Longest ground transfer" stepper are
+ * gone (Q-048, Q-052): areas replace them. Old saved values are ignored.
+ */
 export type SearchFilters = Pick<
   SearchOptions,
-  | 'maxStops'
-  | 'minConnectSameAirlineMin'
-  | 'minConnectSwitchMin'
-  | 'maxLayoverMin'
-  | 'nearbyAirports'
-  | 'maxGroundTransferMin'
+  'maxStops' | 'minConnectSameAirlineMin' | 'minConnectSwitchMin' | 'maxLayoverMin'
 >;
 
 export const DEFAULT_FILTERS: SearchFilters = {
@@ -21,8 +20,6 @@ export const DEFAULT_FILTERS: SearchFilters = {
   minConnectSameAirlineMin: DEFAULT_SEARCH_OPTIONS.minConnectSameAirlineMin,
   minConnectSwitchMin: DEFAULT_SEARCH_OPTIONS.minConnectSwitchMin,
   maxLayoverMin: DEFAULT_SEARCH_OPTIONS.maxLayoverMin,
-  nearbyAirports: DEFAULT_SEARCH_OPTIONS.nearbyAirports,
-  maxGroundTransferMin: DEFAULT_SEARCH_OPTIONS.maxGroundTransferMin,
 };
 
 /** Stepper limits, shared by settings and the Filters panel (provisional ranges). */
@@ -31,7 +28,6 @@ export const LIMITS = {
   minConnectSameAirlineMin: { min: 30, max: 180, step: 15 },
   minConnectSwitchMin: { min: 45, max: 240, step: 15 },
   maxLayoverMin: { min: 60, max: 720, step: 30 },
-  maxGroundTransferMin: { min: 15, max: 120, step: 15 },
 } as const;
 
 /** Home airports (Q-026): one main home plus optional extras. */
@@ -50,6 +46,8 @@ export interface Settings {
   radarOn: boolean;
   /** Defaults the Filters panel starts from. */
   search: SearchFilters;
+  /** Area toggle per airport code, last choice (Q-048). Missing = off. */
+  areaOn: Record<string, boolean>;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -58,6 +56,7 @@ export const DEFAULT_SETTINGS: Settings = {
   useLocation: false,
   radarOn: true,
   search: DEFAULT_FILTERS,
+  areaOn: {},
 };
 
 export const SETTINGS_KEY = 'outbound.settings.v1';
@@ -82,6 +81,10 @@ export function parseSettings(raw: unknown): Settings {
   const extras = Array.isArray(h.extras)
     ? [...new Set(h.extras.filter(known))].filter((code) => code !== main)
     : [];
+  const a = (o.areaOn && typeof o.areaOn === 'object' ? o.areaOn : {}) as Record<string, unknown>;
+  const areaOn = Object.fromEntries(
+    Object.entries(a).filter((e): e is [string, boolean] => known(e[0]) && typeof e[1] === 'boolean'),
+  );
   return {
     homes: { main, extras },
     bufferMin: num(o.bufferMin, DEFAULT_SETTINGS.bufferMin, LIMITS.bufferMin),
@@ -92,9 +95,8 @@ export function parseSettings(raw: unknown): Settings {
       minConnectSameAirlineMin: num(s.minConnectSameAirlineMin, d.minConnectSameAirlineMin, LIMITS.minConnectSameAirlineMin),
       minConnectSwitchMin: num(s.minConnectSwitchMin, d.minConnectSwitchMin, LIMITS.minConnectSwitchMin),
       maxLayoverMin: num(s.maxLayoverMin, d.maxLayoverMin, LIMITS.maxLayoverMin),
-      nearbyAirports: bool(s.nearbyAirports, d.nearbyAirports),
-      maxGroundTransferMin: num(s.maxGroundTransferMin, d.maxGroundTransferMin, LIMITS.maxGroundTransferMin),
     },
+    areaOn,
   };
 }
 
@@ -106,16 +108,17 @@ export function changedFilters(f: SearchFilters, base: SearchFilters = DEFAULT_F
 export interface HomeAirport {
   code: string;
   main: boolean;
-  /** Added automatically: same nearby group as the main home (Q-026). */
+  /** Added automatically: same area as the main home (Q-026, Q-048). */
   auto: boolean;
 }
 
-/** All home airports, main first, then nearby-group airports, then extras. */
+/** All home airports, main first, then the rest of its area, then extras. */
 export function homeAirports(homes: Homes): HomeAirport[] {
   if (!homes.main) return homes.extras.map((code) => ({ code, main: false, auto: false }));
   const out: HomeAirport[] = [{ code: homes.main, main: true, auto: false }];
-  // Unlimited transfer: every airport in the main home's group counts.
-  for (const [code] of airportsNear(homes.main, Infinity).slice(1)) out.push({ code, main: false, auto: true });
+  for (const code of areaFor(homes.main)?.airports ?? []) {
+    if (code !== homes.main) out.push({ code, main: false, auto: true });
+  }
   for (const code of homes.extras) {
     if (!out.some((h) => h.code === code)) out.push({ code, main: false, auto: false });
   }

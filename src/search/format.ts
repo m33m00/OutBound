@@ -75,14 +75,17 @@ export function stopsText(it: Itinerary): string {
   return `${it.stops} ${it.stops === 1 ? 'stop' : 'stops'} · ${where}`;
 }
 
-/** Nearby-airport notes, e.g. "Leaves from DAL, 35 min from DFW". */
+/** "35 min from DFW", or "near DFW" when the transfer time is unknown. */
+const fromText = (min: number | null, code: string) => (min == null ? `near ${code}` : `${min} min from ${code}`);
+
+/** Area-airport notes, e.g. "Leaves from DAL, 35 min from DFW". */
 export function nearbyNotes(it: Itinerary): string[] {
   const notes: string[] = [];
   if (it.origin !== it.requestedOrigin) {
-    notes.push(`Leaves from ${it.origin}, ${it.originTransferMin} min from ${it.requestedOrigin}`);
+    notes.push(`Leaves from ${it.origin}, ${fromText(it.originTransferMin, it.requestedOrigin)}`);
   }
   if (it.destination !== it.requestedDestination) {
-    notes.push(`Arrives at ${it.destination}, ${it.destinationTransferMin} min from ${it.requestedDestination}`);
+    notes.push(`Arrives at ${it.destination}, ${fromText(it.destinationTransferMin, it.requestedDestination)}`);
   }
   return notes;
 }

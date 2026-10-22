@@ -16,9 +16,9 @@ Condensed from the project docs: MVP decisions (through v8.8), design direction 
 - Leave-by card airport buffer (Q-003, 2026-10-13): tester setting, default 75 min before departure.
   - Leave-by travel time (Q-023, 2026-10-14): uses phone location. Card is for the selected route's first leg, times in the departure airport's local time.
   - Provisional (v9.1 prototype details, John chose the approach): ~~location requested only on "Use Location" tap (card) or "Use my location" toggle (settings), never at launch~~ (superseded 2026-10-21 by Q-051: one launch-time opt-in card, see Default origin); location fresh for 20 min; within 400 km: drive min = round((km x 1.3 / 55 x 60 + 10) / 5) x 5; within 3 km: "You're at {AP}"; no fresh location or out of range: "Be at {AP} by {time}" with "{buffer} min before departure to list and clear security"; late on the day: "Leave now".
-- Settings (Q-024, 2026-10-14), reached from the Profile button: airport buffer (default 75, step 5, range 30-180 provisional), "Use my location", and search defaults (max stops, same-airline and switching connection minimums, longest layover, ~~nearby airports~~ (superseded 2026-10-21 by Q-048: replaced by the per-card Area toggle), longest ground transfer (fate open, Q-052)). The Filters panel starts from the saved defaults.
+- Settings (Q-024, 2026-10-14), reached from the Profile button: airport buffer (default 75, step 5, range 30-180 provisional), "Use my location", and search defaults (max stops, same-airline and switching connection minimums, longest layover, ~~nearby airports~~ (superseded 2026-10-21 by Q-048: replaced by the per-card Area toggle), ~~longest ground transfer~~ (removed 2026-10-21 by Q-052; per-area transfer minutes stay internal)). The Filters panel starts from the saved defaults.
 - Settings persistence (Q-025, 2026-10-14): saved on the phone (AsyncStorage) now; move to the account when login exists.
-- Home airports (Q-026, 2026-10-14): one main home airport plus optional extra homes, set in Settings (Profile). Airports in the same nearby group as the main home (today DAL↔DFW, NEARBY_GROUPS) are added as homes automatically.
+- Home airports (Q-026, 2026-10-14): one main home airport plus optional extra homes, set in Settings (Profile). Airports in the same area as the main home (area table in `src/engine/airports.ts`; today DAL↔DFW) are added as homes automatically.
   - Search "From" starts at the main home (when location is off or unavailable; otherwise nearest airport, Q-051, 2026-10-21).
   - "Get Home" button on search: shown when a main home is set and From is not one of your homes; sets To = main home and searches. Always searches all airports in the home's area (Q-048, 2026-10-21).
   - Map: home airports are amber house pins (main = filled pin, others = outline pins); amber stays "you" only.
@@ -29,7 +29,7 @@ Condensed from the project docs: MVP decisions (through v8.8), design direction 
   - Areas = IATA metropolitan city groupings as major airlines use them, limited to cities with 2+ airports in the app's data (today only Dallas: DAL, DFW).
   - Toggle default off, then remembered per airport (last choice). Picker list shows airports only, no area rows.
   - Get Home always searches all airports in the home's area.
-  - Supersedes the "Nearby airports on" default and the Q-012 candidate-metro list (NEARBY_GROUPS stays only as the data source until replaced by area data).
+  - Supersedes the "Nearby airports on" default and the Q-012 candidate-metro list. NEARBY_GROUPS was replaced by the area table in `src/engine/airports.ts` (backlog 22).
 - Default origin (Q-051, 2026-10-21, John), backlog 23:
   - Default origin = nearest airport to the user, however far. First launch shows the app's own card "Start searches from the airport nearest you?" with Allow / Not Now; the iOS location prompt appears only after Allow. Not Now = never asked at launch again; can be enabled in Profile.
   - Origin refreshes on app open if the saved location is older than 20 min; it never overwrites an airport the user picked while the app is open.

@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { LIMITS, type SearchFilters } from '@/settings/settings';
 import { minTapTarget, radius, spacing, textStyles, useColors } from '@/theme';
@@ -50,25 +50,6 @@ export function FiltersForm({ filters: f, onChange }: { filters: SearchFilters; 
         {...LIMITS.maxLayoverMin}
         onChange={(v) => set({ maxLayoverMin: v })}
       />
-
-      <Text style={[textStyles.heading, { color: c.text }]}>Nearby airports</Text>
-      <View style={styles.row}>
-        <Text style={[textStyles.body, styles.label, { color: c.text }]}>Include nearby airports</Text>
-        <Switch
-          value={f.nearbyAirports}
-          onValueChange={(v) => set({ nearbyAirports: v })}
-          accessibilityLabel="Include nearby airports"
-          trackColor={{ true: c.accent, false: c.line2 }}
-        />
-      </View>
-      {f.nearbyAirports ? (
-        <Stepper
-          label="Longest ground transfer"
-          value={f.maxGroundTransferMin}
-          {...LIMITS.maxGroundTransferMin}
-          onChange={(v) => set({ maxGroundTransferMin: v })}
-        />
-      ) : null}
     </View>
   );
 }
@@ -83,6 +64,4 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  row: { flexDirection: 'row', alignItems: 'center', gap: spacing.group, minHeight: minTapTarget },
-  label: { flex: 1 },
 });

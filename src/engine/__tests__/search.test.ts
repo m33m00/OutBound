@@ -13,8 +13,13 @@ function search(
   options: Partial<SearchOptions> = {},
   reports: Record<string, SeatReport[]> = {},
   date = DATE,
+  area: { originArea?: boolean; destinationArea?: boolean } = {},
 ) {
-  return searchItineraries(createMemoryProvider(flights, reports), { origin, destination, date }, { now: NOW, ...options });
+  return searchItineraries(
+    createMemoryProvider(flights, reports),
+    { origin, destination, date, ...area },
+    { now: NOW, ...options },
+  );
 }
 
 const ids = (list: { id: string }[]) => list.map((i) => i.id);
@@ -129,15 +134,22 @@ describe('searchItineraries: dates', () => {
   });
 });
 
-describe('searchItineraries: nearby airports (DAL<->DFW)', () => {
+describe('searchItineraries: airport areas (Dallas: DAL, DFW)', () => {
   const flights = [
     flight('dfw', 'AA', 'DFW', 'LAX', '09:00', 200),
     flight('dal', 'WN', 'DAL', 'LAX', '10:00', 200),
     flight('in', 'WN', 'BNA', 'DAL', '06:00', 120),
   ];
+  const wholeFrom = { originArea: true };
+  const wholeTo = { destinationArea: true };
 
-  it('includes the nearby origin and flags it', async () => {
-    const result = await search(flights, 'DFW', 'LAX');
+  it('searches exactly the requested airports when the toggles are off', async () => {
+    expect(ids(await search(flights, 'DFW', 'LAX'))).toEqual(['dfw']);
+    expect(await search(flights, 'BNA', 'DFW')).toEqual([]);
+  });
+
+  it('includes the area origin when its toggle is on, and flags it', async () => {
+    const result = await search(flights, 'DFW', 'LAX', {}, {}, DATE, wholeFrom);
     expect(ids(result)).toEqual(['dfw', 'dal']);
     expect(result[1]).toMatchObject({
       requestedOrigin: 'DFW',
@@ -147,22 +159,24 @@ describe('searchItineraries: nearby airports (DAL<->DFW)', () => {
     });
   });
 
-  it('includes the nearby destination', async () => {
-    const [it] = await search(flights, 'BNA', 'DFW');
+  it('includes the area destination when its toggle is on', async () => {
+    const [it] = await search(flights, 'BNA', 'DFW', {}, {}, DATE, wholeTo);
     expect(it).toMatchObject({ destination: 'DAL', requestedDestination: 'DFW', destinationTransferMin: 35 });
   });
 
-  it('can be turned off or limited by transfer time', async () => {
-    expect(ids(await search(flights, 'DFW', 'LAX', { nearbyAirports: false }))).toEqual(['dfw']);
-    expect(ids(await search(flights, 'DFW', 'LAX', { maxGroundTransferMin: 30 }))).toEqual(['dfw']);
+  it('expands each end on its own toggle only', async () => {
+    const back = [flight('r1', 'AA', 'LAX', 'DFW', '09:00', 180), flight('r2', 'WN', 'LAX', 'DAL', '10:00', 180)];
+    expect(ids(await search(flights, 'DFW', 'LAX', {}, {}, DATE, wholeTo))).toEqual(['dfw']);
+    expect(ids(await search(back, 'LAX', 'DFW', {}, {}, DATE, wholeFrom))).toEqual(['r1']);
+    expect(ids(await search(back, 'LAX', 'DFW', {}, {}, DATE, wholeTo))).toEqual(['r1', 'r2']);
   });
 
-  it('never connects through an origin/destination group airport', async () => {
+  it('never connects through an origin/destination area airport', async () => {
     const viaDal = [
       flight('a', 'WN', 'DFW', 'DAL', '06:00', 30),
       flight('b', 'WN', 'DAL', 'LAX', '08:00', 200),
     ];
-    expect(ids(await search(viaDal, 'DFW', 'LAX'))).toEqual(['b']);
+    expect(ids(await search(viaDal, 'DFW', 'LAX', {}, {}, DATE, wholeFrom))).toEqual(['b']);
   });
 });
 

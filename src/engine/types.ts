@@ -91,14 +91,17 @@ export interface Itinerary {
   departUtc: number;
   arriveUtc: number;
   totalMin: number;
-  /** What the user asked for vs. what this route uses (nearby airports). */
+  /** What the user asked for vs. what this route uses (area airports, Q-048). */
   requestedOrigin: string;
   requestedDestination: string;
   origin: string;
   destination: string;
-  /** Ground transfer minutes at each end; 0 when the requested airport is used. */
-  originTransferMin: number;
-  destinationTransferMin: number;
+  /**
+   * Ground transfer minutes at each end; 0 when the requested airport is
+   * used, null when the pair has no transfer data yet.
+   */
+  originTransferMin: number | null;
+  destinationTransferMin: number | null;
   /** Weakest reported/estimate leg; 'unknown' if none. */
   tier: SeatTier;
   /** Any leg Full. Full routes stay in time order, shown grayed. */
@@ -110,6 +113,10 @@ export interface SearchRequest {
   destination: string;
   /** Local calendar date at the origin, "YYYY-MM-DD", 0-7 days out. */
   date: string;
+  /** Area toggle (Q-048): search every airport in the origin's area. Default off. */
+  originArea?: boolean;
+  /** Same for the destination. Get Home always turns it on. */
+  destinationArea?: boolean;
 }
 
 export interface SearchOptions {
@@ -121,10 +128,6 @@ export interface SearchOptions {
   minConnectSwitchMin: number;
   /** Maximum layover. Default 240. */
   maxLayoverMin: number;
-  /** Include nearby airports at origin and destination. Default on. */
-  nearbyAirports: boolean;
-  /** Maximum ground transfer between nearby airports. Default 60. */
-  maxGroundTransferMin: number;
   /** Provisional: max first departure to last arrival. Default 24h. */
   maxTripMin: number;
   /** Results returned. Default 10 (top 10 routes). */

@@ -1,4 +1,4 @@
-import { airportsNear } from './airports';
+import { endAirports } from './airports';
 import { legSeats, routeTier, tierRank } from './seats';
 import { addDays, daysBetween, localDate, minutes, zonedToUtc } from './time';
 import type {
@@ -18,8 +18,6 @@ export const DEFAULT_SEARCH_OPTIONS: Omit<SearchOptions, 'now'> = {
   minConnectSameAirlineMin: 60,
   minConnectSwitchMin: 90,
   maxLayoverMin: 240,
-  nearbyAirports: true,
-  maxGroundTransferMin: 60,
   maxTripMin: 24 * 60,
   limit: 10,
 };
@@ -62,10 +60,10 @@ export async function searchItineraries(
     throw new RangeError(`Date ${request.date} is not 0-${MAX_DAYS_OUT} days out`);
   }
 
-  const transfer = opt.nearbyAirports ? opt.maxGroundTransferMin : -1;
-  const origins = new Map(airportsNear(request.origin, transfer));
-  const destinations = new Map(airportsNear(request.destination, transfer));
-  // Intermediate stops never use an origin- or destination-group airport.
+  // Area toggle on (Q-048): that end searches every airport in its area.
+  const origins = new Map(endAirports(request.origin, !!request.originArea));
+  const destinations = new Map(endAirports(request.destination, !!request.destinationArea));
+  // Intermediate stops never use an origin- or destination-end airport.
   const ends = new Set([...origins.keys(), ...destinations.keys()]);
 
   // One fetch per airport, wide enough for the date plus a full-length trip.
@@ -147,8 +145,8 @@ export async function searchItineraries(
         requestedDestination: request.destination,
         origin: first.from,
         destination: last.to,
-        originTransferMin: origins.get(first.from) ?? 0,
-        destinationTransferMin: destinations.get(last.to) ?? 0,
+        originTransferMin: origins.get(first.from) ?? null,
+        destinationTransferMin: destinations.get(last.to) ?? null,
         tier,
         isFull: tier === 'full',
       };

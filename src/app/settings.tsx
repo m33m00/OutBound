@@ -58,7 +58,7 @@ export default function SettingsScreen() {
                 <View style={styles.label}>
                   <Text style={[textStyles.body, { color: c.text }]}>{AIRPORTS[h.code]?.name}</Text>
                   <Text style={[textStyles.small, { color: c.muted }]}>
-                    {h.main ? 'Main home' : h.auto ? 'Nearby, added automatically' : 'Also home'}
+                    {h.main ? 'Main home' : h.auto ? 'Same area, added automatically' : 'Also home'}
                   </Text>
                 </View>
                 {h.main ? (

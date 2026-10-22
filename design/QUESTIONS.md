@@ -289,11 +289,11 @@ Answer: John (2026-10-21). (5) Scheduled = no tag. "Delayed 25m" violet (existin
 Context: Search From currently starts at the main home; location is only requested on "Use Location" tap.
 Answer: John (2026-10-21). (14) Default origin = nearest airport to the user, however far. First launch shows the app's own card "Start searches from the airport nearest you?" Allow / Not Now; iOS prompt only after Allow; Not Now = never asked at launch again, can enable in Profile. Origin refreshes on app open if location is older than 20 min; never overwrites an airport the user picked while the app is open. (15) Location off: main home, else last searched origin, else empty with the existing hint. Supersedes "location requested only on Use Location tap ... never at launch" (Q-023 provisional). Unblocks backlog 23.
 
-### Q-052 Fate of "Longest ground transfer" setting  (Open)
+### Q-052 Fate of "Longest ground transfer" setting  (Answered 2026-10-21)
 Context: With the Nearby airports filter removed (Q-048), the "Longest ground transfer" stepper (default 60, Settings and Filters) only mattered when nearby was on. Area toggle includes every airport in the area, so the limit may be moot. Non-blocking: backlog 22 can leave the stepper hidden.
 A) Remove it  B) Keep it, applied to area airports  C) John specifies
 Recommendation: A, because the toggle already says "all airports".
-Answer: (John)
+Answer: John (2026-10-21), option A. Remove the setting from Filters and Settings; per-area transfer minutes stay as internal data.
 
 Provisional defaults for backlog 3 (not John-decided; John may override any time):
 - FAA cache TTL 5 min server-side; serve stale on FAA error.

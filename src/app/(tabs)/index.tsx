@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { AIRPORTS, addDays, localDate, toRouteLine, type Flight, type Itinerary } from '@/engine';
 import { sampleRouteImpacts, useRouteImpacts } from '@/live';
 import { GlobeMap, type MapAirport } from '@/map';
+import { searchRequest } from '@/search/areas';
 import { dateChips } from '@/search/dates';
 import { useRouteSearch } from '@/search/useRouteSearch';
 import { minTapTarget, spacing, textStyles, useColors } from '@/theme';
@@ -117,26 +118,35 @@ export default function HomeScreen() {
     [impacts.airports],
   );
 
+  // Area toggles (Q-048): remembered per airport code; off = exactly that airport.
+  const areaOn = settings.areaOn;
+  const toggleArea = (code: string) => updateSettings({ areaOn: { ...areaOn, [code]: !areaOn[code] } });
+
   const runSearch = useCallback(
-    (d = date, to = destination) => {
+    (d = date, to = destination, toArea?: boolean) => {
       if (!origin || !to) return;
       setSelectedId(null);
       setSheetIndex(SHEET.half);
-      search({ origin, destination: to, date: d }, filters);
+      search(searchRequest(origin, to, d, areaOn, toArea), filters);
     },
-    [origin, destination, date, filters, search],
+    [origin, destination, date, filters, search, areaOn],
   );
+  // Re-run the shown search (retry, tomorrow, filters) with its own To and area choice.
+  const rerun = (d: string) =>
+    state.status === 'idle' ? runSearch(d) : runSearch(d, state.request.destination, !!state.request.destinationArea);
 
   // Get Home: shown when away from every home (Q-026).
   const awayFromHome = mainHome != null && origin != null && !homes.some((h) => h.code === origin);
   const getHome = () => {
     if (!mainHome) return;
     setDestination(mainHome);
-    runSearch(date, mainHome);
+    // Always the whole home area, whatever its toggle says (Q-048).
+    runSearch(date, mainHome, true);
   };
 
   // Map marks (item 9): homes (main first), the search origin, and the requested
-  // destination plus any nearby airport a result actually lands at.
+  // destination plus any area airport a result actually lands at. Area origins
+  // (e.g. DAL when From is DFW) get a ring when their route is selected.
   const homeMarks = useMemo(() => homes.map((h) => mark(h.code)), [homes]);
   const searched = state.status === 'idle' ? null : state.request;
   const markOrigin = searched?.origin ?? origin;
@@ -210,6 +220,8 @@ export default function HomeScreen() {
                   setOrigin(destination);
                   setDestination(origin);
                 }}
+                areaOn={areaOn}
+                onToggleArea={toggleArea}
                 onFilters={() => setFiltersOpen(true)}
                 filtersChanged={filtersChanged}
                 onFind={() => runSearch()}
@@ -227,7 +239,7 @@ export default function HomeScreen() {
                   setSelectedId(null);
                   reset();
                 }}
-                onRetry={() => runSearch(state.request.date)}
+                onRetry={() => rerun(state.request.date)}
                 impacts={impacts.byId}
                 impactsLoading={!sampleImpacts && live.state === 'loading'}
                 onImpactPress={setImpactFor}
@@ -273,7 +285,7 @@ export default function HomeScreen() {
                     ? () => {
                         const next = addDays(state.request.date, 1);
                         setDate(next);
-                        runSearch(next);
+                        rerun(next);
                       }
                     : null
                 }
@@ -309,7 +321,7 @@ export default function HomeScreen() {
         onChange={setFilters}
         onClose={() => {
           setFiltersOpen(false);
-          if (state.status !== 'idle') runSearch(state.request.date);
+          if (state.status !== 'idle') rerun(state.request.date);
         }}
       />
     </SafeAreaView>
