@@ -11,6 +11,7 @@ Condensed from the project docs: MVP decisions (through v8.8), design direction 
 - Headline (Q-001, 2026-10-13): seat availability and live data (status, FAA delays, weather) are equal; both shown on every result row.
 
 ## Search
+- Date row (Q-045, 2026-10-21, John): 4 chips only: Today, Tomorrow and the next two days. Later dates are reached through a calendar button. The 0–7 days limit is unchanged (calendar must not allow dates outside it).
 - 0–7 days out. Max stops 0–3, default 3. Connections min 60 min same airline / 90 switching; max layover 4h. All adjustable.
 - Leave-by card airport buffer (Q-003, 2026-10-13): tester setting, default 75 min before departure.
   - Leave-by travel time (Q-023, 2026-10-14): uses phone location. Card is for the selected route's first leg, times in the departure airport's local time.
@@ -91,6 +92,8 @@ Condensed from the project docs: MVP decisions (through v8.8), design direction 
 - Globe v1 (P0): land/ocean, state lines, colored arcs, tap to select, camera fly-to. Polish (P1): day/night, spin-in, flight preview, radar (NOAA MRMS, Q-031, 2026-10-14; on/off toggle, no time slider or color key).
 - Results: top 10 routes of current sort; overview in thin neutral gray; selected route in tier color per leg with direction chevrons; others faint ghosts; tap a ghost selects earliest-arriving option on that path.
 - Line styles: solid = reported; dashed = estimate/typical/unknown. Legend only while a route is selected.
+- Route legend (Q-044, 2026-10-21, John): one combined list replaces the separate tier color key and solid/dashed key. Rows read like "Good (Estimate)", "Good (Reported)"; each row's swatch is the tier color drawn in that row's line style. Line style rules unchanged (solid = reported; dashed = estimate/typical/unknown). Still shown only while a route is selected.
+  - Provisional (spec-keeper pre-flight, not John-decided): list only the tier/source combinations that can occur; typical/unknown use the neutral Unknown color, dashed; row text uses theme text color, never tier colors; swatch is decorative, row is one accessible element with the full label.
 - Q-021 (2026-10-14): overview and ghost lines are always solid thin gray; solid/dashed styling applies only to the selected route (when the legend shows).
 - Deselect (Q-018, 2026-10-14): tapping empty space while a route is selected deselects it (back to the all-gray overview) and pulls the camera back out.
 - Chevrons scope (provisional, not John-decided): direction chevrons ship in backlog item 9; item 4 ships arcs without chevrons.
@@ -119,6 +122,7 @@ Condensed from the project docs: MVP decisions (through v8.8), design direction 
   - Feed = request feed (your airline's asks, per Reports and requests rules). My Trips = your own open requests (max 5) plus saved routes.
   - Saved routes = new concept, details open/provisional (Q-043). Feed and My Trips are placeholders until the requests backend exists.
   - Provisional: tab targets >=44pt; Settings still reached from Profile (Q-024).
+- Filters button (Q-046, 2026-10-21, John): gets an SF Symbol icon (like the tab bar icons) so its purpose is clear at a glance. Label stays "Filters".
 - Airline badges: colored pill + plane glyph + IATA code. No logos.
 
 ### Theme tokens (confirmed 2026-10-13, Q-004/5/6; John may revise after seeing it on device)

@@ -248,6 +248,33 @@ Also open: does a saved route keep its date, or re-search when opened?
 Recommendation: A, re-search for the saved date when opened; add a cap only if the list gets unwieldy.
 Answer: (John)
 
+### Q-044 Combined route legend  (Answered 2026-10-21)
+Context: Friend-tester feedback: the tier color key and the solid/dashed key are two lists.
+A) One combined list, rows like "Good (Estimate)" / "Good (Reported)", swatch in the row's line style  B) Keep two lists
+Answer: John (2026-10-21), option A. Line style rules unchanged. Recorded in DECISIONS.md (Map). Unblocks backlog 18.
+
+### Q-045 Date row chips and calendar  (Answered 2026-10-21)
+Context: Friend-tester feedback: the date row is crowded (0-7 days out).
+A) 4 chips (Today, Tomorrow, next two days) plus a calendar button for later dates  B) Keep all chips
+Answer: John (2026-10-21), option A. 0-7 days limit unchanged. Recorded in DECISIONS.md (Search). Unblocks backlog 19.
+
+### Q-046 Filters button icon  (Answered 2026-10-21)
+Context: Friend-tester feedback: the Filters button's purpose is not clear at a glance.
+A) Add an SF Symbol icon like the tab bar  B) Leave as is
+Answer: John (2026-10-21), option A. Recorded in DECISIONS.md (Design system). Unblocks backlog 20.
+
+### Q-047 No-results panel and departed/status display  (Open)
+Context: John does not want a second panel when there are no flights. Wants a discreet notice only if the market truly has no flights that day; otherwise show flights including ones that may have departed, marked scheduled / departed / canceled / delayed. Conflicts: DECISIONS.md fetches AeroDataBox flight status only for flights a user opens or travels on ($30/mo cap), and the engine drops departed flights (Search date rule). Main session is asking John.
+A) Show departed flights from the schedule DB with a time-based "may have departed" label; status words (delayed/canceled) only when a flight is opened  B) Also fetch live status for all listed flights (breaks the opened-flights-only rule; cost risk)  C) Other (John specifies)
+Recommendation: A, because it needs no extra paid calls.
+Answer: (John)
+
+### Q-048 Airport search by metro area  (Open)
+Context: Typing "DAL" should offer "Dallas area" (all Dallas airports) or DAL (Love Field) alone. Relates to the Nearby airports filter (DAL<->DFW group, NEARBY_GROUPS). Under discussion with John; no decision yet.
+A) Offer metro "area" entries built from NEARBY_GROUPS  B) Separate metro list  C) Other (John specifies)
+Recommendation: A, so one list drives both.
+Answer: (John)
+
 Provisional defaults for backlog 3 (not John-decided; John may override any time):
 - FAA cache TTL 5 min server-side; serve stale on FAA error.
 - One national NAS feed fetch, filtered on read.

@@ -22,3 +22,8 @@ Each item names its owner. One item per work session. spec-keeper runs a pre-fli
 | 15 | Leg flight-time labels on the selected route (H:MM, subtle, on the line) | globe-porter | P1 | Done |
 | 16 | Bottom tab bar: Search · Feed · My Trips · Profile (replaces top-bar Requests pill); Feed/My Trips screens as placeholders until requests backend exists | main | P1 | Done |
 | 17 | Android tab bar icons: tab icons are SF Symbols (iOS only), so Android shows labels with no icons; add an Android icon set (e.g. Material symbols) | main | P2 | Open |
+| 18 | Combined route legend: one list of tier + source rows ("Good (Estimate)"), swatch in the row's line style (Q-044); RouteLegend in `src/map/` | globe-porter | P1 | Open |
+| 19 | Date row: 4 chips (Today, Tomorrow, next two days) + calendar button for later dates, 0-7 days (Q-045); `src/search/dates.ts`, `src/ui/SearchPanel.tsx` | main | P1 | Open |
+| 20 | Filters button SF Symbol icon (Q-046) | main | P1 | Open |
+| 21 | No-results / departed / status display: no second panel; discreet notice only when the market has no flights (Q-047; touches engine departed rule and flight-status rule) | main + live-ops | P1 | Open, blocked on John's answers |
+| 22 | Airport search by metro area ("DAL" offers Dallas area or Love Field; Q-048) | main | P1 | Open, blocked on John's answers |
