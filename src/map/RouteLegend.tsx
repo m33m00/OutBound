@@ -1,7 +1,11 @@
 /**
  * Line legend, shown only while a route is selected (DECISIONS.md "Map").
- * Tier swatches are line fills (allowed); all text is in the `text` token,
- * never tier-colored. No weather key (removed in DECISIONS.md).
+ * One combined list (Q-044): each row is a tier color drawn in that row's
+ * line style, e.g. "Good (Estimate)" with a dashed green swatch. Only the
+ * tier/source combinations on the selected route are listed. Swatches are
+ * line fills (allowed); all text is in the `text` token, never tier-colored.
+ * Each row is one accessible element; the swatch is decorative. No weather
+ * key (removed in DECISIONS.md).
  *
  * GlobeMap places it bottom-left inside its insets (away from map buttons on
  * the right). Screens can pass `showLegend={false}` and place this instead.
@@ -11,7 +15,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { radius, spacing, textStyles, useColors } from '@/theme';
 
 import { hexToRgb, rgba } from './globeColors';
-import { DASH_PATTERN, legendEntries, TIER_LABEL } from './routeModel';
+import { DASH_PATTERN, legendEntries } from './routeModel';
 import type { RouteLine } from './types';
 
 const SWATCH_W = 22;
@@ -44,43 +48,25 @@ export interface RouteLegendProps {
 
 export function RouteLegend({ route }: RouteLegendProps) {
   const c = useColors();
-  const { tiers, hasSolid, hasDashed, unknownDashed } = legendEntries(route);
+  const rows = legendEntries(route);
   const textStyle = [textStyles.small, { color: c.text }];
   return (
     <View
       style={[
         styles.box,
         { backgroundColor: rgba(hexToRgb(c.surface), 0.92), borderColor: c.line },
-      ]}
-      accessible
-      accessibilityLabel={`Legend: ${tiers.map((t) => TIER_LABEL[t]).join(', ')}. ${
-        hasSolid ? 'Solid line, reported. ' : ''
-      }${hasDashed ? 'Dashed line, estimate or no report.' : ''}`.trim()}>
-      {tiers.map((t) => (
-        <View key={t} style={styles.row}>
-          {t === 'unknown' && unknownDashed ? (
-            <DashedSwatch color={c[t]} />
-          ) : (
-            <SolidSwatch color={c[t]} />
-          )}
-          <Text style={textStyle}>{TIER_LABEL[t]}</Text>
+      ]}>
+      {rows.map((row) => (
+        <View
+          key={row.key}
+          style={styles.row}
+          accessible
+          accessibilityRole="text"
+          accessibilityLabel={row.accessibilityLabel}>
+          {row.dashed ? <DashedSwatch color={c[row.tier]} /> : <SolidSwatch color={c[row.tier]} />}
+          <Text style={textStyle}>{row.label}</Text>
         </View>
       ))}
-      {tiers.length > 0 && (hasSolid || hasDashed) ? (
-        <View style={[styles.rule, { backgroundColor: c.line }]} />
-      ) : null}
-      {hasSolid ? (
-        <View style={styles.row}>
-          <SolidSwatch color={c.muted} />
-          <Text style={textStyle}>Reported</Text>
-        </View>
-      ) : null}
-      {hasDashed ? (
-        <View style={styles.row}>
-          <DashedSwatch color={c.muted} />
-          <Text style={textStyle}>Estimate or no report</Text>
-        </View>
-      ) : null}
     </View>
   );
 }
@@ -107,9 +93,5 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     overflow: 'hidden',
-  },
-  rule: {
-    height: StyleSheet.hairlineWidth,
-    marginVertical: 2,
   },
 });

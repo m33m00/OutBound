@@ -38,7 +38,8 @@
         {
           "locationWhenInUsePermission": "OutBound uses your location to estimate when to leave for the airport."
         }
-      ]
+      ],
+      "@react-native-community/datetimepicker"
     ],
     "experiments": {
       "typedRoutes": true,

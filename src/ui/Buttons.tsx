@@ -1,3 +1,4 @@
+import { SymbolView, type SFSymbol } from 'expo-symbols';
 import { Pressable, StyleSheet, Text, type StyleProp, type ViewStyle } from 'react-native';
 
 import { minTapTarget, radius, spacing, textStyles, useColors } from '@/theme';
@@ -8,13 +9,16 @@ interface ButtonProps {
   kind?: 'primary' | 'secondary';
   disabled?: boolean;
   accessibilityLabel?: string;
+  /** Decorative SF Symbol before the label (iOS; Android shows the label only). */
+  icon?: SFSymbol;
   style?: StyleProp<ViewStyle>;
 }
 
 /** Title Case labels (DECISIONS.md: Find Routes, Get Home). */
-export function Button({ label, onPress, kind = 'primary', disabled, accessibilityLabel, style }: ButtonProps) {
+export function Button({ label, onPress, kind = 'primary', disabled, accessibilityLabel, icon, style }: ButtonProps) {
   const c = useColors();
   const primary = kind === 'primary';
+  const fg = primary ? c.onAccent : c.text;
   return (
     <Pressable
       onPress={onPress}
@@ -27,7 +31,8 @@ export function Button({ label, onPress, kind = 'primary', disabled, accessibili
         { backgroundColor: primary ? c.accent : c.surface2, opacity: disabled ? 0.5 : 1 },
         style,
       ]}>
-      <Text style={[textStyles.button, { color: primary ? c.onAccent : c.text }]}>{label}</Text>
+      {icon ? <SymbolView name={icon} size={18} tintColor={fg} fallback={null} /> : null}
+      <Text style={[textStyles.button, { color: fg }]}>{label}</Text>
     </Pressable>
   );
 }
@@ -37,6 +42,8 @@ const styles = StyleSheet.create({
     minHeight: minTapTarget,
     paddingHorizontal: spacing.page,
     borderRadius: radius.sm,
+    flexDirection: 'row',
+    gap: 6,
     alignItems: 'center',
     justifyContent: 'center',
   },

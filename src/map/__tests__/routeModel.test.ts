@@ -200,15 +200,71 @@ describe('style mapping', () => {
 });
 
 describe('legend and speech', () => {
-  it('lists the tiers the selected route is drawn in, plus line styles', () => {
+  it('combines tier color and line style into one row per tier/source pair', () => {
     const r = route('l', L('DFW', 'ORD', 'tight', 'estimate'), L('ORD', 'LGA', 'wide', 'reported'));
-    expect(legendEntries(r)).toEqual({ tiers: ['wide', 'tight'], hasSolid: true, hasDashed: true, unknownDashed: false });
-    const typ = route('t', L('DFW', 'LGA', 'good', 'typical'));
-    expect(legendEntries(typ)).toEqual({ tiers: ['unknown'], hasSolid: false, hasDashed: true, unknownDashed: true });
-    // A reported leg with tier unknown draws solid gray: swatch stays solid.
-    const mixed = route('m', L('DFW', 'ORD', 'unknown', 'reported'), L('ORD', 'LGA', 'good', 'typical'));
-    expect(legendEntries(mixed).unknownDashed).toBe(false);
+    expect(legendEntries(r)).toEqual([
+      {
+        key: 'wide:reported',
+        tier: 'wide',
+        source: 'reported',
+        dashed: false,
+        label: 'Wide open (Reported)',
+        accessibilityLabel: 'Wide open, reported, solid line',
+      },
+      {
+        key: 'tight:estimate',
+        tier: 'tight',
+        source: 'estimate',
+        dashed: true,
+        label: 'Tight (Estimate)',
+        accessibilityLabel: 'Tight, estimate, dashed line',
+      },
+    ]);
     expect(TIER_LABEL.wide).toBe('Wide open');
+  });
+
+  it('lists only combinations present, deduped, reported before estimate', () => {
+    const r = route(
+      'g',
+      L('DFW', 'ORD', 'good', 'estimate'),
+      L('ORD', 'ATL', 'good', 'reported'),
+      L('ATL', 'LGA', 'good', 'estimate'),
+    );
+    expect(legendEntries(r).map((e) => e.label)).toEqual(['Good (Reported)', 'Good (Estimate)']);
+  });
+
+  it('draws typical and unknown sources in neutral gray, dashed, with no tier word for typical', () => {
+    const typ = route('t', L('DFW', 'LGA', 'good', 'typical'));
+    expect(legendEntries(typ)).toEqual([
+      {
+        key: 'unknown:typical',
+        tier: 'unknown',
+        source: 'typical',
+        dashed: true,
+        label: 'Typical load',
+        accessibilityLabel: 'Typical load, dashed line',
+      },
+    ]);
+    const unk = route('u', L('DFW', 'LGA', 'okay', 'unknown'));
+    const [row] = legendEntries(unk);
+    expect(row).toMatchObject({ tier: 'unknown', dashed: true, label: 'Unknown (No report)' });
+    expect(row.accessibilityLabel).toBe('Unknown, no report, dashed line');
+  });
+
+  it('keeps a reported unknown-tier leg solid gray, separate from dashed gray rows', () => {
+    const mixed = route('m', L('DFW', 'ORD', 'unknown', 'reported'), L('ORD', 'LGA', 'good', 'typical'));
+    const rows = legendEntries(mixed);
+    expect(rows.map((e) => [e.label, e.tier, e.dashed])).toEqual([
+      ['Unknown (Reported)', 'unknown', false],
+      ['Typical load', 'unknown', true],
+    ]);
+  });
+
+  it('skips undrawable legs and never puts a tier word in a typical row', () => {
+    const r = route('s', L('DFW', 'DFW', 'full', 'reported'), L('DFW', 'LGA', 'wide', 'typical'));
+    const rows = legendEntries(r);
+    expect(rows.map((e) => e.label)).toEqual(['Typical load']);
+    for (const t of Object.values(TIER_LABEL)) expect(rows[0].label).not.toContain(t);
   });
 
   it('speaks a route as its airports', () => {

@@ -1,5 +1,5 @@
 import { matchAirports, SEARCH_AIRPORTS } from '../airports';
-import { dateChips, shortDate } from '../dates';
+import { dateChips, fromPickerDate, QUICK_DATE_CHIPS, shortDate, toPickerDate } from '../dates';
 
 describe('matchAirports', () => {
   it('returns everything for an empty query', () => {
@@ -31,5 +31,20 @@ describe('dateChips', () => {
   });
   it('formats short dates', () => {
     expect(shortDate('2026-10-14')).toBe('Wed, Oct 14');
+  });
+});
+
+describe('calendar dates', () => {
+  it('gives chips to today plus the next three days', () => {
+    expect(dateChips('2026-10-14').slice(0, QUICK_DATE_CHIPS).map((c) => c.label)).toEqual([
+      'Today',
+      'Tomorrow',
+      'Fri 16',
+      'Sat 17',
+    ]);
+  });
+  it('round-trips picker dates as calendar days', () => {
+    expect(fromPickerDate(toPickerDate('2026-11-02'))).toBe('2026-11-02');
+    expect(fromPickerDate(new Date(2026, 0, 5, 23, 59))).toBe('2026-01-05');
   });
 });

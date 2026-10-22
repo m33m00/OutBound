@@ -40,3 +40,18 @@ export function dateChips(today: string): DateChip[] {
     return { date, label, long: `${LONG_DAYS[p.dow]}, ${LONG_MONTHS[p.month]} ${p.day}` };
   });
 }
+
+/** Today, Tomorrow and the next two days get chips; later days use the calendar (Q-045). */
+export const QUICK_DATE_CHIPS = 4;
+
+/** "YYYY-MM-DD" -> local-midnight Date for the native date picker (it works in the phone's zone). */
+export function toPickerDate(date: string): Date {
+  const [y, m, d] = date.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
+/** The picker's Date -> "YYYY-MM-DD", read as the calendar day the user tapped. */
+export function fromPickerDate(d: Date): string {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}

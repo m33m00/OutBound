@@ -220,35 +220,74 @@ export const TIER_LABEL: Record<SeatTier, string> = {
   unknown: 'Unknown',
 };
 
-export interface LegendEntries {
-  /** Tiers the selected route is drawn in, in TIER_ORDER. */
-  tiers: SeatTier[];
-  hasSolid: boolean;
-  hasDashed: boolean;
-  /** Every leg drawn in unknown gray is dashed: show its swatch dashed. */
-  unknownDashed: boolean;
+/** Row-text qualifier per line source (DECISIONS.md "Map", Q-044). */
+const SOURCE_LABEL: Record<Exclude<LineSource, 'typical'>, string> = {
+  reported: 'Reported',
+  estimate: 'Estimate',
+  unknown: 'No report',
+};
+
+/** Row order within a tier: reported first, then estimate, typical, no report. */
+const SOURCE_ORDER: readonly LineSource[] = ['reported', 'estimate', 'typical', 'unknown'];
+
+/** One combined legend row: a tier color drawn in one line style. */
+export interface LegendEntry {
+  /** Stable key, e.g. "good:estimate". */
+  key: string;
+  /** Tier token the swatch is drawn in (typical/unknown sources are `unknown`). */
+  tier: SeatTier;
+  source: LineSource;
+  /** Swatch line style: solid = reported, dashed otherwise. */
+  dashed: boolean;
+  /** Visible row text, e.g. "Good (Estimate)". Typical loads carry no tier word. */
+  label: string;
+  /** Full spoken label, e.g. "Good, estimate, dashed line". */
+  accessibilityLabel: string;
 }
 
-export function legendEntries(route: RouteLine): LegendEntries {
-  const used = new Set<SeatTier>();
-  let hasSolid = false;
-  let hasDashed = false;
-  let unknownSolid = false;
+function makeEntry(tier: SeatTier, source: LineSource): LegendEntry {
+  const dashed = isDashedSource(source);
+  const style = dashed ? 'dashed line' : 'solid line';
+  if (source === 'typical') {
+    // Typical loads are neutral: no tier word (DECISIONS.md "Seat availability").
+    return {
+      key: `${tier}:${source}`,
+      tier,
+      source,
+      dashed,
+      label: 'Typical load',
+      accessibilityLabel: `Typical load, ${style}`,
+    };
+  }
+  const word = SOURCE_LABEL[source];
+  return {
+    key: `${tier}:${source}`,
+    tier,
+    source,
+    dashed,
+    label: `${TIER_LABEL[tier]} (${word})`,
+    accessibilityLabel: `${TIER_LABEL[tier]}, ${word.toLowerCase()}, ${style}`,
+  };
+}
+
+/**
+ * Combined legend rows for the selected route: only the tier/source
+ * combinations its drawable legs actually use, in TIER_ORDER then
+ * SOURCE_ORDER, one row each.
+ */
+export function legendEntries(route: RouteLine): LegendEntry[] {
+  const used = new Set<string>();
   for (const leg of route.legs) {
     if (!isDrawableLeg(leg)) continue;
-    const tier = legTier(leg);
-    used.add(tier);
-    const dashed = isDashedSource(leg.source);
-    if (dashed) hasDashed = true;
-    else hasSolid = true;
-    if (tier === 'unknown' && !dashed) unknownSolid = true;
+    used.add(`${legTier(leg)}:${leg.source}`);
   }
-  return {
-    tiers: TIER_ORDER.filter((t) => used.has(t)),
-    hasSolid,
-    hasDashed,
-    unknownDashed: used.has('unknown') && !unknownSolid,
-  };
+  const out: LegendEntry[] = [];
+  for (const tier of TIER_ORDER) {
+    for (const source of SOURCE_ORDER) {
+      if (used.has(`${tier}:${source}`)) out.push(makeEntry(tier, source));
+    }
+  }
+  return out;
 }
 
 /** Plain-language route name for accessibility: "DFW to ORD to LGA". */

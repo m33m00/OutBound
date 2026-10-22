@@ -1,11 +1,13 @@
 import { SymbolView } from 'expo-symbols';
+import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { AIRPORTS } from '@/engine';
-import type { DateChip } from '@/search/dates';
+import { QUICK_DATE_CHIPS, type DateChip } from '@/search/dates';
 import { minTapTarget, radius, spacing, textStyles, useColors } from '@/theme';
 
 import { Button } from './Buttons';
+import { DatePickerModal } from './DatePickerModal';
 import { SampleLabel } from './ResultsPanel';
 
 export interface SearchPanelProps {
@@ -47,13 +49,18 @@ function AirportCard({ label, code, onPress }: { label: string; code: string | n
 
 export function SearchPanel(p: SearchPanelProps) {
   const c = useColors();
+  const [calendarOpen, setCalendarOpen] = useState(false);
+  const quick = p.chips.slice(0, QUICK_DATE_CHIPS);
+  // A day past the chips shows on the calendar button itself.
+  const later = p.chips.slice(QUICK_DATE_CHIPS).find((chip) => chip.date === p.date);
   return (
     <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
       <View style={styles.sampleRow}>
         <SampleLabel />
       </View>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
-        {p.chips.map((chip) => {
+      {/* One row, no sideways scroll: date chips share the width, calendar stays 44pt until it holds a date. */}
+      <View style={styles.chips}>
+        {quick.map((chip) => {
           const on = chip.date === p.date;
           return (
             <Pressable
@@ -62,12 +69,53 @@ export function SearchPanel(p: SearchPanelProps) {
               accessibilityRole="button"
               accessibilityLabel={chip.long}
               accessibilityState={{ selected: on }}
-              style={[styles.chip, { backgroundColor: on ? c.accent : c.surface2 }]}>
-              <Text style={[textStyles.bodyStrong, { color: on ? c.onAccent : c.text }]}>{chip.label}</Text>
+              style={[styles.chip, styles.dateChip, { backgroundColor: on ? c.accent : c.surface2 }]}>
+              <Text
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.85}
+                style={[textStyles.bodyStrong, { color: on ? c.onAccent : c.text }]}>
+                {chip.label}
+              </Text>
             </Pressable>
           );
         })}
-      </ScrollView>
+        <Pressable
+          onPress={() => setCalendarOpen(true)}
+          accessibilityRole="button"
+          accessibilityLabel={later ? `${later.long}. Change date` : 'Pick a later date'}
+          accessibilityState={{ selected: !!later }}
+          style={[
+            styles.chip,
+            styles.calendar,
+            later ? styles.dateChip : null,
+            { backgroundColor: later ? c.accent : c.surface2 },
+          ]}>
+          <SymbolView
+            name="calendar"
+            size={18}
+            tintColor={later ? c.onAccent : c.text}
+            fallback={later ? null : <Text style={[textStyles.bodyStrong, { color: c.text }]}>Date</Text>}
+          />
+          {later ? (
+            <Text
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.85}
+              style={[textStyles.bodyStrong, { color: c.onAccent }]}>
+              {later.label}
+            </Text>
+          ) : null}
+        </Pressable>
+      </View>
+      <DatePickerModal
+        visible={calendarOpen}
+        date={p.date}
+        min={p.chips[0].date}
+        max={p.chips[p.chips.length - 1].date}
+        onPick={p.onDate}
+        onClose={() => setCalendarOpen(false)}
+      />
 
       <View style={styles.cards}>
         <AirportCard label="From" code={p.origin} onPress={p.onPickOrigin} />
@@ -98,6 +146,7 @@ export function SearchPanel(p: SearchPanelProps) {
       <View style={styles.actions}>
         <Button
           label={p.filtersChanged ? `Filters (${p.filtersChanged})` : 'Filters'}
+          icon="line.3.horizontal.decrease.circle"
           kind="secondary"
           onPress={p.onFilters}
         />
@@ -115,13 +164,15 @@ export function SearchPanel(p: SearchPanelProps) {
 const styles = StyleSheet.create({
   body: { paddingHorizontal: spacing.page, paddingBottom: spacing.page, gap: spacing.section },
   sampleRow: { flexDirection: 'row', justifyContent: 'flex-end' },
-  chips: { gap: spacing.group },
+  chips: { flexDirection: 'row', gap: spacing.group },
   chip: {
     minHeight: minTapTarget,
     paddingHorizontal: spacing.rowX,
     borderRadius: radius.sm,
     justifyContent: 'center',
   },
+  dateChip: { flex: 1, paddingHorizontal: 6, alignItems: 'center' },
+  calendar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, minWidth: minTapTarget },
   cards: { flexDirection: 'row', alignItems: 'center', gap: spacing.group },
   card: { flex: 1, borderRadius: radius.md, padding: spacing.rowX, minHeight: minTapTarget },
   swap: {
