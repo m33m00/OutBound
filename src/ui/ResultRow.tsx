@@ -1,7 +1,7 @@
 import { memo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import type { Itinerary, SeatTier } from '@/engine';
+import type { Flight, Itinerary, SeatTier } from '@/engine';
 import type { RouteImpact } from '@/live';
 import { formatDuration, nearbyNotes, rowAccessibilityLabel, rowTimes, seatText, stopsText } from '@/search/format';
 import { impactSummary } from '@/search/impactText';
@@ -38,6 +38,8 @@ export interface ResultRowProps {
   /** Live data still loading for the first time. */
   impactLoading?: boolean;
   onImpactPress?: (id: string) => void;
+  /** Opens flight status for one leg (item 8). Text only; never feeds the row badge. */
+  onLegPress?: (flight: Flight) => void;
 }
 
 export const ResultRow = memo(function ResultRow({
@@ -48,6 +50,7 @@ export const ResultRow = memo(function ResultRow({
   impact,
   impactLoading,
   onImpactPress,
+  onLegPress,
 }: ResultRowProps) {
   const c = useColors();
   const t = rowTimes(it);
@@ -97,24 +100,40 @@ export const ResultRow = memo(function ResultRow({
             {stopsText(it)} · {formatDuration(it.totalMin)}
           </Text>
         </View>
-        {it.legs.map((leg) => (
-          <View key={leg.flight.id} style={styles.legLine}>
-            <AirlinePill airline={leg.flight.airline} flightNumber={leg.flight.flightNumber} />
-            <View
-              style={[
-                styles.tierChip,
-                { backgroundColor: leg.seats.source === 'typical' ? c.surface2 : c[TIER_BG[leg.seats.tier]] },
-              ]}>
-              <Text
+        {it.legs.map((leg) => {
+          const body = (
+            <>
+              <AirlinePill airline={leg.flight.airline} flightNumber={leg.flight.flightNumber} />
+              <View
                 style={[
-                  textStyles.small,
-                  { color: leg.seats.source === 'typical' ? c.muted : c[TIER_FG[leg.seats.tier]] },
+                  styles.tierChip,
+                  { backgroundColor: leg.seats.source === 'typical' ? c.surface2 : c[TIER_BG[leg.seats.tier]] },
                 ]}>
-                {seatText(leg.seats, now)}
-              </Text>
+                <Text
+                  style={[
+                    textStyles.small,
+                    { color: leg.seats.source === 'typical' ? c.muted : c[TIER_FG[leg.seats.tier]] },
+                  ]}>
+                  {seatText(leg.seats, now)}
+                </Text>
+              </View>
+            </>
+          );
+          return onLegPress ? (
+            <Pressable
+              key={leg.flight.id}
+              onPress={() => onLegPress(leg.flight)}
+              accessibilityRole="button"
+              accessibilityLabel={`Flight status, ${leg.flight.airline} ${leg.flight.flightNumber}, ${leg.flight.from} to ${leg.flight.to}`}
+              style={[styles.legLine, styles.legTap]}>
+              {body}
+            </Pressable>
+          ) : (
+            <View key={leg.flight.id} style={styles.legLine}>
+              {body}
             </View>
-          </View>
-        ))}
+          );
+        })}
         {nearbyNotes(it).map((note) => (
           <Text key={note} style={[textStyles.small, { color: c.muted }]}>
             {note}
@@ -163,6 +182,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.group,
     flexWrap: 'wrap',
+  },
+  legTap: {
+    minHeight: 44,
   },
   tierChip: {
     flexShrink: 1,

@@ -101,7 +101,7 @@ Context: Backlog 3 (FAA NAS status) needs a rule for which FAA events show which
 Answer: John (2026-10-14). Ground stop, ground delay program or airport closure = Likely delays (magenta). General arrival/departure delay under 60 min = Caution (violet). No FAA event = no badge. General delay of 60+ min was not stated; provisional default is Likely delays (not John-decided). Unblocks backlog 3.
 
 ### Q-016 Supabase plan and region  (Answered 2026-10-14)
-Answer: John (2026-10-14). Free plan, US East region for the beta. Upgrade to Pro ($25/mo) before testers rely on it, since free projects pause after a week idle.
+Answer: John (2026-10-14). Free plan, ~~US East region for the beta~~ (US East part superseded 2026-10-21 by Q-038: stay on us-west-2). Upgrade to Pro ($25/mo) before testers rely on it, since free projects pause after a week idle.
 
 ### Q-017 Edge Function access before login exists  (Answered 2026-10-14)
 Answer: John (2026-10-14). Until invite-code login exists, live Edge Functions accept calls with the app's public anon key, with rate limiting. Require login once auth lands. Unblocks backlog 3.
@@ -209,6 +209,24 @@ Context: How day/night is drawn on the globe.
 A) Shading + soft dusk + subtle sun glow (recommended)  B) Also sun disc + labels  C) Shading only
 Recommendation: A.
 Answer: John (2026-10-14), option A. Recorded in DECISIONS.md (Map). Provisional details there are not John-decided.
+
+### Q-038 Supabase region  (Answered 2026-10-21)
+Context: Q-016 chose US East, but the project was created in us-west-2. api_usage (backlog 8) will be the first real DB data, so moving later gets harder.
+A) Keep us-west-2  B) Recreate in US East before any data lands
+Recommendation: A, because friends beta, latency difference is small.
+Answer: John (2026-10-21), option A, keep us-west-2. John asked about US Central; Supabase has no US Central region (closest is us-east-2 Ohio), so he went with the recommendation. Supersedes the US East part of Q-016. Recorded in DECISIONS.md (Tech). Unblocks backlog 8 (api_usage can land in us-west-2).
+
+### Q-039 Canceled/diverted flight status and badges  (Answered 2026-10-21)
+Context: Backlog 8 shows flight status as text in a flight sheet. Should any of it change the row badge?
+A) Text only in the flight sheet, no row badge  B) Canceled = Likely delays badge on the row  C) B plus delays of 60+ min from flight status also badge
+Recommendation: A for now; revisit after seeing real data.
+Answer: John (2026-10-21), option A. Canceled/diverted status is text only in the flight sheet, no row badge. Recorded in DECISIONS.md (Real-time layer). Unblocks the UI part of backlog 8.
+
+### Q-040 AeroDataBox plan  (Answered 2026-10-21)
+Context: The api_usage unit-price placeholder needs a real plan/marketplace price to make the $30 cap meaningful.
+A) Lowest paid tier on API.market/RapidAPI  B) Free tier only for now
+Recommendation: A, because the free tier is unlikely to cover daily schedule pulls plus live status.
+Answer: John (2026-10-21), option A. Lowest paid AeroDataBox tier on API.market/RapidAPI. Unit price stays a placeholder until the exact price is read from the plan page at signup. Recorded in DECISIONS.md (Real-time layer).
 
 Provisional defaults for backlog 3 (not John-decided; John may override any time):
 - FAA cache TTL 5 min server-side; serve stale on FAA error.

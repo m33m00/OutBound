@@ -1,5 +1,6 @@
 export { useAirportStatus, type UseAirportStatusResult, type UseAirportStatusOptions } from './useAirportStatus';
 export { useAirportWeather, type UseAirportWeatherResult, type UseAirportWeatherOptions } from './useAirportWeather';
+export { useFlightStatus, clearFlightStatusMemo, type UseFlightStatusResult, type UseFlightStatusOptions } from './useFlightStatus';
 export { useRadar, type UseRadarResult, type UseRadarOptions } from './useRadar';
 export {
   fetchRadar,
@@ -44,3 +45,14 @@ export {
   type UseRouteImpactsOptions,
 } from './routeImpacts';
 export { sampleRouteImpacts } from './fixtures/sampleRouteImpacts';
+export {
+  fetchFlightStatus,
+  flightLookupKey,
+  refreshAllowed,
+  CLIENT_COOLDOWN_MS,
+  type FlightLookup,
+  type FlightState,
+  type FlightStatus,
+  type FlightStatusResponse,
+  type Movement,
+} from './flightStatus';

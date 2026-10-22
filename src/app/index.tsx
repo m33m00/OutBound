@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { AIRPORTS, addDays, localDate, toRouteLine, type Itinerary } from '@/engine';
+import { AIRPORTS, addDays, localDate, toRouteLine, type Flight, type Itinerary } from '@/engine';
 import { sampleRouteImpacts, useRouteImpacts } from '@/live';
 import { GlobeMap, type MapAirport } from '@/map';
 import { dateChips } from '@/search/dates';
@@ -13,6 +13,7 @@ import { AirportPicker } from '@/ui/AirportPicker';
 import { useSettings } from '@/settings/SettingsProvider';
 import { changedFilters, DEFAULT_FILTERS, homeAirports, type SearchFilters } from '@/settings/settings';
 import { FiltersModal } from '@/ui/FiltersModal';
+import { FlightStatusSheet } from '@/ui/FlightStatusSheet';
 import { ImpactSheet } from '@/ui/ImpactSheet';
 import { LeaveByCard } from '@/ui/LeaveByCard';
 import { PreviewControl, type PreviewPhase } from '@/ui/PreviewControl';
@@ -94,6 +95,7 @@ export default function HomeScreen() {
     [sampleImpacts, results, live],
   );
   const [impactFor, setImpactFor] = useState<string | null>(null);
+  const [statusFlight, setStatusFlight] = useState<Flight | null>(null);
 
   // Flight preview (item 11; button only, Q-035): plane + moving night (Q-034).
   const reduceMotion = useReducedMotion();
@@ -245,6 +247,7 @@ export default function HomeScreen() {
                 impacts={impacts.byId}
                 impactsLoading={!sampleImpacts && live.state === 'loading'}
                 onImpactPress={setImpactFor}
+                onLegPress={setStatusFlight}
                 sampleImpacts={sampleImpacts}
                 selectedCard={
                   firstLeg ? (
@@ -314,6 +317,7 @@ export default function HomeScreen() {
         sample={sampleImpacts}
         onClose={() => setImpactFor(null)}
       />
+      <FlightStatusSheet flight={statusFlight} now={now} onClose={() => setStatusFlight(null)} />
       <FiltersModal
         visible={filtersOpen}
         filters={filters}

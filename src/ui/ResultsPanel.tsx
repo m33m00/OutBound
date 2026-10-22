@@ -1,7 +1,7 @@
 import { forwardRef, type ReactNode } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 
-import type { Itinerary } from '@/engine';
+import type { Flight, Itinerary } from '@/engine';
 import type { RouteImpact } from '@/live';
 import { shortDate } from '@/search/dates';
 import type { SearchState } from '@/search/useRouteSearch';
@@ -26,6 +26,8 @@ export interface ResultsPanelProps {
   impacts?: Record<string, RouteImpact>;
   impactsLoading?: boolean;
   onImpactPress?: (id: string) => void;
+  /** Opens flight status for one leg. */
+  onLegPress?: (flight: Flight) => void;
   /** Label shown while impacts are dev sample data. */
   sampleImpacts?: boolean;
 }
@@ -111,6 +113,7 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
             impact={p.impacts?.[item.id]}
             impactLoading={p.impactsLoading}
             onImpactPress={p.onImpactPress}
+            onLegPress={p.onLegPress}
           />
         )}
         onScrollToIndexFailed={() => {}}

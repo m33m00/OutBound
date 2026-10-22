@@ -74,6 +74,15 @@ Condensed from the project docs: MVP decisions (through v8.8), design direction 
   - G5: rate limiting reuses item 3's per-client limiter for anon-key calls.
   - G6: response per station: level, short plain-word reasons, observed/forecast time, asOf, raw ceiling/visibility/wind values (for retuning thresholds), stale flag.
 - Weather impact shows disruption only; Caution (violet) / Likely delays (magenta). Station = destination for nonstops, connection airport for connections.
+- Provisional for backlog item 8, flight status (2026-10-21; main session defaults, not John-decided; John may override):
+  - Function `live-flight-status`; shared cache keyed by flight number + date; called only for flights the user opened or is traveling on.
+  - Cache TTL by time to departure: >48h 6h; 24-48h 2h; <24h 30m; <3h 15m. Client refresh cooldown 2 min. Serve stale on upstream error, flagged.
+  - Fields: scheduled/estimated/actual times + delay minutes; departure and arrival gate + terminal; status (scheduled, delayed, departed, arrived, canceled, diverted); asOf + provider time.
+  - Usage: `api_usage` table, monthly sum. Schedule pulls count toward the same $30 cap (see Budget). Warn at $24; at $30 refuse new AeroDataBox calls and serve cached/stale data flagged "paused". Unit price is a placeholder until the exact price is read from the plan page at signup.
+  - UI: status shown as text in a flight-detail sheet opened by tapping a leg.
+- John-decided for backlog item 8 (2026-10-21):
+  - Canceled/diverted (and all flight status) is text only in the flight sheet; no row badge (Q-039, option A).
+  - Provider plan: lowest paid AeroDataBox tier on API.market/RapidAPI (Q-040, option A). Unit price placeholder stays until read from the plan page at signup.
 - All third-party calls go through Supabase Edge Functions with caching. Keys server-side only.
 - Edge Function access (Q-017, 2026-10-14): until invite-code login exists, live Edge Functions accept calls with the app's public anon key, with rate limiting. Require login once auth lands.
 
@@ -127,8 +136,9 @@ Source in code: `src/theme/colors.ts`, `src/theme/typography.ts`. Values are lig
 - Fresh project created 2026-10-13 on John's Mac with `create-expo-app@latest` (latest Expo SDK; 57 at time of writing) + TypeScript + Expo Router. The earlier Windows v0 codebase was a test and is not used.
 - Dev machine: MacBook Pro (Apple silicon). iPhone via Expo Go; iOS Simulator optional.
 - Supabase (Postgres, auth with invite codes, Edge Functions). iOS first via TestFlight.
-- Supabase plan (Q-016, 2026-10-14): Free plan, US East region for the beta. Upgrade to Pro ($25/mo) before testers rely on it (free projects pause after a week idle). Pro is not in the Floor estimate below until then.
-  - Region note (2026-10-14): the Supabase project was created in US West (Oregon, us-west-2), not US East as planned in Q-016. Edge Functions run at the edge, so they are unaffected; database region matters only once tables are added. Flag for John: recreate in US East before data lands, or accept US West?
+- Supabase plan (Q-016, 2026-10-14): Free plan, ~~US East region for the beta~~ (US East part superseded 2026-10-21 by Q-038). Upgrade to Pro ($25/mo) before testers rely on it (free projects pause after a week idle). Pro is not in the Floor estimate below until then.
+  - Region (Q-038, 2026-10-21, John: A): keep US West (Oregon, us-west-2) for the database; no recreate. Supabase has no US Central region (closest is us-east-2 Ohio). Supersedes the US East plan in Q-016.
+  - ~~Region note (2026-10-14): project created in us-west-2, not US East as planned; flag for John whether to recreate in US East or accept US West.~~ (resolved 2026-10-21 by Q-038)
   - Deployed 2026-10-14: live-faa-status and live-weather, to project bpiwqsdnngfdmrczpieb.
 - Budget: Floor ~$9–18/mo + $99/yr Apple. Paid-API cap $30/mo, alert $24, estimates pause at cap.
 
