@@ -228,6 +228,26 @@ A) Lowest paid tier on API.market/RapidAPI  B) Free tier only for now
 Recommendation: A, because the free tier is unlikely to cover daily schedule pulls plus live status.
 Answer: John (2026-10-21), option A. Lowest paid AeroDataBox tier on API.market/RapidAPI. Unit price stays a placeholder until the exact price is read from the plan page at signup. Recorded in DECISIONS.md (Real-time layer).
 
+### Q-041 Leg flight-time labels on the globe  (Answered 2026-10-21)
+Context: Friend-tester feedback: hard to tell how long each leg is. Should the globe show leg durations, and where?
+A) Small label on each leg of the selected route only  B) Labels on all route lines  C) Skip
+Format options: "2:35" / "02:35" / "2h 35m"
+Recommendation: A, format "2:35"; keeps the overview clean.
+Answer: John (2026-10-21), option A (selected route only) and "2:35" (H:MM, no leading zero on hours). Duration = arriveUtc - departUtc. Recorded in DECISIONS.md (Map). Unblocks new backlog item 15.
+
+### Q-042 Bottom tab bar  (Answered 2026-10-21)
+Context: Friend-tester feedback on navigation. DECISIONS.md said "No tabs; top bar = wordmark, Requests pill, Profile."
+A) Keep top bar only  B) Four bottom tabs: Search, Feed, My Trips, Profile
+Recommendation: B.
+Answer: John (2026-10-21), four tabs: Search, Feed, My Trips, Profile. Feed = request feed (your airline's asks, per existing Requests rules). My Trips = your own open requests (max 5) plus saved routes. Supersedes "No tabs" (Design system). "Saved routes" is new with no rules yet; details open/provisional (see Q-043). Unblocks new backlog item 16.
+
+### Q-043 Saved routes details  (Open)
+Context: Q-042 puts "saved routes" in My Trips, but there are no rules for it. Non-blocking: item 16 ships placeholders.
+A) Save from a result row or the selected route; stored on the phone (AsyncStorage) for now, no cap  B) Same, but cap at 10  C) John specifies
+Also open: does a saved route keep its date, or re-search when opened?
+Recommendation: A, re-search for the saved date when opened; add a cap only if the list gets unwieldy.
+Answer: (John)
+
 Provisional defaults for backlog 3 (not John-decided; John may override any time):
 - FAA cache TTL 5 min server-side; serve stale on FAA error.
 - One national NAS feed fetch, filtered on read.

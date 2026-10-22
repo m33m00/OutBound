@@ -19,3 +19,5 @@ Each item names its owner. One item per work session. spec-keeper runs a pre-fli
 | 12 | Leave-by card + tester settings screen (airport buffer, default 75 min; Q-003) | main | P0 | Done |
 | 13 | `live-radar` Edge Function: latest NOAA MRMS frame per region (CONUS, AK, HI, Caribbean) as a cached lat/lon PNG with observedAt; polite fetching, stale fallback | live-ops | P1 | Done (deployed 2026-10-14) |
 | 14 | Radar overlay on the globe (Skia mesh/shader from lat/lon image), on/off toggle, age shown, hidden past 30 min; no time slider or color key | globe-porter | P1 | Done |
+| 15 | Leg flight-time labels on the selected route (H:MM, subtle, on the line) | globe-porter | P1 | Open |
+| 16 | Bottom tab bar: Search · Feed · My Trips · Profile (replaces top-bar Requests pill); Feed/My Trips screens as placeholders until requests backend exists | main | P1 | Open |

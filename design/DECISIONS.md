@@ -95,6 +95,8 @@ Condensed from the project docs: MVP decisions (through v8.8), design direction 
 - Deselect (Q-018, 2026-10-14): tapping empty space while a route is selected deselects it (back to the all-gray overview) and pulls the camera back out.
 - Chevrons scope (provisional, not John-decided): direction chevrons ship in backlog item 9; item 4 ships arcs without chevrons.
 - Q-022 (2026-10-14): map line hit area 28pt = a tap within 28pt of a drawn line counts; if several routes are in range the selected route wins, otherwise the nearest. May be tightened after on-device testing.
+- Leg flight-time labels (Q-041, 2026-10-21, John: A): selected route only, a small subtle label on each leg's line, format "H:MM" (e.g. "2:35", no leading zero on hours; not "02:35" or "2h 35m"). Duration = arriveUtc - departUtc. Other route lines stay clean.
+  - Provisional (spec-keeper pre-flight, not John-decided): backlog 15 defaults: label midpoint t=0.5 (chevrons sit at 0.2/0.66/0.88); non-interactive; text uses `muted` on a `surface` pill, never tier colors; hidden during flight preview; accessibility text "{FROM} to {TO}, flight time {h} hours {mm} minutes".
 - Camera fits the real route box above the panel.
 - Removed: city lights, terrain, clock/time slider, weather key.
 - Flight preview (Q-034/035, 2026-10-14, John: B + A): a plane flies the selected route and day/night shifts to the flight's scheduled times (a moving sky clock during the preview only; no user-controlled time slider). Started by a button only, never automatically.
@@ -112,7 +114,11 @@ Condensed from the project docs: MVP decisions (through v8.8), design direction 
 - Ice Mix: Big Shoulders Display (uppercase) + Manrope. Primary ink blue #1D3D84 / #9BB8EF. Amber = "you" only (UI marks, not the radar picture; Q-033, 2026-10-14); amber text #9A5200 / #FFC27A.
 - Follows phone light/dark. Contrast ≥4.5:1; tier colors only as large numbers or fills.
 - Tap targets ≥44pt. Spacing: 16 page, 12 section, 8 in groups, rows 10/12; radius 12/14/26.
-- Buttons Title Case (Find Routes, Get Home); body sentence case. No tabs; top bar = wordmark, Requests pill, Profile.
+- Buttons Title Case (Find Routes, Get Home); body sentence case. ~~No tabs; top bar = wordmark, Requests pill, Profile.~~ (superseded 2026-10-21 by Q-042)
+- Bottom tab bar (Q-042, 2026-10-21, John): four tabs: Search · Feed · My Trips · Profile. Replaces the top-bar Requests pill and Profile button.
+  - Feed = request feed (your airline's asks, per Reports and requests rules). My Trips = your own open requests (max 5) plus saved routes.
+  - Saved routes = new concept, details open/provisional (Q-043). Feed and My Trips are placeholders until the requests backend exists.
+  - Provisional: tab targets >=44pt; Settings still reached from Profile (Q-024).
 - Airline badges: colored pill + plane glyph + IATA code. No logos.
 
 ### Theme tokens (confirmed 2026-10-13, Q-004/5/6; John may revise after seeing it on device)

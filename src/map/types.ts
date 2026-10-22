@@ -12,6 +12,7 @@
  * Item 7: airport status badges (Caution diamond, Likely delays triangle).
  * Item 14: radar overlay (one lat/lon image per region, drawn as a mesh).
  * Item 11: day/night shading, launch spin-in, flight preview.
+ * Item 15: leg flight-time labels ("2:35") on the selected route.
  */
 import type { StyleProp, ViewStyle } from 'react-native';
 
@@ -39,9 +40,10 @@ export interface RouteLeg {
   tier: SeatTier;
   source: LineSource;
   /**
-   * Scheduled departure / arrival, epoch ms (UTC). Optional; only the flight
-   * preview reads them, to move day/night with the flight. If any leg of a
-   * route lacks them, the preview keeps the sky at real time.
+   * Scheduled departure / arrival, epoch ms (UTC). Optional. The flight
+   * preview reads them to move day/night with the flight (if any leg of a
+   * route lacks them, the preview keeps the sky at real time), and the
+   * selected route shows each leg's duration ("2:35") from them (item 15).
    */
   departUtc?: number;
   arriveUtc?: number;

@@ -1,5 +1,5 @@
 /**
- * Big Shoulders Display for map labels, loaded into Skia from the same
+ * Big Shoulders Display for map labels (and Manrope for leg time pills), loaded into Skia from the same
  * bundled font files the app uses (src/theme fontAssets). Skia draws text
  * with its own typefaces, so the expo-font copies cannot be reused directly;
  * `useTypeface` reads the bundled asset (works in Expo Go, no network).
@@ -12,6 +12,7 @@ import { useMemo } from 'react';
 
 import { fontAssets } from '@/theme';
 
+import { LEG_TIME_PILL } from './legTimes';
 import { LABEL_FONT, type MarkKind } from './marks';
 
 export type MarkFonts = Record<MarkKind, SkFont>;
@@ -28,4 +29,13 @@ export function useMarkFonts(): MarkFonts | null {
     }
     return out;
   }, [semi, bold]);
+}
+
+/**
+ * Manrope 600 for leg flight-time pills (item 15, 12/16). Null until loaded;
+ * the pills wait, nothing else does.
+ */
+export function useLegTimeFont(): SkFont | null {
+  const semi = useTypeface(fontAssets.Manrope_600SemiBold);
+  return useMemo(() => (semi ? Skia.Font(semi, LEG_TIME_PILL.fontSize) : null), [semi]);
 }

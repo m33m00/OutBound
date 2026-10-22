@@ -11,9 +11,10 @@
  *   route picture  arcs; re-recorded on camera, routes, selection or theme
  *                  change, never touching the static pictures (routeLayer.ts)
  *   rim picture    limb and edge, cached per camera
- *   marks picture  home pins, origin dot, destination rings, labels (item 9)
- *                  and airport status badges (item 7); above the rim so the
- *                  limb never dims a label
+ *   marks picture  home pins, origin dot, destination rings, labels (item 9),
+ *                  airport status badges (item 7) and the selected route's
+ *                  leg flight-time pills (item 15, hidden while a preview
+ *                  plays); above the rim so the limb never dims a label
  *   plane          flight preview plane (item 11): a glyph picture recorded
  *                  once per accent, moved by a Reanimated shared value
  *                  transform each frame (no React re-render per frame)
@@ -68,9 +69,11 @@ import { markSpinInDone, shouldSpinIn, SPIN_IN, spinStartCamera } from './spinIn
 import { NIGHT_THEME, SKY_IDLE_TICK_MS, sunFromKey, sunKey, sunPosition } from './sun';
 import { useFlightPreview } from './useFlightPreview';
 import { makeLiftedProjector } from './arcs';
-import { useMarkFonts } from './markFonts';
+import { useLegTimeFont, useMarkFonts } from './markFonts';
+import { legTimeColors, legTimeSpecs, legTimesSummary } from './legTimes';
 import { markColors, marksSummary, markSet } from './marks';
 import { recordMarksLayer } from './marksLayer';
+import type { Box } from './marks';
 import { statusColors, statusSet, statusSummary } from './status';
 
 const NO_ROUTES: readonly RouteLine[] = [];
@@ -311,18 +314,21 @@ export function GlobeMap({
   );
   const statusSpoken = useMemo(() => statusSummary(JSON.parse(statusKey)), [statusKey]);
   const statusColorSet = useMemo(() => statusColors(palette), [palette]);
-  const marksPicture = useMemo(() => {
-    if (!viewport || !camera || (marks.length === 0 && statuses.length === 0)) return null;
-    return recordMarksLayer({
-      project: makeLiftedProjector(camera, viewport),
-      viewport,
-      marks,
-      colors: markColorSet,
-      fonts,
-      statuses,
-      statusColors: statusColorSet,
-    });
-  }, [camera, viewport, marks, markColorSet, fonts, statuses, statusColorSet]);
+  // Leg flight-time pills (item 15): selected route only, hidden during a
+  // preview, kept off the legend (measured below).
+  const legTimeFont = useLegTimeFont();
+  const legTimeColorSet = useMemo(() => legTimeColors(palette), [palette]);
+  const [legendBox, setLegendBox] = useState<Box | null>(null);
+  const onLegendLayout = useCallback((e: LayoutChangeEvent) => {
+    const { x, y, width: w, height: h } = e.nativeEvent.layout;
+    setLegendBox((prev) =>
+      prev && prev.x0 === x && prev.y0 === y && prev.x1 === x + w && prev.y1 === y + h
+        ? prev
+        : { x0: x, y0: y, x1: x + w, y1: y + h },
+    );
+  }, []);
+  const legendShown = showLegend && selectedRoute != null;
+  const legTimesSpoken = useMemo(() => legTimesSummary(selectedRoute), [selectedRoute]);
 
   // Radar (item 14): decoded once per region + observedAt, drawn as its own
   // picture between the static base and the routes. Not used for hit tests.
@@ -398,6 +404,38 @@ export function GlobeMap({
     onFrame: onPreviewFrame,
   });
   const previewing = flight.active;
+  const legTimes = useMemo(() => legTimeSpecs(selectedRoute, previewing), [selectedRoute, previewing]);
+  const marksPicture = useMemo(() => {
+    if (!viewport || !camera || (marks.length === 0 && statuses.length === 0 && legTimes.length === 0)) return null;
+    return recordMarksLayer({
+      project: makeLiftedProjector(camera, viewport),
+      viewport,
+      marks,
+      colors: markColorSet,
+      fonts,
+      statuses,
+      statusColors: statusColorSet,
+      legTimes,
+      selectedRoute,
+      legTimeFont,
+      legTimeColors: legTimeColorSet,
+      legendBox: legendShown ? legendBox : null,
+    });
+  }, [
+    camera,
+    viewport,
+    marks,
+    markColorSet,
+    fonts,
+    statuses,
+    statusColorSet,
+    legTimes,
+    selectedRoute,
+    legTimeFont,
+    legTimeColorSet,
+    legendShown,
+    legendBox,
+  ]);
   const radarSpoken = previewing ? null : radarSummary(radarImages.length);
 
   // Day/night (item 11): real time, ticking at most once a minute (and on
@@ -567,7 +605,11 @@ export function GlobeMap({
             .join(' ')}
           accessibilityValue={
             hasRoutes
-              ? { text: selectedRoute ? `Selected ${routeSpokenName(selectedRoute)}` : 'No route selected' }
+              ? {
+                  text: selectedRoute
+                    ? [`Selected ${routeSpokenName(selectedRoute)}.`, legTimesSpoken].filter(Boolean).join(' ')
+                    : 'No route selected',
+                }
               : undefined
           }
           accessibilityHint={hasRoutes ? 'Swipe up or down to pick a route.' : undefined}
@@ -605,14 +647,15 @@ export function GlobeMap({
           ) : null}
         </View>
       </GestureDetector>
-      {showLegend && selectedRoute ? (
+      {legendShown ? (
         <View
+          onLayout={onLegendLayout}
           pointerEvents="none"
           style={[
             styles.legend,
             { left: normInsets.left + LEGEND_GAP, bottom: normInsets.bottom + LEGEND_GAP },
           ]}>
-          <RouteLegend route={selectedRoute} />
+          <RouteLegend route={selectedRoute!} />
         </View>
       ) : null}
     </GestureHandlerRootView>

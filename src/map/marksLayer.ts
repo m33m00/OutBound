@@ -5,7 +5,8 @@
  *
  * Marks are not tappable; route hit testing ignores them. Airport status
  * badges (item 7, status.ts) are drawn here too, on top of the marks, and
- * count as label obstacles.
+ * count as label obstacles. Leg flight-time pills (item 15, legTimes.ts)
+ * are placed after the IATA labels, which win any collision.
  */
 import {
   BlurStyle,
@@ -14,11 +15,21 @@ import {
   StrokeCap,
   StrokeJoin,
   type SkCanvas,
+  type SkFont,
   type SkPicture,
 } from '@shopify/react-native-skia';
 
-import type { LiftedProjector } from './arcs';
+import { legSamples, type LiftedProjector } from './arcs';
 import type { Viewport } from './camera';
+import {
+  LEG_TIME_PILL,
+  legTimeAnchor,
+  legTimeArea,
+  placeLegTimes,
+  type LegTimeColors,
+  type LegTimeRequest,
+  type LegTimeSpec,
+} from './legTimes';
 import type { MarkFonts } from './markFonts';
 import {
   houseGlyph,
@@ -29,6 +40,7 @@ import {
   markExtent,
   placeLabels,
   visibleMarks,
+  type Box,
   type LabelRequest,
   type MarkColors,
   type MarkSpec,
@@ -43,6 +55,7 @@ import {
   type StatusColors,
   type StatusSpec,
 } from './status';
+import type { RouteLine } from './types';
 
 export interface MarksLayerInput {
   project: LiftedProjector;
@@ -54,6 +67,13 @@ export interface MarksLayerInput {
   /** Airport status badges (item 7), from `statusSet`. */
   statuses?: readonly StatusSpec[];
   statusColors?: StatusColors;
+  /** Leg time pills (item 15), from `legTimeSpecs` for `selectedRoute`. */
+  legTimes?: readonly LegTimeSpec[];
+  selectedRoute?: RouteLine | null;
+  legTimeFont?: SkFont | null;
+  legTimeColors?: LegTimeColors;
+  /** Screen box of the legend, if shown: pills never cover it. */
+  legendBox?: Box | null;
 }
 
 function paint(color: string, style: PaintStyle, width = 0) {
@@ -130,6 +150,53 @@ function drawStatus(canvas: SkCanvas, s: ScreenStatus, c: StatusColors) {
   if (s.dim) canvas.restore();
 }
 
+function circleBox(x: number, y: number, r: number): Box {
+  return { x0: x - r, y0: y - r, x1: x + r, y1: y + r };
+}
+
+function drawLegTimes(
+  canvas: SkCanvas,
+  args: {
+    project: LiftedProjector;
+    viewport: Viewport;
+    specs: readonly LegTimeSpec[];
+    route: RouteLine;
+    font: SkFont;
+    colors: LegTimeColors;
+    obstacles: readonly Box[];
+  },
+) {
+  const { project, viewport, specs, route, font, colors, obstacles } = args;
+  const cap = font.measureText('0');
+  const measured = specs.map((s) => ({ s, text: font.measureText(s.text) }));
+  const requests: LegTimeRequest[] = measured.map(({ s, text }) => {
+    const leg = route.legs[s.legIndex];
+    return {
+      id: s.legId,
+      anchor: leg ? legTimeAnchor(legSamples(leg), project) : null,
+      width: text.width + LEG_TIME_PILL.padX * 2,
+      height: LEG_TIME_PILL.height,
+    };
+  });
+  const placed = placeLegTimes(
+    requests,
+    obstacles,
+    legTimeArea(viewport.width, viewport.height, viewport.insets),
+  );
+  const pill = paint(colors.pill, PaintStyle.Fill);
+  const fill = paint(colors.text, PaintStyle.Fill);
+  for (const p of placed) {
+    const m = measured.find((x) => x.s.legId === p.id)!;
+    const w = m.text.width + LEG_TIME_PILL.padX * 2;
+    const h = LEG_TIME_PILL.height;
+    const rect = Skia.XYWHRect(p.x - w / 2, p.y - h / 2, w, h);
+    canvas.drawRRect(Skia.RRectXY(rect, LEG_TIME_PILL.radius, LEG_TIME_PILL.radius), pill);
+    const x = p.x - w / 2 + LEG_TIME_PILL.padX - m.text.x;
+    const baseline = p.y - (cap.y + cap.height / 2);
+    canvas.drawText(m.s.text, x, baseline, fill, font);
+  }
+}
+
 export function recordMarksLayer({
   project,
   viewport,
@@ -138,13 +205,25 @@ export function recordMarksLayer({
   fonts,
   statuses = [],
   statusColors,
+  legTimes = [],
+  selectedRoute,
+  legTimeFont,
+  legTimeColors,
+  legendBox,
 }: MarksLayerInput): SkPicture | null {
   const shown = visibleMarks(marks, project, viewport);
   const badges = statusColors ? visibleStatus(statuses, project, viewport) : [];
-  if (shown.length === 0 && badges.length === 0) return null;
+  const wantTimes = legTimes.length > 0 && selectedRoute != null && legTimeFont != null && legTimeColors != null;
+  if (shown.length === 0 && badges.length === 0 && !wantTimes) return null;
 
   const recorder = Skia.PictureRecorder();
   const canvas = recorder.beginRecording(Skia.XYWHRect(0, 0, viewport.width, viewport.height));
+
+  const markBoxes: Box[] = [
+    ...shown.map((m) => circleBox(m.x, m.y, markExtent(m.kind))),
+    ...badges.map((b) => circleBox(b.x, b.y, statusExtent(b.level))),
+  ];
+  const labelBoxes: Box[] = [];
 
   // Labels first (under marks), so a nudged label never hides a pin.
   if (fonts) {
@@ -179,8 +258,21 @@ export function recordMarksLayer({
       const halo = paint(colors.halo, PaintStyle.Stroke, LABEL_FONT[m.kind].halo);
       canvas.drawText(m.label, x, baseline, halo, font);
       canvas.drawText(m.label, x, baseline, fill, font);
+      labelBoxes.push(p.box);
     });
   }
+
+  // Leg time pills (item 15): after IATA labels so those win; drawn under
+  // the marks. Not hit tested anywhere.
+  if (wantTimes) drawLegTimes(canvas, {
+    project,
+    viewport,
+    specs: legTimes,
+    route: selectedRoute!,
+    font: legTimeFont!,
+    colors: legTimeColors!,
+    obstacles: [...labelBoxes, ...markBoxes, ...(legendBox ? [legendBox] : [])],
+  });
 
   for (const m of shown) drawMark(canvas, m, colors);
   // Badges last: they sit beside the marks (never over them), above labels.
