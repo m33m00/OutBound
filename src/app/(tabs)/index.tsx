@@ -1,14 +1,14 @@
 import { router } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { FlatList, StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AIRPORTS, addDays, localDate, toRouteLine, type Flight, type Itinerary } from '@/engine';
 import { sampleRouteImpacts, useRouteImpacts } from '@/live';
 import { GlobeMap, type MapAirport } from '@/map';
 import { dateChips } from '@/search/dates';
 import { useRouteSearch } from '@/search/useRouteSearch';
-import { minTapTarget, radius, spacing, textStyles, useColors } from '@/theme';
+import { minTapTarget, spacing, textStyles, useColors } from '@/theme';
 import { AirportPicker } from '@/ui/AirportPicker';
 import { useSettings } from '@/settings/SettingsProvider';
 import { changedFilters, DEFAULT_FILTERS, homeAirports, type SearchFilters } from '@/settings/settings';
@@ -37,7 +37,7 @@ const mark = (code: string): MapAirport => ({ code, coord: [AIRPORTS[code].lon, 
 
 /**
  * Home: globe behind a bottom sheet holding search, then results.
- * DECISIONS.md: no tabs; top bar = wordmark, Requests pill, Profile.
+ * The Search tab (Q-042): top bar = wordmark only.
  */
 export default function HomeScreen() {
   const c = useColors();
@@ -60,7 +60,6 @@ export default function HomeScreen() {
   const [bodyHeight, setBodyHeight] = useState(0);
   const [sheetIndex, setSheetIndex] = useState<number>(SHEET.half);
   const listRef = useRef<FlatList<Itinerary>>(null);
-  const safe = useSafeAreaInsets();
   const { state, search, reset } = useRouteSearch();
 
   // 0-7 days out, counted in the origin's local calendar.
@@ -73,8 +72,8 @@ export default function HomeScreen() {
 
   const snaps = useMemo(() => {
     const h = Math.max(bodyHeight, PEEK * 3);
-    return [PEEK + safe.bottom, Math.round(h * 0.48), h - spacing.group];
-  }, [bodyHeight, safe.bottom]);
+    return [PEEK, Math.round(h * 0.48), h - spacing.group];
+  }, [bodyHeight]);
 
   // Ages ("12m ago") keep counting while results are open.
   const [now, setNow] = useState(Date.now());
@@ -171,21 +170,6 @@ export default function HomeScreen() {
         <Text style={[textStyles.wordmark, { color: c.text }]} accessibilityRole="header">
           OutBound
         </Text>
-        <View style={styles.topActions}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Requests"
-            style={[styles.pill, { backgroundColor: c.accentSoft }]}>
-            <Text style={[textStyles.bodyStrong, { color: c.accent }]}>Requests</Text>
-          </Pressable>
-          <Pressable
-            onPress={() => router.push('/settings')}
-            accessibilityRole="button"
-            accessibilityLabel="Profile and settings"
-            style={[styles.pill, { backgroundColor: c.surface2 }]}>
-            <Text style={[textStyles.bodyStrong, { color: c.text }]}>Profile</Text>
-          </Pressable>
-        </View>
       </View>
 
       <View style={styles.body} onLayout={onBodyLayout}>
@@ -342,16 +326,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: spacing.page,
     minHeight: minTapTarget,
-  },
-  topActions: {
-    flexDirection: 'row',
-    gap: spacing.group,
-  },
-  pill: {
-    minHeight: minTapTarget,
-    paddingHorizontal: spacing.rowX,
-    borderRadius: radius.lg,
-    justifyContent: 'center',
   },
   body: {
     flex: 1,

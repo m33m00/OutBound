@@ -1,7 +1,6 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 import { Animated, Pressable, StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { minTapTarget, radius, useColors } from '@/theme';
 
@@ -24,7 +23,6 @@ export interface SheetProps {
 export function Sheet({ snaps, index, onIndexChange, children }: SheetProps) {
   const c = useColors();
   const reduceMotion = useReducedMotion();
-  const safe = useSafeAreaInsets();
   const height = useRef(new Animated.Value(snaps[index])).current;
   const current = useRef(snaps[index]);
   const dragStart = useRef(0);
@@ -87,7 +85,7 @@ export function Sheet({ snaps, index, onIndexChange, children }: SheetProps) {
           <View style={[styles.handle, { backgroundColor: c.line2 }]} />
         </Pressable>
       </GestureDetector>
-      <View style={[styles.body, { paddingBottom: safe.bottom }]}>{children}</View>
+      <View style={styles.body}>{children}</View>
     </Animated.View>
   );
 }
