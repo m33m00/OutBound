@@ -109,8 +109,7 @@ export function recordNightLayer({ camera, viewport, sun, theme }: NightLayerInp
 
   const hA = highlightAlpha(sz);
   if (hA > 0) {
-    const clip = Skia.Path.Make();
-    clip.addCircle(cx, cy, R);
+    const clip = Skia.Path.Circle(cx, cy, R);
     canvas.save();
     canvas.clipPath(clip, ClipOp.Intersect, true);
     const lx = cx + R * sx;

@@ -111,10 +111,11 @@ export function recordRouteLayer(input: RouteLayerInput): RouteLayer {
       const ink = stroke(style.color, CHEVRON.width);
       for (const c of chevronsAlong(legSamples(d.leg), project)) {
         const pts = chevronPoints(c);
-        const cp = Skia.Path.Make();
-        cp.moveTo(pts[0].x, pts[0].y);
-        cp.lineTo(pts[1].x, pts[1].y);
-        cp.lineTo(pts[2].x, pts[2].y);
+        const cp = Skia.PathBuilder.Make()
+          .moveTo(pts[0].x, pts[0].y)
+          .lineTo(pts[1].x, pts[1].y)
+          .lineTo(pts[2].x, pts[2].y)
+          .detach();
         canvas.drawPath(cp, halo);
         canvas.drawPath(cp, ink);
       }

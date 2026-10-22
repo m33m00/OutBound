@@ -13,7 +13,7 @@ jest.mock('@shopify/react-native-skia', () => ({
       finishRecordingAsPicture: () => ({ kind: 'picture' }),
     }),
     Paint: () => ({ setAntiAlias: jest.fn(), setShader: jest.fn() }),
-    Path: { Make: () => ({ addCircle: jest.fn() }) },
+    Path: { Circle: jest.fn(() => ({ kind: 'circle' })) },
     Color: (c: string) => c,
     Shader: { MakeRadialGradient: jest.fn(() => ({ kind: 'gradient' })) },
     RuntimeEffect: { Make: (src: string) => mockEffectMake(src) },

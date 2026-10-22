@@ -59,9 +59,7 @@ function skPath(projection: GeoProjection, object: GeoPermissibleObjects) {
 }
 
 function circlePath(x: number, y: number, r: number) {
-  const p = Skia.Path.Make();
-  p.addCircle(x, y, r);
-  return p;
+  return Skia.Path.Circle(x, y, r);
 }
 
 function record(viewport: Viewport, draw: (canvas: SkCanvas) => void): SkPicture {

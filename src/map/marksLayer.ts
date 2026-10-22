@@ -70,10 +70,10 @@ function paint(color: string, style: PaintStyle, width = 0) {
 }
 
 function polyline(canvas: SkCanvas, pts: readonly { x: number; y: number }[], p: ReturnType<typeof paint>) {
-  const path = Skia.Path.Make();
-  path.moveTo(pts[0].x, pts[0].y);
-  for (let i = 1; i < pts.length; i++) path.lineTo(pts[i].x, pts[i].y);
-  canvas.drawPath(path, p);
+  const b = Skia.PathBuilder.Make();
+  b.moveTo(pts[0].x, pts[0].y);
+  for (let i = 1; i < pts.length; i++) b.lineTo(pts[i].x, pts[i].y);
+  canvas.drawPath(b.detach(), p);
 }
 
 function drawHomePin(canvas: SkCanvas, m: ScreenMark, c: MarkColors, outline: boolean) {
@@ -117,8 +117,7 @@ function drawMark(canvas: SkCanvas, m: ScreenMark, c: MarkColors) {
 
 function drawStatus(canvas: SkCanvas, s: ScreenStatus, c: StatusColors) {
   const pts = statusShapePoints(s.level, s.x, s.y);
-  const path = Skia.Path.Make();
-  path.addPoly(pts, true);
+  const path = Skia.Path.Polygon(pts, true);
   if (s.dim) {
     // One layer so the halo does not show through the faded fill.
     const layer = Skia.Paint();
