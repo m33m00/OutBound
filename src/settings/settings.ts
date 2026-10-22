@@ -40,8 +40,15 @@ export interface Settings {
   homes: Homes;
   /** Be at the airport this long before departure (Q-003, default 75). */
   bufferMin: number;
-  /** Use phone location for the leave-by drive estimate (Q-023). */
+  /** Use phone location: nearest-airport From (Q-051) and leave-by drive estimate (Q-023). */
   useLocation: boolean;
+  /**
+   * The launch-time location card was answered (Q-051). True after Not Now,
+   * and whenever location was turned on any way, so the card never returns.
+   */
+  locationAsked: boolean;
+  /** From of the last Find Routes; fallback origin when location is off (Q-051). */
+  lastOrigin: string | null;
   /** Radar overlay on the globe; on by default, remembered (Q-032). */
   radarOn: boolean;
   /** Defaults the Filters panel starts from. */
@@ -54,6 +61,8 @@ export const DEFAULT_SETTINGS: Settings = {
   homes: { main: null, extras: [] },
   bufferMin: 75,
   useLocation: false,
+  locationAsked: false,
+  lastOrigin: null,
   radarOn: true,
   search: DEFAULT_FILTERS,
   areaOn: {},
@@ -85,10 +94,14 @@ export function parseSettings(raw: unknown): Settings {
   const areaOn = Object.fromEntries(
     Object.entries(a).filter((e): e is [string, boolean] => known(e[0]) && typeof e[1] === 'boolean'),
   );
+  const useLocation = bool(o.useLocation, DEFAULT_SETTINGS.useLocation);
   return {
     homes: { main, extras },
     bufferMin: num(o.bufferMin, DEFAULT_SETTINGS.bufferMin, LIMITS.bufferMin),
-    useLocation: bool(o.useLocation, DEFAULT_SETTINGS.useLocation),
+    useLocation,
+    // Location on (Profile, leave-by or the card) counts as asked; old saves lack the key.
+    locationAsked: useLocation || bool(o.locationAsked, false),
+    lastOrigin: known(o.lastOrigin) ? o.lastOrigin : null,
     radarOn: bool(o.radarOn, DEFAULT_SETTINGS.radarOn),
     search: {
       maxStops: Math.min(3, Math.max(0, stops)),

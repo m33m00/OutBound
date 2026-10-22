@@ -1,5 +1,5 @@
 import { SymbolView } from 'expo-symbols';
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { AIRPORTS, areaFor } from '@/engine';
@@ -30,6 +30,8 @@ export interface SearchPanelProps {
   onGetHome?: () => void;
   /** Shown when no main home is set yet. */
   onSetHome?: () => void;
+  /** First-launch location card (Q-051), shown above the dates when given. */
+  locationCard?: ReactNode;
 }
 
 interface AirportCardProps {
@@ -135,6 +137,7 @@ export function SearchPanel(p: SearchPanelProps) {
       <View style={styles.sampleRow}>
         <SampleLabel />
       </View>
+      {p.locationCard}
       {/* One row, no sideways scroll: date chips share the width, calendar stays 44pt until it holds a date. */}
       <View style={styles.chips}>
         {quick.map((chip) => {

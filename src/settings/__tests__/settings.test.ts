@@ -16,6 +16,8 @@ describe('parseSettings', () => {
       homes: { main: 'DFW', extras: ['ORD'] },
       bufferMin: 90,
       useLocation: true,
+      locationAsked: true,
+      lastOrigin: 'DAL',
       radarOn: false,
       search: { ...DEFAULT_FILTERS, maxStops: 1, maxLayoverMin: 300 },
       areaOn: { DAL: true, DFW: false },
@@ -30,6 +32,27 @@ describe('parseSettings', () => {
     expect(s.search.minConnectSwitchMin).toBe(90);
     expect(s.search.maxLayoverMin).toBe(60);
     expect(parseSettings({ bufferMin: 12 }).bufferMin).toBe(30);
+  });
+
+  it('loads old saves without the backlog 23 keys (Q-051)', () => {
+    const old = { homes: { main: 'DFW', extras: [] }, bufferMin: 90, useLocation: false, radarOn: true };
+    const s = parseSettings(old);
+    expect(s.locationAsked).toBe(false);
+    expect(s.lastOrigin).toBeNull();
+    expect(s.homes.main).toBe('DFW');
+    expect(s.bufferMin).toBe(90);
+  });
+
+  it('counts location already on as asked, so the launch card never shows (Q-051)', () => {
+    expect(parseSettings({ useLocation: true }).locationAsked).toBe(true);
+    // Turning location off later keeps it asked.
+    expect(parseSettings({ useLocation: false, locationAsked: true }).locationAsked).toBe(true);
+  });
+
+  it('drops an unknown last origin', () => {
+    expect(parseSettings({ lastOrigin: 'ZZZ' }).lastOrigin).toBeNull();
+    expect(parseSettings({ lastOrigin: 42 }).lastOrigin).toBeNull();
+    expect(parseSettings({ lastOrigin: 'ORD' }).lastOrigin).toBe('ORD');
   });
 
   it('fills missing search fields from defaults', () => {

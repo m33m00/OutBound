@@ -16,11 +16,14 @@ export type SearchState =
   | { status: 'done'; request: SearchRequest; results: Itinerary[]; searchedAt: number }
   | { status: 'error'; request: SearchRequest; message: string };
 
+/** Zone the sample schedule is built in; also the date zone while From is empty. */
+export const SAMPLE_TZ = 'America/Chicago';
+
 let sample: FlightDataProvider | undefined;
 
 /** Sample data until the schedule DB exists. Covers today through +7 days. */
 export function sampleProvider(): FlightDataProvider {
-  if (!sample) sample = createSampleProvider(localDate(Date.now(), 'America/Chicago'));
+  if (!sample) sample = createSampleProvider(localDate(Date.now(), SAMPLE_TZ));
   return sample;
 }
 

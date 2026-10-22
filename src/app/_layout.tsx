@@ -7,6 +7,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { SettingsProvider } from '@/settings/SettingsProvider';
 import { colors, fontAssets, useColorSchemeName } from '@/theme';
+import { LocationProvider } from '@/ui/LocationProvider';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -38,10 +39,12 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SettingsProvider>
-        <ThemeProvider value={navTheme}>
-          <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
-          <Stack screenOptions={{ headerShown: false }} />
-        </ThemeProvider>
+        <LocationProvider>
+          <ThemeProvider value={navTheme}>
+            <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
+            <Stack screenOptions={{ headerShown: false }} />
+          </ThemeProvider>
+        </LocationProvider>
       </SettingsProvider>
     </GestureHandlerRootView>
   );

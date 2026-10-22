@@ -6,9 +6,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { AIRPORTS, addDays, localDate, toRouteLine, type Flight, type Itinerary } from '@/engine';
 import { sampleRouteImpacts, useRouteImpacts } from '@/live';
 import { GlobeMap, type MapAirport } from '@/map';
+import { nearestAirport } from '@/search/airports';
 import { searchRequest } from '@/search/areas';
 import { dateChips } from '@/search/dates';
-import { useRouteSearch } from '@/search/useRouteSearch';
+import { chooseOrigin, showLocationCard } from '@/search/origin';
+import { SAMPLE_TZ, useRouteSearch } from '@/search/useRouteSearch';
 import { minTapTarget, spacing, textStyles, useColors } from '@/theme';
 import { AirportPicker } from '@/ui/AirportPicker';
 import { useSettings } from '@/settings/SettingsProvider';
@@ -19,15 +21,14 @@ import { ImpactSheet } from '@/ui/ImpactSheet';
 import { LeaveByCard } from '@/ui/LeaveByCard';
 import { PreviewControl, type PreviewPhase } from '@/ui/PreviewControl';
 import { useReducedMotion } from '@/ui/useReducedMotion';
-import { useCurrentLocation } from '@/ui/useCurrentLocation';
+import { useSharedLocation } from '@/ui/LocationProvider';
+import { LocationOptInCard } from '@/ui/LocationOptInCard';
 import { ResultsPanel } from '@/ui/ResultsPanel';
 import { SearchPanel } from '@/ui/SearchPanel';
 import { RadarButton } from '@/ui/RadarButton';
 import { Sheet } from '@/ui/Sheet';
 import { useRadarLayers } from '@/ui/useRadarLayers';
 
-/** Sample-data route used until a main home is set (Q-026). */
-const DEFAULT_ORIGIN = 'BNA';
 const DEFAULT_DESTINATION = 'LAX';
 /** Peek height above the home indicator. */
 const PEEK = 132;
@@ -42,20 +43,36 @@ const mark = (code: string): MapAirport => ({ code, coord: [AIRPORTS[code].lon, 
  */
 export default function HomeScreen() {
   const c = useColors();
-  const [origin, setOrigin] = useState<string | null>(DEFAULT_ORIGIN);
   const [destination, setDestination] = useState<string | null>(DEFAULT_DESTINATION);
   const [picking, setPicking] = useState<'origin' | 'destination' | null>(null);
-  const { settings, update: updateSettings } = useSettings();
+  const { settings, loaded: settingsLoaded, update: updateSettings } = useSettings();
   const [filters, setFilters] = useState<SearchFilters>(DEFAULT_FILTERS);
   // Each search starts from the saved defaults (Settings).
   useEffect(() => setFilters(settings.search), [settings.search]);
-  const { location, status: locationStatus, request: requestLocation } = useCurrentLocation(settings.useLocation);
+  const {
+    location,
+    status: locationStatus,
+    permission: locationPermission,
+    request: requestLocation,
+  } = useSharedLocation();
   const homes = useMemo(() => homeAirports(settings.homes), [settings.homes]);
   const mainHome = settings.homes.main;
-  // Search "From" starts at the main home (Q-026).
-  useEffect(() => {
-    if (mainHome) setOrigin(mainHome);
-  }, [mainHome]);
+  // From (Q-051): a hand pick (picker, swap) wins for the rest of the session,
+  // i.e. this JS runtime's lifetime (the Search tab stays mounted while the app
+  // runs; a cold start begins fresh). Otherwise the nearest airport when
+  // location is on, else main home, else the last searched origin, else empty.
+  const [pickedOrigin, setPickedOrigin] = useState<string | null | undefined>(undefined);
+  const nearest = useMemo(
+    () => (settings.useLocation && location ? nearestAirport(location.lat, location.lon) : null),
+    [settings.useLocation, location],
+  );
+  const origin = chooseOrigin({ picked: pickedOrigin, nearest, mainHome, lastOrigin: settings.lastOrigin });
+  const locationCard = showLocationCard({
+    settingsLoaded,
+    locationAsked: settings.locationAsked,
+    useLocation: settings.useLocation,
+    permission: locationPermission,
+  });
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [bodyHeight, setBodyHeight] = useState(0);
@@ -63,8 +80,8 @@ export default function HomeScreen() {
   const listRef = useRef<FlatList<Itinerary>>(null);
   const { state, search, reset } = useRouteSearch();
 
-  // 0-7 days out, counted in the origin's local calendar.
-  const today = localDate(Date.now(), AIRPORTS[origin ?? DEFAULT_ORIGIN].tz);
+  // 0-7 days out, counted in the origin's local calendar (sample-data zone while From is empty).
+  const today = localDate(Date.now(), origin ? AIRPORTS[origin].tz : SAMPLE_TZ);
   const chips = useMemo(() => dateChips(today), [today]);
   const [date, setDate] = useState(today);
   useEffect(() => {
@@ -127,9 +144,11 @@ export default function HomeScreen() {
       if (!origin || !to) return;
       setSelectedId(null);
       setSheetIndex(SHEET.half);
+      // Remembered as the fallback From when location is off (Q-051).
+      if (origin !== settings.lastOrigin) updateSettings({ lastOrigin: origin });
       search(searchRequest(origin, to, d, areaOn, toArea), filters);
     },
-    [origin, destination, date, filters, search, areaOn],
+    [origin, destination, date, filters, search, areaOn, settings.lastOrigin, updateSettings],
   );
   // Re-run the shown search (retry, tomorrow, filters) with its own To and area choice.
   const rerun = (d: string) =>
@@ -217,7 +236,7 @@ export default function HomeScreen() {
                 onPickOrigin={() => setPicking('origin')}
                 onPickDestination={() => setPicking('destination')}
                 onSwap={() => {
-                  setOrigin(destination);
+                  setPickedOrigin(destination);
                   setDestination(origin);
                 }}
                 areaOn={areaOn}
@@ -227,6 +246,17 @@ export default function HomeScreen() {
                 onFind={() => runSearch()}
                 onGetHome={awayFromHome ? getHome : undefined}
                 onSetHome={mainHome ? undefined : () => router.push('/settings')}
+                locationCard={
+                  locationCard ? (
+                    <LocationOptInCard
+                      onAllow={async () => {
+                        // A denial hides the card too (permission is no longer undetermined).
+                        updateSettings((await requestLocation()) ? { useLocation: true } : { locationAsked: true });
+                      }}
+                      onNotNow={() => updateSettings({ locationAsked: true })}
+                    />
+                  ) : null
+                }
               />
             ) : (
               <ResultsPanel
@@ -299,7 +329,7 @@ export default function HomeScreen() {
         visible={picking !== null}
         title={picking === 'origin' ? 'From' : 'To'}
         onPick={(code) => {
-          if (picking === 'origin') setOrigin(code);
+          if (picking === 'origin') setPickedOrigin(code);
           else setDestination(code);
           setPicking(null);
         }}

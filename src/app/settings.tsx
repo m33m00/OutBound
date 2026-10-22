@@ -11,20 +11,20 @@ import { AirportPicker } from '@/ui/AirportPicker';
 import { Button } from '@/ui/Buttons';
 import { FiltersForm } from '@/ui/FiltersForm';
 import { Stepper } from '@/ui/Stepper';
-import { useCurrentLocation } from '@/ui/useCurrentLocation';
+import { useSharedLocation } from '@/ui/LocationProvider';
 
 /** Tester settings (backlog 12; Q-003, Q-024). Saved on this phone (Q-025). */
 export default function SettingsScreen() {
   const c = useColors();
   const { settings, update, reset } = useSettings();
-  const { status, request } = useCurrentLocation(false);
+  const { status, request } = useSharedLocation();
   const [picking, setPicking] = useState<'main' | 'extra' | null>(null);
   const { homes } = settings;
   const homeList = homeAirports(homes);
 
   const setUseLocation = async (on: boolean) => {
     if (!on) return update({ useLocation: false });
-    // The iOS prompt only ever appears from this tap or the card's button.
+    // The iOS prompt only ever appears from a tap: this toggle, leave-by's button or the launch card's Allow.
     if (await request()) update({ useLocation: true });
   };
 
@@ -47,7 +47,7 @@ export default function SettingsScreen() {
         <View style={[styles.group, { backgroundColor: c.surface, borderColor: c.line }]}>
           <Text style={[textStyles.heading, { color: c.text }]}>Homes</Text>
           <Text style={[textStyles.small, { color: c.muted }]}>
-            Search starts from your main home, and Get Home takes you back to it.
+            Search starts from your main home when location is off, and Get Home takes you back to it.
           </Text>
           {homeList.length === 0 ? (
             <Text style={[textStyles.body, { color: c.text }]}>No home airport yet.</Text>
@@ -104,7 +104,8 @@ export default function SettingsScreen() {
           <Text style={[textStyles.small, { color: c.muted }]}>
             {status === 'denied'
               ? 'Location is off for OutBound. Turn it on in iPhone Settings, then try again.'
-              : 'Estimates your drive to the airport. Only used while the app is open.'}
+              : // Provisional copy (backlog 23): location now also picks From (Q-051).
+                'Starts searches from the nearest airport and estimates your drive. Only used while the app is open.'}
           </Text>
         </View>
 

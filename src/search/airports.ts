@@ -1,5 +1,7 @@
 import { AIRPORTS, type Airport } from '@/engine';
 
+import { distanceKm } from './leaveBy';
+
 /** Airports the search can use, by code. Sample data until the schedule DB. */
 export const SEARCH_AIRPORTS: readonly Airport[] = Object.values(AIRPORTS).sort((a, b) =>
   a.code.localeCompare(b.code),
@@ -24,4 +26,18 @@ export function matchAirports(query: string, airports: readonly Airport[] = SEAR
     .filter(([, r]) => r >= 0)
     .sort((x, y) => x[1] - y[1] || x[0].code.localeCompare(y[0].code))
     .map(([a]) => a);
+}
+
+/** Closest airport in the app's data, however far (Q-051). Null only for an empty list. */
+export function nearestAirport(lat: number, lon: number, airports: readonly Airport[] = SEARCH_AIRPORTS): string | null {
+  let best: string | null = null;
+  let bestKm = Infinity;
+  for (const a of airports) {
+    const km = distanceKm(lat, lon, a.lat, a.lon);
+    if (km < bestKm) {
+      best = a.code;
+      bestKm = km;
+    }
+  }
+  return best;
 }
