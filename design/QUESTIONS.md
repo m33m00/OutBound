@@ -452,12 +452,13 @@ C) Keep it on top but short: icon and word only ("Likely delays"), airport and a
 Recommendation: C, because delays stay as prominent as seats while most rows fit on two lines.
 Answer: John (2026-10-30), "2C".
 
-### Q-073 A next step on "No Flights Found on Selected Date"  (Open)
+### Q-073 A next step on "No Flights Found on Selected Date"  (Answered)
 Context: When a day has no flights, the banner you chose (Q-047) has only the X, so the only way forward is to change the date yourself in the search panel. The day after is usually what people try next.
 A) Keep it as it is: the words and the X
 B) Add a "Try Tomorrow" button on the banner that searches the next day
 C) Add "Try Tomorrow", plus "Include all Dallas airports" when an area toggle is off for From or To
 Recommendation: B, because it turns a dead end into one tap without crowding the banner; C adds a second button most searches won't need.
+Answer: John (2026-10-30), B. Built in design round 55.
 
 Provisional defaults for backlog 3 (not John-decided; John may override any time):
 - FAA cache TTL 5 min server-side; serve stale on FAA error.

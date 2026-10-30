@@ -39,6 +39,7 @@ Condensed from the project docs: MVP decisions (through v8.8), design direction 
   - Supersedes "Search From starts at the main home" when location is on.
 - Missing-results display (Q-047, 2026-10-21, John), backlog 21:
   - No flights at all in the market that day: banner "No Flights Found on Selected Date", dismissible with X; no results panel opens.
+  - The no-flights banner adds a "Try Tomorrow" button that searches the next day (Q-073, 2026-10-30, John, option B). Provisional wording (not John-decided): when the search was for a later day it reads "Try {weekday}", e.g. "Try Saturday"; hidden on the last searchable day (7 days out).
   - Flights exist but filters hide all: banner like "3 routes hidden by your filters · Show Them", dismissible with X.
   - Departed flights are shown, mixed in by time. ~~Engine drops departed flights.~~ (superseded 2026-10-21 by Q-047)
   - Routes with a canceled leg stay in their normal time position.

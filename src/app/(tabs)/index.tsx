@@ -31,6 +31,7 @@ import { LeaveByCard } from '@/ui/LeaveByCard';
 import { useSharedLocation } from '@/ui/LocationProvider';
 import { LocationOptInCard } from '@/ui/LocationOptInCard';
 import { ResultsBanner } from '@/ui/ResultsBanner';
+import { neighborDays } from '@/ui/DayStepper';
 import { ResultsPanel } from '@/ui/ResultsPanel';
 import { SearchPanel } from '@/ui/SearchPanel';
 import { RadarButton } from '@/ui/RadarButton';
@@ -220,6 +221,19 @@ export default function HomeScreen() {
   // Re-run the shown search (retry, tomorrow, filters) with its own To and area choice.
   const rerun = (d: string) =>
     state.status === 'idle' ? runSearch(d) : runSearch(d, state.request.destination, !!state.request.destinationArea);
+
+  // No flights on the searched day (Q-073): one tap searches the next day, inside the 0-7 day window.
+  const nextDay = state.status === 'done' ? neighborDays(chips, state.request.date).next : null;
+  const tryNext = nextDay
+    ? {
+        label: nextDay.label === 'Tomorrow' ? 'Try Tomorrow' : `Try ${nextDay.long.split(',')[0]}`,
+        hint: `Searches ${nextDay.long}`,
+        onPress: () => {
+          setDate(nextDay.date);
+          rerun(nextDay.date);
+        },
+      }
+    : null;
 
   // Get Home: shown when away from every home (Q-026).
   const awayFromHome = mainHome != null && origin != null && !homes.some((h) => h.code === origin);
@@ -471,6 +485,7 @@ export default function HomeScreen() {
                           setSheetIndex(SHEET.full);
                         }}
                         onDismiss={reset}
+                        next={tryNext}
                       />
                     ) : null
                   }
