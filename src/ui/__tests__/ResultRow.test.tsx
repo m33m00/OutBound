@@ -37,7 +37,11 @@ describe('ResultRow', () => {
     expect(button.props.accessibilityState).toEqual({ selected: false });
     expect(root.findAll((n) => n.props.testID === 'badge-slot').length).toBeGreaterThan(0);
     const texts = root.findAll((n) => typeof n.props.children === 'string').map((n) => n.props.children);
-    expect(texts).toContain('Full · no open seats · reported just now');
+    // Seats lead the top line (Q-059); a nonstop's leg keeps only the source and age.
+    expect(texts).toContain('Full · no open seats');
+    expect(texts).toContain('Reported just now');
+    expect(texts).not.toContain('Full · no open seats · reported just now');
+    expect(root.findAll((n) => n.props.testID === 'seat-summary').length).toBeGreaterThan(0);
     act(() => button.props.onPress());
     expect(onPress).toHaveBeenCalledWith(it.id);
   });
@@ -88,6 +92,29 @@ describe('ResultRow', () => {
     expect(onLeg).toHaveBeenCalledWith(it.legs[0].flight);
     const texts = r!.root.findAll((n) => n.props.children != null).flatMap((n) => [n.props.children].flat());
     expect(texts).toContain('Nonstop');
+  });
+
+  it('connections: top line shows the weakest leg; each leg keeps its own seat chip', async () => {
+    const at = (hhmm: string) => zonedToUtc('2026-10-20', hhmm, 'America/Chicago');
+    const provider = createMemoryProvider(
+      [
+        { id: 'A', airline: 'WN', flightNumber: '10', from: 'BNA', to: 'DEN', departUtc: at('08:00'), arriveUtc: at('10:00') },
+        { id: 'B', airline: 'WN', flightNumber: '20', from: 'DEN', to: 'LAX', departUtc: at('11:30'), arriveUtc: at('13:30') },
+      ],
+      {
+        A: [{ source: 'reported', openSeats: 30, listed: 5, asOf: NOW }],
+        B: [{ source: 'reported', openSeats: 6, listed: 4, asOf: NOW }],
+      },
+    );
+    const [it] = await searchItineraries(provider, { origin: 'BNA', destination: 'LAX', date: '2026-10-20' }, { now: NOW });
+    await act(async () => {
+      r = create(<ResultRow itinerary={it} selected={false} now={NOW} onPress={jest.fn()} />);
+    });
+    const summary = r!.root.findAll((n) => n.props.testID === 'seat-summary' && typeof n.type === 'string')[0];
+    const words = summary.findAll((n) => typeof n.props.children === 'string').map((n) => n.props.children);
+    expect(words[0]).toMatch(/^Tight · 2 open$/);
+    const texts = r!.root.findAll((n) => typeof n.props.children === 'string').map((n) => n.props.children as string);
+    expect(texts.some((t) => t.endsWith('· reported just now'))).toBe(true);
   });
 
   it('shows Checking… while live data loads', async () => {

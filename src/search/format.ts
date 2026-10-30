@@ -68,6 +68,28 @@ export function seatText(seats: LegSeats, now: number): string {
   return `${TIER_WORD[seats.tier]} · ${open}${age}`;
 }
 
+/**
+ * Route seat summary for the row's top line (Q-059): the weakest counted leg,
+ * e.g. "Tight · 3 open". Null when no leg has reported or estimated seats
+ * (typical loads stay neutral and stay on their leg).
+ */
+export function routeSeatSummary(it: Itinerary): string | null {
+  if (it.tier === 'unknown') return null;
+  const nets = it.legs
+    .map((l) => l.seats)
+    .filter((s) => s.tier === it.tier && s.netSeats != null)
+    .map((s) => s.netSeats as number);
+  if (!nets.length) return TIER_WORD[it.tier];
+  const least = Math.min(...nets);
+  return `${TIER_WORD[it.tier]} · ${least > 0 ? `${least} open` : 'no open seats'}`;
+}
+
+/** Where a leg's seat number came from and its age: "Reported 5m ago", "Est. 2h ago". */
+export function seatSourceText(seats: LegSeats, now: number): string | null {
+  if (seats.asOf == null || (seats.source !== 'reported' && seats.source !== 'estimate')) return null;
+  return `${seats.source === 'reported' ? 'Reported' : 'Est.'} ${formatAge(seats.asOf, now)}`;
+}
+
 /** "Nonstop", "1 stop", "2 stops". */
 export function stopCount(it: Itinerary): string {
   return it.stops ? `${it.stops} ${it.stops === 1 ? 'stop' : 'stops'}` : 'Nonstop';

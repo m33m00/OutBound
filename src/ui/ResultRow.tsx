@@ -3,7 +3,16 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { Flight, Itinerary, SeatTier } from '@/engine';
 import type { RouteImpact } from '@/live';
-import { formatDuration, nearbyNotes, rowAccessibilityLabel, rowTimes, seatText, stopCount } from '@/search/format';
+import {
+  formatDuration,
+  nearbyNotes,
+  routeSeatSummary,
+  rowAccessibilityLabel,
+  rowTimes,
+  seatSourceText,
+  seatText,
+  stopCount,
+} from '@/search/format';
 import { impactSummary } from '@/search/impactText';
 import type { LegStatusView, LegTagKind, RowStatus } from '@/search/statusTags';
 import { fonts, radius, spacing, textStyles, useColors, type ColorToken } from '@/theme';
@@ -114,6 +123,10 @@ export const ResultRow = memo(function ResultRow({
         }))
       : []),
   ];
+  // Seats lead the top line (Q-059); the delay badge sits after them.
+  const summary = routeSeatSummary(it);
+  // A nonstop's summary already says its tier and number; its leg line keeps only the source and age.
+  const legDetailOnly = summary != null && it.legs.length === 1;
   const first = status?.legs[0];
   // Departed rows are dimmed with a gray fill and edge; text keeps 4.5:1.
   const dimmed = !!status?.dimmed;
@@ -162,12 +175,19 @@ export const ResultRow = memo(function ResultRow({
             )}
             {t.plusDays ? <Text style={[textStyles.small, { color: c.muted }]}> {t.plusDays}</Text> : null}
           </Text>
-          <View style={styles.badgeSlot} testID="badge-slot">
-            {hasImpact ? (
-              <ImpactBadge impact={impact} now={now} onPress={() => onImpactPress?.(it.id)} />
-            ) : impactLoading ? (
-              <Text style={[textStyles.small, { color: c.muted }]}>Checking…</Text>
+          <View style={styles.topRight}>
+            {summary ? (
+              <View style={[styles.summary, { backgroundColor: c[TIER_BG[it.tier]] }]} testID="seat-summary">
+                <Text style={[textStyles.bodyStrong, { color: c[TIER_FG[it.tier]] }]}>{summary}</Text>
+              </View>
             ) : null}
+            <View style={styles.badgeSlot} testID="badge-slot">
+              {hasImpact ? (
+                <ImpactBadge impact={impact} now={now} onPress={() => onImpactPress?.(it.id)} />
+              ) : impactLoading ? (
+                <Text style={[textStyles.small, { color: c.muted }]}>Checking…</Text>
+              ) : null}
+            </View>
           </View>
         </View>
         <View style={styles.line}>
@@ -188,19 +208,23 @@ export const ResultRow = memo(function ResultRow({
               {view?.tag ? <StatusTag label={view.tag.label} tone={TONE[view.tag.kind]} /> : null}
               {/* Leg 0's struck / new time is in the top time line; show it once. */}
               {view && i > 0 ? <LegTime view={view} /> : null}
-              <View
-                style={[
-                  styles.tierChip,
-                  { backgroundColor: leg.seats.source === 'typical' ? c.surface2 : c[TIER_BG[leg.seats.tier]] },
-                ]}>
-                <Text
+              {legDetailOnly ? (
+                <Text style={[textStyles.small, { color: c.muted }]}>{seatSourceText(leg.seats, now)}</Text>
+              ) : (
+                <View
                   style={[
-                    textStyles.small,
-                    { color: leg.seats.source === 'typical' ? c.muted : c[TIER_FG[leg.seats.tier]] },
+                    styles.tierChip,
+                    { backgroundColor: leg.seats.source === 'typical' ? c.surface2 : c[TIER_BG[leg.seats.tier]] },
                   ]}>
-                  {seatText(leg.seats, now)}
-                </Text>
-              </View>
+                  <Text
+                    style={[
+                      textStyles.small,
+                      { color: leg.seats.source === 'typical' ? c.muted : c[TIER_FG[leg.seats.tier]] },
+                    ]}>
+                    {seatText(leg.seats, now)}
+                  </Text>
+                </View>
+              )}
             </>
           );
           const line = onLegPress ? (
@@ -267,6 +291,19 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     flexWrap: 'wrap',
     gap: spacing.group,
+  },
+  topRight: {
+    flexShrink: 1,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: spacing.group,
+  },
+  summary: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: radius.sm,
   },
   badgeSlot: {
     flexShrink: 1,

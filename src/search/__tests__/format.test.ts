@@ -6,8 +6,10 @@ import {
   formatDuration,
   formatTime,
   nearbyNotes,
+  routeSeatSummary,
   rowAccessibilityLabel,
   rowTimes,
+  seatSourceText,
   seatText,
   stopCount,
   stopsText,
@@ -78,6 +80,28 @@ describe('seatText', () => {
   });
   it('handles no data', () => {
     expect(seatText({ source: 'unknown', tier: 'unknown', netSeats: null, asOf: null }, NOW)).toBe('No data yet');
+  });
+});
+
+describe('seat summary (Q-059)', () => {
+  const NOW = Date.UTC(2026, 9, 19, 12);
+  const seats = (p: Partial<LegSeats>): LegSeats => ({ source: 'reported', tier: 'good', netSeats: 8, asOf: NOW, ...p });
+  const route = (legs: LegSeats[], tier: LegSeats['tier']) =>
+    ({ tier, legs: legs.map((s) => ({ seats: s })) }) as unknown as Parameters<typeof routeSeatSummary>[0];
+
+  it('names the weakest counted leg', () => {
+    expect(routeSeatSummary(route([seats({ tier: 'good', netSeats: 9 }), seats({ tier: 'tight', netSeats: 2 })], 'tight'))).toBe('Tight · 2 open');
+    expect(routeSeatSummary(route([seats({ tier: 'full', netSeats: -3 })], 'full'))).toBe('Full · no open seats');
+  });
+
+  it('stays off when no leg has reported or estimated seats', () => {
+    expect(routeSeatSummary(route([seats({ source: 'typical', tier: 'unknown', netSeats: 12 })], 'unknown'))).toBeNull();
+  });
+
+  it('says where a number came from and its age', () => {
+    expect(seatSourceText(seats({}), NOW)).toBe('Reported just now');
+    expect(seatSourceText(seats({ source: 'estimate', asOf: NOW - 2 * 3_600_000 }), NOW)).toBe('Est. 2h ago');
+    expect(seatSourceText(seats({ source: 'typical' }), NOW)).toBeNull();
   });
 });
 
