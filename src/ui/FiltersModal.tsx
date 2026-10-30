@@ -1,11 +1,12 @@
-import { Modal, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Modal, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type { SearchFilters } from '@/settings/settings';
-import { spacing, textStyles, useColors } from '@/theme';
+import { spacing, useColors } from '@/theme';
 
 import { Button } from './Buttons';
 import { FiltersForm } from './FiltersForm';
+import { SheetHeader } from './SheetHeader';
 
 export interface FiltersModalProps {
   visible: boolean;
@@ -22,12 +23,7 @@ export function FiltersModal({ visible, filters, defaults, onChange, onClose }: 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <SafeAreaView style={[styles.screen, { backgroundColor: c.bg }]} edges={['top', 'bottom']}>
-        <View style={styles.header}>
-          <Text style={[textStyles.title, { color: c.text }]} accessibilityRole="header">
-            Filters
-          </Text>
-          <Button label="Done" onPress={onClose} />
-        </View>
+        <SheetHeader title="Filters" action="Done" onAction={onClose} />
         <ScrollView contentContainerStyle={styles.body}>
           <FiltersForm filters={filters} onChange={onChange} />
           <Button label="Reset to Defaults" kind="secondary" onPress={() => onChange(defaults)} />
@@ -39,11 +35,5 @@ export function FiltersModal({ visible, filters, defaults, onChange, onClose }: 
 
 const styles = StyleSheet.create({
   screen: { flex: 1, paddingHorizontal: spacing.page },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: spacing.section,
-  },
   body: { gap: spacing.section, paddingBottom: spacing.page },
 });

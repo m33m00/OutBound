@@ -7,12 +7,12 @@ import type { FlightStatusEntry } from '@/live/flightStatus';
 import { shortDate } from '@/search/dates';
 import { radius, spacing, textStyles, useColors } from '@/theme';
 
-import { Button } from './Buttons';
 import { ageText, delayText, movementTimes, placeText, sampleResponse, STATE_WORD } from './flightStatusText';
 import { Icon } from './Icon';
 import { pressStyle } from './press';
 import { SampleLabel } from './ResultsPanel';
 import { STATE_TONE, TONE_BG, TONE_FG } from './statusTone';
+import { SheetHeader } from './SheetHeader';
 
 export interface FlightStatusSheetProps {
   /** The opened flight; null = closed (no request is made). */
@@ -68,15 +68,7 @@ export function FlightStatusSheet({ flight, now, onClose, liveOptions, sample }:
   return (
     <Modal visible={flight !== null} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <SafeAreaView style={[styles.screen, { backgroundColor: c.bg }]} edges={['top', 'bottom']}>
-        <View style={styles.header}>
-          <View style={styles.title}>
-            <Text style={[textStyles.title, { color: c.text }]} accessibilityRole="header">
-              {title}
-            </Text>
-            {subtitle ? <Text style={[textStyles.bodyStrong, { color: c.muted }]}>{subtitle}</Text> : null}
-          </View>
-          <Button label="Done" onPress={onClose} />
-        </View>
+        <SheetHeader title={title} subtitle={subtitle || undefined} action="Done" onAction={onClose} />
         <ScrollView contentContainerStyle={styles.body}>
           {isSample ? (
             <View style={styles.sampleRow}>
@@ -153,14 +145,6 @@ export function FlightStatusSheet({ flight, now, onClose, liveOptions, sample }:
 
 const styles = StyleSheet.create({
   screen: { flex: 1, paddingHorizontal: spacing.page },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: spacing.section,
-    gap: spacing.group,
-  },
-  title: { flex: 1, gap: 2 },
   sampleRow: { flexDirection: 'row' },
   state: {
     flexDirection: 'row',

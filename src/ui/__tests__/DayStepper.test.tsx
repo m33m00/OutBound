@@ -55,4 +55,16 @@ describe('DayStepper', () => {
     expect(prev.props.accessibilityLabel).toBe('Previous day');
     expect(arrow('next').props.accessibilityState).toEqual({ disabled: false });
   });
+
+  it('runs the full width with the route count under the date (John, 2026-10-30)', () => {
+    act(() => {
+      r = create(<DayStepper days={DAYS} date="2026-10-31" label="Sat, Oct 31" onDay={jest.fn()} detail="4 routes" />);
+    });
+    const box = r!.root.findAll((n) => typeof n.type === 'string')[0];
+    const flat = Object.assign({}, ...[box.props.style].flat(Infinity).filter(Boolean));
+    expect(flat.alignSelf).toBe('stretch');
+    const detail = r!.root.findAll((n) => n.props.testID === 'day-detail' && typeof n.type === 'string')[0];
+    expect(detail.props.children).toBe('4 routes');
+    expect(r!.root.findAll((n) => n.props.accessibilityLabel === 'Saturday, October 31, 4 routes').length).toBeGreaterThan(0);
+  });
 });
