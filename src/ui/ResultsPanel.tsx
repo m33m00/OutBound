@@ -191,7 +191,7 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
           {header}
           <View style={[styles.state, styles.loading]} accessible accessibilityLabel="Finding routes">
             <ActivityIndicator color={c.accent} />
-            <Text style={[textStyles.body, { color: c.muted }]}>Finding routes…</Text>
+            <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, { color: c.muted }]}>Finding routes…</Text>
           </View>
         </View>
       </View>
@@ -215,7 +215,7 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
               />
               <View style={styles.errorText}>
                 <Text lineBreakStrategyIOS="push-out" style={[textStyles.heading, { color: c.text }]}>Couldn’t load flights</Text>
-                <Text style={[textStyles.body, { color: c.muted }]}>
+                <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, { color: c.muted }]}>
                   {p.sampleFlights !== false ? 'Something went wrong. Try again.' : 'Check your connection, then try again.'}
                 </Text>
               </View>

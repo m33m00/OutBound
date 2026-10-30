@@ -116,7 +116,7 @@ export function AirportCard({ label, code, emptyText = 'Choose airport', onPress
         <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, styles.cardLabel, { color: c.muted }]} maxFontSizeMultiplier={LABEL_MAX_SCALE}>
           {label}
         </Text>
-        <Text style={[textStyles.title, { color: code ? c.text : c.faint }]}>{code ?? '—'}</Text>
+        <Text lineBreakStrategyIOS="push-out" style={[textStyles.title, { color: code ? c.text : c.faint }]}>{code ?? '—'}</Text>
         {whole ? (
           <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.text }]}>{area.airports.join(' · ')}</Text>
         ) : null}
@@ -217,7 +217,7 @@ export function SearchPanel(p: SearchPanelProps) {
             name="calendar"
             size={18}
             tintColor={later ? c.onAccent : c.text}
-            fallback={later ? null : <Text style={[textStyles.bodyStrong, { color: c.text }]}>Date</Text>}
+            fallback={later ? null : <Text lineBreakStrategyIOS="push-out" style={[textStyles.bodyStrong, { color: c.text }]}>Date</Text>}
           />
           {later ? (
             <Text
@@ -315,7 +315,7 @@ export function SearchPanel(p: SearchPanelProps) {
             tintColor={c.accent}
             fallback={<Text style={[textStyles.small, { color: c.accent }]}>⌂</Text>}
           />
-          <Text style={[textStyles.bodyStrong, styles.homeHintText, { color: c.accent }]}>Set your main home to use Get Home ›</Text>
+          <Text lineBreakStrategyIOS="push-out" style={[textStyles.bodyStrong, styles.homeHintText, { color: c.accent }]}>Set your main home to use Get Home ›</Text>
         </Pressable>
       ) : null}
       {p.airportCard}

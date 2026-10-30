@@ -29,7 +29,7 @@ export function ResultsBanner({
   return (
     <View style={[styles.banner, { backgroundColor: c.surface2, borderColor: c.line }]}>
       <View style={styles.message}>
-        <Text style={[textStyles.body, { color: c.text }]}>
+        <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, { color: c.text }]}>
           {banner.text}
           {banner.kind === 'hidden' ? ' ·' : ''}
         </Text>
@@ -40,7 +40,7 @@ export function ResultsBanner({
             accessibilityLabel={banner.action}
             accessibilityHint="Shows the hidden routes for this search only. Your filters stay the same."
             style={pressStyle(styles.link, 'link')}>
-            <Text style={[textStyles.bodyStrong, { color: c.accent }]}>{banner.action}</Text>
+            <Text lineBreakStrategyIOS="push-out" style={[textStyles.bodyStrong, { color: c.accent }]}>{banner.action}</Text>
           </Pressable>
         ) : null}
       </View>

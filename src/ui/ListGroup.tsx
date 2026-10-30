@@ -73,7 +73,7 @@ export function ListRow({ label, value, detail, onPress, accessibilityHint, valu
   const content = (
     <>
       <View style={styles.left}>
-        <Text style={[textStyles.body, { color: c.text }]}>{label}</Text>
+        <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, { color: c.text }]}>{label}</Text>
         {stacked ? valueText : null}
         {detail ? <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>{detail}</Text> : null}
       </View>

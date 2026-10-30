@@ -187,7 +187,7 @@ export const ResultRow = memo(function ResultRow({
               <View
                 style={[styles.summary, { backgroundColor: dimmed ? c.surface : c[TIER_BG[it.tier]] }]}
                 testID="seat-summary">
-                <Text style={[textStyles.bodyStrong, { color: dimmed ? c.muted : c[TIER_FG[it.tier]] }]}>{summary}</Text>
+                <Text lineBreakStrategyIOS="push-out" style={[textStyles.bodyStrong, { color: dimmed ? c.muted : c[TIER_FG[it.tier]] }]}>{summary}</Text>
               </View>
             ) : (
               // Typical loads stay neutral (no tier word or color) but still say what's known.
@@ -212,11 +212,11 @@ export const ResultRow = memo(function ResultRow({
                 <Icon name="bookmark.fill" size={13} tintColor={c.accent} fallback={null} />
               </View>
             ) : null}
-            <Text style={[textStyles.bodyStrong, styles.shrink, { color: c.text }]}>
+            <Text lineBreakStrategyIOS="push-out" style={[textStyles.bodyStrong, styles.shrink, { color: c.text }]}>
               {[it.origin, ...it.legs.map((l) => l.flight.to)].join(' → ')}
             </Text>
           </View>
-          <Text style={[textStyles.body, { color: c.muted }]}>
+          <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, { color: c.muted }]}>
             {/* The route line already names the connections; the slim row adds short layovers. */}
             {selected ? stopCount(it) : slimStops(it)} · {formatDuration(it.totalMin)}
           </Text>

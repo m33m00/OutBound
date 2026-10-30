@@ -39,7 +39,7 @@ export function SheetHeader({ title, subtitle, action, onAction, focusTitle = fa
         </Text>
         {/* "DAL → PHX → LAX" is read "DAL to PHX to LAX". */}
         {subtitle ? (
-          <Text style={[textStyles.bodyStrong, { color: c.muted }]} accessibilityLabel={forSpeech(subtitle)}>
+          <Text lineBreakStrategyIOS="push-out" style={[textStyles.bodyStrong, { color: c.muted }]} accessibilityLabel={forSpeech(subtitle)}>
             {subtitle}
           </Text>
         ) : null}

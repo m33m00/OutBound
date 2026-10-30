@@ -15,6 +15,7 @@ import { BackButton } from '@/ui/BackButton';
 import { SectionFooter, SectionHeader } from '@/ui/ListGroup';
 import { Button } from '@/ui/Buttons';
 import { FiltersForm } from '@/ui/FiltersForm';
+import { TITLE_MAX_SCALE } from '@/ui/SheetHeader';
 import { Stepper } from '@/ui/Stepper';
 import { useSharedLocation } from '@/ui/LocationProvider';
 import { withTick } from '@/ui/haptics';
@@ -54,7 +55,8 @@ export default function SettingsScreen() {
         <BackButton label="Back" onPress={() => router.back()} />
       </View>
       <ScrollView ref={scrollRef} contentContainerStyle={styles.body}>
-        <Text style={[textStyles.title, { color: c.text }]} accessibilityRole="header">
+        {/* Capped like every other screen title, so it never breaks mid-word at big text. */}
+        <Text lineBreakStrategyIOS="push-out" style={[textStyles.title, { color: c.text }]} accessibilityRole="header" maxFontSizeMultiplier={TITLE_MAX_SCALE}>
           Settings
         </Text>
 
@@ -62,7 +64,7 @@ export default function SettingsScreen() {
           <SectionHeader title="Homes" />
           <View style={[styles.group, { backgroundColor: c.surface, borderColor: c.line }]}>
             {homeList.length === 0 ? (
-              <Text style={[textStyles.body, styles.empty, { color: c.muted }]}>No main home yet. Set one to show Get Home when you’re away.</Text>
+              <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, styles.empty, { color: c.muted }]}>No main home yet. Set one to show Get Home when you’re away.</Text>
             ) : (
               homeList.map((h, i) => (
                 <View
@@ -70,7 +72,7 @@ export default function SettingsScreen() {
                   style={[styles.row, i > 0 ? [styles.divided, { borderTopColor: c.line }] : null]}>
                   <Text style={[textStyles.number, styles.code, { color: c.text }]}>{h.code}</Text>
                   <View style={styles.label}>
-                    <Text style={[textStyles.body, { color: c.text }]}>{AIRPORTS[h.code]?.name}</Text>
+                    <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, { color: c.text }]}>{AIRPORTS[h.code]?.name}</Text>
                     <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.youText }]}>
                       {h.main ? 'Main home' : h.auto ? 'Same area, added automatically' : 'Also home'}
                     </Text>
@@ -220,7 +222,7 @@ function SwitchRow({
       accessibilityHint={hint ?? caption}
       style={pressStyle([styles.row, divided && [styles.divided, { borderTopColor: c.line }]])}>
       <View style={styles.label}>
-        <Text style={[textStyles.body, { color: c.text }]}>{label}</Text>
+        <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, { color: c.text }]}>{label}</Text>
         {caption ? <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>{caption}</Text> : null}
       </View>
       {/* The row takes the tap and speaks for it. */}
@@ -236,7 +238,7 @@ function MapsChoice({ value, onChange }: { value: MapsApp; onChange: (app: MapsA
   const c = useColors();
   return (
     <View style={[styles.divided, styles.maps, { borderTopColor: c.line }]}>
-      <Text style={[textStyles.body, { color: c.text }]}>Directions open in</Text>
+      <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, { color: c.text }]}>Directions open in</Text>
       <View style={styles.segments} accessibilityRole="radiogroup" accessibilityLabel="Directions open in">
         {(['apple', 'google'] as const).map((app) => {
           const on = value === app;

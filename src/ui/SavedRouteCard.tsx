@@ -38,7 +38,7 @@ export function SavedRouteCard({ route, past, now, onOpen, onRemove }: SavedRout
         accessibilityHint={past ? 'Searches today' : 'Searches this day again'}
         style={pressStyle(styles.main)}>
         <Text lineBreakStrategyIOS="push-out" style={[textStyles.heading, { color: past ? c.muted : c.text }]}>{title}</Text>
-        <Text style={[textStyles.body, { color: c.muted }]}>{when}</Text>
+        <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, { color: c.muted }]}>{when}</Text>
         <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>{flights}</Text>
         {past ? <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>{pastNote}</Text> : null}
       </Pressable>

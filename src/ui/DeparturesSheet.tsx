@@ -124,7 +124,7 @@ export function DeparturesSheet({ code, visible, flights, now, reportFor, onRepo
             keyExtractor={flightKey}
             renderItem={row}
             ListEmptyComponent={
-              <Text style={[textStyles.body, { color: c.muted }]}>
+              <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, { color: c.muted }]}>
                 {`No more departures from ${code ?? 'here'} in the next 5 hours.`}
               </Text>
             }

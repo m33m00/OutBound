@@ -45,7 +45,7 @@ export function Stepper({
   const controls = (
     <>
       {btn(-1)}
-      <Text style={[textStyles.bodyStrong, styles.value, { color: c.text }]} accessibilityLiveRegion="polite">
+      <Text lineBreakStrategyIOS="push-out" style={[textStyles.bodyStrong, styles.value, { color: c.text }]} accessibilityLiveRegion="polite">
         {format(value)}
       </Text>
       {btn(1)}
@@ -55,7 +55,7 @@ export function Stepper({
     return (
       <View style={styles.stack}>
         {/* The buttons already say the label, so VoiceOver skips it here. */}
-        <Text style={[textStyles.body, { color: c.text }]} accessibilityElementsHidden importantForAccessibility="no">
+        <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, { color: c.text }]} accessibilityElementsHidden importantForAccessibility="no">
           {label}
         </Text>
         <View style={[styles.row, styles.end]} testID="stepper-row">{controls}</View>
@@ -64,7 +64,7 @@ export function Stepper({
   }
   return (
     <View style={styles.row} testID="stepper-row">
-      <Text style={[textStyles.body, styles.label, { color: c.text }]}>{label}</Text>
+      <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, styles.label, { color: c.text }]}>{label}</Text>
       {controls}
     </View>
   );
