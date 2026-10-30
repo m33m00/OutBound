@@ -31,6 +31,32 @@ export function formatDuration(min: number): string {
   return m ? `${h}h ${m}m` : `${h}h`;
 }
 
+/** "1 hour 20 minutes" for VoiceOver, which can read "20m" as meters. */
+export function spokenDuration(min: number): string {
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  const hs = h ? `${h} ${h === 1 ? 'hour' : 'hours'}` : '';
+  const mins = m || !h ? `${m} ${m === 1 ? 'minute' : 'minutes'}` : '';
+  return [hs, mins].filter(Boolean).join(' ');
+}
+
+const plural = (n: string, unit: string) => `${n} ${unit}${n === '1' ? '' : 's'}`;
+
+/**
+ * Visible shorthand turned into words for VoiceOver (design round 26): "·" becomes a
+ * pause, "→" "to", "~" "about", "est." "estimated", and "4m ago" "4 minutes ago".
+ */
+export function forSpeech(text: string): string {
+  return text
+    .replace(/ · /g, ', ')
+    .replace(/ → /g, ' to ')
+    .replace(/~/g, 'about ')
+    .replace(/\best\./gi, (m) => (m[0] === 'E' ? 'Estimated' : 'estimated'))
+    .replace(/\b(\d+)m ago\b/g, (_, n: string) => `${plural(n, 'minute')} ago`)
+    .replace(/\b(\d+)h ago\b/g, (_, n: string) => `${plural(n, 'hour')} ago`)
+    .replace(/\b(\d+)d ago\b/g, (_, n: string) => `${plural(n, 'day')} ago`);
+}
+
 /** Every value shows its age: "just now", "12m ago", "3h ago", "2d ago". */
 export function formatAge(asOf: number, now: number): string {
   const min = Math.max(0, Math.floor((now - asOf) / 60_000));
@@ -187,9 +213,9 @@ export function rowAccessibilityLabel(it: Itinerary, now: number): string {
     `Departs ${t.depart} from ${it.origin}`,
     `arrives ${t.arrive}${t.plusDays ? ' next day' : ''} at ${it.destination}`,
     stopsText(it).replace(' · ', ' via '),
-    formatDuration(it.totalMin),
+    spokenDuration(it.totalMin),
     it.isFull ? 'Full route' : `Route ${TIER_WORD[it.tier]}`,
-    ...it.legs.map((l) => `${l.flight.airline} ${l.flight.flightNumber}: ${seatText(l.seats, now).replace(/ · /g, ', ')}`),
+    ...it.legs.map((l) => `${l.flight.airline} ${l.flight.flightNumber}: ${forSpeech(seatText(l.seats, now))}`),
     ...nearbyNotes(it),
   ];
   return parts.join(', ');

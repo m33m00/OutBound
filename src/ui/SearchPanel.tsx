@@ -112,7 +112,8 @@ export function AirportCard({ label, code, onPress, areaOn, onToggleArea }: Airp
         {whole ? (
           <Text style={[textStyles.small, { color: c.text }]}>{area.airports.join(' · ')}</Text>
         ) : null}
-        <Text style={[textStyles.small, { color: c.muted }]} numberOfLines={1}>
+        {/* Two lines so long names ("Dallas/Fort Worth International") show at big text sizes. */}
+        <Text style={[textStyles.small, { color: c.muted }]} numberOfLines={2}>
           {name ?? 'Choose airport'}
         </Text>
       </Pressable>

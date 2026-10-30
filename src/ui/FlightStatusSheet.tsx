@@ -5,6 +5,7 @@ import { AIRPORTS, localDate, type Flight } from '@/engine';
 import { useFlightStatus, type FlightLookup, type UseFlightStatusOptions, type Movement } from '@/live';
 import type { FlightStatusEntry } from '@/live/flightStatus';
 import { shortDate } from '@/search/dates';
+import { forSpeech } from '@/search/format';
 import { radius, spacing, textStyles, useColors } from '@/theme';
 
 import { ageText, delayText, movementTimes, placeText, sampleResponse, STATE_WORD } from './flightStatusText';
@@ -52,12 +53,15 @@ export function FlightStatusSheet({ flight, now, onClose, liveOptions, sample }:
     // The title already says "On time" for a scheduled flight; don't repeat it on each card.
     const delay = delayWord === 'On time' && status?.state === 'scheduled' ? null : delayWord;
     return (
-      <View key={label} accessible style={[styles.card, { backgroundColor: c.surface, borderColor: c.line }]}>
+      <View
+        key={label}
+        accessible
+        accessibilityLabel={forSpeech([`${label}, ${code}`, delay, movementTimes(m, tz), placeText(m)].filter(Boolean).join('. '))}
+        style={[styles.card, { backgroundColor: c.surface, borderColor: c.line }]}>
         <View style={styles.top}>
           <Text style={[textStyles.number, { color: c.text }]}>{code}</Text>
           <Text style={[textStyles.small, { color: c.muted }]}>{label}</Text>
-          <View style={styles.spacer} />
-          {delay ? <Text style={[textStyles.bodyStrong, { color: c.text }]}>{delay}</Text> : null}
+          {delay ? <Text style={[textStyles.bodyStrong, styles.trailing, { color: c.text }]}>{delay}</Text> : null}
         </View>
         {movementTimes(m, tz) ? <Text style={[textStyles.body, { color: c.text }]}>{movementTimes(m, tz)}</Text> : null}
         <Text style={[textStyles.body, { color: c.muted }]}>{placeText(m)}</Text>
@@ -158,7 +162,8 @@ const styles = StyleSheet.create({
   },
   body: { gap: spacing.section, paddingBottom: spacing.page },
   card: { borderRadius: radius.md, borderWidth: StyleSheet.hairlineWidth, padding: spacing.rowX, gap: 4 },
-  top: { flexDirection: 'row', alignItems: 'center', gap: spacing.group },
-  spacer: { flex: 1 },
+  // Wraps at big text sizes; the delay stays right-aligned on whichever line it lands.
+  top: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: spacing.group },
+  trailing: { marginLeft: 'auto', flexShrink: 1 },
   refresh: { minHeight: 44, justifyContent: 'center', alignSelf: 'flex-start' },
 });

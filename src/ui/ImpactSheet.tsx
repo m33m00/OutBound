@@ -2,7 +2,7 @@ import { Modal, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type { RouteImpact } from '@/live';
-import { formatAge } from '@/search/format';
+import { formatAge, forSpeech } from '@/search/format';
 import { IMPACT_WORD } from '@/search/impactText';
 import { radius, spacing, textStyles, useColors } from '@/theme';
 
@@ -40,19 +40,30 @@ export function ImpactSheet({ visible, title, subtitle, impact, now, sample, onC
           {impact?.stations.map((s) => {
             const likely = s.level === 'likelyDelays';
             const badge = s.level !== 'none';
+            // One spoken line per station, in words (design round 26).
+            const spoken = [
+              `${s.code}, ${s.role === 'destination' ? 'destination' : 'connection'}, ${
+                badge ? IMPACT_WORD[s.level as 'caution' | 'likelyDelays'].toLowerCase() : 'no disruption'
+              }`,
+              ...s.reasons.map((r) => `${r.text}, from ${r.source === 'FAA' ? 'FAA' : 'weather'}`),
+              s.noForecast ? 'Weather forecast not available yet' : '',
+              s.asOf ? `Updated ${forSpeech(formatAge(Date.parse(s.asOf), now))}${s.stale ? ', may be out of date' : ''}` : '',
+            ]
+              .filter(Boolean)
+              .join('. ');
             return (
               <View
                 key={`${s.role}-${s.code}`}
                 accessible
+                accessibilityLabel={spoken}
                 style={[styles.station, { backgroundColor: c.surface, borderColor: c.line }]}>
                 <View style={styles.stationTop}>
                   <Text style={[textStyles.number, { color: c.text }]}>{s.code}</Text>
                   <Text style={[textStyles.small, { color: c.muted }]}>
                     {s.role === 'destination' ? 'Destination' : 'Connection'}
                   </Text>
-                  <View style={styles.spacer} />
                   {badge ? (
-                    <View style={[styles.pill, { backgroundColor: likely ? c.likelyDelaysBg : c.cautionBg }]}>
+                    <View style={[styles.pill, styles.trailing, { backgroundColor: likely ? c.likelyDelaysBg : c.cautionBg }]}>
                       <Icon
                         name={IMPACT_ICON[s.level as 'caution' | 'likelyDelays']}
                         size={13}
@@ -63,7 +74,7 @@ export function ImpactSheet({ visible, title, subtitle, impact, now, sample, onC
                       </Text>
                     </View>
                   ) : (
-                    <Text style={[textStyles.body, { color: c.muted }]}>No disruption</Text>
+                    <Text style={[textStyles.body, styles.trailing, { color: c.muted }]}>No disruption</Text>
                   )}
                 </View>
                 {s.reasons.map((r) => (
@@ -98,7 +109,8 @@ const styles = StyleSheet.create({
   sampleNote: { flexShrink: 1 },
   body: { gap: spacing.section, paddingBottom: spacing.page },
   station: { borderRadius: radius.md, borderWidth: StyleSheet.hairlineWidth, padding: spacing.rowX, gap: 4 },
-  stationTop: { flexDirection: 'row', alignItems: 'center', gap: spacing.group },
-  spacer: { flex: 1 },
+  // Wraps at big text sizes; the badge stays right-aligned on whichever line it lands.
+  stationTop: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: spacing.group },
+  trailing: { marginLeft: 'auto', flexShrink: 1 },
   pill: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 2, borderRadius: radius.sm },
 });

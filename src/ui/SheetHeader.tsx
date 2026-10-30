@@ -1,5 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { forSpeech } from '@/search/format';
 import { fonts, minTapTarget, spacing, textStyles, useColors } from '@/theme';
 
 import { pressStyle } from './press';
@@ -24,7 +25,12 @@ export function SheetHeader({ title, subtitle, action, onAction }: SheetHeaderPr
         <Text style={[textStyles.title, { color: c.text }]} accessibilityRole="header">
           {title}
         </Text>
-        {subtitle ? <Text style={[textStyles.bodyStrong, { color: c.muted }]}>{subtitle}</Text> : null}
+        {/* "DAL → PHX → LAX" is read "DAL to PHX to LAX". */}
+        {subtitle ? (
+          <Text style={[textStyles.bodyStrong, { color: c.muted }]} accessibilityLabel={forSpeech(subtitle)}>
+            {subtitle}
+          </Text>
+        ) : null}
       </View>
       <Pressable
         onPress={onAction}

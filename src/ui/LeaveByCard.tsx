@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { AccessibilityInfo, Linking, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
 import type { Airport } from '@/engine';
+import { forSpeech } from '@/search/format';
 import { computeLeaveBy, leaveByText, LOCATION_FRESH_MS, type PhoneLocation } from '@/search/leaveBy';
 import { radius, spacing, textStyles, useColors } from '@/theme';
 
@@ -68,7 +69,7 @@ export function LeaveByCard(p: LeaveByCardProps) {
           />
         </View>
         {/* One VoiceOver element for the text; buttons stay separately reachable. */}
-        <View style={styles.text} accessible accessibilityLabel={[text.title, text.sub, note].filter(Boolean).join('. ')}>
+        <View style={styles.text} accessible accessibilityLabel={forSpeech([text.title, text.sub, note].filter(Boolean).join('. '))}>
           <Text style={[textStyles.heading, { color: atAirport ? c.youText : c.text }]}>{text.title}</Text>
           <Text style={[textStyles.small, { color: c.muted }]}>{text.sub}</Text>
           {note ? <Text style={[textStyles.small, { color: c.muted }]}>{note}</Text> : null}

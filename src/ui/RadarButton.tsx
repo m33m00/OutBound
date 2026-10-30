@@ -28,7 +28,10 @@ export function RadarButton({ on, caption, onToggle }: { on: boolean; caption: s
         />
       </Pressable>
       {caption ? (
-        <View style={[styles.caption, { backgroundColor: c.surface }]} pointerEvents="none" importantForAccessibility="no">
+        <View style={[styles.caption, { backgroundColor: c.surface }]} pointerEvents="none"
+          // Hidden from VoiceOver on both platforms; the button's hint already says it.
+          importantForAccessibility="no-hide-descendants"
+          accessibilityElementsHidden>
           <Text style={[textStyles.small, { color: c.muted }]}>{caption}</Text>
         </View>
       ) : null}

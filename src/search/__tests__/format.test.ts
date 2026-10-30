@@ -16,6 +16,7 @@ import {
   slimStops,
   stopCount,
   stopsText,
+  forSpeech,
   seatCounts,
 } from '../format';
 
@@ -166,7 +167,8 @@ describe('row text', () => {
       '1': [{ source: 'reported', openSeats: 30, listed: 8, asOf: NOW - 5 * 60_000 }],
     });
     expect(rowAccessibilityLabel(it, NOW)).toBe(
-      'Departs 9:00 AM from BNA, arrives 11:20 AM at LAX, Nonstop, 4h 20m, Route Good, AA 1: Good, 30 open, 8 listed, reported 5m ago',
+      // Spelled out so VoiceOver doesn't read "20m" as meters (design round 26).
+      'Departs 9:00 AM from BNA, arrives 11:20 AM at LAX, Nonstop, 4 hours 20 minutes, Route Good, AA 1: Good, 30 open, 8 listed, reported 5 minutes ago',
     );
   });
 });
@@ -179,5 +181,18 @@ describe('seatCounts (Q-065)', () => {
   it('falls back to the net count for older data', () => {
     expect(seatCounts(base)).toBe('3 open');
     expect(seatCounts({ ...base, netSeats: -2, tier: 'full' })).toBe('no open seats');
+  });
+});
+
+describe('forSpeech (design round 26)', () => {
+  it('turns visible shorthand into words', () => {
+    expect(forSpeech('Typically ~12 open · Jul data')).toBe('Typically about 12 open, Jul data');
+    expect(forSpeech('Tight · 3 open · est. 1m ago')).toBe('Tight, 3 open, estimated 1 minute ago');
+    expect(forSpeech('Est. 2h ago')).toBe('Estimated 2 hours ago');
+    expect(forSpeech('DAL → PHX → LAX')).toBe('DAL to PHX to LAX');
+    expect(forSpeech('Updated 3d ago')).toBe('Updated 3 days ago');
+  });
+  it('leaves clock times alone', () => {
+    expect(forSpeech('Departs 9:00 AM')).toBe('Departs 9:00 AM');
   });
 });

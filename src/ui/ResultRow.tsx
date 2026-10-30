@@ -1,9 +1,10 @@
 import { memo } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
 import type { Flight, Itinerary, SeatTier } from '@/engine';
 import type { RouteImpact } from '@/live';
 import {
+  forSpeech,
   formatDuration,
   nearbyNotes,
   neutralSeatText,
@@ -72,6 +73,12 @@ const TONE: Record<LegTagKind, Tone> = {
   diverted: 'canceled',
 };
 
+/** From this text size the seat chip and delay badge sit left-aligned under the times. */
+export const STACK_TOP_LINE_SCALE = 1.3;
+
+/** "7:05 AM" never splits between the number and AM/PM, so a long time line only wraps at the dash. */
+const keep = (time: string) => time.replace(/ /g, '\u00a0');
+
 function StatusTag({ label, tone }: { label: string; tone: Tone }) {
   const c = useColors();
   return (
@@ -81,7 +88,7 @@ function StatusTag({ label, tone }: { label: string; tone: Tone }) {
       {tone === 'canceled' ? (
         <Icon name="xmark.circle" size={12} tintColor={c[TONE_FG[tone]]} fallback={null} />
       ) : null}
-      <Text style={[textStyles.small, styles.tagWord, { color: c[TONE_FG[tone]] }]}>{label}</Text>
+      <Text style={[textStyles.small, styles.tagWord, styles.shrink, { color: c[TONE_FG[tone]] }]}>{label}</Text>
     </View>
   );
 }
@@ -111,15 +118,16 @@ export const ResultRow = memo(function ResultRow({
   large,
 }: ResultRowProps) {
   const c = useColors();
-  const t = rowTimes(it);
+  const { fontScale } = useWindowDimensions();
+  const stacked = fontScale >= STACK_TOP_LINE_SCALE;
+  const rt = rowTimes(it);
+  const t = { ...rt, depart: keep(rt.depart), arrive: keep(rt.arrive) };
   const hasImpact = impact != null && impact.level !== 'none';
-  const label = [
-    rowAccessibilityLabel(it, now),
-    ...(status?.spoken ?? []),
-    hasImpact ? impactSummary(impact, now) : '',
-  ]
-    .filter(Boolean)
-    .join('. ');
+  const label = forSpeech(
+    [rowAccessibilityLabel(it, now), ...(status?.spoken ?? []), hasImpact ? impactSummary(impact, now) : '']
+      .filter(Boolean)
+      .join('. '),
+  );
   const actions = [
     ...(hasImpact ? [{ name: 'impact', label: 'Delay and weather details' }] : []),
     ...(onLegPress
@@ -184,7 +192,7 @@ export const ResultRow = memo(function ResultRow({
               <>
                 {first?.struck && first.newText ? (
                   <>
-                    <Text style={[styles.struck, { color: c.muted }]}>{t.depart}</Text> {first.newText}
+                    <Text style={[styles.struck, { color: c.muted }]}>{t.depart}</Text> {keep(first.newText)}
                   </>
                 ) : (
                   t.depart
@@ -193,7 +201,7 @@ export const ResultRow = memo(function ResultRow({
                 {/* A late arrival shows like a late departure: old time struck, new time after it. */}
                 {status?.arrival ? (
                   <>
-                    <Text style={[styles.struck, { color: c.muted }]}>{t.arrive}</Text> {status.arrival.newText}
+                    <Text style={[styles.struck, { color: c.muted }]}>{t.arrive}</Text> {keep(status.arrival.newText)}
                   </>
                 ) : (
                   t.arrive
@@ -202,7 +210,8 @@ export const ResultRow = memo(function ResultRow({
             )}
             {t.plusDays ? <Text style={[textStyles.small, { color: c.muted }]}> {t.plusDays}</Text> : null}
           </Text>
-          <View style={styles.topRight}>
+          {/* At big text the times take the line; seats and the delay badge go under them. */}
+          <View style={[styles.topRight, stacked && styles.topRightStacked]} testID="top-right">
             {summary ? (
               <View
                 style={[styles.summary, { backgroundColor: dimmed ? c.surface : c[TIER_BG[it.tier]] }]}
@@ -348,6 +357,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     minHeight: 44,
   },
+  shrink: { flexShrink: 1 },
   strongBorder: {
     borderWidth: 2,
   },
@@ -375,7 +385,14 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     gap: spacing.group,
   },
+  topRightStacked: {
+    flexBasis: '100%',
+    justifyContent: 'flex-start',
+  },
+  // Long seat text wraps inside the chip instead of being cut off by the row's rounded edge.
   summary: {
+    flexShrink: 1,
+    maxWidth: '100%',
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: radius.sm,

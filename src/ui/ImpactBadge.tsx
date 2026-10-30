@@ -33,7 +33,7 @@ export function ImpactBadge({ impact, now, onPress }: { impact: RouteImpact; now
         tintColor={fg}
         fallback={<Text style={[textStyles.small, { color: fg }]}>!</Text>}
       />
-      <Text style={[textStyles.small, styles.word, { color: fg }]}>
+      <Text style={[textStyles.small, styles.word, { color: fg }]} testID="impact-word">
         {impactBadgeText(impact, now)}
       </Text>
     </Pressable>
@@ -44,6 +44,7 @@ const styles = StyleSheet.create({
   pill: {
     minHeight: 22,
     flexShrink: 1,
+    maxWidth: '100%',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
@@ -51,5 +52,6 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
     borderRadius: radius.sm,
   },
-  word: { fontFamily: fonts.bodySemiBold },
+  // Shrinks so long words wrap inside the pill at big text sizes instead of spilling out.
+  word: { fontFamily: fonts.bodySemiBold, flexShrink: 1 },
 });

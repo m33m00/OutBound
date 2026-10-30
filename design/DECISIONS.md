@@ -82,6 +82,11 @@ Condensed from the project docs: MVP decisions (through v8.8), design direction 
 - Settings reset (Q-064, 2026-10-30, John: "Clear everything"): "Reset All Settings" clears everything on the phone, homes included, after a confirm.
 - Seat numbers (Q-065, 2026-10-30, John: "I'd rather see both numbers"): seat text shows open seats and nonrevs listed, not only the net figure: "Tight · 20 open · 17 listed" on the row's seat summary and on each leg in the route card. The tier still comes from net seats (open minus listed). Readings without both numbers fall back to "3 open". Typical loads keep "Typically ~51 open".
 - Today's list opens at the "Now" line (Q-066, 2026-10-30, John: "Yes"): when routes that already left sit at the top, results open scrolled so the "Now" line is at the top; the routes that left are a short scroll up. Once you scroll or pick a route, the list stays where you put it.
+- Provisional (design round 26, 2026-10-30; accessibility pass, not John-decided):
+  - Dark mode contrast checked for every text/fill pair in use; all pass 4.5:1 (weakest: Tight chip 6.31:1 light). Keep faint text off accentSoft (4.32:1).
+  - From 1.3x text size the row's seat chip and delay badge sit left-aligned under the times; long seat text and badges wrap inside their pill instead of being cut off; times never split between the number and AM/PM.
+  - VoiceOver hears words, not shorthand: "4 hours 20 minutes", "5 minutes ago", "estimated", "about", "DAL to PHX to LAX". Delay and flight status cards each read as one sentence.
+  - Flight status and delay cards wrap their top line at big text sizes; airport names on Search get two lines; the radar caption is hidden from VoiceOver on iPhone too.
 - Own schedule DB from daily AeroDataBox pulls (~30 airports). No live calls per search.
 
 ## Seat availability
