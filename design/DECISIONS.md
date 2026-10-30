@@ -191,48 +191,8 @@ Condensed from the project docs: MVP decisions (through v8.8), design direction 
     - Provisional (design round 28, 2026-10-30; not John-decided): saved routes show a small blue bookmark before the route line in the results list, and VoiceOver adds "Saved to My Trips" to the row. Saving or removing from the header bookmark is announced to VoiceOver. My Trips cards say Today or Tomorrow instead of the date when that fits (counted at the origin).
   - Provisional: tab targets >=44pt; Settings still reached from Profile (Q-024).
   - Provisional (design round 1, 2026-10-30; not John-decided, John may override): Feed and My Trips show an empty-state card (icon, heading, one sentence, list of what will show there) until requests exist; My Trips offers Find Routes. Profile lists main home, other homes, airport buffer, location and search defaults as rows that open Settings, then an About group (Flights: Sample data, Airport delays: FAA, Weather: NOAA Aviation Weather, Radar: NOAA/NWS MRMS, Version) and the "Follow your airline's rules on sharing loads" notice.
-- Filters button (Q-046, 2026-10-21, John): gets an SF Symbol icon (like the tab bar icons) so its purpose is clear at a glance. Label stays "Filters".
-- Airline badges: colored pill + plane glyph + IATA code. No logos.
-- Provisional (design rounds 2 and 10, 2026-10-30; not John-decided): every tappable dims while pressed; picking controls (date chips, area toggle, swap, max stops, steppers, radar, route select) give a light iOS selection haptic.
-- Provisional (design round 11, 2026-10-30; not John-decided): the leave-by card (and, until 2026-10-30, Preview Flight) sit directly under the selected route's row and scroll with it (they used to sit above the list and could push the picked row out of the half-height panel); picking a route scrolls its row to the top and VoiceOver says the leave-by line once. Each leg's flight status is a VoiceOver action on the row. The row's stops line reads "1 stop · 5h 10m" because the route line above it already names the connections (VoiceOver still says "1 stop via DEN").
-- Provisional (design round 12, 2026-10-30; not John-decided): at text sizes of 1.2x and up, the date chips go two to a row (calendar on its own row) instead of shrinking and cutting off "Tomorrow". The From/To label and the area pill share the card's top row, so they stop growing at 1.3x; the airport code, name and area list keep growing.
-- Provisional (design round 13, 2026-10-30; not John-decided): when a search covered a whole area (Q-048, including Get Home), the results header adds a line under the date, e.g. "Landing at any Dallas airport (DAL, DFW)", because the title shows only the picked airports.
-- Design review follow-ups (Q-056 to Q-059, 2026-10-30, John: "Go with your lean"):
-  - Area pill matches Q-048: outline gray "+ Area" when off, solid accent-blue "All Dallas" when on.
-  - Results let you change the date and the filters in place, without going back to search.
-    - Provisional (design round 18, 2026-10-30; not John-decided): the results header shows "‹ Wed, Oct 30 ›" to step one day at a time inside the 0-7 day window (arrows dim at the ends) and a Filters button with the changed count; either re-runs the search in place. The date line under it keeps only the route count.
-  - Results get a sort control; still the top 10 routes of the current sort; ~~default stays earliest arrival~~ (default is departure time since 2026-10-30; whether the control is still wanted is Q-060).
-  - Seat availability gets more visual weight on each result row (a route-level seat summary on the top line).
-- Provisional (design round 14, 2026-10-30; not John-decided): Android and web show the closest Material icon wherever iPhone shows an SF Symbol (tab bar, buttons, chevrons, sheets), via `src/ui/Icon.tsx`; a symbol with no match keeps its text fallback.
-- App icon (Q-055, 2026-10-30, John: A, "You design it"): Ice Mix ink blue (#1D3D84) background, white route arc from an amber origin dot (amber = you), white plane leaving up-right. Same mark on Android adaptive icon and favicon. Source `design/assets/make-icon.py`.
-  - Provisional (design round 6, not John-decided): splash = OutBound wordmark (Big Shoulders 700, ink #1D3D84 / dark #9BB8EF) on the theme background (#f6f8fb / #0b1119).
-
-### Theme tokens (confirmed 2026-10-13, Q-004/5/6; John may revise after seeing it on device)
-Source in code: `src/theme/colors.ts`, `src/theme/typography.ts`. Values are light / dark.
-- Surfaces: bg #f6f8fb / #0b1119; surface #ffffff / #111a25; surface2 #eef2f7 / #172231; line #dfe5ec / #1f2c3b; line2 #cbd4de / #2a3a4d.
-- Text: text #101824 / #e8eef5; muted #56657a / #9cadc0; faint #606f84 / #8d9db0 (light faint darkened from prototype #66758a to pass 4.5:1, Q-006).
-- Accent: #1d3d84 / #9bb8ef; onAccent #ffffff / #0a1530; accentSoft #e7ecf6 / #17233b.
-- You (amber): you #c46a10 / #ffb25a; youText #9a5200 / #ffc27a; youBg #fcecd9 / #2c1d10.
-- Tiers (mark | bg | text-on-bg), light then dark:
-  - Wide open: #0b7f6a | #dcf3ee | #08594a / #2fd1b0 | #0d2a25 | #8ff0dc
-  - Good: #1f9e6a | #e2f5ec | #11613f / #3bd08f | #10271d | #9af0c7
-  - Okay: #7f9a1d | #eef4d8 | #4d5e0f / #c3d64a | #232a10 | #dbe98f
-  - Tight: #c9861a | #fbf0dc | #7a4f08 / #f0b541 | #2a2313 | #ffd98c
-  - Full: #d8474a | #fbe5e5 | #8f2426 / #ff6b6b | #2c1618 | #ffb9b9
-  - Unknown: #8a94a6 | #eceff4 | #4c5568 / #8792a8 | #1c2230 | #b8c0d0
-- Weather: Caution violet #5b4bd6 (bg #ebe8fd) / #b7adff (bg #201c40); Likely delays magenta #a3269a (bg #f9e2f6) / #f283e8 (bg #3a1533).
-- Fonts: Big Shoulders Display 600/700/800; Manrope 400/500/600/700.
-- Type scale (size/line height): title 29/32 Display, uppercase, tracking .02em; number 22/26 Display 800; wordmark 17/20 Display, uppercase, tracking .16em; heading 16/22 Manrope 700; body 14/20 Manrope 400; bodyStrong 14/20 Manrope 600; button 15/20 Manrope 700; small 12/16 Manrope 500.
-
-## Tech
-- Fresh project created 2026-10-13 on John's Mac with `create-expo-app@latest` (latest Expo SDK; 57 at time of writing) + TypeScript + Expo Router. The earlier Windows v0 codebase was a test and is not used.
-- Dev machine: MacBook Pro (Apple silicon). iPhone via Expo Go; iOS Simulator optional.
-- Supabase (Postgres, auth with invite codes, Edge Functions). iOS first via TestFlight.
-- Supabase plan (Q-016, 2026-10-14): Free plan, ~~US East region for the beta~~ (US East part superseded 2026-10-21 by Q-038). Upgrade to Pro ($25/mo) before testers rely on it (free projects pause after a week idle). Pro is not in the Floor estimate below until then.
-  - Region (Q-038, 2026-10-21, John: A): keep US West (Oregon, us-west-2) for the database; no recreate. Supabase has no US Central region (closest is us-east-2 Ohio). Supersedes the US East plan in Q-016.
-  - ~~Region note (2026-10-14): project created in us-west-2, not US East as planned; flag for John whether to recreate in US East or accept US West.~~ (resolved 2026-10-21 by Q-038)
-  - Deployed 2026-10-14: live-faa-status and live-weather, to project bpiwqsdnngfdmrczpieb.
-- Budget: Floor ~$9–18/mo + $99/yr Apple. ~~Paid-API cap $30/mo, alert $24, estimates pause at cap.~~ (superseded 2026-10-21 by Q-049: no app spend cap for now; usage logging stays.)
-
-## Not in the MVP
-Boarding-pass scan, trip log, Watching, contributor priority, eligibility filtering, "from here" map, wayfinding, WN/DL/AS seat maps. Live aircraft positions (OpenSky) = P1.
+  - Provisional (design round 29, motion and navigation audit, 2026-10-30; not John-decided, John may override):
+    - Motion: the results panel uses one no-bounce spring for every size change (tap, drag, app). Search and results cross-fade (180 ms). A picked route slides in a little from the right like an iOS push; flipping routes fades the card and starts it at the top; the list fades back in. The globe glides with the panel (350 ms) instead of snapping. Reduce Motion: no slides or glides, fades only.
+    - Back: one step at a time everywhere: route, then list, then search. Android's back button and re-tapping the Search tab walk these steps (iOS pop-to-top). Tapping empty globe closes a route the same way as "‹ Routes".
+    - Sheets keep their title and content while they slide away. Filters' Done re-runs the search only when something changed, and keeps an open route open. Opening a saved route goes straight to the route view's height.
+    - VoiceOver lands on the route title when a route opens and on the list title when you go back. Globe route taps and airport picks tick like row taps. Return in the airport search picks the top match.

@@ -1,6 +1,6 @@
-import { router } from 'expo-router';
+import { router, useFocusEffect, useNavigation } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { FlatList, StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
+import { BackHandler, FlatList, StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AIRPORTS, areaFor, localDate, toRouteLine, type Flight, type Itinerary } from '@/engine';
@@ -16,6 +16,7 @@ import { minTapTarget, spacing, textStyles, useColors } from '@/theme';
 import { openRequest, reopenOutcome, savedKey, savedRouteFrom, type SavedRoute } from '@/trips/savedRoutes';
 import { useSavedRoutes } from '@/trips/SavedRoutesProvider';
 import { AirportPicker } from '@/ui/AirportPicker';
+import { Appear } from '@/ui/Appear';
 import { useSettings } from '@/settings/SettingsProvider';
 import { changedFilters, DEFAULT_FILTERS, homeAirports, type SearchFilters } from '@/settings/settings';
 import { FiltersModal } from '@/ui/FiltersModal';
@@ -30,7 +31,8 @@ import { SearchPanel } from '@/ui/SearchPanel';
 import { RadarButton } from '@/ui/RadarButton';
 import { Sheet } from '@/ui/Sheet';
 import { useRadarLayers } from '@/ui/useRadarLayers';
-import { useReducedMotion } from '@/ui/useReducedMotion';
+import { useSheetContent } from '@/ui/useSheetContent';
+import { selectionTick } from '@/ui/haptics';
 
 const DEFAULT_DESTINATION = 'LAX';
 /** Peek height above the home indicator. */
@@ -87,7 +89,6 @@ export default function HomeScreen() {
   const [bodyHeight, setBodyHeight] = useState(0);
   const [sheetIndex, setSheetIndex] = useState<number>(SHEET.half);
   const listRef = useRef<FlatList<Itinerary>>(null);
-  const reduceMotion = useReducedMotion();
   const { state, search, reset } = useRouteSearch();
   const saved = useSavedRoutes();
 
@@ -169,6 +170,10 @@ export default function HomeScreen() {
   );
   const [impactFor, setImpactFor] = useState<string | null>(null);
   const [statusFlight, setStatusFlight] = useState<Flight | null>(null);
+  // Sheets keep their content while they slide away (design round 29).
+  const statusSheet = useSheetContent(statusFlight);
+  const impactSheet = useSheetContent(impactFor);
+  const pickerSheet = useSheetContent(picking);
 
   // Radar overlay (items 13-14): on by default, remembered (Q-032).
   const radar = useRadarLayers(settings.radarOn, now);
@@ -242,7 +247,6 @@ export default function HomeScreen() {
     setDestination(request.destination);
     setDate(request.date);
     setSelectedId(null);
-    setSheetIndex(SHEET.full);
     setReopening(opening);
     setReopenPast(request.date !== opening.request.date);
     search(request, filters);
@@ -252,7 +256,11 @@ export default function HomeScreen() {
     setReopening(null);
     if (state.status !== 'done') return;
     const outcome = reopenOutcome(state, reopening, reopenPast);
-    if (outcome.kind === 'note') return setReopenNote({ at: state.searchedAt, text: outcome.text });
+    // Straight to the route view's height when the flights are there, so the panel doesn't rise and fall.
+    if (outcome.kind === 'note') {
+      setSheetIndex(SHEET.full);
+      return setReopenNote({ at: state.searchedAt, text: outcome.text });
+    }
     setReopenNote(null);
     if (outcome.hidden) setShowHidden(true);
     select(outcome.id);
@@ -260,11 +268,86 @@ export default function HomeScreen() {
   const missingNote =
     state.status === 'done' && reopenNote?.at === state.searchedAt ? reopenNote.text : undefined;
 
+  // Closing the route view goes back to the tall list, at the route you had open.
+  const closeRoute = useCallback(
+    (id: string) => {
+      select(null);
+      setSheetIndex(SHEET.full);
+      const index = departedFirst(results, rowStatuses).findIndex((r) => r.id === id);
+      if (index >= 0) {
+        requestAnimationFrame(() =>
+          listRef.current?.scrollToIndex({ index, viewPosition: 0.3, animated: false }),
+        );
+      }
+    },
+    [select, results, rowStatuses],
+  );
+  const backToSearch = useCallback(() => {
+    setSelectedId(null);
+    setSheetIndex(SHEET.half);
+    reset();
+  }, [reset]);
+
+  // One step back at a time, the same way everywhere (design round 29): a route goes back
+  // to the list, the list back to search. Android's back button walks these steps, and
+  // tapping the Search tab while you're on it does too, like popping to the top on iOS.
+  const stepBack = useCallback((): boolean => {
+    if (selectedId) {
+      closeRoute(selectedId);
+      return true;
+    }
+    if (showResults) {
+      backToSearch();
+      return true;
+    }
+    return false;
+  }, [selectedId, showResults, closeRoute, backToSearch]);
+  // Only while Search is the tab on screen, so back on another tab isn't taken here.
+  useFocusEffect(
+    useCallback(() => {
+      const sub = BackHandler.addEventListener('hardwareBackPress', stepBack);
+      return () => sub.remove();
+    }, [stepBack]),
+  );
+  const navigation = useNavigation();
+  useEffect(
+    () =>
+      navigation.addListener('tabPress' as never, () => {
+        if (navigation.isFocused()) stepBack();
+      }),
+    [navigation, stepBack],
+  );
+
+  // Filters (design round 29): Done re-runs the search only when something changed, and a
+  // route you had open stays open if it's still there afterwards.
+  const filtersAtOpen = useRef(filters);
+  const keepRoute = useRef<string | null>(null);
+  const openFilters = () => {
+    filtersAtOpen.current = filters;
+    setFiltersOpen(true);
+  };
+  const closeFilters = () => {
+    setFiltersOpen(false);
+    if (state.status === 'idle' || !changedFilters(filters, filtersAtOpen.current)) return;
+    if (!selectedId) return rerun(state.request.date);
+    keepRoute.current = selectedId;
+    search(state.request, filters);
+  };
+  useEffect(() => {
+    if (state.status === 'loading' || !keepRoute.current) return;
+    const id = keepRoute.current;
+    keepRoute.current = null;
+    if (state.status === 'done' && state.results.some((r) => r.id === id)) return;
+    // The route is gone under the new filters: back to the tall list.
+    setSelectedId(null);
+    setSheetIndex(SHEET.full);
+  }, [state]);
+
   const onBodyLayout = (e: LayoutChangeEvent) => setBodyHeight(e.nativeEvent.layout.height);
   const filtersChanged = changedFilters(filters, settings.search);
   const selected = results.find((r) => r.id === selectedId);
   const firstLeg = selected?.legs[0].flight;
-  const impactIt = impactFor ? results.find((r) => r.id === impactFor) : undefined;
+  const impactIt = impactSheet.shown ? results.find((r) => r.id === impactSheet.shown) : undefined;
   const impactRoute = impactIt ? [impactIt.origin, ...impactIt.legs.map((l) => l.flight.to)].join(' → ') : null;
 
   return (
@@ -286,7 +369,14 @@ export default function HomeScreen() {
           airportStatus={statusMarks}
           radar={radar.layers}
           selectedRouteId={selectedId}
-          onSelectRoute={select}
+          // A tap on a route picks it (with the same tick as a row); a tap on empty globe
+          // closes the open route the same way "‹ Routes" does.
+          onSelectRoute={(id) => {
+            if (id) {
+              selectionTick();
+              select(id);
+            } else if (selectedId) closeRoute(selectedId);
+          }}
           insets={{ bottom: snaps[sheetIndex] }}
         />
         {radar.available ? (
@@ -298,123 +388,111 @@ export default function HomeScreen() {
         ) : null}
         {bodyHeight > 0 ? (
           <Sheet snaps={snaps} index={sheetIndex} onIndexChange={setSheetIndex}>
-            {!showResults ? (
-              <SearchPanel
-                chips={chips}
-                date={date}
-                onDate={setDate}
-                origin={origin}
-                destination={destination}
-                onPickOrigin={() => setPicking('origin')}
-                onPickDestination={() => setPicking('destination')}
-                onSwap={() => {
-                  setPickedOrigin(destination);
-                  setDestination(origin);
-                }}
-                areaOn={areaOn}
-                onToggleArea={toggleArea}
-                onFilters={() => setFiltersOpen(true)}
-                filtersChanged={filtersChanged}
-                onFind={() => runSearch()}
-                onGetHome={awayFromHome ? getHome : undefined}
-                homeName={mainHome ? (areaFor(mainHome)?.city ?? mainHome) : undefined}
-                onSetHome={mainHome ? undefined : () => router.push('/settings')}
-                locationCard={
-                  locationCard ? (
-                    <LocationOptInCard
-                      onAllow={async () => {
-                        // A denial hides the card too (permission is no longer undetermined).
-                        updateSettings((await requestLocation()) ? { useLocation: true } : { locationAsked: true });
-                      }}
-                      onNotNow={() => updateSettings({ locationAsked: true })}
-                    />
-                  ) : null
-                }
-                banner={
-                  banner ? (
-                    <ResultsBanner
-                      banner={banner}
-                      onShow={() => {
-                        setShowHidden(true);
-                        setSheetIndex(SHEET.full);
-                      }}
-                      onDismiss={reset}
-                    />
-                  ) : null
-                }
-              />
-            ) : (
-              <ResultsPanel
-                ref={listRef}
-                state={state}
-                selectedId={selectedId}
-                now={now}
-                onSelect={(id) => {
-                  if (id !== selectedId) return select(id);
-                  // Closing the route view goes back to the tall list, at the route you had open.
-                  select(null);
-                  setSheetIndex(SHEET.full);
-                  const index = departedFirst(results, rowStatuses).findIndex((r) => r.id === id);
-                  if (index >= 0) {
-                    requestAnimationFrame(() =>
-                      listRef.current?.scrollToIndex({ index, viewPosition: 0.3, animated: !reduceMotion }),
-                    );
+            {/* Search and results cross-fade as they swap (design round 29). */}
+            <Appear key={showResults ? 'results' : 'search'}>
+              {!showResults ? (
+                <SearchPanel
+                  chips={chips}
+                  date={date}
+                  onDate={setDate}
+                  origin={origin}
+                  destination={destination}
+                  onPickOrigin={() => setPicking('origin')}
+                  onPickDestination={() => setPicking('destination')}
+                  onSwap={() => {
+                    setPickedOrigin(destination);
+                    setDestination(origin);
+                  }}
+                  areaOn={areaOn}
+                  onToggleArea={toggleArea}
+                  onFilters={openFilters}
+                  filtersChanged={filtersChanged}
+                  onFind={() => runSearch()}
+                  onGetHome={awayFromHome ? getHome : undefined}
+                  homeName={mainHome ? (areaFor(mainHome)?.city ?? mainHome) : undefined}
+                  onSetHome={mainHome ? undefined : () => router.push('/settings')}
+                  locationCard={
+                    locationCard ? (
+                      <LocationOptInCard
+                        onAllow={async () => {
+                          // A denial hides the card too (permission is no longer undetermined).
+                          updateSettings((await requestLocation()) ? { useLocation: true } : { locationAsked: true });
+                        }}
+                        onNotNow={() => updateSettings({ locationAsked: true })}
+                      />
+                    ) : null
                   }
-                }}
-                onBack={() => {
-                  setSelectedId(null);
-                  setSheetIndex(SHEET.half);
-                  reset();
-                }}
-                onRetry={() => rerun(state.request.date)}
-                impacts={impacts.byId}
-                impactsLoading={!sampleImpacts && live.state === 'loading'}
-                onImpactPress={setImpactFor}
-                onLegPress={setStatusFlight}
-                sampleImpacts={sampleImpacts}
-                statuses={rowStatuses}
-                sampleStatus={flightStatuses.sample && results.length > 0}
-                sampleFlights={!LIVE_FLIGHTS}
-                showingHidden={showHidden}
-                days={chips}
-                onDay={(d) => {
-                  setDate(d);
-                  rerun(d);
-                }}
-                onFilters={() => setFiltersOpen(true)}
-                filtersChanged={filtersChanged}
-                note={missingNote}
-                isSaved={(it) => saved.isSaved(savedKey(it, state.request.date))}
-                onToggleSave={(it) => {
-                  const key = savedKey(it, state.request.date);
-                  if (saved.isSaved(key)) saved.remove(key);
-                  else saved.save(savedRouteFrom(it, state.request, Date.now()));
-                }}
-                selectedCard={
-                  firstLeg ? (
-                    <LeaveByCard
-                      airport={AIRPORTS[firstLeg.from]}
-                      departUtc={firstLeg.departUtc}
-                      bufferMin={settings.bufferMin}
-                      now={now}
-                      location={location}
-                      locationStatus={locationStatus}
-                      onUseLocation={async () => {
-                        if (await requestLocation()) updateSettings({ useLocation: true });
-                      }}
-                    />
-                  ) : null
-                }
-              />
-            )}
+                  banner={
+                    banner ? (
+                      <ResultsBanner
+                        banner={banner}
+                        onShow={() => {
+                          setShowHidden(true);
+                          setSheetIndex(SHEET.full);
+                        }}
+                        onDismiss={reset}
+                      />
+                    ) : null
+                  }
+                />
+              ) : (
+                <ResultsPanel
+                  ref={listRef}
+                  state={state}
+                  selectedId={selectedId}
+                  now={now}
+                  onSelect={(id) => (id !== selectedId ? select(id) : closeRoute(id))}
+                  onBack={backToSearch}
+                  onRetry={() => rerun(state.request.date)}
+                  impacts={impacts.byId}
+                  impactsLoading={!sampleImpacts && live.state === 'loading'}
+                  onImpactPress={setImpactFor}
+                  onLegPress={setStatusFlight}
+                  sampleImpacts={sampleImpacts}
+                  statuses={rowStatuses}
+                  sampleStatus={flightStatuses.sample && results.length > 0}
+                  sampleFlights={!LIVE_FLIGHTS}
+                  showingHidden={showHidden}
+                  days={chips}
+                  onDay={(d) => {
+                    setDate(d);
+                    rerun(d);
+                  }}
+                  onFilters={openFilters}
+                  filtersChanged={filtersChanged}
+                  note={missingNote}
+                  isSaved={(it) => saved.isSaved(savedKey(it, state.request.date))}
+                  onToggleSave={(it) => {
+                    const key = savedKey(it, state.request.date);
+                    if (saved.isSaved(key)) saved.remove(key);
+                    else saved.save(savedRouteFrom(it, state.request, Date.now()));
+                  }}
+                  selectedCard={
+                    firstLeg ? (
+                      <LeaveByCard
+                        airport={AIRPORTS[firstLeg.from]}
+                        departUtc={firstLeg.departUtc}
+                        bufferMin={settings.bufferMin}
+                        now={now}
+                        location={location}
+                        locationStatus={locationStatus}
+                        onUseLocation={async () => {
+                          if (await requestLocation()) updateSettings({ useLocation: true });
+                        }}
+                      />
+                    ) : null
+                  }
+                />
+              )}
+            </Appear>
           </Sheet>
         ) : null}
       </View>
 
       <AirportPicker
-        visible={picking !== null}
-        title={picking === 'origin' ? 'From' : 'To'}
-        current={picking === 'origin' ? origin : destination}
+        visible={pickerSheet.visible}
+        title={pickerSheet.shown === 'origin' ? 'From' : 'To'}
+        current={pickerSheet.shown === 'origin' ? origin : destination}
         nearest={nearest}
         homes={homes}
         onPick={(code) => {
@@ -425,24 +503,25 @@ export default function HomeScreen() {
         onClose={() => setPicking(null)}
       />
       <ImpactSheet
-        visible={impactFor !== null}
+        visible={impactSheet.visible}
         title="Delays and weather"
         subtitle={impactRoute}
-        impact={impactFor ? (impacts.byId[impactFor] ?? null) : null}
+        impact={impactSheet.shown ? (impacts.byId[impactSheet.shown] ?? null) : null}
         now={now}
         sample={sampleImpacts}
         onClose={() => setImpactFor(null)}
       />
       <FlightStatusSheet
-        flight={statusFlight}
+        flight={statusSheet.shown}
+        visible={statusSheet.visible}
         now={now}
         onClose={() => setStatusFlight(null)}
         // Sample flights never ask the live service about a made-up flight.
         liveOptions={LIVE_FLIGHTS ? undefined : SAMPLE_STATUS_OPTIONS}
         // Sample rows open the same sample status their tag shows.
         sample={
-          statusFlight && flightStatuses.sample
-            ? (flightStatuses.byKey[flightLookupKey(legLookup(statusFlight))] ?? null)
+          statusSheet.shown && flightStatuses.sample
+            ? (flightStatuses.byKey[flightLookupKey(legLookup(statusSheet.shown))] ?? null)
             : null
         }
       />
@@ -451,10 +530,7 @@ export default function HomeScreen() {
         filters={filters}
         defaults={settings.search}
         onChange={setFilters}
-        onClose={() => {
-          setFiltersOpen(false);
-          if (state.status !== 'idle') rerun(state.request.date);
-        }}
+        onClose={closeFilters}
       />
     </SafeAreaView>
   );

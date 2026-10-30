@@ -1,5 +1,5 @@
-import { forwardRef, useCallback, useEffect, useRef, type ReactNode } from 'react';
-import { ActivityIndicator, FlatList, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { forwardRef, useCallback, useEffect, useRef, type ComponentRef, type ReactNode } from 'react';
+import { AccessibilityInfo, ActivityIndicator, FlatList, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
 import { AIRPORTS, areaFor, type Flight, type Itinerary, type SearchRequest } from '@/engine';
 import type { RouteImpact } from '@/live';
@@ -9,6 +9,7 @@ import { departedFirst, type RowStatus } from '@/search/statusTags';
 import type { SearchState } from '@/search/useRouteSearch';
 import { fonts, radius, spacing, textStyles, useColors } from '@/theme';
 
+import { Appear } from './Appear';
 import { BackButton } from './BackButton';
 import { Button } from './Buttons';
 import { DayStepper } from './DayStepper';
@@ -99,6 +100,23 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
     );
     return () => cancelAnimationFrame(frame);
   }, [searchKey, nowAt]);
+  // VoiceOver follows the panel (design round 29): opening or flipping a route lands on its
+  // title, and coming back lands on the list's title, instead of staying on a button that's gone.
+  const routeTitleRef = useRef<ComponentRef<typeof Text>>(null);
+  const listTitleRef = useRef<ComponentRef<typeof Text>>(null);
+  const shownRoute = p.state.status === 'done' ? p.selectedId : null;
+  const lastRoute = useRef(shownRoute);
+  useEffect(() => {
+    const was = lastRoute.current;
+    lastRoute.current = shownRoute;
+    if (was === shownRoute) return;
+    const target = shownRoute ? routeTitleRef : was ? listTitleRef : null;
+    if (!target) return;
+    const frame = requestAnimationFrame(() => {
+      if (target.current) AccessibilityInfo.sendAccessibilityEvent(target.current, 'focus');
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [shownRoute]);
   const stepsDays = !!(p.days && p.onDay);
   // With the day stepper the date is in the stepper, so this line keeps only the count.
   const summary = [
@@ -125,6 +143,7 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
       <View style={styles.titleRow}>
         <BackButton label={tight ? '' : 'Search'} onPress={p.onBack} accessibilityLabel="Back to search" />
         <Text
+          ref={listTitleRef}
           style={[textStyles.heading, styles.title, { color: c.text }]}
           accessibilityRole="header"
           accessibilityLabel={routeSpoken}
@@ -233,111 +252,120 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
   return (
     <View style={styles.fill}>
       {focused ? (
-        <View style={styles.fill} testID="route-view">
-          <View style={[styles.bar, styles.pad, styles.titleRow, { borderBottomColor: c.line }]}>
-            <BackButton
-              label={tight ? '' : 'Routes'}
-              onPress={() => p.onSelect(focused.id)}
-              accessibilityLabel="Back to all routes"
-            />
-            <Text
-              style={[textStyles.heading, styles.title, { color: c.text }]}
-              accessibilityRole="header"
-              accessibilityLabel={routeSpoken}
-              numberOfLines={2}>
-              {routeTitle}
-            </Text>
-            {p.onToggleSave ? (
-              <SaveRouteButton saved={!!p.isSaved?.(focused)} onPress={() => p.onToggleSave?.(focused)} />
-            ) : null}
-            <View style={styles.pager}>
-              <StepArrow dir="prev" onPress={step(focusIndex - 1)} />
-              {/* VoiceOver: swipe up or down here to flip routes (the arrows stay for Voice Control). */}
+        // A picked route slides in a little from the right, like a push (design round 29).
+        <Appear kind="push">
+          <View style={styles.fill} testID="route-view">
+            <View style={[styles.bar, styles.pad, styles.titleRow, { borderBottomColor: c.line }]}>
+              <BackButton
+                label={tight ? '' : 'Routes'}
+                onPress={() => p.onSelect(focused.id)}
+                accessibilityLabel="Back to all routes"
+              />
               <Text
-                style={[textStyles.body, { color: c.muted }]}
-                testID="route-count"
-                accessible
-                accessibilityRole="adjustable"
-                accessibilityLabel={`Route ${focusIndex + 1} of ${results.length}`}
-                accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
-                onAccessibilityAction={(e) => step(focusIndex + (e.nativeEvent.actionName === 'increment' ? 1 : -1))?.()}>
-                {focusIndex + 1} of {results.length}
+                ref={routeTitleRef}
+                style={[textStyles.heading, styles.title, { color: c.text }]}
+                accessibilityRole="header"
+                accessibilityLabel={routeSpoken}
+                numberOfLines={2}>
+                {routeTitle}
               </Text>
-              <StepArrow dir="next" onPress={step(focusIndex + 1)} />
-            </View>
-          </View>
-          {labels ? <View style={[styles.labelRow, styles.pad, styles.labelPad]}>{labels}</View> : null}
-          <ScrollView contentContainerStyle={styles.focus}>
-            {/* Keyed by route so paging re-announces the new Leave By time. */}
-            {p.selectedCard ? (
-              <View testID="selected-card" key={focused.id}>
-                {p.selectedCard}
+              {p.onToggleSave ? (
+                <SaveRouteButton saved={!!p.isSaved?.(focused)} onPress={() => p.onToggleSave?.(focused)} />
+              ) : null}
+              <View style={styles.pager}>
+                <StepArrow dir="prev" onPress={step(focusIndex - 1)} />
+                {/* VoiceOver: swipe up or down here to flip routes (the arrows stay for Voice Control). */}
+                <Text
+                  style={[textStyles.body, { color: c.muted }]}
+                  testID="route-count"
+                  accessible
+                  accessibilityRole="adjustable"
+                  accessibilityLabel={`Route ${focusIndex + 1} of ${results.length}`}
+                  accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
+                  onAccessibilityAction={(e) => step(focusIndex + (e.nativeEvent.actionName === 'increment' ? 1 : -1))?.()}>
+                  {focusIndex + 1} of {results.length}
+                </Text>
+                <StepArrow dir="next" onPress={step(focusIndex + 1)} />
               </View>
-            ) : null}
-            <ResultRow
-              itinerary={focused}
-              selected
-              large
-              now={p.now}
-              onPress={p.onSelect}
-              impact={p.impacts?.[focused.id]}
-              impactLoading={p.impactsLoading}
-              onImpactPress={p.onImpactPress}
-              onLegPress={p.onLegPress}
-              status={p.statuses?.[focused.id]}
-            />
-          </ScrollView>
-        </View>
-      ) : null}
-      <View style={[styles.fill, focused && styles.hidden]}>
-      {topRow}
-      <FlatList
-        ref={setListRef}
-        data={results}
-        onScrollBeginDrag={() => {
-          userScrolled.current = true;
-        }}
-        keyExtractor={(it) => it.id}
-        contentContainerStyle={styles.list}
-        ListHeaderComponent={header}
-        ItemSeparatorComponent={() => <View style={styles.sep} />}
-        renderItem={({ item, index }) => {
-          const selected = item.id === p.selectedId;
-          const row = (
-            <ResultRow
-              itinerary={item}
-              selected={selected}
-              now={p.now}
-              onPress={p.onSelect}
-              impact={p.impacts?.[item.id]}
-              impactLoading={p.impactsLoading}
-              onImpactPress={p.onImpactPress}
-              onLegPress={p.onLegPress}
-              status={p.statuses?.[item.id]}
-              saved={p.isSaved?.(item)}
-            />
-          );
-          const block = row;
-          if (index !== nowAt) return block;
-          const tz = AIRPORTS[item.origin]?.tz;
-          return (
-            <View style={styles.selectedBlock}>
-              <NowLine time={tz ? formatTime(p.now, tz) : null} />
-              {block}
             </View>
-          );
-        }}
-        // Rows aren't measured yet: jump near the row by its average height instead.
-        onScrollToIndexFailed={(info) =>
-          listRef.current?.scrollToOffset({ offset: info.averageItemLength * info.index, animated: false })
-        }
-        ListFooterComponent={
-          <Text style={[textStyles.small, styles.footer, { color: c.muted }]}>
-            Follow your airline’s rules on sharing loads.
-          </Text>
-        }
-      />
-      </View>
+            {labels ? <View style={[styles.labelRow, styles.pad, styles.labelPad]}>{labels}</View> : null}
+            {/* Flipping to another route fades the card in so the change registers. */}
+            <Appear trigger={focused.id}>
+              {/* Keyed by route so each one opens at its top. */}
+              <ScrollView key={focused.id} contentContainerStyle={styles.focus}>
+                {/* Keyed by route so paging re-announces the new Leave By time. */}
+                {p.selectedCard ? (
+                  <View testID="selected-card" key={focused.id}>
+                    {p.selectedCard}
+                  </View>
+                ) : null}
+                <ResultRow
+                  itinerary={focused}
+                  selected
+                  large
+                  now={p.now}
+                  onPress={p.onSelect}
+                  impact={p.impacts?.[focused.id]}
+                  impactLoading={p.impactsLoading}
+                  onImpactPress={p.onImpactPress}
+                  onLegPress={p.onLegPress}
+                  status={p.statuses?.[focused.id]}
+                />
+              </ScrollView>
+            </Appear>
+          </View>
+        </Appear>
+      ) : null}
+      {/* Back from a route, the list fades back in where you left it. */}
+      <Appear trigger={!focused} style={focused && styles.hidden}>
+        {topRow}
+        <FlatList
+          ref={setListRef}
+          data={results}
+          onScrollBeginDrag={() => {
+            userScrolled.current = true;
+          }}
+          keyExtractor={(it) => it.id}
+          contentContainerStyle={styles.list}
+          ListHeaderComponent={header}
+          ItemSeparatorComponent={() => <View style={styles.sep} />}
+          renderItem={({ item, index }) => {
+            const selected = item.id === p.selectedId;
+            const row = (
+              <ResultRow
+                itinerary={item}
+                selected={selected}
+                now={p.now}
+                onPress={p.onSelect}
+                impact={p.impacts?.[item.id]}
+                impactLoading={p.impactsLoading}
+                onImpactPress={p.onImpactPress}
+                onLegPress={p.onLegPress}
+                status={p.statuses?.[item.id]}
+                saved={p.isSaved?.(item)}
+              />
+            );
+            const block = row;
+            if (index !== nowAt) return block;
+            const tz = AIRPORTS[item.origin]?.tz;
+            return (
+              <View style={styles.selectedBlock}>
+                <NowLine time={tz ? formatTime(p.now, tz) : null} />
+                {block}
+              </View>
+            );
+          }}
+          // Rows aren't measured yet: jump near the row by its average height instead.
+          onScrollToIndexFailed={(info) =>
+            listRef.current?.scrollToOffset({ offset: info.averageItemLength * info.index, animated: false })
+          }
+          ListFooterComponent={
+            <Text style={[textStyles.small, styles.footer, { color: c.muted }]}>
+              Follow your airline’s rules on sharing loads.
+            </Text>
+          }
+        />
+      </Appear>
     </View>
   );
 });

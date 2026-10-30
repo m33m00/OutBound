@@ -15,6 +15,7 @@ import { Button } from '@/ui/Buttons';
 import { FiltersForm } from '@/ui/FiltersForm';
 import { Stepper } from '@/ui/Stepper';
 import { useSharedLocation } from '@/ui/LocationProvider';
+import { useSheetContent } from '@/ui/useSheetContent';
 
 /** Tester settings (backlog 12; Q-003, Q-024). Saved on this phone (Q-025). */
 export default function SettingsScreen() {
@@ -23,6 +24,8 @@ export default function SettingsScreen() {
   const { status, request } = useSharedLocation();
   const [picking, setPicking] = useState<'main' | 'extra' | null>(null);
   const { homes } = settings;
+  // The picker keeps its title while it slides away (design round 29).
+  const pickerSheet = useSheetContent(picking);
   const homeList = homeAirports(homes);
 
   const setUseLocation = async (on: boolean) => {
@@ -131,9 +134,9 @@ export default function SettingsScreen() {
         <Text style={[textStyles.small, { color: c.muted }]}>Saved on this phone.</Text>
       </ScrollView>
       <AirportPicker
-        visible={picking !== null}
-        title={picking === 'main' ? 'Main home' : 'Add home'}
-        current={picking === 'main' ? homes.main : null}
+        visible={pickerSheet.visible}
+        title={pickerSheet.shown === 'main' ? 'Main home' : 'Add home'}
+        current={pickerSheet.shown === 'main' ? homes.main : null}
         onPick={(code) => {
           if (picking === 'main') {
             update({ homes: { main: code, extras: homes.extras.filter((x) => x !== code) } });

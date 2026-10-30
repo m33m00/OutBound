@@ -351,4 +351,29 @@ describe('results bar at big text sizes', () => {
     const saidSaved = rows.map((n) => (n.props.accessibilityLabel as string).endsWith('Saved to My Trips'));
     expect(saidSaved).toEqual([false, true]);
   });
+
+  it('moves VoiceOver to the route title on open, and back to the list title on close (design round 29)', async () => {
+    const { request, list } = await results();
+    const state = { status: 'done' as const, request, results: list, hiddenCount: 0, hiddenResults: [], searchedAt: NOW };
+    const send = jest.spyOn(AccessibilityInfo, 'sendAccessibilityEvent').mockImplementation(() => {});
+    const raf = jest.spyOn(global, 'requestAnimationFrame').mockImplementation((cb) => {
+      cb(0);
+      return 0;
+    });
+    const panel = (selectedId: string | null) => (
+      <ResultsPanel state={state} selectedId={selectedId} now={NOW} onSelect={jest.fn()} onBack={jest.fn()} onRetry={jest.fn()} />
+    );
+    await act(async () => {
+      r = create(panel(null));
+    });
+    expect(send).not.toHaveBeenCalled();
+    await act(async () => r!.update(panel(list[0].id)));
+    expect(send).toHaveBeenCalledTimes(1);
+    await act(async () => r!.update(panel(null)));
+    expect(send).toHaveBeenCalledTimes(2);
+    expect(send.mock.calls.every((call) => call[1] === 'focus')).toBe(true);
+    send.mockRestore();
+    raf.mockRestore();
+  });
 });
+

@@ -18,6 +18,8 @@ import { SheetHeader } from './SheetHeader';
 export interface FlightStatusSheetProps {
   /** The opened flight; null = closed (no request is made). */
   flight: Flight | null;
+  /** Shown; defaults to having a flight. False while it slides away still showing its flight. */
+  visible?: boolean;
   now: number;
   onClose: () => void;
   /** Test hook: fetcher / config / clock for the data hook. */
@@ -35,7 +37,7 @@ export function lookupForFlight(f: Flight): FlightLookup {
 }
 
 /** Status for one opened flight: state, times with delay, gates and terminals, and how old it is. Text only. */
-export function FlightStatusSheet({ flight, now, onClose, liveOptions, sample }: FlightStatusSheetProps) {
+export function FlightStatusSheet({ flight, visible, now, onClose, liveOptions, sample }: FlightStatusSheetProps) {
   const c = useColors();
   const lookup = flight ? lookupForFlight(flight) : null;
   const isSample = !!(flight && sample);
@@ -70,7 +72,7 @@ export function FlightStatusSheet({ flight, now, onClose, liveOptions, sample }:
   };
 
   return (
-    <Modal visible={flight !== null} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
+    <Modal visible={visible ?? flight !== null} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <SafeAreaView style={[styles.screen, { backgroundColor: c.bg }]} edges={['top', 'bottom']}>
         <SheetHeader title={title} subtitle={subtitle || undefined} action="Done" onAction={onClose} />
         <ScrollView contentContainerStyle={styles.body}>

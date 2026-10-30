@@ -48,4 +48,20 @@ describe('AirportPicker (design round 3)', () => {
     const texts = r!.root.findAll((n) => (n.type as unknown) === 'Text').map((n) => [n.props.children].flat().join(''));
     expect(texts.some((t) => t.includes('No airports match'))).toBe(true);
   });
+
+  it('picks the top match on Return once something is typed, with a tick (design round 29)', () => {
+    const onPick = jest.fn();
+    act(() => {
+      r = create(<AirportPicker visible title="To" onPick={onPick} onClose={jest.fn()} />);
+    });
+    const input = () => r!.root.find((n) => n.props.accessibilityLabel === 'Search airports' && n.props.onChangeText);
+    expect(input().props.returnKeyType).toBe('done');
+    act(() => input().props.onSubmitEditing());
+    expect(onPick).not.toHaveBeenCalled();
+    act(() => input().props.onChangeText('LAX'));
+    expect(input().props.returnKeyType).toBe('go');
+    act(() => input().props.onSubmitEditing());
+    expect(onPick).toHaveBeenCalledWith('LAX');
+  });
 });
+

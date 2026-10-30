@@ -11,6 +11,8 @@ import { normalizeLon, type GlobeCamera } from './camera';
 export const FLY_MS = 900;
 /** Fraction the globe shrinks at mid-flight, for a sense of travel. */
 export const FLY_ZOOM_BUMP = 0.12;
+/** A re-frame for a panel size change: about as long as the panel's own spring. */
+export const REFRAME_MS = 350;
 
 export function easeCubicInOut(t: number): number {
   const x = Math.max(0, Math.min(1, t));
@@ -87,7 +89,10 @@ export type RetargetPlan =
  *   Reduce Motion;
  * - the same target re-framed (layout or panel change) mid-flight: keep
  *   flying to the re-framed camera for the time left (a spin stays a spin);
- * - otherwise jump.
+ * - the same target re-framed at rest (the panel changed size): glide over
+ *   REFRAME_MS so the globe moves with the panel instead of snapping
+ *   (design round 29);
+ * - otherwise (Reduce Motion, or nothing moved) jump.
  */
 export function planRetarget(input: {
   isNewTarget: boolean;
@@ -106,5 +111,6 @@ export function planRetarget(input: {
     const left = running.endsAt - nowMs;
     if (left > 50) return { kind: 'continue', durationMs: left, spin: running.spin };
   }
+  if (!reduceMotion && !sameCamera(from, to)) return { kind: 'fly', durationMs: REFRAME_MS, spin: false };
   return { kind: 'jump' };
 }

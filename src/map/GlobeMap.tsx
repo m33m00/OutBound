@@ -192,7 +192,7 @@ export function GlobeMap({
     if (!viewport || !reduceKnown) return;
     const target = JSON.parse(targetKey) as CameraTarget;
     const next = cameraForTarget(target, viewport, cameraRef.current);
-    // Only a new target flies; a layout or inset change just re-frames.
+    // A new target flies; a layout or inset change re-frames (gliding with the panel, flyTo.ts).
     const isNewTarget = lastTargetKey.current !== targetKey;
     lastTargetKey.current = targetKey;
 

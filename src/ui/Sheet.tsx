@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, type ReactNode } from 'react';
 import { Animated, Pressable, StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 
@@ -7,6 +7,8 @@ import { minTapTarget, radius, useColors } from '@/theme';
 import { useReducedMotion } from './useReducedMotion';
 
 const SNAP_NAMES = ['Peek', 'Half', 'Full'];
+/** Critically damped, no bounce: the panel settles like an iOS sheet. */
+export const SNAP_SPRING = { useNativeDriver: false, bounciness: 0, speed: 16 } as const;
 
 export interface SheetProps {
   /** Visible heights in pt, ascending: peek, half, full. */
@@ -32,14 +34,18 @@ export function Sheet({ snaps, index, onIndexChange, children }: SheetProps) {
     return () => height.removeListener(id);
   }, [height]);
 
+  // One motion for every snap, from a tap, a drag or the app (design round 29); Reduce Motion jumps.
+  const snapTo = useCallback(
+    (to: number) => {
+      if (reduceMotion) return height.setValue(to);
+      Animated.spring(height, { toValue: to, ...SNAP_SPRING }).start();
+    },
+    [height, reduceMotion],
+  );
+
   useEffect(() => {
-    const to = snaps[index];
-    if (reduceMotion) {
-      height.setValue(to);
-      return;
-    }
-    Animated.spring(height, { toValue: to, useNativeDriver: false, bounciness: 0, speed: 18 }).start();
-  }, [index, snaps, height, reduceMotion]);
+    snapTo(snaps[index]);
+  }, [index, snaps, snapTo]);
 
   const pan = Gesture.Pan()
     .runOnJS(true)
@@ -58,10 +64,9 @@ export function Sheet({ snaps, index, onIndexChange, children }: SheetProps) {
       snaps.forEach((s, i) => {
         if (Math.abs(s - projected) < Math.abs(snaps[best] - projected)) best = i;
       });
-      if (best === index) {
-        Animated.spring(height, { toValue: snaps[best], useNativeDriver: false, bounciness: 0 }).start();
-      }
-      onIndexChange(best);
+      // Same size as before: settle back here (a new size animates from the effect above).
+      if (best === index) snapTo(snaps[best]);
+      else onIndexChange(best);
     });
 
   return (

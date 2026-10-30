@@ -1,5 +1,5 @@
 import { globeOrigin, type GlobeCamera, type Viewport } from '../camera';
-import { FLY_MS, interpolateCamera, planRetarget, sameCamera } from '../flyTo';
+import { FLY_MS, interpolateCamera, planRetarget, REFRAME_MS, sameCamera } from '../flyTo';
 import { markSpinInDone, resetSpinInForTests, shouldSpinIn, SPIN_IN, spinStartCamera } from '../spinIn';
 
 const vp: Viewport = { width: 390, height: 700, insets: { top: 0, right: 0, bottom: 300, left: 0 } };
@@ -63,6 +63,15 @@ describe('retarget during the spin-in', () => {
       durationMs: 1000,
       spin: true,
     });
-    expect(planRetarget({ isNewTarget: false, from: mid, to: target, running: null, reduceMotion: false, nowMs: 1000 })).toEqual({ kind: 'jump' });
+  });
+
+  it('a re-frame at rest glides with the panel, and jumps under Reduce Motion or when nothing moved (design round 29)', () => {
+    expect(planRetarget({ isNewTarget: false, from: mid, to: target, running: null, reduceMotion: false, nowMs: 1000 })).toEqual({
+      kind: 'fly',
+      durationMs: REFRAME_MS,
+      spin: false,
+    });
+    expect(planRetarget({ isNewTarget: false, from: mid, to: target, running: null, reduceMotion: true, nowMs: 1000 })).toEqual({ kind: 'jump' });
+    expect(planRetarget({ isNewTarget: false, from: target, to: target, running: null, reduceMotion: false, nowMs: 1000 })).toEqual({ kind: 'jump' });
   });
 });
