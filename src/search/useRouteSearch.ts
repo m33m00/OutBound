@@ -9,6 +9,7 @@ import {
   type SearchOptions,
   type SearchRequest,
 } from '@/engine';
+import { createScheduleProvider, readLiveConfig, readScheduleSource } from '@/live';
 import { LIMITS, type SearchFilters } from '@/settings/settings';
 
 export type SearchState =
@@ -47,8 +48,21 @@ export function sampleProvider(): FlightDataProvider {
   return sample;
 }
 
-/** Runs the itinerary engine. No network: the provider is local data. */
-export function useRouteSearch(provider: FlightDataProvider = sampleProvider()) {
+/** Where search flights come from: 'live' (schedule DB, backlog 25) only when EXPO_PUBLIC_SCHEDULES=live. */
+export const SCHEDULE_SOURCE = readScheduleSource();
+
+let schedules: FlightDataProvider | undefined;
+
+/** The schedule DB when switched on, else sample data. */
+export function defaultProvider(): FlightDataProvider {
+  const config = SCHEDULE_SOURCE === 'live' ? readLiveConfig() : null;
+  if (!config) return sampleProvider();
+  if (!schedules) schedules = createScheduleProvider({ config });
+  return schedules;
+}
+
+/** Runs the itinerary engine over the default provider (sample data, or the schedule DB when switched on). */
+export function useRouteSearch(provider: FlightDataProvider = defaultProvider()) {
   const [state, setState] = useState<SearchState>({ status: 'idle' });
   const run = useRef(0);
 

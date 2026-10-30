@@ -34,6 +34,8 @@ export interface SearchPanelProps {
   locationCard?: ReactNode;
   /** Empty-results notice (Q-047), shown under Find Routes. */
   banner?: ReactNode;
+  /** "Sample flights" label while search runs on sample data (default true). */
+  sampleFlights?: boolean;
 }
 
 interface AirportCardProps {
@@ -136,9 +138,11 @@ export function SearchPanel(p: SearchPanelProps) {
   const later = p.chips.slice(QUICK_DATE_CHIPS).find((chip) => chip.date === p.date);
   return (
     <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
-      <View style={styles.sampleRow}>
-        <SampleLabel />
-      </View>
+      {p.sampleFlights !== false ? (
+        <View style={styles.sampleRow}>
+          <SampleLabel />
+        </View>
+      ) : null}
       {p.locationCard}
       {/* One row, no sideways scroll: date chips share the width, calendar stays 44pt until it holds a date. */}
       <View style={styles.chips}>
