@@ -413,9 +413,9 @@ B) Wait for accounts (sign-up sets it); keep WN for the examples until then
 C) Let people follow more than one airline's asks (for example, a partner's)
 Recommendation: B, because accounts already have to know your airline to keep reports to the right people, and asking twice is extra work.
 
-### Q-068 Wording you decided that now reads differently from the rest  (Open)
+### Q-068 Wording you decided that now reads differently from the rest  (Open: B only)
 Context: Round 36 made the app use one word per thing ("your", "request", "main home"). A few strings you decided earlier were left as they are.
-A) Change "Use my location" to "Use your location" in Settings and Profile (the launch card already says "your")
+A) Change "Use my location" to "Use your location" in Settings and Profile (the launch card already says "your"). Done in round 36 (the old wording was only in a superseded decision line); say if you want it back.
 B) Change the results banner "No Flights Found on Selected Date" to sentence case, "No flights found for this date", and "Show Them" to "Show Routes"
 C) Keep all of them as they are
 Recommendation: A and B, because every other notice and setting in the app uses "your" and sentence case, and "Show Routes" says what the button does when VoiceOver reads it alone.

@@ -45,7 +45,7 @@ export function profileSummary(s: Settings): SummaryRow[] {
       value: others.length ? others.map((h) => h.code).join(', ') : 'None',
     },
     // Same order as the Settings sections they open.
-    { key: 'location', label: 'Use my location', value: s.useLocation ? 'On' : 'Off' },
+    { key: 'location', label: 'Use your location', value: s.useLocation ? 'On' : 'Off' },
     { key: 'notify', label: 'Notifications', value: notifyText(s) },
     { key: 'buffer', label: 'Airport buffer', value: `${s.bufferMin} min`, detail: 'Before departure' },
     { key: 'search', label: 'Search defaults', value: stopsText(s.search.maxStops) },

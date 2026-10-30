@@ -99,11 +99,11 @@ export default function SettingsScreen() {
           <SectionHeader title="Location" />
           <View style={[styles.group, { backgroundColor: c.surface, borderColor: c.line }]}>
             <View style={styles.row}>
-              <Text style={[textStyles.body, styles.label, { color: c.text }]}>Use my location</Text>
+              <Text style={[textStyles.body, styles.label, { color: c.text }]}>Use your location</Text>
               <Switch
                 value={settings.useLocation}
                 onValueChange={setUseLocation}
-                accessibilityLabel="Use my location for the nearest airport and drive estimate"
+                accessibilityLabel="Use your location for the nearest airport and drive estimate"
                 trackColor={{ true: c.accent, false: c.faint }}
               />
             </View>
