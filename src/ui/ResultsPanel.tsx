@@ -470,7 +470,8 @@ const styles = StyleSheet.create({
 /** A slim result row's shape (times, seat chip; route; airline pills) in gray, while routes load. */
 function PlaceholderRow() {
   const c = useColors();
-  const fill = { backgroundColor: c.surface2 };
+  // line2, not surface2: surface2 barely shows on a card in dark mode.
+  const fill = { backgroundColor: c.line2 };
   return (
     <View style={[styles.placeholder, { backgroundColor: c.surface, borderColor: c.line }]} testID="placeholder-row">
       <View style={styles.placeholderLine}>

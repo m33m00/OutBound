@@ -65,6 +65,9 @@ const listText = (codes: readonly string[]) =>
  * both, and comes first so it reads in visual order (top-right before code).
  */
 export function AirportCard({ label, code, emptyText = 'Choose airport', onPress, areaOn, onToggleArea }: AirportCardProps) {
+  // "Location is off. Choose airport" -> gray status, blue ask.
+  const ask = /(Choose airport)$/.exec(emptyText);
+  const action = !code && ask ? { status: emptyText.slice(0, ask.index).trim(), ask: ask[1] } : null;
   const c = useColors();
   const name = code ? AIRPORTS[code]?.name : undefined;
   const area = code ? areaFor(code) : null;
@@ -123,16 +126,18 @@ export function AirportCard({ label, code, emptyText = 'Choose airport', onPress
           <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.text }]}>{area.airports.join(' · ')}</Text>
         ) : null}
         {/* Two lines so long names ("Dallas/Fort Worth International") show at big text sizes. */}
-        {/* An empty side says what to do in blue, so a dimmed Find Routes never needs explaining (round 53). */}
-        <Text
-          lineBreakStrategyIOS="push-out"
-          style={[
-            textStyles.small,
-            { color: !code && /choose/i.test(emptyText) ? c.accent : c.muted },
-            !code && /choose/i.test(emptyText) ? { fontFamily: textStyles.bodyStrong.fontFamily } : null,
-          ]}
-          numberOfLines={2}>
-          {name ?? emptyText}
+        {/* An empty side says what to do in blue, so a dimmed Find Routes never needs explaining (round 53);
+            a status before it ("Location is off.") stays gray. */}
+        <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]} numberOfLines={2}>
+          {name ??
+            (action ? (
+              <>
+                {action.status ? `${action.status} ` : null}
+                <Text style={{ color: c.accent, fontFamily: textStyles.bodyStrong.fontFamily }}>{action.ask}</Text>
+              </>
+            ) : (
+              emptyText
+            ))}
         </Text>
       </Pressable>
     </View>

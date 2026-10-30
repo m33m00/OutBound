@@ -67,7 +67,7 @@ export default function TripsScreen() {
             icon="suitcase"
             title="No trips yet"
             body="Two things show up here."
-            points={['Routes you save: open one in Search and tap the bookmark at the top', 'Replies when you tap Ask for Load on a flight']}
+            points={['Routes you save (tap the bookmark beside a route’s name in Search)', 'Replies when you tap Ask for Load on a flight']}
             action={<Button label="Find Routes" icon="magnifyingglass" onPress={() => router.navigate('/')} />}
           />
         ) : null}
@@ -102,7 +102,7 @@ export default function TripsScreen() {
         {/* No saved routes yet: say where the bookmark is and give a way there (round 52). */}
         {list.length ? null : (
           <>
-            <SectionFooter>Open a route in Search, then tap the bookmark at the top to keep it here.</SectionFooter>
+            <SectionFooter>Open a route in Search, then tap the bookmark beside its name to keep it here.</SectionFooter>
             <Button label="Find Routes" kind="secondary" icon="magnifyingglass" onPress={() => router.navigate('/')} style={styles.find} />
           </>
         )}
