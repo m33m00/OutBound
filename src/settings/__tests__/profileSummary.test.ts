@@ -30,13 +30,22 @@ describe('profileSummary', () => {
     expect(row(s, 'location').value).toBe('On');
   });
 
+  it('says which notifications are on', () => {
+    const on = (answers: boolean, airlineAsks: boolean) =>
+      row({ ...DEFAULT_SETTINGS, notify: { answers, airlineAsks } }, 'notify').value;
+    expect(on(true, true)).toBe('On');
+    expect(on(true, false)).toBe('Answers only');
+    expect(on(false, true)).toBe('Airline asks only');
+    expect(on(false, false)).toBe('Off');
+  });
+
   it('keeps rows in a fixed order', () => {
     expect(profileSummary(DEFAULT_SETTINGS).map((r) => r.key)).toEqual([
       'home',
       'otherHomes',
-      'buffer',
       'location',
       'notify',
+      'buffer',
       'search',
     ]);
   });

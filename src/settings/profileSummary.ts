@@ -20,12 +20,12 @@ export function stopsText(maxStops: number): string {
   return `Up to ${maxStops} ${maxStops === 1 ? 'stop' : 'stops'}`;
 }
 
-/** "On", "Off", "Answers only", "Asks only". */
+/** "On", "Off", "Answers only", "Airline asks only". */
 export function notifyText(s: Settings): string {
   const { answers, airlineAsks } = s.notify;
   if (answers && airlineAsks) return 'On';
   if (answers) return 'Answers only';
-  if (airlineAsks) return 'Asks only';
+  if (airlineAsks) return 'Airline asks only';
   return 'Off';
 }
 
@@ -44,9 +44,10 @@ export function profileSummary(s: Settings): SummaryRow[] {
       label: 'Other homes',
       value: others.length ? others.map((h) => h.code).join(', ') : 'None',
     },
-    { key: 'buffer', label: 'Airport buffer', value: `${s.bufferMin} min`, detail: 'Before departure' },
+    // Same order as the Settings sections they open.
     { key: 'location', label: 'Use my location', value: s.useLocation ? 'On' : 'Off' },
     { key: 'notify', label: 'Notifications', value: notifyText(s) },
+    { key: 'buffer', label: 'Airport buffer', value: `${s.bufferMin} min`, detail: 'Before departure' },
     { key: 'search', label: 'Search defaults', value: stopsText(s.search.maxStops) },
   ];
 }

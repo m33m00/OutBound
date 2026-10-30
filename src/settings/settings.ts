@@ -78,7 +78,7 @@ export const DEFAULT_SETTINGS: Settings = {
   radarOn: true,
   search: DEFAULT_FILTERS,
   areaOn: {},
-  notify: { answers: true, airlineAsks: true },
+  notify: { answers: false, airlineAsks: false },
 };
 
 export const SETTINGS_KEY = 'outbound.settings.v1';

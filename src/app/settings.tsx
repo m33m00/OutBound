@@ -104,7 +104,7 @@ export default function SettingsScreen() {
                 value={settings.useLocation}
                 onValueChange={setUseLocation}
                 accessibilityLabel="Use my location for the nearest airport and drive estimate"
-                trackColor={{ true: c.accent, false: c.line2 }}
+                trackColor={{ true: c.accent, false: c.faint }}
               />
             </View>
           </View>
@@ -121,30 +121,45 @@ export default function SettingsScreen() {
           <View style={[styles.group, { backgroundColor: c.surface, borderColor: c.line }]}>
             <View style={styles.row}>
               <View style={styles.label}>
-                <Text style={[textStyles.body, { color: c.text }]}>Answers to my requests</Text>
-                <Text style={[textStyles.small, { color: c.muted }]}>As soon as someone replies</Text>
+                <Text style={[textStyles.body, { color: c.text }]}>Answers to your requests</Text>
+                <Text
+                  style={[textStyles.small, { color: c.muted }]}
+                  accessibilityElementsHidden
+                  importantForAccessibility="no">
+                  As soon as someone replies
+                </Text>
               </View>
               <Switch
                 value={settings.notify.answers}
                 onValueChange={(on) => update({ notify: { ...settings.notify, answers: on } })}
-                accessibilityLabel="Answers to my requests"
-                trackColor={{ true: c.accent, false: c.line2 }}
+                accessibilityLabel="Answers to your requests"
+                accessibilityHint="As soon as someone replies"
+                trackColor={{ true: c.accent, false: c.faint }}
               />
             </View>
             <View style={[styles.row, styles.divided, { borderTopColor: c.line }]}>
               <View style={styles.label}>
-                <Text style={[textStyles.body, { color: c.text }]}>Asks on my airline’s flights</Text>
-                <Text style={[textStyles.small, { color: c.muted }]}>At most 5 a day</Text>
+                <Text style={[textStyles.body, { color: c.text }]}>Asks on your airline’s flights</Text>
+                <Text
+                  style={[textStyles.small, { color: c.muted }]}
+                  accessibilityElementsHidden
+                  importantForAccessibility="no">
+                  At most 5 a day
+                </Text>
               </View>
               <Switch
                 value={settings.notify.airlineAsks}
                 onValueChange={(on) => update({ notify: { ...settings.notify, airlineAsks: on } })}
-                accessibilityLabel="Asks on my airline’s flights, at most 5 a day"
-                trackColor={{ true: c.accent, false: c.line2 }}
+                accessibilityLabel="Asks on your airline’s flights"
+                accessibilityHint="At most 5 a day"
+                trackColor={{ true: c.accent, false: c.faint }}
               />
             </View>
           </View>
-          <SectionFooter>Answer an ask with what you see on the board. Nobody sees who asked or who answered.</SectionFooter>
+          <SectionFooter>
+            Other employees can ask about your airline’s flights, at most 5 a day. Nobody sees who asked or who
+            answered.
+          </SectionFooter>
         </View>
 
         <View style={styles.section} onLayout={sectionLayout('leaveBy')}>

@@ -7,10 +7,10 @@ describe('parseSettings', () => {
     expect(parseSettings({ bufferMin: 'x', useLocation: 1, search: 7 })).toEqual(DEFAULT_SETTINGS);
   });
 
-  it('turns both notifications on by default and keeps saved choices', () => {
-    expect(DEFAULT_SETTINGS.notify).toEqual({ answers: true, airlineAsks: true });
+  it('starts with notifications off and keeps saved choices', () => {
+    expect(DEFAULT_SETTINGS.notify).toEqual({ answers: false, airlineAsks: false });
     expect(parseSettings({ notify: { answers: false, airlineAsks: true } }).notify).toEqual({ answers: false, airlineAsks: true });
-    expect(parseSettings({ notify: { answers: 'no' } }).notify).toEqual({ answers: true, airlineAsks: true });
+    expect(parseSettings({ notify: { answers: 'no' } }).notify).toEqual({ answers: false, airlineAsks: false });
   });
 
   it('defaults the airport buffer to 75 min (Q-003)', () => {
