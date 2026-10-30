@@ -62,3 +62,12 @@ export {
   type FlightStatusResponse,
   type Movement,
 } from './flightStatus';
+export {
+  createScheduleProvider,
+  fetchDepartures,
+  readScheduleSource,
+  SCHEDULE_CLIENT_CACHE_MS,
+  type LiveSchedulesResponse,
+  type ScheduleProviderOptions,
+  type ScheduleSource,
+} from './schedules';

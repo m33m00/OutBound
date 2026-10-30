@@ -303,6 +303,15 @@ C) Dedicated red token, as built: light #c8102e text-mark / #fde0e3 bg / #9e0d24
 Recommendation: C, because red reads as canceled at a glance, stays distinct from the Full seat tier and from magenta weather/FAA badges, and the icon keeps it from relying on color alone.
 Answer: (John)
 
+### Q-054 Schedule pulls: how often, and which airports  (Open)
+Context: Backlog 25 builds the schedule DB ("own schedule DB from daily AeroDataBox pulls (~30 airports)"). It is built and tested with hand-written samples; nothing calls AeroDataBox until the key is added and the daily job is switched on. Each airport-day costs 2 FIDS calls (AeroDataBox caps a call at 12 hours). Provisional build: the 12 airports already in the app's table; a daily run pulls today, tomorrow and day 7 (12 x 3 x 2 = 72 calls a day, about 2,200 a month); a one-time fill of days 0-7 is 192 calls. Units per call and the unit price are placeholders until the plan page is read at signup, so the monthly cost is not known yet. Flights to airports outside the table are dropped, because the app can't draw or search them.
+A) Keep as built: 12 airports, daily pull of days 0, 1 and 7
+B) Pull every day 0-7 daily (fresher, about 2.7x the calls)
+C) Grow to ~30 airports now (needs the extra airports' coordinates and time zones added to the app; about 2.5x the calls)
+Recommendation: A for the friends beta, then C once real usage shows in `api_usage` and the plan's price is known.
+Also open: real flights have no seat data yet (no reports or estimates exist), so every route shows Unknown until reports land. Sample seats are not mixed in, because they would be made up.
+Answer: (John)
+
 Provisional defaults for backlog 3 (not John-decided; John may override any time):
 - FAA cache TTL 5 min server-side; serve stale on FAA error.
 - One national NAS feed fetch, filtered on read.

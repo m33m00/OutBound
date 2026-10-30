@@ -32,6 +32,8 @@ export interface ResultsPanelProps {
   statuses?: Record<string, RowStatus>;
   /** Label shown while flight statuses are sample data. */
   sampleStatus?: boolean;
+  /** Flights are sample data (default true); false once the schedule DB is on. */
+  sampleFlights?: boolean;
   /** "Show Them": routes the filters hid, shown for this search only (Q-047). */
   showingHidden?: boolean;
 }
@@ -43,6 +45,7 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
   const full = results.filter((r) => r.isFull).length;
 
   // Fixed above the list so the sample-data label never scrolls away.
+  const sampleText = sampleLabel(p.sampleFlights !== false, !!p.sampleImpacts);
   const topRow = (
     <View style={[styles.titleRow, styles.pad]}>
       <Pressable
@@ -53,7 +56,7 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
         <Text style={[textStyles.heading, { color: c.accent }]}>‹ Search</Text>
       </Pressable>
       <View style={styles.labels}>
-        <SampleLabel text={p.sampleImpacts ? 'Sample flights and delays' : undefined} />
+        {sampleText ? <SampleLabel text={sampleText} /> : null}
         {p.sampleStatus ? <SampleLabel text="Sample status" /> : null}
       </View>
     </View>
@@ -137,6 +140,13 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
     </View>
   );
 });
+
+/** Results label text for what is sample data; null when nothing is. */
+export function sampleLabel(flights: boolean, impacts: boolean): string | null {
+  if (flights && impacts) return 'Sample flights and delays';
+  if (flights) return 'Sample flights';
+  return impacts ? 'Sample delays' : null;
+}
 
 /** Shown wherever sample data appears, until the schedule DB lands. */
 export function SampleLabel({ text = 'Sample flights' }: { text?: string }) {

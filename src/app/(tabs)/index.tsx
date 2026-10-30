@@ -11,7 +11,7 @@ import { searchRequest } from '@/search/areas';
 import { dateChips } from '@/search/dates';
 import { chooseOrigin, showLocationCard } from '@/search/origin';
 import { resultsBanner, rowStatus, statusLookups } from '@/search/statusTags';
-import { SAMPLE_TZ, useRouteSearch } from '@/search/useRouteSearch';
+import { SAMPLE_TZ, SCHEDULE_SOURCE, useRouteSearch } from '@/search/useRouteSearch';
 import { minTapTarget, spacing, textStyles, useColors } from '@/theme';
 import { AirportPicker } from '@/ui/AirportPicker';
 import { useSettings } from '@/settings/SettingsProvider';
@@ -38,6 +38,9 @@ const SHEET = { peek: 0, half: 1, full: 2 } as const;
 
 const airport = (code: string) => AIRPORTS[code];
 const SAMPLE_STATUS_OPTIONS = { config: null } as const;
+const LIVE_STATUS_OPTIONS = {} as const;
+/** Real flights (schedule DB, backlog 25) get live statuses; sample flights keep sample statuses. */
+const LIVE_FLIGHTS = SCHEDULE_SOURCE === 'live';
 const mark = (code: string): MapAirport => ({ code, coord: [AIRPORTS[code].lon, AIRPORTS[code].lat] });
 
 /**
@@ -133,8 +136,8 @@ export default function HomeScreen() {
   );
   // Live status tags on every row (Q-047, Q-050): one lookup per distinct flight.
   const lookups = useMemo(() => statusLookups(results), [results]);
-  // Flights are sample data until the schedule DB lands, so their statuses are too.
-  const flightStatuses = useFlightStatuses(lookups, SAMPLE_STATUS_OPTIONS);
+  // Sample flights get sample statuses; real flights from the schedule DB get live ones.
+  const flightStatuses = useFlightStatuses(lookups, LIVE_FLIGHTS ? LIVE_STATUS_OPTIONS : SAMPLE_STATUS_OPTIONS);
   const rowStatuses = useMemo(
     () => Object.fromEntries(results.map((it) => [it.id, rowStatus(it, flightStatuses.byKey, filters)])),
     [results, flightStatuses.byKey, filters],
@@ -271,6 +274,7 @@ export default function HomeScreen() {
                 onFilters={() => setFiltersOpen(true)}
                 filtersChanged={filtersChanged}
                 onFind={() => runSearch()}
+                sampleFlights={!LIVE_FLIGHTS}
                 onGetHome={awayFromHome ? getHome : undefined}
                 onSetHome={mainHome ? undefined : () => router.push('/settings')}
                 locationCard={
@@ -309,6 +313,7 @@ export default function HomeScreen() {
                 sampleImpacts={sampleImpacts}
                 statuses={rowStatuses}
                 sampleStatus={flightStatuses.sample && results.length > 0}
+                sampleFlights={!LIVE_FLIGHTS}
                 showingHidden={showHidden}
                 selectedCard={
                   firstLeg ? (
