@@ -118,6 +118,11 @@ export default function HomeScreen() {
   const [showHidden, setShowHidden] = useState(false);
   useEffect(() => setShowHidden(false), [state]);
   const showResults = state.status !== 'idle' && (!emptyBanner || showHidden);
+  // An empty search shows its banner under Find Routes, so the panel goes back to half.
+  const emptyNow = emptyBanner != null && !showHidden;
+  useEffect(() => {
+    if (emptyNow) setSheetIndex(SHEET.half);
+  }, [emptyNow]);
   const results = useMemo(
     () => (state.status !== 'done' ? [] : showHidden ? state.hiddenResults : state.results),
     [state, showHidden],
@@ -158,7 +163,8 @@ export default function HomeScreen() {
     (d = date, to = destination, toArea?: boolean) => {
       if (!origin || !to) return;
       setSelectedId(null);
-      setSheetIndex(SHEET.half);
+      // Results take over (Q-062): the list opens near full height.
+      setSheetIndex(SHEET.full);
       // Remembered as the fallback From when location is off (Q-051).
       if (origin !== settings.lastOrigin) updateSettings({ lastOrigin: origin });
       search(searchRequest(origin, to, d, areaOn, toArea), filters);
@@ -195,11 +201,12 @@ export default function HomeScreen() {
     (id: string | null) => {
       setSelectedId(id);
       if (!id) return;
+      // Picking a route drops the panel to half so the globe shows it, with the route card on top.
+      setSheetIndex(SHEET.half);
       // Same order as the list: routes that already left sit on top.
       const index = departedFirst(results, rowStatuses).findIndex((r) => r.id === id);
       // Top of the list, so the leave-by card under the row stays in view.
       if (index >= 0) listRef.current?.scrollToIndex({ index, viewPosition: 0 });
-      setSheetIndex((i) => (i === SHEET.full ? SHEET.half : i));
     },
     [results, rowStatuses],
   );
@@ -274,7 +281,14 @@ export default function HomeScreen() {
                 }
                 banner={
                   banner ? (
-                    <ResultsBanner banner={banner} onShow={() => setShowHidden(true)} onDismiss={reset} />
+                    <ResultsBanner
+                      banner={banner}
+                      onShow={() => {
+                        setShowHidden(true);
+                        setSheetIndex(SHEET.full);
+                      }}
+                      onDismiss={reset}
+                    />
                   ) : null
                 }
               />
@@ -284,9 +298,15 @@ export default function HomeScreen() {
                 state={state}
                 selectedId={selectedId}
                 now={now}
-                onSelect={(id) => select(id === selectedId ? null : id)}
+                onSelect={(id) => {
+                  if (id !== selectedId) return select(id);
+                  // Closing the route card goes back to the tall list.
+                  select(null);
+                  setSheetIndex(SHEET.full);
+                }}
                 onBack={() => {
                   setSelectedId(null);
+                  setSheetIndex(SHEET.half);
                   reset();
                 }}
                 onRetry={() => rerun(state.request.date)}

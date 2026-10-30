@@ -368,12 +368,13 @@ C) Hide routes that left more than an hour ago
 Recommendation: A, because a delayed flight past its scheduled time may still be at the gate, and you'd want to see it.
 Default while open: A.
 
-### Q-062 Results feel small and the flow feels like something is missing  (Open 2026-10-30)
+### Q-062 Results feel small and the flow feels like something is missing  (Answered 2026-10-30)
 Context: John: the results list "feels so small and constricted" and the flow "doesn't feel right… like something is missing". Measured on a 6.1" iPhone: results open in the half-height sheet (~320pt). The header (Back, title, day stepper, count) takes ~170pt, so about one route row shows before scrolling; full height shows about four. Tapping a row only highlights it on the globe and opens the leave-by card inline; flight details hide behind small per-leg taps, so there's no clear "this is my flight" step. In departure order there's also no marker for "now".
 A) Results take over: after Find Routes the sheet opens near full height with a one-line header (route, ‹ day ›, Filters), compact two-line rows, and a "Now" divider between flights that left and flights still to go. Tapping a row drops the sheet to half so the globe shows the route, with a route card (legs, seats per leg, connection, leave-by, live status).
 B) List first: results open as their own full screen; a Map button shows the globe; tapping a row opens a route detail page.
 C) Tighten in place: keep the half sheet but open results taller (~70%), make the header one line and the rows more compact, and add the "Now" divider.
 Recommendation: A, because it gives the list room (about 6 routes on screen) and adds the missing step (a route card) while keeping the globe as the place you see where a flight goes.
+Answer: John (2026-10-30), "Results take over" = A.
 
 Provisional defaults for backlog 3 (not John-decided; John may override any time):
 - FAA cache TTL 5 min server-side; serve stale on FAA error.

@@ -146,7 +146,7 @@ export const ResultRow = memo(function ResultRow({
         const leg = name.startsWith('leg-') ? it.legs[Number(name.slice(4))] : undefined;
         if (leg) onLegPress?.(leg.flight);
       }}
-      accessibilityHint={selected ? 'Tap to clear the route from the globe' : 'Shows this route on the globe'}
+      accessibilityHint={selected ? 'Closes the route card' : 'Opens the route card and shows the route on the globe'}
       style={pressStyle([
         styles.row,
         {
@@ -202,69 +202,98 @@ export const ResultRow = memo(function ResultRow({
             {stopCount(it)} · {formatDuration(it.totalMin)}
           </Text>
         </View>
-        {it.legs.map((leg, i) => {
-          const view = status?.legs[i];
-          const risk = status?.risks.find((r) => r.index === i);
-          const body = (
-            <>
-              <AirlinePill airline={leg.flight.airline} flightNumber={leg.flight.flightNumber} />
-              {view?.tag ? <StatusTag label={view.tag.label} tone={TONE[view.tag.kind]} /> : null}
-              {/* Leg 0's struck / new time is in the top time line; show it once. */}
-              {view && i > 0 ? <LegTime view={view} /> : null}
-              {legDetailOnly ? (
-                <Text style={[textStyles.small, { color: c.muted }]}>{seatSourceText(leg.seats, now)}</Text>
-              ) : (
-                <View
-                  style={[
-                    styles.tierChip,
-                    // A route that already left keeps its seat words but drops the tier colors.
-                    {
-                      backgroundColor: dimmed
-                        ? c.surface
-                        : leg.seats.source === 'typical'
-                          ? c.surface2
-                          : c[TIER_BG[leg.seats.tier]],
-                    },
-                  ]}>
-                  <Text
+        {selected ? (
+          // Route card (Q-062): each leg with its seats and status, and each connection.
+          it.legs.map((leg, i) => {
+            const view = status?.legs[i];
+            const risk = status?.risks.find((r) => r.index === i);
+            const connection = it.connections[i];
+            const body = (
+              <>
+                <AirlinePill airline={leg.flight.airline} flightNumber={leg.flight.flightNumber} />
+                <Text style={[textStyles.small, { color: c.muted }]}>
+                  {leg.flight.from} → {leg.flight.to}
+                </Text>
+                {view?.tag ? <StatusTag label={view.tag.label} tone={TONE[view.tag.kind]} /> : null}
+                {/* Leg 0's struck / new time is in the top time line; show it once. */}
+                {view && i > 0 ? <LegTime view={view} /> : null}
+                {legDetailOnly ? (
+                  <Text style={[textStyles.small, { color: c.muted }]}>{seatSourceText(leg.seats, now)}</Text>
+                ) : (
+                  <View
                     style={[
-                      textStyles.small,
-                      { color: neutralSeats(leg.seats.source) ? c.muted : c[TIER_FG[leg.seats.tier]] },
+                      styles.tierChip,
+                      {
+                        backgroundColor: dimmed
+                          ? c.surface
+                          : leg.seats.source === 'typical'
+                            ? c.surface2
+                            : c[TIER_BG[leg.seats.tier]],
+                      },
                     ]}>
-                    {seatText(leg.seats, now)}
+                    <Text
+                      style={[
+                        textStyles.small,
+                        // A route that already left keeps its seat words but drops the tier colors.
+                        { color: neutralSeats(leg.seats.source) ? c.muted : c[TIER_FG[leg.seats.tier]] },
+                      ]}>
+                      {seatText(leg.seats, now)}
+                    </Text>
+                  </View>
+                )}
+              </>
+            );
+            const line = onLegPress ? (
+              <Pressable
+                onPress={() => onLegPress(leg.flight)}
+                accessibilityRole="button"
+                accessibilityLabel={[
+                  `Flight status, ${leg.flight.airline} ${leg.flight.flightNumber}, ${leg.flight.from} to ${leg.flight.to}`,
+                  view?.tag?.spoken,
+                ]
+                  .filter(Boolean)
+                  .join(', ')}
+                style={pressStyle([styles.legLine, styles.legTap], 'link')}>
+                {body}
+                <Icon name="chevron.right" size={12} tintColor={c.muted} fallback={null} />
+              </Pressable>
+            ) : (
+              <View style={styles.legLine}>{body}</View>
+            );
+            return (
+              <View key={leg.flight.id} style={styles.legBlock}>
+                {line}
+                {/* At the connecting airport, i.e. after the inbound leg (Q-050). */}
+                {risk ? (
+                  <View style={styles.legLine}>
+                    <StatusTag label={`Connection at risk · ${risk.airport}`} tone="delayed" />
+                  </View>
+                ) : connection ? (
+                  <Text style={[textStyles.small, styles.connection, { color: c.muted, borderColor: c.line2 }]}>
+                    Connect at {connection.airport} · {formatDuration(connection.layoverMin)}
+                    {connection.sameAirline ? '' : ' · change airlines'}
                   </Text>
+                ) : null}
+              </View>
+            );
+          })
+        ) : (
+          // Slim row: who flies it and anything live; seats per leg live in the route card.
+          <View style={styles.legLine} testID="flights-line">
+            {it.legs.map((leg, i) => {
+              const tag = status?.legs[i]?.tag;
+              return (
+                <View key={leg.flight.id} style={styles.flight}>
+                  <AirlinePill airline={leg.flight.airline} flightNumber={leg.flight.flightNumber} />
+                  {tag ? <StatusTag label={tag.label} tone={TONE[tag.kind]} /> : null}
                 </View>
-              )}
-            </>
-          );
-          const line = onLegPress ? (
-            <Pressable
-              onPress={() => onLegPress(leg.flight)}
-              accessibilityRole="button"
-              accessibilityLabel={[
-                `Flight status, ${leg.flight.airline} ${leg.flight.flightNumber}, ${leg.flight.from} to ${leg.flight.to}`,
-                view?.tag?.spoken,
-              ]
-                .filter(Boolean)
-                .join(', ')}
-              style={pressStyle([styles.legLine, styles.legTap], 'link')}>
-              {body}
-            </Pressable>
-          ) : (
-            <View style={styles.legLine}>{body}</View>
-          );
-          return (
-            <View key={leg.flight.id} style={styles.legBlock}>
-              {line}
-              {/* At the connecting airport, i.e. after the inbound leg (Q-050). */}
-              {risk ? (
-                <View style={styles.legLine}>
-                  <StatusTag label={`Connection at risk · ${risk.airport}`} tone="delayed" />
-                </View>
-              ) : null}
-            </View>
-          );
-        })}
+              );
+            })}
+            {status?.risks.map((r) => (
+              <StatusTag key={r.index} label={`Connection at risk · ${r.airport}`} tone="delayed" />
+            ))}
+          </View>
+        )}
         {nearbyNotes(it).map((note) => (
           <Text key={note} style={[textStyles.small, { color: c.muted }]}>
             {note}
@@ -329,6 +358,16 @@ const styles = StyleSheet.create({
   },
   legTap: {
     minHeight: 44,
+  },
+  flight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  connection: {
+    marginLeft: 10,
+    paddingLeft: 10,
+    borderLeftWidth: 2,
   },
   legBlock: {
     gap: 6,

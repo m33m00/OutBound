@@ -69,52 +69,73 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
     .filter(Boolean)
     .join(' · ');
 
-  // Fixed above the list so the sample-data label never scrolls away.
+  // Fixed above the list (results take over, Q-062): back, route and Filters on one line,
+  // the day and count under it. Sample labels stay in view while you scroll.
   const sampleText = sampleLabel(p.sampleFlights !== false, !!p.sampleImpacts);
-  const topRow = (
-    <View style={[styles.titleRow, styles.pad]}>
-      <BackButton label="Search" onPress={p.onBack} accessibilityLabel="Back to search" />
+  const labels =
+    sampleText || p.sampleStatus ? (
       <View style={styles.labels}>
         {sampleText ? <SampleLabel text={sampleText} /> : null}
         {p.sampleStatus ? <SampleLabel text="Sample status" /> : null}
       </View>
-    </View>
-  );
-
-  const header = (
-    <View style={styles.header}>
-      <Text style={[textStyles.title, { color: c.text }]} accessibilityRole="header">
-        {request.origin} → {request.destination}
-      </Text>
+    ) : null;
+  const topRow = (
+    <View style={[styles.bar, styles.pad, { borderBottomColor: c.line }]} testID="results-bar">
+      <View style={styles.titleRow}>
+        <BackButton label="Search" onPress={p.onBack} accessibilityLabel="Back to search" />
+        <Text
+          style={[textStyles.heading, styles.title, { color: c.text }]}
+          accessibilityRole="header"
+          numberOfLines={1}>
+          {request.origin} → {request.destination}
+        </Text>
+        {p.onFilters ? (
+          <Button
+            label={p.filtersChanged ? `Filters (${p.filtersChanged})` : 'Filters'}
+            accessibilityLabel={p.filtersChanged ? `Filters, ${p.filtersChanged} changed` : 'Filters'}
+            icon="line.3.horizontal.decrease.circle"
+            kind="secondary"
+            onPress={p.onFilters}
+            style={styles.filters}
+          />
+        ) : null}
+      </View>
       {stepsDays && p.days && p.onDay ? (
         <View style={styles.controls}>
           <DayStepper days={p.days} date={request.date} label={shortDate(request.date)} onDay={p.onDay} />
-          {p.onFilters ? (
-            <Button
-              label={p.filtersChanged ? `Filters (${p.filtersChanged})` : 'Filters'}
-              accessibilityLabel={p.filtersChanged ? `Filters, ${p.filtersChanged} changed` : 'Filters'}
-              icon="line.3.horizontal.decrease.circle"
-              kind="secondary"
-              onPress={p.onFilters}
-              style={styles.filters}
-            />
-          ) : null}
+          <View style={styles.meta}>
+            {summary ? (
+              <Text style={[textStyles.body, { color: c.muted }]} testID="results-summary">
+                {summary}
+              </Text>
+            ) : null}
+            {labels}
+          </View>
         </View>
-      ) : null}
-      {summary ? (
-        <Text style={[textStyles.body, { color: c.muted }]} testID="results-summary">
-          {summary}
-        </Text>
-      ) : null}
-      {areaLines(request).map((line) => (
-        <Text key={line} style={[textStyles.small, { color: c.muted }]}>
-          {line}
-        </Text>
-      ))}
-      {p.showingHidden ? (
-        <Text style={[textStyles.small, { color: c.muted }]}>Showing routes your filters hid, for this search only.</Text>
+      ) : labels ? (
+        <View style={styles.controls}>{labels}</View>
       ) : null}
     </View>
+  );
+
+  // Scrolls with the list: notes that matter once.
+  const notes = [
+    ...(!stepsDays && summary ? [{ key: 'summary', text: summary, testID: 'results-summary', strong: true }] : []),
+    ...areaLines(request).map((text) => ({ key: text, text, testID: undefined, strong: false })),
+    ...(p.showingHidden
+      ? [{ key: 'hidden', text: 'Showing routes your filters hid, for this search only.', testID: undefined, strong: false }]
+      : []),
+  ];
+  const header = notes.length ? (
+    <View style={styles.header}>
+      {notes.map((n) => (
+        <Text key={n.key} testID={n.testID} style={[n.strong ? textStyles.body : textStyles.small, { color: c.muted }]}>
+          {n.text}
+        </Text>
+      ))}
+    </View>
+  ) : (
+    <View style={styles.headerGap} />
   );
 
   if (p.state.status === 'loading') {
@@ -281,10 +302,14 @@ const styles = StyleSheet.create({
   pad: { paddingHorizontal: spacing.page },
   sample: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: radius.sm },
   list: { paddingHorizontal: spacing.page, paddingBottom: spacing.page * 2 },
-  header: { gap: 2, paddingBottom: spacing.section },
-  controls: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: spacing.group, paddingVertical: 6 },
+  header: { gap: 2, paddingTop: spacing.group, paddingBottom: spacing.section },
+  headerGap: { height: spacing.group },
+  bar: { gap: 4, paddingBottom: spacing.group, borderBottomWidth: StyleSheet.hairlineWidth },
+  title: { flex: 1, textAlign: 'center' },
+  controls: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: spacing.group },
+  meta: { flexShrink: 1, alignItems: 'flex-end', gap: 2 },
   filters: { paddingHorizontal: spacing.section },
-  titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.group },
   sep: { height: spacing.group },
   state: { paddingVertical: spacing.page, gap: spacing.section, alignItems: 'flex-start' },
   loading: { flexDirection: 'row', alignItems: 'center', gap: spacing.group },

@@ -55,12 +55,13 @@ describe('leg tap and sheet', () => {
     clearFlightStatusMemo();
   });
 
-  it('a leg is its own 44pt button that reports the flight; the row still selects', async () => {
+  it('in the route card, a leg is its own 44pt button that reports the flight', async () => {
     const it = await itinerary();
     const onPress = jest.fn();
     const onLegPress = jest.fn();
     await act(async () => {
-      r = create(<ResultRow itinerary={it} selected={false} now={NOW} onPress={onPress} onLegPress={onLegPress} />);
+      // Leg buttons live in the route card, i.e. the selected row (Q-062).
+      r = create(<ResultRow itinerary={it} selected now={NOW} onPress={onPress} onLegPress={onLegPress} />);
     });
     const leg = r!.root.findAll((n) => typeof n.props.accessibilityLabel === 'string' && n.props.accessibilityLabel.startsWith('Flight status,'))[0];
     expect(leg.props.accessibilityRole).toBe('button');
