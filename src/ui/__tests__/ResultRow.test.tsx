@@ -90,8 +90,9 @@ describe('ResultRow', () => {
     act(() => row.props.onAccessibilityAction({ nativeEvent: { actionName: 'impact' } }));
     expect(onImpact).toHaveBeenCalledWith(it.id);
     const texts = root.findAll((n) => typeof n.props.children === 'string').map((n) => n.props.children);
-    // The badge names the airport (design round 25).
+    // The badge is just the word; the airport and age are in the sheet (Q-072, John: C).
     expect(texts).toContain('Likely delays');
+    expect(texts.some((t) => / ago$/.test(String(t)) && String(t).startsWith('Likely'))).toBe(false);
     const pill = root.findAll((n) => n.props.hitSlop != null)[0];
     expect(pill.props.hitSlop).toEqual({ top: 11, bottom: 11, left: 10, right: 10 });
   });
