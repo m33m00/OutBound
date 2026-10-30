@@ -356,7 +356,7 @@ describe('results bar at big text sizes', () => {
     const { request, list } = await results();
     const state = { status: 'done' as const, request, results: list, hiddenCount: 0, hiddenResults: [], searchedAt: NOW };
     const send = jest.spyOn(AccessibilityInfo, 'sendAccessibilityEvent').mockImplementation(() => {});
-    const raf = jest.spyOn(global, 'requestAnimationFrame').mockImplementation((cb) => {
+    const raf = jest.spyOn(globalThis, 'requestAnimationFrame').mockImplementation((cb: FrameRequestCallback) => {
       cb(0);
       return 0;
     });

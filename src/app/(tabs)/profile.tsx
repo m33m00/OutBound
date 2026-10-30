@@ -35,7 +35,8 @@ export default function ProfileScreen() {
       </ListGroup>
 
       <ListGroup title="About">
-        <ListRow label="Flights" value={SCHEDULE_SOURCE === 'live' ? 'Daily schedules' : 'Sample data'} />
+        {/* Credits name real sources only, so sample flights get no row (round 30). */}
+        {SCHEDULE_SOURCE === 'live' ? <ListRow label="Flights" value="Daily schedules" /> : null}
         <ListRow label="Airport delays" value="FAA" />
         <ListRow label="Weather" value="NOAA Aviation Weather" />
         <ListRow label="Radar" value="NOAA/NWS MRMS" />

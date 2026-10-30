@@ -7,13 +7,8 @@ export default function FeedScreen() {
     <TabScreen title="Feed">
       <EmptyState
         icon="text.bubble"
-        title="No requests yet"
-        body="Seat requests aren't live yet. When they are, this is where you help people at your airline get on."
-        points={[
-          'Asks from people at your airline',
-          'Answer with open seats and nonrevs listed',
-          'Your own asks show up here too',
-        ]}
+        title="No requests right now"
+        body="When someone at your airline asks about a flight, it shows up here so you can answer with open seats and nonrevs listed."
       />
     </TabScreen>
   );

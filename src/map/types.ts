@@ -165,9 +165,14 @@ export interface GlobeMapProps {
   /**
    * Applied whenever its value changes (fly-to, or jump with Reduce Motion).
    * When undefined, the map frames itself: the selected route's box, else
-   * the overview box of the drawn routes, else the default view.
+   * the overview box of the drawn routes, else `home`.
    */
   cameraTarget?: CameraTarget;
+  /**
+   * Where the globe rests with no routes: your location (design round 30).
+   * Also where it drifts back to after a spin. Default: continental US.
+   */
+  home?: LonLat | null;
   /** UI covering the map; the camera frames inside what is left. */
   insets?: Partial<MapInsets>;
   /** Drag/pinch enabled. Default true. */

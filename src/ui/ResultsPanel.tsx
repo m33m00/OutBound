@@ -34,12 +34,8 @@ export interface ResultsPanelProps {
   onImpactPress?: (id: string) => void;
   /** Opens flight status for one leg. */
   onLegPress?: (flight: Flight) => void;
-  /** Label shown while impacts are dev sample data. */
-  sampleImpacts?: boolean;
   /** Live status tags per itinerary id (Q-050). */
   statuses?: Record<string, RowStatus>;
-  /** Label shown while flight statuses are sample data. */
-  sampleStatus?: boolean;
   /** Flights are sample data (default true); false once the schedule DB is on. */
   sampleFlights?: boolean;
   /** "Show Them": routes the filters hid, shown for this search only (Q-047). */
@@ -129,15 +125,7 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
     .join(' · ');
 
   // Fixed above the list (results take over, Q-062): back, route and Filters on one line,
-  // the day and count under it. Sample labels stay in view while you scroll.
-  const sampleText = sampleLabel(p.sampleFlights !== false, !!p.sampleImpacts);
-  const labels =
-    sampleText || p.sampleStatus ? (
-      <View style={styles.labels}>
-        {sampleText ? <SampleLabel text={sampleText} /> : null}
-        {p.sampleStatus ? <SampleLabel text="Sample status" /> : null}
-      </View>
-    ) : null;
+  // the day and count under it.
   const topRow = (
     <View style={[styles.bar, styles.pad, { borderBottomColor: c.line }]} testID="results-bar">
       <View style={styles.titleRow}>
@@ -171,7 +159,6 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
           detail={summary || undefined}
         />
       ) : null}
-      {labels ? <View style={styles.labelRow}>{labels}</View> : null}
     </View>
   );
 
@@ -288,7 +275,6 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
                 <StepArrow dir="next" onPress={step(focusIndex + 1)} />
               </View>
             </View>
-            {labels ? <View style={[styles.labelRow, styles.pad, styles.labelPad]}>{labels}</View> : null}
             {/* Flipping to another route fades the card in so the change registers. */}
             <Appear trigger={focused.id}>
               {/* Keyed by route so each one opens at its top. */}
@@ -438,23 +424,6 @@ function NowLine({ time }: { time: string | null }) {
   );
 }
 
-/** Results label text for what is sample data; null when nothing is. */
-export function sampleLabel(flights: boolean, impacts: boolean): string | null {
-  if (flights && impacts) return 'Sample flights and delays';
-  if (flights) return 'Sample flights';
-  return impacts ? 'Sample delays' : null;
-}
-
-/** Shown wherever sample data appears, until the schedule DB lands. */
-export function SampleLabel({ text = 'Sample flights' }: { text?: string }) {
-  const c = useColors();
-  return (
-    <View style={[styles.sample, { backgroundColor: c.surface2 }]}>
-      <Text style={[textStyles.small, { color: c.muted }]}>{text}</Text>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   fill: { flex: 1 },
   selectedBlock: { gap: spacing.group },
@@ -463,14 +432,11 @@ const styles = StyleSheet.create({
   pager: { flexDirection: 'row', alignItems: 'center' },
   stepArrow: { width: 36, height: 44, alignItems: 'center', justifyContent: 'center' },
   pad: { paddingHorizontal: spacing.page },
-  sample: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: radius.sm },
   list: { paddingHorizontal: spacing.page, paddingBottom: spacing.page * 2 },
   header: { gap: 2, paddingTop: spacing.group, paddingBottom: spacing.section },
   headerGap: { height: spacing.group },
   bar: { gap: 4, paddingBottom: spacing.group, borderBottomWidth: StyleSheet.hairlineWidth },
   title: { flex: 1, textAlign: 'center' },
-  labelRow: { flexDirection: 'row', justifyContent: 'center' },
-  labelPad: { paddingTop: spacing.group },
   filters: { paddingHorizontal: spacing.section },
   titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.group },
   sep: { height: spacing.group },
@@ -478,7 +444,6 @@ const styles = StyleSheet.create({
   loading: { flexDirection: 'row', alignItems: 'center', gap: spacing.group },
   errorTop: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.section },
   errorText: { flex: 1, gap: 2 },
-  labels: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 4, flexShrink: 1 },
   footer: { paddingTop: spacing.section },
   nowLine: { flexDirection: 'row', alignItems: 'center', gap: spacing.group, paddingTop: 2 },
   rule: { flex: 1, height: StyleSheet.hairlineWidth * 2 },

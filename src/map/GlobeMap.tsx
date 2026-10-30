@@ -18,12 +18,13 @@
  *   legend         React Native view, only while a route is selected
  *
  * Item 11 also adds the launch spin-in (spinIn.ts). The flight preview was
- * removed on 2026-10-30 (John: the app doesn't need it).
+ * removed on 2026-10-30 (John: the app doesn't need it). Round 30 adds
+ * flick-to-spin and the slow drift back home (momentum.ts).
  *
  * Gestures run on the JS thread (d3 projection and picture recording live
- * there): pan rotates, pinch zooms, a tap (no movement) selects a route or
- * clears the selection. Camera targets fly (flyTo.ts) unless Reduce Motion
- * is on, then they jump.
+ * there): pan rotates (and coasts when let go with speed), pinch zooms, a
+ * tap (no movement) selects a route or clears the selection. Camera targets
+ * fly (flyTo.ts) unless Reduce Motion is on, then they jump.
  */
 import { Canvas, Picture } from '@shopify/react-native-skia';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -47,6 +48,7 @@ import {
   type Viewport,
 } from './camera';
 import { easeCubicInOut, interpolateCamera, planRetarget, sameCamera, type RunningFlight } from './flyTo';
+import { DRIFT_HOME, momentumStep, releaseVelocity, shouldDriftHome, type Velocity } from './momentum';
 import { routeFrameTarget } from './framing';
 import { globeColors } from './globeColors';
 import { hitTestRoutes } from './hitTest';
@@ -87,6 +89,7 @@ export function GlobeMap({
   airportStatus,
   radar,
   cameraTarget,
+  home,
   insets,
   interactive = true,
   showLegend = true,
@@ -152,10 +155,26 @@ export function GlobeMap({
     }
     setFlying(false);
   }, []);
+  // Coasting after a flick, and the timer that sends the globe home (momentum.ts).
+  const coastRef = useRef<number | null>(null);
+  const driftTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const stopCoast = useCallback(() => {
+    if (coastRef.current == null) return;
+    cancelAnimationFrame(coastRef.current);
+    coastRef.current = null;
+    setMoving(false);
+  }, []);
+  const cancelDrift = useCallback(() => {
+    if (driftTimer.current == null) return;
+    clearTimeout(driftTimer.current);
+    driftTimer.current = null;
+  }, []);
   useEffect(
     () => () => {
       if (frameRef.current != null) cancelAnimationFrame(frameRef.current);
       if (flightRef.current != null) cancelAnimationFrame(flightRef.current);
+      if (coastRef.current != null) cancelAnimationFrame(coastRef.current);
+      if (driftTimer.current != null) clearTimeout(driftTimer.current);
     },
     [],
   );
@@ -183,10 +202,22 @@ export function GlobeMap({
     flightRef.current = requestAnimationFrame(step);
   }, []);
 
-  // Target: the screen's, or the map's own framing (selected route, else overview).
-  const autoTarget = useMemo(() => routeFrameTarget(routes, selectedId), [routes, selectedId]);
+  // Target: the screen's, or the map's own framing (selected route, else
+  // overview, else home).
+  // Keyed by value, so a new array for the same spot doesn't count as a move.
+  const homeLon = home?.[0];
+  const homeLat = home?.[1];
+  const autoTarget = useMemo(
+    () => routeFrameTarget(routes, selectedId, homeLon != null && homeLat != null ? [homeLon, homeLat] : null),
+    [routes, selectedId, homeLon, homeLat],
+  );
   const targetKey = JSON.stringify(cameraTarget ?? autoTarget);
   const lastTargetKey = useRef<string | null>(null);
+  // What the drift home reads when its timer fires (it outlives renders).
+  const restRef = useRef({ targetKey, viewport, routeOpen: selectedId != null });
+  useEffect(() => {
+    restRef.current = { targetKey, viewport, routeOpen: selectedId != null };
+  }, [targetKey, viewport, selectedId]);
   useEffect(() => {
     // Wait for Reduce Motion to be known so the spin-in never flashes.
     if (!viewport || !reduceKnown) return;
@@ -194,7 +225,12 @@ export function GlobeMap({
     const next = cameraForTarget(target, viewport, cameraRef.current);
     // A new target flies; a layout or inset change re-frames (gliding with the panel, flyTo.ts).
     const isNewTarget = lastTargetKey.current !== targetKey;
+    const wasCenter = lastTargetKey.current != null && (JSON.parse(lastTargetKey.current) as CameraTarget).kind === 'center';
     lastTargetKey.current = targetKey;
+    // The camera is being placed (results, a pick, your location, the panel):
+    // no coasting or pending drift from before.
+    stopCoast();
+    cancelDrift();
 
     // First camera: launch spin-in (once per app launch, item 11).
     if (!cameraRef.current) {
@@ -216,6 +252,7 @@ export function GlobeMap({
     // flies from where it is; a re-frame mid-flight keeps flying (flyTo.ts).
     const plan = planRetarget({
       isNewTarget,
+      homeOnly: wasCenter && target.kind === 'center',
       from: cameraRef.current,
       to: next,
       running: flightTargetRef.current,
@@ -229,7 +266,61 @@ export function GlobeMap({
     } else {
       flyTo(next, plan.durationMs, plan.spin);
     }
-  }, [targetKey, viewport, reduceKnown, flyTo, stopFlight]);
+  }, [targetKey, viewport, reduceKnown, flyTo, stopFlight, stopCoast, cancelDrift]);
+
+  // After a spin or zoom, once the globe has been still for a while, glide it
+  // slowly back home; never with a route open (momentum.ts). Reduce Motion:
+  // a plain jump.
+  const scheduleDrift = useCallback(() => {
+    cancelDrift();
+    driftTimer.current = setTimeout(() => {
+      driftTimer.current = null;
+      const { targetKey: key, viewport: vp, routeOpen } = restRef.current;
+      const cur = cameraRef.current;
+      if (!vp || !cur || flightRef.current != null || coastRef.current != null) return;
+      const homeCam = cameraForTarget(JSON.parse(key) as CameraTarget, vp, cur);
+      if (!shouldDriftHome({ routeOpen, atHome: sameCamera(cur, homeCam) })) return;
+      if (reduceRef.current) {
+        cameraRef.current = homeCam;
+        setCamera(homeCam);
+      } else {
+        flyTo(homeCam, DRIFT_HOME.durationMs);
+      }
+    }, DRIFT_HOME.delayMs);
+  }, [cancelDrift, flyTo]);
+
+  // Let go with speed: keep turning and slow down smoothly, then start the
+  // drift timer. Too slow, or Reduce Motion: stop where it is.
+  const coast = useCallback(
+    (vx: number, vy: number) => {
+      stopCoast();
+      let velocity: Velocity | null = releaseVelocity(vx, vy, reduceRef.current);
+      if (!velocity || !cameraRef.current) {
+        scheduleDrift();
+        return;
+      }
+      setMoving(true);
+      let last: number | null = null;
+      const step = (now: number) => {
+        const cur = cameraRef.current;
+        if (!cur || !velocity) return;
+        const res = momentumStep(cur, velocity, last == null ? 16 : now - last);
+        last = now;
+        velocity = res.velocity;
+        cameraRef.current = res.camera;
+        setCamera(res.camera);
+        if (res.done) {
+          coastRef.current = null;
+          setMoving(false);
+          scheduleDrift();
+        } else {
+          coastRef.current = requestAnimationFrame(step);
+        }
+      };
+      coastRef.current = requestAnimationFrame(step);
+    },
+    [stopCoast, scheduleDrift],
+  );
 
   // Reduce Motion switched on mid-flight (or the spin-in): jump to the end.
   useEffect(() => {
@@ -407,10 +498,13 @@ export function GlobeMap({
     return recordNightLayer({ camera, viewport, sun: sunFromKey(skyKey), theme: NIGHT_THEME[scheme] });
   }, [camera, viewport, skyKey, scheme]);
 
-  // Any touch on the map stops the spin-in (snapping to its end).
+  // Any touch on the map stops the spin-in (snapping to its end), a coast
+  // and a pending drift home.
   const onTouchDown = useCallback(() => {
     if (flightTargetRef.current?.spin) stopFlight(true);
-  }, [stopFlight]);
+    stopCoast();
+    cancelDrift();
+  }, [stopFlight, stopCoast, cancelDrift]);
   const touchRef = useRef(onTouchDown);
   useEffect(() => {
     touchRef.current = onTouchDown;
@@ -430,6 +524,10 @@ export function GlobeMap({
     tapRef.current = handleTap;
   }, [handleTap]);
 
+  const coastRef2 = useRef(coast);
+  useEffect(() => {
+    coastRef2.current = coast;
+  }, [coast]);
   const active = useRef(0);
   const panStart = useRef<GlobeCamera | null>(null);
   const pinchStart = useRef(0);
@@ -444,6 +542,10 @@ export function GlobeMap({
     const end = () => {
       active.current = Math.max(0, active.current - 1);
       if (active.current === 0) setMoving(false);
+    };
+    // Last finger up: coast with the drag's speed (a pinch has none).
+    const release = (vx: number, vy: number) => {
+      if (active.current === 0) coastRef2.current(vx, vy);
     };
     const pan = Gesture.Pan()
       .runOnJS(true)
@@ -462,9 +564,12 @@ export function GlobeMap({
         const moved = panCamera(start, e.translationX, e.translationY);
         commit({ center: moved.center, radius: cur.radius });
       })
-      .onFinalize(() => {
-        if (panStart.current) end();
+      .onFinalize((e) => {
+        const started = panStart.current != null;
         panStart.current = null;
+        if (!started) return;
+        end();
+        release(e.velocityX, e.velocityY);
       });
     const pinch = Gesture.Pinch()
       .runOnJS(true)
@@ -480,8 +585,11 @@ export function GlobeMap({
         commit(pinchCamera(cur, pinchStart.current, e.scale, width));
       })
       .onFinalize(() => {
-        if (pinchStart.current > 0) end();
+        const started = pinchStart.current > 0;
         pinchStart.current = 0;
+        if (!started) return;
+        end();
+        release(0, 0);
       });
     // A tap only fires if the finger stayed within TAP_SLOP and no drag/pinch
     // won the race, so a pan never ends in a tap.
@@ -494,6 +602,10 @@ export function GlobeMap({
       .onEnd((e, success) => {
         if (!success || active.current > 0) return;
         tapRef.current(e.x, e.y);
+      })
+      // A touch cancelled the drift; a tap that left the globe off home re-arms it.
+      .onFinalize(() => {
+        if (active.current === 0) coastRef2.current(0, 0);
       });
     return Gesture.Race(Gesture.Simultaneous(pan, pinch), tap);
   }, [commit, interactive, width, stopFlight]);

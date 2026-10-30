@@ -11,7 +11,6 @@ import { radius, spacing, textStyles, useColors } from '@/theme';
 import { ageText, delayText, movementTimes, placeText, sampleResponse, STATE_WORD } from './flightStatusText';
 import { Icon } from './Icon';
 import { pressStyle } from './press';
-import { SampleLabel } from './ResultsPanel';
 import { STATE_TONE, TONE_BG, TONE_FG } from './statusTone';
 import { SheetHeader } from './SheetHeader';
 
@@ -76,11 +75,6 @@ export function FlightStatusSheet({ flight, visible, now, onClose, liveOptions, 
       <SafeAreaView style={[styles.screen, { backgroundColor: c.bg }]} edges={['top', 'bottom']}>
         <SheetHeader title={title} subtitle={subtitle || undefined} action="Done" onAction={onClose} />
         <ScrollView contentContainerStyle={styles.body}>
-          {isSample ? (
-            <View style={styles.sampleRow}>
-              <SampleLabel text="Sample status" />
-            </View>
-          ) : null}
           {error === 'not_configured' ? (
             <Text style={[textStyles.body, { color: c.muted }]}>Flight status is not connected yet.</Text>
           ) : null}
@@ -138,11 +132,8 @@ export function FlightStatusSheet({ flight, visible, now, onClose, liveOptions, 
               ? 'Times are local to each airport.'
               : 'Times are local to each airport. Refresh works about every 2 minutes.'}
           </Text>
-          <Text style={[textStyles.small, { color: c.muted }]}>
-            {isSample
-              ? 'This is sample status for trying the app. Real status shows once flight data is connected.'
-              : 'Data from AeroDataBox.'}
-          </Text>
+          {/* The source line names a real feed, so it shows only for live status (round 30: no sample labels). */}
+          {isSample ? null : <Text style={[textStyles.small, { color: c.muted }]}>Data from AeroDataBox.</Text>}
         </ScrollView>
       </SafeAreaView>
     </Modal>
@@ -151,7 +142,6 @@ export function FlightStatusSheet({ flight, visible, now, onClose, liveOptions, 
 
 const styles = StyleSheet.create({
   screen: { flex: 1, paddingHorizontal: spacing.page },
-  sampleRow: { flexDirection: 'row' },
   state: {
     flexDirection: 'row',
     alignItems: 'center',

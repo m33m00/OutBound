@@ -34,7 +34,7 @@ describe('ImpactSheet VoiceOver (design round 26)', () => {
   it('reads each station in words and the route as "to"', () => {
     act(() => {
       r = create(
-        <ImpactSheet visible title="Delays and weather" subtitle="DAL → DFW → LAX" impact={impact} now={NOW} sample={false} onClose={jest.fn()} />,
+        <ImpactSheet visible title="Delays and weather" subtitle="DAL → DFW → LAX" impact={impact} now={NOW} onClose={jest.fn()} />,
       );
     });
     const labels = r!.root.findAll((n) => typeof n.type === 'string' && typeof n.props.accessibilityLabel === 'string').map((n) => n.props.accessibilityLabel);

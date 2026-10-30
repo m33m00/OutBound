@@ -6,6 +6,9 @@ import { routeFramePoints, routeFrameTarget } from '../framing';
 describe('routeFrameTarget (auto camera)', () => {
   it('no routes: the default view', () => {
     expect(routeFrameTarget([], null)).toEqual({ kind: 'center', center: DEFAULT_CENTER });
+    // Design round 30: with no routes it rests on your location when known.
+    expect(routeFrameTarget([], null, [-97.04, 32.9])).toEqual({ kind: 'center', center: [-97.04, 32.9] });
+    expect(routeFrameTarget([], null, null)).toEqual({ kind: 'center', center: DEFAULT_CENTER });
   });
 
   it('nothing selected: fits every drawn route (top 10 only)', () => {

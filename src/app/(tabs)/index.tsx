@@ -5,7 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AIRPORTS, areaFor, localDate, toRouteLine, type Flight, type Itinerary } from '@/engine';
 import { flightLookupKey, sampleRouteImpacts, useFlightStatuses, useRouteImpacts } from '@/live';
-import { GlobeMap, type MapAirport } from '@/map';
+import { GlobeMap, type LonLat, type MapAirport } from '@/map';
 import { nearestAirport } from '@/search/airports';
 import { searchRequest } from '@/search/areas';
 import { dateChips } from '@/search/dates';
@@ -26,7 +26,7 @@ import { LeaveByCard } from '@/ui/LeaveByCard';
 import { useSharedLocation } from '@/ui/LocationProvider';
 import { LocationOptInCard } from '@/ui/LocationOptInCard';
 import { ResultsBanner } from '@/ui/ResultsBanner';
-import { ResultsPanel, SampleLabel } from '@/ui/ResultsPanel';
+import { ResultsPanel } from '@/ui/ResultsPanel';
 import { SearchPanel } from '@/ui/SearchPanel';
 import { RadarButton } from '@/ui/RadarButton';
 import { Sheet } from '@/ui/Sheet';
@@ -78,6 +78,10 @@ export default function HomeScreen() {
     [settings.useLocation, location],
   );
   const origin = chooseOrigin({ picked: pickedOrigin, nearest, mainHome, lastOrigin: settings.lastOrigin });
+  const homeCenter = useMemo<LonLat | null>(
+    () => (origin ? [AIRPORTS[origin].lon, AIRPORTS[origin].lat] : null),
+    [origin],
+  );
   const locationCard = showLocationCard({
     settingsLoaded,
     locationAsked: settings.locationAsked,
@@ -153,7 +157,7 @@ export default function HomeScreen() {
   const routes = useMemo(() => results.map((it) => toRouteLine(it, airport)), [results]);
 
   // Delay/weather badges (item 7). Until the live functions are deployed the
-  // hook reports 'off'; dev builds then show clearly labeled sample impacts.
+  // hook reports 'off'; dev builds then show sample impacts so the screens look finished (round 30: no labels).
   const live = useRouteImpacts(results);
   const sampleImpacts = __DEV__ && live.state === 'off';
   const impacts = useMemo(
@@ -356,8 +360,6 @@ export default function HomeScreen() {
         <Text style={[textStyles.wordmark, { color: c.text }]} accessibilityRole="header">
           OutBound
         </Text>
-        {/* In the top bar so it doesn't push Find Routes down; results carry their own label. */}
-        {!LIVE_FLIGHTS && !showResults ? <SampleLabel /> : null}
       </View>
 
       <View style={styles.body} onLayout={onBodyLayout}>
@@ -369,6 +371,8 @@ export default function HomeScreen() {
           airportStatus={statusMarks}
           radar={radar.layers}
           selectedRouteId={selectedId}
+          // Rests on your From airport (your location when it's on) and drifts back there after a spin.
+          home={homeCenter}
           // A tap on a route picks it (with the same tick as a row); a tap on empty globe
           // closes the open route the same way "‹ Routes" does.
           onSelectRoute={(id) => {
@@ -448,9 +452,7 @@ export default function HomeScreen() {
                   impactsLoading={!sampleImpacts && live.state === 'loading'}
                   onImpactPress={setImpactFor}
                   onLegPress={setStatusFlight}
-                  sampleImpacts={sampleImpacts}
                   statuses={rowStatuses}
-                  sampleStatus={flightStatuses.sample && results.length > 0}
                   sampleFlights={!LIVE_FLIGHTS}
                   showingHidden={showHidden}
                   days={chips}
@@ -508,7 +510,6 @@ export default function HomeScreen() {
         subtitle={impactRoute}
         impact={impactSheet.shown ? (impacts.byId[impactSheet.shown] ?? null) : null}
         now={now}
-        sample={sampleImpacts}
         onClose={() => setImpactFor(null)}
       />
       <FlightStatusSheet

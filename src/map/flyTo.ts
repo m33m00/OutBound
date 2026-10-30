@@ -92,17 +92,28 @@ export type RetargetPlan =
  * - the same target re-framed at rest (the panel changed size): glide over
  *   REFRAME_MS so the globe moves with the panel instead of snapping
  *   (design round 29);
+ * - a new resting spot (`homeOnly`) during the spin-in: the spin carries on
+ *   to it for the time left (design round 30);
  * - otherwise (Reduce Motion, or nothing moved) jump.
  */
 export function planRetarget(input: {
   isNewTarget: boolean;
+  /**
+   * The new target only moves the resting spot (your location arrived):
+   * a running spin-in keeps spinning to it instead of being cut short.
+   */
+  homeOnly?: boolean;
   from: GlobeCamera;
   to: GlobeCamera;
   running: RunningFlight | null;
   reduceMotion: boolean;
   nowMs: number;
 }): RetargetPlan {
-  const { isNewTarget, from, to, running, reduceMotion, nowMs } = input;
+  const { isNewTarget, homeOnly, from, to, running, reduceMotion, nowMs } = input;
+  if (isNewTarget && homeOnly && running?.spin && !reduceMotion) {
+    const left = running.endsAt - nowMs;
+    if (left > 50) return { kind: 'continue', durationMs: left, spin: true };
+  }
   if (isNewTarget) {
     const plan = planCameraMove(from, to, reduceMotion);
     return plan.animate ? { kind: 'fly', durationMs: plan.durationMs, spin: false } : { kind: 'jump' };

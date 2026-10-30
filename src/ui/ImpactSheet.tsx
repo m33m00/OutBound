@@ -8,7 +8,6 @@ import { radius, spacing, textStyles, useColors } from '@/theme';
 
 import { Icon } from './Icon';
 import { IMPACT_ICON } from './ImpactBadge';
-import { SampleLabel } from './ResultsPanel';
 import { SheetHeader } from './SheetHeader';
 
 export interface ImpactSheetProps {
@@ -18,25 +17,17 @@ export interface ImpactSheetProps {
   subtitle?: string | null;
   impact: RouteImpact | null;
   now: number;
-  /** True while showing dev sample data (no live service yet). */
-  sample: boolean;
   onClose: () => void;
 }
 
 /** Why a route has a delay/weather badge: each station, reasons, source and age. */
-export function ImpactSheet({ visible, title, subtitle, impact, now, sample, onClose }: ImpactSheetProps) {
+export function ImpactSheet({ visible, title, subtitle, impact, now, onClose }: ImpactSheetProps) {
   const c = useColors();
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <SafeAreaView style={[styles.screen, { backgroundColor: c.bg }]} edges={['top', 'bottom']}>
         <SheetHeader title={title} subtitle={subtitle || undefined} action="Done" onAction={onClose} />
         <ScrollView contentContainerStyle={styles.body}>
-          {sample ? (
-            <View style={styles.sampleRow} accessible accessibilityLabel="Sample delays and weather. Live data is not connected yet.">
-              <SampleLabel text="Sample delays" />
-              <Text style={[textStyles.small, styles.sampleNote, { color: c.muted }]}>Live data isn’t connected yet.</Text>
-            </View>
-          ) : null}
           {impact?.stations.map((s) => {
             const likely = s.level === 'likelyDelays';
             const badge = s.level !== 'none';
@@ -105,8 +96,6 @@ export function ImpactSheet({ visible, title, subtitle, impact, now, sample, onC
 
 const styles = StyleSheet.create({
   screen: { flex: 1, paddingHorizontal: spacing.page },
-  sampleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.group, flexWrap: 'wrap' },
-  sampleNote: { flexShrink: 1 },
   body: { gap: spacing.section, paddingBottom: spacing.page },
   station: { borderRadius: radius.md, borderWidth: StyleSheet.hairlineWidth, padding: spacing.rowX, gap: 4 },
   // Wraps at big text sizes; the badge stays right-aligned on whichever line it lands.

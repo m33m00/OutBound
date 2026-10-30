@@ -133,7 +133,7 @@ describe('sample status in the sheet (design round 4)', () => {
     expect(res.status!.arrival.airport).toBe('LAX');
   });
 
-  it('shows the sample, labeled, asks no server and offers no Refresh', async () => {
+  it('shows the sample like a real status (no label since round 30), asks no server and offers no Refresh', async () => {
     const f = (await itinerary()).legs[0].flight;
     const fetcher = jest.fn();
     await act(async () => {
@@ -149,7 +149,8 @@ describe('sample status in the sheet (design round 4)', () => {
     });
     expect(fetcher).not.toHaveBeenCalled();
     const texts = r!.root.findAll((n) => typeof n.props.children === 'string').map((n) => n.props.children);
-    expect(texts).toContain('Sample status');
+    expect(texts.some((t) => /sample/i.test(String(t)))).toBe(false);
+    expect(texts).not.toContain('Data from AeroDataBox.');
     expect(texts).toContain('Delayed');
     expect(texts).toContain('DL 2210');
     expect(texts).toContain('Updated 2m ago');
