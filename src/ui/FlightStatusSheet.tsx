@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { AccessibilityInfo, ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AIRPORTS, localDate, type Flight } from '@/engine';
@@ -19,6 +19,7 @@ import { ReportForm } from './ReportSheet';
 import { STATE_TONE, TONE_BG, TONE_FG } from './statusTone';
 import { SheetHeader } from './SheetHeader';
 import { TIER_FG } from './tierColors';
+import { useAnnounceLater } from './useAnnounceLater';
 
 export interface FlightStatusSheetProps {
   /** The opened flight; null = closed (no request is made). */
@@ -58,6 +59,7 @@ export function FlightStatusSheet({ flight, visible, now, onClose, liveOptions, 
   const c = useColors();
   // Report Load opens as a page inside this sheet (a second sheet on top can't open while one is up).
   const [reporting, setReporting] = useState(false);
+  const announce = useAnnounceLater();
   // Back from the report page: VoiceOver lands on the Seats card again.
   const [backFromReport, setBackFromReport] = useState(false);
   const flightId = flight?.id;
@@ -113,9 +115,7 @@ export function FlightStatusSheet({ flight, visible, now, onClose, liveOptions, 
             onSubmit={(open, listed) => {
               load.onReport(open, listed);
               leaveReport();
-              // After the page swap, or VoiceOver drops it.
-              const said = forSpeech(`Reported ${answerText({ open, listed, at: now })}`);
-              setTimeout(() => AccessibilityInfo.announceForAccessibility(said), 400);
+              announce(forSpeech(`Reported ${answerText({ open, listed, at: now })}`));
             }}
           />
         ) : (

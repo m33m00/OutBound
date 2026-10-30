@@ -47,20 +47,23 @@ function hash(s: string): number {
   return h >>> 0;
 }
 
-/** Sample flights leaving between 40 minutes and 30 hours from now, earliest first. */
-function upcomingSampleFlights(now: number): Flight[] {
+/** Sample flights leaving between `startMs` and `endMs` from now (negative = already left), earliest first. */
+export function sampleFlightsBetween(now: number, startMs: number, endMs: number): Flight[] {
   const out: Flight[] = [];
   const today = localDate(now, 'America/Chicago');
   for (const date of [addDays(today, -1), today, addDays(today, 1)]) {
     for (const [airline, flightNumber, from, to, time, blockMin] of SAMPLE_SCHEDULE) {
       const departUtc = zonedToUtc(date, time, AIRPORTS[from].tz);
-      if (departUtc < now + 40 * 60_000 || departUtc > now + 30 * 3600_000) continue;
+      if (departUtc < now + startMs || departUtc > now + endMs) continue;
       const id = `${airline}${flightNumber}-${date}-${from}`;
       out.push({ id, airline, flightNumber, from, to, departUtc, arriveUtc: departUtc + blockMin * 60_000 });
     }
   }
   return out.sort((a, b) => a.departUtc - b.departUtc);
 }
+
+/** Sample flights leaving between 40 minutes and 30 hours from now. */
+const upcomingSampleFlights = (now: number) => sampleFlightsBetween(now, 40 * 60_000, 30 * 3600_000);
 
 /** Minutes ago, stable per flight: between `min` and `min + span`. */
 const askedAgo = (id: string, min: number, span: number) => (min + (hash(id) % span)) * 60_000;

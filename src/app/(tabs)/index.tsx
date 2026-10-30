@@ -20,8 +20,11 @@ import { Appear } from '@/ui/Appear';
 import { useSettings } from '@/settings/SettingsProvider';
 import { changedFilters, DEFAULT_FILTERS, homeAirports, type SearchFilters } from '@/settings/settings';
 import { FiltersModal } from '@/ui/FiltersModal';
+import { airportYouAreAt, sampleDepartures } from '@/requests/atAirport';
 import { askNote, reportWindow } from '@/requests/requests';
 import { useRequests } from '@/requests/RequestsProvider';
+import { AtAirportCard } from '@/ui/AtAirportCard';
+import { DeparturesSheet } from '@/ui/DeparturesSheet';
 import { FlightStatusSheet } from '@/ui/FlightStatusSheet';
 import { ImpactSheet } from '@/ui/ImpactSheet';
 import { LeaveByCard } from '@/ui/LeaveByCard';
@@ -120,6 +123,15 @@ export default function HomeScreen() {
     const t = setInterval(() => setNow(Date.now()), 60_000);
     return () => clearInterval(t);
   }, []);
+
+  // At-airport shortcut (round 33): within 4 km of an airport, report from its departures board.
+  const atAirport = settings.useLocation ? airportYouAreAt(location, now) : null;
+  const departures = useMemo(
+    () => (atAirport && !LIVE_FLIGHTS ? sampleDepartures(atAirport, now) : []),
+    [atAirport, now],
+  );
+  const [departuresFor, setDeparturesFor] = useState<string | null>(null);
+  const departuresSheet = useSheetContent(departuresFor);
 
   // Empty search (Q-047): a banner at the top of the search panel instead of a results
   // panel. "Show Them" lists the hidden routes for this search only; the
@@ -429,6 +441,16 @@ export default function HomeScreen() {
                       />
                     ) : null
                   }
+                  airportCard={
+                    // Live boards need the schedule feed; until then only sample departures are listed.
+                    atAirport && !LIVE_FLIGHTS ? (
+                      <AtAirportCard
+                        code={atAirport}
+                        count={departures.length}
+                        onReport={() => setDeparturesFor(atAirport)}
+                      />
+                    ) : null
+                  }
                   banner={
                     banner ? (
                       <ResultsBanner
@@ -544,6 +566,15 @@ export default function HomeScreen() {
               }
             : undefined
         }
+      />
+      <DeparturesSheet
+        code={departuresSheet.shown}
+        visible={departuresSheet.visible}
+        flights={departures}
+        now={now}
+        reportFor={requests.reportFor}
+        onReport={requests.report}
+        onClose={() => setDeparturesFor(null)}
       />
       <FiltersModal
         visible={filtersOpen}

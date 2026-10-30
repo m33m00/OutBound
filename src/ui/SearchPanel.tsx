@@ -37,6 +37,8 @@ export interface SearchPanelProps {
   locationCard?: ReactNode;
   /** Empty-results notice (Q-047), shown at the top so it's in view at half height. */
   banner?: ReactNode;
+  /** "At DAL? Report a load" (round 33), under the search buttons: searching stays the main job. */
+  airportCard?: ReactNode;
 }
 
 interface AirportCardProps {
@@ -280,7 +282,7 @@ export function SearchPanel(p: SearchPanelProps) {
           <Text style={[textStyles.small, { color: c.accent }]}>Set your home airport in Profile ›</Text>
         </Pressable>
       ) : null}
-
+      {p.airportCard}
     </ScrollView>
   );
 }
