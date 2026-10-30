@@ -2,10 +2,12 @@ import { useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
+import { flightLookupKey, useFlightStatuses } from '@/live';
 import { spacing } from '@/theme';
 import { answerText, requestTitle, sampleFeed, type LoadAnswer } from '@/requests/requests';
 import { useRequests } from '@/requests/RequestsProvider';
 import { forSpeech } from '@/search/format';
+import { legLookup, legStatus } from '@/search/statusTags';
 import { SCHEDULE_SOURCE } from '@/search/useRouteSearch';
 import { EmptyState } from '@/ui/EmptyState';
 import { ListGroup, SectionFooter } from '@/ui/ListGroup';
@@ -32,6 +34,11 @@ export default function FeedScreen() {
   const sheet = useSheetContent(reporting);
   // Said once the sheet has closed, or VoiceOver drops it.
   const announce = useAnnounceLater();
+  // A delayed or canceled flight shows on its request, like in My Trips (round 51).
+  const live = SCHEDULE_SOURCE === 'live';
+  const lookups = useMemo(() => asks.map((r) => legLookup(r.flight)), [asks]);
+  const statuses = useFlightStatuses(lookups, live ? {} : SAMPLE_STATUS_OPTIONS);
+  const legFor = (r: (typeof asks)[number]) => legStatus(r.flight, statuses.byKey[flightLookupKey(legLookup(r.flight))]);
   const sheetFlight = asks.find((r) => r.id === sheet.shown)?.flight ?? null;
 
   const withAnswers = asks.map((r) => (answers[r.id] ? { ...r, answer: answers[r.id] } : r));
@@ -55,7 +62,7 @@ export default function FeedScreen() {
         <View style={styles.section}>
           <ListGroup title="Requests on your airline’s flights">
             {open.map((r) => (
-              <RequestRow key={r.id} request={r} now={now} onAnswer={() => setReporting(r.id)} />
+              <RequestRow key={r.id} request={r} now={now} leg={legFor(r)} onAnswer={() => setReporting(r.id)} />
             ))}
           </ListGroup>
           <SectionFooter>Answer with what you see on the departure board. People who ask only see the numbers, never who answered.</SectionFooter>
@@ -70,7 +77,7 @@ export default function FeedScreen() {
       {done.length ? (
         <ListGroup title="You answered">
           {done.map((r) => (
-            <RequestRow key={r.id} request={r} now={now} />
+            <RequestRow key={r.id} request={r} now={now} leg={legFor(r)} />
           ))}
         </ListGroup>
       ) : null}
@@ -84,6 +91,8 @@ export default function FeedScreen() {
     </TabScreen>
   );
 }
+
+const SAMPLE_STATUS_OPTIONS = { config: null } as const;
 
 const styles = StyleSheet.create({
   section: { gap: spacing.group },
