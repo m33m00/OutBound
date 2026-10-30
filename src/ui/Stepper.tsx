@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
 import { formatDuration } from '@/search/format';
 import { minTapTarget, radius, spacing, textStyles, useColors } from '@/theme';
@@ -24,6 +24,8 @@ export function Stepper({
   format?: (v: number) => string;
 }) {
   const c = useColors();
+  // From 1.3x text the label gets its own line, like ListRow, so it never breaks into a narrow column.
+  const stacked = useWindowDimensions().fontScale >= STACK_SCALE;
   const btn = (sign: 1 | -1) => {
     const next = value + sign * step;
     const disabled = next < min || next > max;
@@ -40,19 +42,36 @@ export function Stepper({
       </Pressable>
     );
   };
-  return (
-    <View style={styles.row}>
-      <Text style={[textStyles.body, styles.label, { color: c.text }]}>{label}</Text>
+  const controls = (
+    <>
       {btn(-1)}
       <Text style={[textStyles.bodyStrong, styles.value, { color: c.text }]} accessibilityLiveRegion="polite">
         {format(value)}
       </Text>
       {btn(1)}
+    </>
+  );
+  if (stacked) {
+    return (
+      <View style={styles.stack}>
+        <Text style={[textStyles.body, { color: c.text }]}>{label}</Text>
+        <View style={styles.row} testID="stepper-row">{controls}</View>
+      </View>
+    );
+  }
+  return (
+    <View style={styles.row} testID="stepper-row">
+      <Text style={[textStyles.body, styles.label, { color: c.text }]}>{label}</Text>
+      {controls}
     </View>
   );
 }
 
+/** Same threshold as ListRow's stacked value. */
+const STACK_SCALE = 1.3;
+
 const styles = StyleSheet.create({
+  stack: { gap: 4 },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.group, minHeight: minTapTarget },
   label: { flex: 1 },
   value: { minWidth: 64, textAlign: 'center' },

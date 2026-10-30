@@ -436,6 +436,20 @@ C) Keep the scheduled time and add a line under it: "Flight delayed to 2:40 PM"
 Recommendation: C, because it never makes you late if the delay shrinks, and you still see the new time.
 Answer: John (2026-10-30), "C".
 
+### Q-071 Notification switches before push exists  (Open)
+Context: Settings has "Answers to your requests" and "Requests on your airline’s flights". They save your choice, but nothing is sent yet because push notifications aren't built. You asked to remove placeholder stuff, and a switch that does nothing is close to that.
+A) Keep them, with a line under them: "Notifications start once requests go live."
+B) Hide the section until push works
+C) Keep them as they are
+Recommendation: A, because your choice is ready the day push ships and the line stops it feeling broken.
+
+### Q-072 Delay badge on the result row's top line  (Open)
+Context: On a 390pt iPhone, times, the seat chip and a delay badge like "Likely delays · ORD · 4m ago" rarely fit on one line, so rows grow to 3 or 4 lines and fewer routes show. Q-001 treats seats and live data as equals.
+A) Keep the badge on the top line
+B) Move the badge to the bottom line next to the flight tags, without the age (the sheet still shows it)
+C) Keep it on top but short: icon and word only ("Likely delays"), airport and age in the sheet
+Recommendation: C, because delays stay as prominent as seats while most rows fit on two lines.
+
 Provisional defaults for backlog 3 (not John-decided; John may override any time):
 - FAA cache TTL 5 min server-side; serve stale on FAA error.
 - One national NAS feed fetch, filtered on read.

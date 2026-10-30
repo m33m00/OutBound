@@ -36,5 +36,5 @@ export function SaveRouteButton({ saved, onPress }: { saved: boolean; onPress: (
 }
 
 const styles = StyleSheet.create({
-  button: { width: minTapTarget - 8, height: minTapTarget, alignItems: 'center', justifyContent: 'center' },
+  button: { width: minTapTarget, height: minTapTarget, alignItems: 'center', justifyContent: 'center' },
 });

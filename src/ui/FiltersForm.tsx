@@ -25,8 +25,13 @@ export function FiltersForm({ filters: f, onChange }: { filters: SearchFilters; 
               accessibilityState={{ checked: on }}
               accessibilityLabel={n === 0 ? 'Nonstop only' : `Up to ${n} ${n === 1 ? 'stop' : 'stops'}`}
               style={pressStyle([styles.segment, { backgroundColor: on ? c.accent : c.surface2 }])}>
-              <Text style={[textStyles.bodyStrong, { color: on ? c.onAccent : c.text }]}>
-                {n === 0 ? 'Nonstop' : n}
+              {/* Units on every option, so "2" never reads as a count of something else. */}
+              <Text
+                style={[textStyles.bodyStrong, { color: on ? c.onAccent : c.text }]}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.8}>
+                {n === 0 ? 'Nonstop' : `${n} ${n === 1 ? 'stop' : 'stops'}`}
               </Text>
             </Pressable>
           );

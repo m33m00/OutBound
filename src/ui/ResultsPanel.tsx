@@ -129,25 +129,25 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
   const topRow = (
     <View style={[styles.bar, styles.pad, { borderBottomColor: c.line }]} testID="results-bar">
       <View style={styles.titleRow}>
-        <BackButton label={tight ? '' : 'Search'} onPress={p.onBack} accessibilityLabel="Back to search" />
-        <Text
-          ref={listTitleRef}
-          style={[textStyles.heading, styles.title, { color: c.text }]}
-          accessibilityRole="header"
-          accessibilityLabel={routeSpoken}
-          numberOfLines={2}>
-          {routeTitle}
-        </Text>
-        {p.onFilters ? (
-          <Button
-            label={tight ? (p.filtersChanged ? String(p.filtersChanged) : '') : p.filtersChanged ? `Filters (${p.filtersChanged})` : 'Filters'}
-            accessibilityLabel={p.filtersChanged ? `Filters, ${p.filtersChanged} changed` : 'Filters'}
-            icon="line.3.horizontal.decrease.circle"
-            kind="secondary"
-            onPress={p.onFilters}
-            style={styles.filters}
-          />
-        ) : null}
+          <BackButton label={tight ? '' : 'Search'} onPress={p.onBack} accessibilityLabel="Back to search" />
+          <Text
+            ref={listTitleRef}
+            style={[textStyles.heading, styles.title, { color: c.text }]}
+            accessibilityRole="header"
+            accessibilityLabel={routeSpoken}
+            numberOfLines={2}>
+            {routeTitle}
+          </Text>
+          {p.onFilters ? (
+            <Button
+              label={tight ? (p.filtersChanged ? String(p.filtersChanged) : '') : p.filtersChanged ? `Filters (${p.filtersChanged})` : 'Filters'}
+              accessibilityLabel={p.filtersChanged ? `Filters, ${p.filtersChanged} changed` : 'Filters'}
+              icon="line.3.horizontal.decrease.circle"
+              kind="secondary"
+              onPress={p.onFilters}
+              style={styles.filters}
+            />
+          ) : null}
       </View>
       {stepsDays && p.days && p.onDay ? (
         // Full width: arrows at the panel edges, the day and route count centered (John, 2026-10-30).
@@ -242,7 +242,8 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
         // A picked route slides in a little from the right, like a push (design round 29).
         <Appear kind="push">
           <View style={styles.fill} testID="route-view">
-            <View style={[styles.bar, styles.pad, styles.titleRow, { borderBottomColor: c.line }]}>
+            <View style={[styles.bar, styles.pad, { borderBottomColor: c.line }]}>
+              <View style={styles.titleRow}>
               <BackButton
                 label={tight ? '' : 'Routes'}
                 onPress={() => p.onSelect(focused.id)}
@@ -259,6 +260,8 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
               {p.onToggleSave ? (
                 <SaveRouteButton saved={!!p.isSaved?.(focused)} onPress={() => p.onToggleSave?.(focused)} />
               ) : null}
+              </View>
+              {/* Own thin row under the title, so a two-stop title has room on one line (round 46). */}
               <View style={styles.pager}>
                 <StepArrow dir="prev" onPress={step(focusIndex - 1)} />
                 {/* VoiceOver: swipe up or down here to flip routes (the arrows stay for Voice Control). */}
@@ -429,7 +432,7 @@ const styles = StyleSheet.create({
   selectedBlock: { gap: spacing.group },
   hidden: { display: 'none' },
   focus: { padding: spacing.page, paddingTop: spacing.section, gap: spacing.section },
-  pager: { flexDirection: 'row', alignItems: 'center' },
+  pager: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.section },
   stepArrow: { width: 36, height: 44, alignItems: 'center', justifyContent: 'center' },
   pad: { paddingHorizontal: spacing.page },
   list: { paddingHorizontal: spacing.page, paddingBottom: spacing.page * 2 },
