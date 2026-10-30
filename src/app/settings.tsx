@@ -1,11 +1,13 @@
-import { router } from 'expo-router';
-import { useState } from 'react';
-import { ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { router, useLocalSearchParams } from 'expo-router';
+import { useRef, useState, type ComponentRef } from 'react';
+import { Platform, Pressable, ScrollView, StyleSheet, Switch, Text, View, type LayoutChangeEvent } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useSettings } from '@/settings/SettingsProvider';
 import { AIRPORTS } from '@/engine';
 import { confirmReset } from '@/settings/confirmReset';
+import { parseSettingsSection, type SettingsSection } from '@/settings/profileSummary';
+import { MAPS_APP_NAME, type MapsApp } from '@/search/directions';
 import { homeAirports, LIMITS } from '@/settings/settings';
 import { minTapTarget, radius, spacing, textStyles, useColors } from '@/theme';
 import { AirportPicker } from '@/ui/AirportPicker';
@@ -15,6 +17,9 @@ import { Button } from '@/ui/Buttons';
 import { FiltersForm } from '@/ui/FiltersForm';
 import { Stepper } from '@/ui/Stepper';
 import { useSharedLocation } from '@/ui/LocationProvider';
+import { withTick } from '@/ui/haptics';
+import { pressStyle } from '@/ui/press';
+import { useSheetContent } from '@/ui/useSheetContent';
 
 /** Tester settings (backlog 12; Q-003, Q-024). Saved on this phone (Q-025). */
 export default function SettingsScreen() {
@@ -23,7 +28,19 @@ export default function SettingsScreen() {
   const { status, request } = useSharedLocation();
   const [picking, setPicking] = useState<'main' | 'extra' | null>(null);
   const { homes } = settings;
+  // The picker keeps its title while it slides away (design round 29).
+  const pickerSheet = useSheetContent(picking);
   const homeList = homeAirports(homes);
+
+  // Opened from a Profile row: scroll to that row's section once it's laid out (backlog 56).
+  const target = parseSettingsSection(useLocalSearchParams().section);
+  const scrollRef = useRef<ComponentRef<typeof ScrollView>>(null);
+  const scrolled = useRef(false);
+  const sectionLayout = (section: SettingsSection) => (e: LayoutChangeEvent) => {
+    if (section !== target || scrolled.current || section === 'homes') return;
+    scrolled.current = true;
+    scrollRef.current?.scrollTo({ y: Math.max(0, e.nativeEvent.layout.y - spacing.page), animated: false });
+  };
 
   const setUseLocation = async (on: boolean) => {
     if (!on) return update({ useLocation: false });
@@ -36,16 +53,16 @@ export default function SettingsScreen() {
       <View style={styles.header}>
         <BackButton label="Back" onPress={() => router.back()} />
       </View>
-      <ScrollView contentContainerStyle={styles.body}>
+      <ScrollView ref={scrollRef} contentContainerStyle={styles.body}>
         <Text style={[textStyles.title, { color: c.text }]} accessibilityRole="header">
           Settings
         </Text>
 
-        <View style={styles.section}>
+        <View style={styles.section} onLayout={sectionLayout('homes')}>
           <SectionHeader title="Homes" />
           <View style={[styles.group, { backgroundColor: c.surface, borderColor: c.line }]}>
             {homeList.length === 0 ? (
-              <Text style={[textStyles.body, styles.empty, { color: c.muted }]}>No home airport yet.</Text>
+              <Text style={[textStyles.body, styles.empty, { color: c.muted }]}>No main home yet. Set one to show Get Home when you’re away.</Text>
             ) : (
               homeList.map((h, i) => (
                 <View
@@ -54,7 +71,7 @@ export default function SettingsScreen() {
                   <Text style={[textStyles.number, styles.code, { color: c.text }]}>{h.code}</Text>
                   <View style={styles.label}>
                     <Text style={[textStyles.body, { color: c.text }]}>{AIRPORTS[h.code]?.name}</Text>
-                    <Text style={[textStyles.small, { color: c.youText }]}>
+                    <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.youText }]}>
                       {h.main ? 'Main home' : h.auto ? 'Same area, added automatically' : 'Also home'}
                     </Text>
                   </View>
@@ -73,7 +90,7 @@ export default function SettingsScreen() {
             )}
             <View style={[styles.buttons, { borderTopColor: c.line }]}>
               {homes.main ? null : <Button label="Set Main Home" onPress={() => setPicking('main')} />}
-              <Button label="Add Airport" kind="secondary" icon="plus" onPress={() => setPicking('extra')} />
+              <Button label="Add Home" kind="secondary" icon="plus" onPress={() => setPicking('extra')} />
             </View>
           </View>
           <SectionFooter>
@@ -81,18 +98,15 @@ export default function SettingsScreen() {
           </SectionFooter>
         </View>
 
-        <View style={styles.section}>
+        <View style={styles.section} onLayout={sectionLayout('location')}>
           <SectionHeader title="Location" />
           <View style={[styles.group, { backgroundColor: c.surface, borderColor: c.line }]}>
-            <View style={styles.row}>
-              <Text style={[textStyles.body, styles.label, { color: c.text }]}>Use my location</Text>
-              <Switch
-                value={settings.useLocation}
-                onValueChange={setUseLocation}
-                accessibilityLabel="Use my location for the nearest airport and drive estimate"
-                trackColor={{ true: c.accent, false: c.line2 }}
-              />
-            </View>
+            <SwitchRow
+              label="Use your location"
+              hint="For the nearest airport and your drive estimate"
+              value={settings.useLocation}
+              onChange={setUseLocation}
+            />
           </View>
           <SectionFooter>
             {status === 'denied'
@@ -102,7 +116,30 @@ export default function SettingsScreen() {
           </SectionFooter>
         </View>
 
-        <View style={styles.section}>
+        <View style={styles.section} onLayout={sectionLayout('notify')}>
+          <SectionHeader title="Notifications" />
+          <View style={[styles.group, { backgroundColor: c.surface, borderColor: c.line }]}>
+            <SwitchRow
+              label="Answers to your requests"
+              caption="As soon as someone replies"
+              value={settings.notify.answers}
+              onChange={(on) => update({ notify: { ...settings.notify, answers: on } })}
+            />
+            <SwitchRow
+              label="Requests on your airline’s flights"
+              caption="At most 5 a day"
+              value={settings.notify.airlineAsks}
+              onChange={(on) => update({ notify: { ...settings.notify, airlineAsks: on } })}
+              divided
+            />
+          </View>
+          <SectionFooter>
+            Notifications start once requests go live. Other employees can ask about your airline’s flights, at most 5
+            requests a day. Nobody sees who asked or who answered.
+          </SectionFooter>
+        </View>
+
+        <View style={styles.section} onLayout={sectionLayout('leaveBy')}>
           <SectionHeader title="Leave-by" />
           <View style={[styles.group, { backgroundColor: c.surface, borderColor: c.line }]}>
             <Stepper
@@ -112,13 +149,19 @@ export default function SettingsScreen() {
               format={(v) => `${v} min`}
               onChange={(v) => update({ bufferMin: v })}
             />
+            {/* Android always uses Google Maps, so there's nothing to pick there. */}
+            {Platform.OS === 'ios' ? (
+              <MapsChoice value={settings.mapsApp} onChange={(mapsApp) => update({ mapsApp })} />
+            ) : null}
           </View>
           <SectionFooter>
-            Time to list and clear security. The leave-by card counts back from your first departure.
+            {Platform.OS === 'ios'
+              ? 'Time to list and clear security. Tap the leave-by card for directions to the airport.'
+              : 'Time to list and clear security. The leave-by card counts back from your first departure.'}
           </SectionFooter>
         </View>
 
-        <View style={styles.section}>
+        <View style={styles.section} onLayout={sectionLayout('search')}>
           <SectionHeader title="Search defaults" />
           <View style={[styles.group, { backgroundColor: c.surface, borderColor: c.line }]}>
             <FiltersForm filters={settings.search} onChange={(search) => update({ search })} />
@@ -128,12 +171,12 @@ export default function SettingsScreen() {
 
         {/* Clears homes too, so it asks first (what it should clear is Q-064). */}
         <Button label="Reset All Settings" kind="secondary" onPress={() => confirmReset(reset)} />
-        <Text style={[textStyles.small, { color: c.muted }]}>Saved on this phone.</Text>
+        <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>Saved on this phone.</Text>
       </ScrollView>
       <AirportPicker
-        visible={picking !== null}
-        title={picking === 'main' ? 'Main home' : 'Add home'}
-        current={picking === 'main' ? homes.main : null}
+        visible={pickerSheet.visible}
+        title={pickerSheet.shown === 'main' ? 'Main home' : 'Add home'}
+        current={pickerSheet.shown === 'main' ? homes.main : null}
         onPick={(code) => {
           if (picking === 'main') {
             update({ homes: { main: code, extras: homes.extras.filter((x) => x !== code) } });
@@ -145,6 +188,82 @@ export default function SettingsScreen() {
         onClose={() => setPicking(null)}
       />
     </SafeAreaView>
+  );
+}
+
+/**
+ * A setting with a switch: the whole row toggles it and VoiceOver reads it
+ * as one switch (label, caption as the hint, on or off).
+ */
+function SwitchRow({
+  label,
+  caption,
+  hint,
+  value,
+  onChange,
+  divided,
+}: {
+  label: string;
+  caption?: string;
+  hint?: string;
+  value: boolean;
+  onChange: (on: boolean) => void;
+  divided?: boolean;
+}) {
+  const c = useColors();
+  return (
+    <Pressable
+      onPress={() => onChange(!value)}
+      accessibilityRole="switch"
+      accessibilityState={{ checked: value }}
+      accessibilityLabel={label}
+      accessibilityHint={hint ?? caption}
+      style={pressStyle([styles.row, divided && [styles.divided, { borderTopColor: c.line }]])}>
+      <View style={styles.label}>
+        <Text style={[textStyles.body, { color: c.text }]}>{label}</Text>
+        {caption ? <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>{caption}</Text> : null}
+      </View>
+      {/* The row takes the tap and speaks for it. */}
+      <View pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+        <Switch value={value} trackColor={{ true: c.accent, false: c.faint }} />
+      </View>
+    </Pressable>
+  );
+}
+
+/** Which maps app the leave-by card opens (provisional; John left it open, 2026-10-30). */
+function MapsChoice({ value, onChange }: { value: MapsApp; onChange: (app: MapsApp) => void }) {
+  const c = useColors();
+  return (
+    <View style={[styles.divided, styles.maps, { borderTopColor: c.line }]}>
+      <Text style={[textStyles.body, { color: c.text }]}>Directions open in</Text>
+      <View style={styles.segments} accessibilityRole="radiogroup" accessibilityLabel="Directions open in">
+        {(['apple', 'google'] as const).map((app) => {
+          const on = value === app;
+          return (
+            <Pressable
+              key={app}
+              onPress={withTick(() => onChange(app))}
+              accessibilityRole="radio"
+              accessibilityState={{ checked: on }}
+              accessibilityLabel={MAPS_APP_NAME[app]}
+              style={pressStyle([styles.segment, { backgroundColor: on ? c.accent : c.surface2 }])}>
+              <Text
+                style={[textStyles.bodyStrong, { color: on ? c.onAccent : c.text }]}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.8}>
+                {MAPS_APP_NAME[app]}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+      {/* Always shown, so picking doesn't make the layout jump. */}
+      <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>
+        Google Maps opens in Safari if the app isn’t on this iPhone.
+      </Text>
+    </View>
   );
 }
 
@@ -171,4 +290,14 @@ const styles = StyleSheet.create({
   section: { gap: spacing.group },
   divided: { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: spacing.group },
   empty: { paddingVertical: spacing.group },
+  maps: { gap: spacing.group },
+  segments: { flexDirection: 'row', gap: spacing.group },
+  segment: {
+    flex: 1,
+    minHeight: minTapTarget,
+    borderRadius: radius.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.group,
+  },
 });

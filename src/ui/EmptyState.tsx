@@ -31,7 +31,7 @@ export function EmptyState({ icon, title, body, points, action }: EmptyStateProp
         <View style={[styles.icon, { backgroundColor: c.accentSoft }]}>
           <Icon name={icon} size={26} tintColor={c.accent} fallback={null} />
         </View>
-        <Text style={[textStyles.heading, styles.center, { color: c.text }]}>{title}</Text>
+        <Text lineBreakStrategyIOS="push-out" style={[textStyles.heading, styles.center, { color: c.text }]}>{title}</Text>
         <Text style={[textStyles.body, styles.center, { color: c.muted }]}>{body}</Text>
         {points?.length ? (
           <View style={styles.points}>

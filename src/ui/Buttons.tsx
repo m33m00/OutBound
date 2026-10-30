@@ -11,13 +11,24 @@ interface ButtonProps {
   kind?: 'primary' | 'secondary';
   disabled?: boolean;
   accessibilityLabel?: string;
+  /** Say why a button is off, or what it opens. */
+  accessibilityHint?: string;
   /** Decorative SF Symbol before the label (iOS; Android shows the label only). */
   icon?: SFSymbol;
   style?: StyleProp<ViewStyle>;
 }
 
 /** Title Case labels (DECISIONS.md: Find Routes, Get Home). */
-export function Button({ label, onPress, kind = 'primary', disabled, accessibilityLabel, icon, style }: ButtonProps) {
+export function Button({
+  label,
+  onPress,
+  kind = 'primary',
+  disabled,
+  accessibilityLabel,
+  accessibilityHint,
+  icon,
+  style,
+}: ButtonProps) {
   const c = useColors();
   const primary = kind === 'primary';
   const fg = primary ? c.onAccent : c.text;
@@ -27,6 +38,7 @@ export function Button({ label, onPress, kind = 'primary', disabled, accessibili
       disabled={disabled}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel ?? label}
+      accessibilityHint={accessibilityHint}
       accessibilityState={{ disabled }}
       style={pressStyle([
         styles.button,
@@ -43,6 +55,8 @@ const styles = StyleSheet.create({
   button: {
     minHeight: minTapTarget,
     paddingHorizontal: spacing.page,
+    // Two-line labels at big text keep clear of the edges.
+    paddingVertical: 10,
     borderRadius: radius.sm,
     flexDirection: 'row',
     gap: 6,

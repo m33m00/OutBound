@@ -4,13 +4,15 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { spacing, textStyles, useColors } from '@/theme';
 
-/** A tab's page: title plus body. Feed and My Trips are placeholders until requests exist (Q-042). */
+import { TITLE_MAX_SCALE } from './SheetHeader';
+
+/** A tab's page: title plus a scrolling body. */
 export function TabScreen({ title, children }: { title: string; children: ReactNode }) {
   const c = useColors();
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: c.bg }]} edges={['top']}>
       <ScrollView contentContainerStyle={styles.body}>
-        <Text style={[textStyles.title, { color: c.text }]} accessibilityRole="header">
+        <Text style={[textStyles.title, { color: c.text }]} accessibilityRole="header" maxFontSizeMultiplier={TITLE_MAX_SCALE}>
           {title}
         </Text>
         {children}

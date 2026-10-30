@@ -29,7 +29,7 @@ describe('computeLeaveBy', () => {
     expect(r).toEqual({ kind: 'beAt', airport: 'BNA', beAtUtc: DEP - 75 * MIN, bufferMin: 75 });
     expect(leaveByText(r, BNA.tz)).toEqual({
       title: 'Be at BNA by 7:45 AM',
-      sub: '75 min before departure to list and clear security',
+      sub: '75 min early to list and clear security',
     });
   });
 
@@ -42,7 +42,7 @@ describe('computeLeaveBy', () => {
     expect(r).toMatchObject({ kind: 'leaveBy', driveMin: 25, leaveUtc: DEP - 100 * MIN });
     expect(leaveByText(r, BNA.tz)).toEqual({
       title: 'Leave by 7:20 AM',
-      sub: '~25 min drive from where you are · at BNA by 7:45 AM',
+      sub: '~25 min drive · at BNA by 7:45 AM',
     });
   });
 
@@ -70,4 +70,14 @@ describe('computeLeaveBy', () => {
       sub: 'Be at BNA by 7:45 AM',
     });
   });
+
+  it('says departed only when live status says so, never from the schedule (round 42, Q-050)', () => {
+    const after = DEP + 10 * MIN;
+    // Past the scheduled time but no live word: it may be delayed, so still "Leave now".
+    expect(run({ now: after }).kind).toBe('leaveNow');
+    const r = run({ now: after, location: { lat: BNA.lat, lon: BNA.lon, at: after }, departed: true });
+    expect(r).toEqual({ kind: 'departed', airport: 'BNA' });
+    expect(leaveByText(r, BNA.tz)).toEqual({ title: 'Departed', sub: 'This flight has left BNA. Pick a later route.' });
+  });
 });
+

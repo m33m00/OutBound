@@ -15,6 +15,7 @@ export const MATERIAL: Partial<Record<SFSymbol, keyof typeof MaterialIcons.glyph
   airplane: 'flight',
   'airplane.departure': 'flight-takeoff',
   'car.fill': 'directions-car',
+  'arrow.triangle.turn.up.right.diamond.fill': 'directions',
   xmark: 'close',
   'xmark.circle': 'cancel',
   checkmark: 'check',
@@ -30,6 +31,9 @@ export const MATERIAL: Partial<Record<SFSymbol, keyof typeof MaterialIcons.glyph
   'exclamationmark.triangle.fill': 'warning',
   'wifi.exclamationmark': 'wifi-off',
   'house.fill': 'home',
+  bookmark: 'bookmark-border',
+  'bookmark.fill': 'bookmark',
+  trash: 'delete-outline',
 };
 
 export interface IconProps {

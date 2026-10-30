@@ -1,5 +1,5 @@
-import { forwardRef, useCallback, useEffect, useRef, type ReactNode } from 'react';
-import { ActivityIndicator, FlatList, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { forwardRef, useCallback, useEffect, useRef, type ComponentRef, type ReactNode } from 'react';
+import { AccessibilityInfo, ActivityIndicator, FlatList, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
 import { AIRPORTS, areaFor, type Flight, type Itinerary, type SearchRequest } from '@/engine';
 import type { RouteImpact } from '@/live';
@@ -9,6 +9,7 @@ import { departedFirst, type RowStatus } from '@/search/statusTags';
 import type { SearchState } from '@/search/useRouteSearch';
 import { fonts, radius, spacing, textStyles, useColors } from '@/theme';
 
+import { Appear } from './Appear';
 import { BackButton } from './BackButton';
 import { Button } from './Buttons';
 import { DayStepper } from './DayStepper';
@@ -16,6 +17,7 @@ import { withTick } from './haptics';
 import { pressStyle } from './press';
 import { Icon } from './Icon';
 import { ResultRow } from './ResultRow';
+import { SaveRouteButton } from './SaveRouteButton';
 
 export interface ResultsPanelProps {
   state: Exclude<SearchState, { status: 'idle' }>;
@@ -32,12 +34,8 @@ export interface ResultsPanelProps {
   onImpactPress?: (id: string) => void;
   /** Opens flight status for one leg. */
   onLegPress?: (flight: Flight) => void;
-  /** Label shown while impacts are dev sample data. */
-  sampleImpacts?: boolean;
   /** Live status tags per itinerary id (Q-050). */
   statuses?: Record<string, RowStatus>;
-  /** Label shown while flight statuses are sample data. */
-  sampleStatus?: boolean;
   /** Flights are sample data (default true); false once the schedule DB is on. */
   sampleFlights?: boolean;
   /** "Show Them": routes the filters hid, shown for this search only (Q-047). */
@@ -49,6 +47,11 @@ export interface ResultsPanelProps {
   onFilters?: () => void;
   /** How many filters differ from the saved defaults. */
   filtersChanged?: number;
+  /** Whether a route is in My Trips (Q-043); with onToggleSave the route view shows Save Route. */
+  isSaved?: (it: Itinerary) => boolean;
+  onToggleSave?: (it: Itinerary) => void;
+  /** One more line under the count, e.g. a saved route that's no longer in the results. */
+  note?: string;
 }
 
 export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(function ResultsPanel(p, ref) {
@@ -93,6 +96,23 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
     );
     return () => cancelAnimationFrame(frame);
   }, [searchKey, nowAt]);
+  // VoiceOver follows the panel (design round 29): opening or flipping a route lands on its
+  // title, and coming back lands on the list's title, instead of staying on a button that's gone.
+  const routeTitleRef = useRef<ComponentRef<typeof Text>>(null);
+  const listTitleRef = useRef<ComponentRef<typeof Text>>(null);
+  const shownRoute = p.state.status === 'done' ? p.selectedId : null;
+  const lastRoute = useRef(shownRoute);
+  useEffect(() => {
+    const was = lastRoute.current;
+    lastRoute.current = shownRoute;
+    if (was === shownRoute) return;
+    const target = shownRoute ? routeTitleRef : was ? listTitleRef : null;
+    if (!target) return;
+    const frame = requestAnimationFrame(() => {
+      if (target.current) AccessibilityInfo.sendAccessibilityEvent(target.current, 'focus');
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [shownRoute]);
   const stepsDays = !!(p.days && p.onDay);
   // With the day stepper the date is in the stepper, so this line keeps only the count.
   const summary = [
@@ -105,20 +125,13 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
     .join(' · ');
 
   // Fixed above the list (results take over, Q-062): back, route and Filters on one line,
-  // the day and count under it. Sample labels stay in view while you scroll.
-  const sampleText = sampleLabel(p.sampleFlights !== false, !!p.sampleImpacts);
-  const labels =
-    sampleText || p.sampleStatus ? (
-      <View style={styles.labels}>
-        {sampleText ? <SampleLabel text={sampleText} /> : null}
-        {p.sampleStatus ? <SampleLabel text="Sample status" /> : null}
-      </View>
-    ) : null;
+  // the day and count under it.
   const topRow = (
     <View style={[styles.bar, styles.pad, { borderBottomColor: c.line }]} testID="results-bar">
       <View style={styles.titleRow}>
         <BackButton label={tight ? '' : 'Search'} onPress={p.onBack} accessibilityLabel="Back to search" />
         <Text
+          ref={listTitleRef}
           style={[textStyles.heading, styles.title, { color: c.text }]}
           accessibilityRole="header"
           accessibilityLabel={routeSpoken}
@@ -146,7 +159,6 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
           detail={summary || undefined}
         />
       ) : null}
-      {labels ? <View style={styles.labelRow}>{labels}</View> : null}
     </View>
   );
 
@@ -154,6 +166,7 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
   const notes = [
     ...(!stepsDays && summary ? [{ key: 'summary', text: summary, testID: 'results-summary', strong: true }] : []),
     ...areaLines(request).map((text) => ({ key: text, text, testID: undefined, strong: false })),
+    ...(p.note ? [{ key: 'note', text: p.note, testID: 'results-note', strong: false }] : []),
     ...(p.showingHidden
       ? [{ key: 'hidden', text: 'Showing routes your filters hid, for this search only.', testID: undefined, strong: false }]
       : []),
@@ -201,7 +214,7 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
                 fallback={null}
               />
               <View style={styles.errorText}>
-                <Text style={[textStyles.heading, { color: c.text }]}>Couldn’t load flights</Text>
+                <Text lineBreakStrategyIOS="push-out" style={[textStyles.heading, { color: c.text }]}>Couldn’t load flights</Text>
                 <Text style={[textStyles.body, { color: c.muted }]}>
                   {p.sampleFlights !== false ? 'Something went wrong. Try again.' : 'Check your connection, then try again.'}
                 </Text>
@@ -226,107 +239,119 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
   return (
     <View style={styles.fill}>
       {focused ? (
-        <View style={styles.fill} testID="route-view">
-          <View style={[styles.bar, styles.pad, styles.titleRow, { borderBottomColor: c.line }]}>
-            <BackButton
-              label={tight ? '' : 'Routes'}
-              onPress={() => p.onSelect(focused.id)}
-              accessibilityLabel="Back to all routes"
-            />
-            <Text
-              style={[textStyles.heading, styles.title, { color: c.text }]}
-              accessibilityRole="header"
-              accessibilityLabel={routeSpoken}
-              numberOfLines={2}>
-              {routeTitle}
-            </Text>
-            <View style={styles.pager}>
-              <StepArrow dir="prev" onPress={step(focusIndex - 1)} />
-              {/* VoiceOver: swipe up or down here to flip routes (the arrows stay for Voice Control). */}
+        // A picked route slides in a little from the right, like a push (design round 29).
+        <Appear kind="push">
+          <View style={styles.fill} testID="route-view">
+            <View style={[styles.bar, styles.pad, styles.titleRow, { borderBottomColor: c.line }]}>
+              <BackButton
+                label={tight ? '' : 'Routes'}
+                onPress={() => p.onSelect(focused.id)}
+                accessibilityLabel="Back to all routes"
+              />
               <Text
-                style={[textStyles.body, { color: c.muted }]}
-                testID="route-count"
-                accessible
-                accessibilityRole="adjustable"
-                accessibilityLabel={`Route ${focusIndex + 1} of ${results.length}`}
-                accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
-                onAccessibilityAction={(e) => step(focusIndex + (e.nativeEvent.actionName === 'increment' ? 1 : -1))?.()}>
-                {focusIndex + 1} of {results.length}
+                ref={routeTitleRef}
+                style={[textStyles.heading, styles.title, { color: c.text }]}
+                accessibilityRole="header"
+                accessibilityLabel={routeSpoken}
+                numberOfLines={2}>
+                {routeTitle}
               </Text>
-              <StepArrow dir="next" onPress={step(focusIndex + 1)} />
-            </View>
-          </View>
-          {labels ? <View style={[styles.labelRow, styles.pad, styles.labelPad]}>{labels}</View> : null}
-          <ScrollView contentContainerStyle={styles.focus}>
-            {/* Keyed by route so paging re-announces the new Leave By time. */}
-            {p.selectedCard ? (
-              <View testID="selected-card" key={focused.id}>
-                {p.selectedCard}
+              {p.onToggleSave ? (
+                <SaveRouteButton saved={!!p.isSaved?.(focused)} onPress={() => p.onToggleSave?.(focused)} />
+              ) : null}
+              <View style={styles.pager}>
+                <StepArrow dir="prev" onPress={step(focusIndex - 1)} />
+                {/* VoiceOver: swipe up or down here to flip routes (the arrows stay for Voice Control). */}
+                <Text
+                  style={[textStyles.body, { color: c.muted }]}
+                  testID="route-count"
+                  accessible
+                  accessibilityRole="adjustable"
+                  accessibilityLabel={`Route ${focusIndex + 1} of ${results.length}`}
+                  accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
+                  onAccessibilityAction={(e) => step(focusIndex + (e.nativeEvent.actionName === 'increment' ? 1 : -1))?.()}>
+                  {focusIndex + 1} of {results.length}
+                </Text>
+                <StepArrow dir="next" onPress={step(focusIndex + 1)} />
               </View>
-            ) : null}
-            <ResultRow
-              itinerary={focused}
-              selected
-              large
-              now={p.now}
-              onPress={p.onSelect}
-              impact={p.impacts?.[focused.id]}
-              impactLoading={p.impactsLoading}
-              onImpactPress={p.onImpactPress}
-              onLegPress={p.onLegPress}
-              status={p.statuses?.[focused.id]}
-            />
-          </ScrollView>
-        </View>
-      ) : null}
-      <View style={[styles.fill, focused && styles.hidden]}>
-      {topRow}
-      <FlatList
-        ref={setListRef}
-        data={results}
-        onScrollBeginDrag={() => {
-          userScrolled.current = true;
-        }}
-        keyExtractor={(it) => it.id}
-        contentContainerStyle={styles.list}
-        ListHeaderComponent={header}
-        ItemSeparatorComponent={() => <View style={styles.sep} />}
-        renderItem={({ item, index }) => {
-          const selected = item.id === p.selectedId;
-          const row = (
-            <ResultRow
-              itinerary={item}
-              selected={selected}
-              now={p.now}
-              onPress={p.onSelect}
-              impact={p.impacts?.[item.id]}
-              impactLoading={p.impactsLoading}
-              onImpactPress={p.onImpactPress}
-              onLegPress={p.onLegPress}
-              status={p.statuses?.[item.id]}
-            />
-          );
-          const block = row;
-          if (index !== nowAt) return block;
-          const tz = AIRPORTS[item.origin]?.tz;
-          return (
-            <View style={styles.selectedBlock}>
-              <NowLine time={tz ? formatTime(p.now, tz) : null} />
-              {block}
             </View>
-          );
-        }}
-        // Rows aren't measured yet: jump near the row by its average height instead.
-        onScrollToIndexFailed={(info) =>
-          listRef.current?.scrollToOffset({ offset: info.averageItemLength * info.index, animated: false })
-        }
-        ListFooterComponent={
-          <Text style={[textStyles.small, styles.footer, { color: c.muted }]}>
-            Follow your airline’s rules on sharing loads.
-          </Text>
-        }
-      />
-      </View>
+            {/* Flipping to another route fades the card in so the change registers. */}
+            <Appear trigger={focused.id}>
+              {/* Keyed by route so each one opens at its top. */}
+              <ScrollView key={focused.id} contentContainerStyle={styles.focus}>
+                {/* Keyed by route so paging re-announces the new Leave By time. */}
+                {p.selectedCard ? (
+                  <View testID="selected-card" key={focused.id}>
+                    {p.selectedCard}
+                  </View>
+                ) : null}
+                <ResultRow
+                  itinerary={focused}
+                  selected
+                  large
+                  now={p.now}
+                  onPress={p.onSelect}
+                  impact={p.impacts?.[focused.id]}
+                  impactLoading={p.impactsLoading}
+                  onImpactPress={p.onImpactPress}
+                  onLegPress={p.onLegPress}
+                  status={p.statuses?.[focused.id]}
+                />
+              </ScrollView>
+            </Appear>
+          </View>
+        </Appear>
+      ) : null}
+      {/* Back from a route, the list fades back in where you left it. */}
+      <Appear trigger={!focused} style={focused && styles.hidden}>
+        {topRow}
+        <FlatList
+          ref={setListRef}
+          data={results}
+          onScrollBeginDrag={() => {
+            userScrolled.current = true;
+          }}
+          keyExtractor={(it) => it.id}
+          contentContainerStyle={styles.list}
+          ListHeaderComponent={header}
+          ItemSeparatorComponent={() => <View style={styles.sep} />}
+          renderItem={({ item, index }) => {
+            const selected = item.id === p.selectedId;
+            const row = (
+              <ResultRow
+                itinerary={item}
+                selected={selected}
+                now={p.now}
+                onPress={p.onSelect}
+                impact={p.impacts?.[item.id]}
+                impactLoading={p.impactsLoading}
+                onImpactPress={p.onImpactPress}
+                onLegPress={p.onLegPress}
+                status={p.statuses?.[item.id]}
+                saved={p.isSaved?.(item)}
+              />
+            );
+            const block = row;
+            if (index !== nowAt) return block;
+            const tz = AIRPORTS[item.origin]?.tz;
+            return (
+              <View style={styles.selectedBlock}>
+                <NowLine time={tz ? formatTime(p.now, tz) : null} />
+                {block}
+              </View>
+            );
+          }}
+          // Rows aren't measured yet: jump near the row by its average height instead.
+          onScrollToIndexFailed={(info) =>
+            listRef.current?.scrollToOffset({ offset: info.averageItemLength * info.index, animated: false })
+          }
+          ListFooterComponent={
+            <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, styles.footer, { color: c.muted }]}>
+              Follow your airline’s rules on sharing loads.
+            </Text>
+          }
+        />
+      </Appear>
     </View>
   );
 });
@@ -393,25 +418,8 @@ function NowLine({ time }: { time: string | null }) {
       accessible
       accessibilityLabel={`Now${time ? `, ${time}` : ''}. Flights below haven’t left yet.`}>
       <View style={[styles.rule, { backgroundColor: c.accent }]} />
-      <Text style={[textStyles.small, styles.nowText, { color: c.accent }]}>{time ? `Now · ${time}` : 'Now'}</Text>
+      <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { fontFamily: fonts.bodySemiBold, color: c.accent }]}>{time ? `Now · ${time}` : 'Now'}</Text>
       <View style={[styles.rule, { backgroundColor: c.accent }]} />
-    </View>
-  );
-}
-
-/** Results label text for what is sample data; null when nothing is. */
-export function sampleLabel(flights: boolean, impacts: boolean): string | null {
-  if (flights && impacts) return 'Sample flights and delays';
-  if (flights) return 'Sample flights';
-  return impacts ? 'Sample delays' : null;
-}
-
-/** Shown wherever sample data appears, until the schedule DB lands. */
-export function SampleLabel({ text = 'Sample flights' }: { text?: string }) {
-  const c = useColors();
-  return (
-    <View style={[styles.sample, { backgroundColor: c.surface2 }]}>
-      <Text style={[textStyles.small, { color: c.muted }]}>{text}</Text>
     </View>
   );
 }
@@ -424,14 +432,11 @@ const styles = StyleSheet.create({
   pager: { flexDirection: 'row', alignItems: 'center' },
   stepArrow: { width: 36, height: 44, alignItems: 'center', justifyContent: 'center' },
   pad: { paddingHorizontal: spacing.page },
-  sample: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: radius.sm },
   list: { paddingHorizontal: spacing.page, paddingBottom: spacing.page * 2 },
   header: { gap: 2, paddingTop: spacing.group, paddingBottom: spacing.section },
   headerGap: { height: spacing.group },
   bar: { gap: 4, paddingBottom: spacing.group, borderBottomWidth: StyleSheet.hairlineWidth },
   title: { flex: 1, textAlign: 'center' },
-  labelRow: { flexDirection: 'row', justifyContent: 'center' },
-  labelPad: { paddingTop: spacing.group },
   filters: { paddingHorizontal: spacing.section },
   titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.group },
   sep: { height: spacing.group },
@@ -439,9 +444,7 @@ const styles = StyleSheet.create({
   loading: { flexDirection: 'row', alignItems: 'center', gap: spacing.group },
   errorTop: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.section },
   errorText: { flex: 1, gap: 2 },
-  labels: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 4, flexShrink: 1 },
   footer: { paddingTop: spacing.section },
   nowLine: { flexDirection: 'row', alignItems: 'center', gap: spacing.group, paddingTop: 2 },
   rule: { flex: 1, height: StyleSheet.hairlineWidth * 2 },
-  nowText: { fontFamily: fonts.bodySemiBold },
 });

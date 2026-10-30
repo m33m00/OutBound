@@ -224,7 +224,7 @@ export const TIER_LABEL: Record<SeatTier, string> = {
 const SOURCE_LABEL: Record<Exclude<LineSource, 'typical'>, string> = {
   reported: 'Reported',
   estimate: 'Estimate',
-  unknown: 'No report',
+  unknown: 'No data',
 };
 
 /** Row order within a tier: reported first, then estimate, typical, no report. */

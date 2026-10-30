@@ -3,6 +3,7 @@ import { useColorScheme } from 'react-native';
 import { colors, type ColorScheme, type Palette } from './colors';
 
 export { colors, type ColorScheme, type ColorToken, type Palette } from './colors';
+export { applyBoldText, boldTextOn, useBoldText } from './boldText';
 export { fontAssets, fonts } from './fonts';
 export { minTapTarget, radius, spacing } from './spacing';
 export { textStyles, type TypeStyle } from './typography';

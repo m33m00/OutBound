@@ -59,5 +59,7 @@ export function useRadarLayers(on: boolean, now: number) {
     layers,
     caption: radarCaption(on, radar.state, shownFrames.length ? shownFrames : drawn, now),
     available: configured,
+    /** On and at least one picture is on the globe. */
+    showing: layers.length > 0,
   };
 }

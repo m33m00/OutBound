@@ -48,12 +48,12 @@ describe('impact text', () => {
 });
 
 describe('impactBadgeText', () => {
-  it('names the worst airport, so a stop at the connection reads differently from one at the end', () => {
-    expect(impactBadgeText(impact, NOW)).toBe('Likely delays · ORD · 12m ago');
+  it('is just the word on the row; the airport and age are in the sheet (Q-072, John: C)', () => {
+    expect(impactBadgeText(impact)).toBe('Likely delays');
   });
 
-  it('leaves out the age when no time is known and says nothing when there is no impact', () => {
-    expect(impactBadgeText({ ...impact, asOf: null }, NOW)).toBe('Likely delays · ORD');
-    expect(impactBadgeText({ ...impact, level: 'none' }, NOW)).toBe('');
+  it('says Caution for the milder level and nothing when there is no impact', () => {
+    expect(impactBadgeText({ ...impact, level: 'caution' })).toBe('Caution');
+    expect(impactBadgeText({ ...impact, level: 'none' })).toBe('');
   });
 });

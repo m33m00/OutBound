@@ -247,8 +247,8 @@ describe('legend and speech', () => {
     ]);
     const unk = route('u', L('DFW', 'LGA', 'okay', 'unknown'));
     const [row] = legendEntries(unk);
-    expect(row).toMatchObject({ tier: 'unknown', dashed: true, label: 'Unknown (No report)' });
-    expect(row.accessibilityLabel).toBe('Unknown, no report, dashed line');
+    expect(row).toMatchObject({ tier: 'unknown', dashed: true, label: 'Unknown (No data)' });
+    expect(row.accessibilityLabel).toBe('Unknown, no data, dashed line');
   });
 
   it('keeps a reported unknown-tier leg solid gray, separate from dashed gray rows', () => {

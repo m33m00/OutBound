@@ -1,9 +1,10 @@
 import { memo } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
-import type { Flight, Itinerary, SeatTier } from '@/engine';
+import type { Flight, Itinerary } from '@/engine';
 import type { RouteImpact } from '@/live';
 import {
+  forSpeech,
   formatDuration,
   nearbyNotes,
   neutralSeatText,
@@ -17,33 +18,16 @@ import {
   stopCount,
 } from '@/search/format';
 import { impactSummary } from '@/search/impactText';
-import type { LegStatusView, LegTagKind, RowStatus } from '@/search/statusTags';
-import { fonts, radius, spacing, textStyles, useColors, type ColorToken } from '@/theme';
+import type { LegStatusView, RowStatus } from '@/search/statusTags';
+import { radius, spacing, textStyles, useBoldText, useColors } from '@/theme';
 
 import { AirlinePill } from './AirlinePill';
 import { Icon } from './Icon';
 import { ImpactBadge } from './ImpactBadge';
 import { pressStyle } from './press';
-import { TONE_BG, TONE_FG, type Tone } from './statusTone';
+import { StatusTag, TAG_TONE } from './StatusTag';
 import { withTick } from './haptics';
-
-/** Tier text and fill tokens; color is never the only signal (word + number). */
-const TIER_FG: Record<SeatTier, ColorToken> = {
-  wide: 'wideFg',
-  good: 'goodFg',
-  okay: 'okayFg',
-  tight: 'tightFg',
-  full: 'fullFg',
-  unknown: 'unknownFg',
-};
-const TIER_BG: Record<SeatTier, ColorToken> = {
-  wide: 'wideBg',
-  good: 'goodBg',
-  okay: 'okayBg',
-  tight: 'tightBg',
-  full: 'fullBg',
-  unknown: 'unknownBg',
-};
+import { TIER_BG, TIER_FG } from './tierColors';
 
 export interface ResultRowProps {
   itinerary: Itinerary;
@@ -61,39 +45,24 @@ export interface ResultRowProps {
   status?: RowStatus;
   /** Route view (John, 2026-10-30): leg lines in body-size text. */
   large?: boolean;
+  /** In My Trips (Q-043): a small bookmark before the route line in the list. */
+  saved?: boolean;
 }
 
-/** Row tag kind to tone (Q-050). */
-const TONE: Record<LegTagKind, Tone> = {
-  delayed: 'delayed',
-  departed: 'gone',
-  arrived: 'gone',
-  canceled: 'canceled',
-  diverted: 'canceled',
-};
+/** From this text size the seat chip and delay badge sit left-aligned under the times. */
+export const STACK_TOP_LINE_SCALE = 1.3;
 
-function StatusTag({ label, tone }: { label: string; tone: Tone }) {
-  const c = useColors();
-  return (
-    <View
-      style={[styles.statusTag, { backgroundColor: c[TONE_BG[tone]], borderColor: tone === 'gone' ? c.line2 : c[TONE_BG[tone]] }]}>
-      {/* Icon keeps Canceled / Diverted from reading as a Full-tier red edge; the word stays. */}
-      {tone === 'canceled' ? (
-        <Icon name="xmark.circle" size={12} tintColor={c[TONE_FG[tone]]} fallback={null} />
-      ) : null}
-      <Text style={[textStyles.small, styles.tagWord, { color: c[TONE_FG[tone]] }]}>{label}</Text>
-    </View>
-  );
-}
+/** "7:05 AM" never splits between the number and AM/PM, so a long time line only wraps at the dash. */
+const keep = (time: string) => time.replace(/ /g, '\u00a0');
 
-/** Leg departure time: struck through when delayed or canceled, with the new time after it. */
+/** Leg departure time when delayed or canceled: the new time first, the old one struck through after it (John, 2026-10-30). */
 function LegTime({ view }: { view: LegStatusView }) {
   const c = useColors();
   if (!view.struck) return null;
   return (
-    <Text style={[textStyles.small, { color: c.muted }]}>
-      <Text style={styles.struck}>{view.scheduledText}</Text>
-      {view.newText ? <Text style={{ color: c.text }}> {view.newText}</Text> : null}
+    <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>
+      {view.newText ? <Text style={{ color: c.text }}>{`${keep(view.newText)}\u00a0`}</Text> : null}
+      <Text style={styles.struck}>{keep(view.scheduledText)}</Text>
     </Text>
   );
 }
@@ -109,17 +78,26 @@ export const ResultRow = memo(function ResultRow({
   onLegPress,
   status,
   large,
+  saved,
 }: ResultRowProps) {
   const c = useColors();
-  const t = rowTimes(it);
+  // A memo row redraws when Bold Text changes.
+  useBoldText();
+  const { fontScale } = useWindowDimensions();
+  const stacked = fontScale >= STACK_TOP_LINE_SCALE;
+  const rt = rowTimes(it);
+  const t = { ...rt, depart: keep(rt.depart), arrive: keep(rt.arrive) };
   const hasImpact = impact != null && impact.level !== 'none';
-  const label = [
-    rowAccessibilityLabel(it, now),
-    ...(status?.spoken ?? []),
-    hasImpact ? impactSummary(impact, now) : '',
-  ]
-    .filter(Boolean)
-    .join('. ');
+  const label = forSpeech(
+    [
+      rowAccessibilityLabel(it, now),
+      ...(status?.spoken ?? []),
+      hasImpact ? impactSummary(impact, now) : '',
+      saved && !large ? 'Saved to My Trips' : '',
+    ]
+      .filter(Boolean)
+      .join('. '),
+  );
   const actions = [
     ...(hasImpact ? [{ name: 'impact', label: 'Delay and weather details' }] : []),
     ...(onLegPress
@@ -182,9 +160,10 @@ export const ResultRow = memo(function ResultRow({
               </Text>
             ) : (
               <>
+                {/* What matters now leads: the new time at full size, the old one small and struck after it (John, 2026-10-30). */}
                 {first?.struck && first.newText ? (
                   <>
-                    <Text style={[styles.struck, { color: c.muted }]}>{t.depart}</Text> {first.newText}
+                    {keep(first.newText)}{'\u00a0'}<Text style={[styles.was, styles.struck, { color: c.muted }]}>{keep(t.depart)}</Text>
                   </>
                 ) : (
                   t.depart
@@ -193,7 +172,7 @@ export const ResultRow = memo(function ResultRow({
                 {/* A late arrival shows like a late departure: old time struck, new time after it. */}
                 {status?.arrival ? (
                   <>
-                    <Text style={[styles.struck, { color: c.muted }]}>{t.arrive}</Text> {status.arrival.newText}
+                    {keep(status.arrival.newText)}{'\u00a0'}<Text style={[styles.was, styles.struck, { color: c.muted }]}>{keep(t.arrive)}</Text>
                   </>
                 ) : (
                   t.arrive
@@ -202,7 +181,8 @@ export const ResultRow = memo(function ResultRow({
             )}
             {t.plusDays ? <Text style={[textStyles.small, { color: c.muted }]}> {t.plusDays}</Text> : null}
           </Text>
-          <View style={styles.topRight}>
+          {/* At big text the times take the line; seats and the delay badge go under them. */}
+          <View style={[styles.topRight, stacked && styles.topRightStacked]} testID="top-right">
             {summary ? (
               <View
                 style={[styles.summary, { backgroundColor: dimmed ? c.surface : c[TIER_BG[it.tier]] }]}
@@ -211,23 +191,31 @@ export const ResultRow = memo(function ResultRow({
               </View>
             ) : (
               // Typical loads stay neutral (no tier word or color) but still say what's known.
-              <Text style={[textStyles.small, { color: c.muted }]} testID="seat-neutral">
+              <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]} testID="seat-neutral">
                 {neutralSeatText(it, now)}
               </Text>
             )}
             <View style={styles.badgeSlot} testID="badge-slot">
               {hasImpact ? (
-                <ImpactBadge impact={impact} now={now} onPress={() => onImpactPress?.(it.id)} />
+                <ImpactBadge impact={impact} onPress={() => onImpactPress?.(it.id)} />
               ) : impactLoading ? (
-                <Text style={[textStyles.small, { color: c.muted }]}>Checking…</Text>
+                <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>Checking…</Text>
               ) : null}
             </View>
           </View>
         </View>
         <View style={styles.line}>
-          <Text style={[textStyles.bodyStrong, { color: c.text }]}>
-            {[it.origin, ...it.legs.map((l) => l.flight.to)].join(' → ')}
-          </Text>
+          <View style={styles.path}>
+            {/* The route view's header bookmark already says it; the list shows a small one. */}
+            {saved && !large ? (
+              <View testID="row-saved">
+                <Icon name="bookmark.fill" size={13} tintColor={c.accent} fallback={null} />
+              </View>
+            ) : null}
+            <Text style={[textStyles.bodyStrong, styles.shrink, { color: c.text }]}>
+              {[it.origin, ...it.legs.map((l) => l.flight.to)].join(' → ')}
+            </Text>
+          </View>
           <Text style={[textStyles.body, { color: c.muted }]}>
             {/* The route line already names the connections; the slim row adds short layovers. */}
             {selected ? stopCount(it) : slimStops(it)} · {formatDuration(it.totalMin)}
@@ -245,7 +233,7 @@ export const ResultRow = memo(function ResultRow({
                 <Text style={[legText, { color: c.muted }]}>
                   {leg.flight.from} → {leg.flight.to}
                 </Text>
-                {view?.tag ? <StatusTag label={view.tag.label} tone={TONE[view.tag.kind]} /> : null}
+                {view?.tag ? <StatusTag label={view.tag.label} tone={TAG_TONE[view.tag.kind]} /> : null}
                 {/* Leg 0's struck / new time is in the top time line; show it once. */}
                 {view && i > 0 ? <LegTime view={view} /> : null}
                 {legDetailOnly ? (
@@ -316,7 +304,7 @@ export const ResultRow = memo(function ResultRow({
               return (
                 <View key={leg.flight.id} style={styles.flight}>
                   <AirlinePill airline={leg.flight.airline} flightNumber={leg.flight.flightNumber} />
-                  {tag ? <StatusTag label={tag.label} tone={TONE[tag.kind]} /> : null}
+                  {tag ? <StatusTag label={tag.label} tone={TAG_TONE[tag.kind]} /> : null}
                 </View>
               );
             })}
@@ -324,7 +312,7 @@ export const ResultRow = memo(function ResultRow({
               <StatusTag key={r.index} label={`Connection at risk · ${r.airport}`} tone="delayed" />
             ))}
             {summaryAge ? (
-              <Text style={[textStyles.small, { color: c.muted }]} testID="seat-age">
+              <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]} testID="seat-age">
                 {summaryAge}
               </Text>
             ) : null}
@@ -348,6 +336,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     minHeight: 44,
   },
+  shrink: { flexShrink: 1 },
   strongBorder: {
     borderWidth: 2,
   },
@@ -360,6 +349,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.rowX,
     gap: spacing.group,
   },
+  path: { flexDirection: 'row', alignItems: 'center', gap: 4, flexShrink: 1 },
   line: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -375,7 +365,14 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     gap: spacing.group,
   },
+  topRightStacked: {
+    flexBasis: '100%',
+    justifyContent: 'flex-start',
+  },
+  // Long seat text wraps inside the chip instead of being cut off by the row's rounded edge.
   summary: {
+    flexShrink: 1,
+    maxWidth: '100%',
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: radius.sm,
@@ -408,18 +405,9 @@ const styles = StyleSheet.create({
   legBlock: {
     gap: spacing.group,
   },
-  statusTag: {
-    flexShrink: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: radius.sm,
-    borderWidth: 1,
-  },
-  tagWord: { fontFamily: fonts.bodySemiBold },
   struck: { textDecorationLine: 'line-through' },
+  // The replaced time inside the big time line: small, so the new time carries the weight.
+  was: { fontFamily: textStyles.small.fontFamily, fontSize: textStyles.small.fontSize },
   tierChip: {
     flexShrink: 1,
     paddingHorizontal: 8,

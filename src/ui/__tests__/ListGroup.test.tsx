@@ -9,9 +9,28 @@ import { ListGroup, ListRow } from '../ListGroup';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
+let mockFontScale = 1;
+jest.mock('react-native/Libraries/Utilities/useWindowDimensions', () => ({
+  __esModule: true,
+  default: () => ({ width: 393, height: 852, scale: 3, fontScale: mockFontScale }),
+}));
+
 describe('ListGroup and ListRow', () => {
   let r: ReactTestRenderer | undefined;
-  afterEach(() => act(() => r?.unmount()));
+  afterEach(() => {
+    act(() => r?.unmount());
+    mockFontScale = 1;
+  });
+
+  it('puts the value under the label at big text, uncut', () => {
+    mockFontScale = 2;
+    act(() => {
+      r = create(<ListRow label="Notifications" value="Airline requests only" onPress={() => {}} />);
+    });
+    const value = r!.root.findAll((n) => typeof n.type === 'string' && n.props.children === 'Airline requests only')[0];
+    expect(value.props.numberOfLines).toBeUndefined();
+    expect(StyleSheet.flatten(value.props.style).maxWidth).toBeUndefined();
+  });
 
   it('tappable rows are 44pt buttons labeled with label, value and detail', () => {
     const onPress = jest.fn();

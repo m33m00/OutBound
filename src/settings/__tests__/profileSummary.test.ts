@@ -1,5 +1,5 @@
 import { DEFAULT_SETTINGS, type Settings } from '../settings';
-import { profileSummary, stopsText } from '../profileSummary';
+import { parseSettingsSection, profileSummary, settingsSectionFor, stopsText } from '../profileSummary';
 
 const row = (s: Settings, key: string) => profileSummary(s).find((r) => r.key === key)!;
 
@@ -14,7 +14,8 @@ describe('stopsText', () => {
 describe('profileSummary', () => {
   it('shows defaults when nothing is set', () => {
     const s = DEFAULT_SETTINGS;
-    expect(row(s, 'home').value).toBe('Not set');
+    expect(row(s, 'home').value).toBe('Set Up');
+    expect(row(s, 'home').prompt).toBe(true);
     expect(row(s, 'otherHomes').value).toBe('None');
     expect(row(s, 'buffer').value).toBe('75 min');
     expect(row(s, 'location').value).toBe('Off');
@@ -30,13 +31,47 @@ describe('profileSummary', () => {
     expect(row(s, 'location').value).toBe('On');
   });
 
+  it('says which notifications are on', () => {
+    const on = (answers: boolean, airlineAsks: boolean) =>
+      row({ ...DEFAULT_SETTINGS, notify: { answers, airlineAsks } }, 'notify').value;
+    expect(on(true, true)).toBe('On');
+    expect(on(true, false)).toBe('Answers only');
+    expect(on(false, true)).toBe('Airline requests only');
+    expect(on(false, false)).toBe('Off');
+  });
+
   it('keeps rows in a fixed order', () => {
     expect(profileSummary(DEFAULT_SETTINGS).map((r) => r.key)).toEqual([
       'home',
       'otherHomes',
-      'buffer',
       'location',
+      'notify',
+      'buffer',
+      'maps',
       'search',
     ]);
+  });
+
+  it('names the maps app on iPhone only (round 49)', () => {
+    expect(row({ ...DEFAULT_SETTINGS, mapsApp: 'google' }, 'maps').value).toBe('Google Maps');
+    expect(profileSummary(DEFAULT_SETTINGS, false).some((r) => r.key === 'maps')).toBe(false);
+  });
+});
+
+describe('Profile rows open Settings at their section (backlog 56)', () => {
+  it('every row has a section', () => {
+    for (const row of profileSummary(DEFAULT_SETTINGS)) {
+      expect(['homes', 'location', 'notify', 'leaveBy', 'search']).toContain(settingsSectionFor(row.key));
+    }
+    expect(settingsSectionFor('otherHomes')).toBe('homes');
+    expect(settingsSectionFor('buffer')).toBe('leaveBy');
+  });
+
+  it('reads only known sections from the link', () => {
+    expect(parseSettingsSection('search')).toBe('search');
+    expect(parseSettingsSection(['location'])).toBe('location');
+    expect(parseSettingsSection('notify')).toBe('notify');
+    expect(parseSettingsSection('nope')).toBeNull();
+    expect(parseSettingsSection(undefined)).toBeNull();
   });
 });

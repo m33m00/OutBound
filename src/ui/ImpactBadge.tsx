@@ -12,7 +12,7 @@ import { pressStyle } from './press';
  */
 export const IMPACT_ICON = { caution: 'exclamationmark.circle', likelyDelays: 'exclamationmark.triangle.fill' } as const;
 
-export function ImpactBadge({ impact, now, onPress }: { impact: RouteImpact; now: number; onPress: () => void }) {
+export function ImpactBadge({ impact, onPress }: { impact: RouteImpact; onPress: () => void }) {
   const c = useColors();
   if (impact.level === 'none') return null;
   const likely = impact.level === 'likelyDelays';
@@ -33,8 +33,8 @@ export function ImpactBadge({ impact, now, onPress }: { impact: RouteImpact; now
         tintColor={fg}
         fallback={<Text style={[textStyles.small, { color: fg }]}>!</Text>}
       />
-      <Text style={[textStyles.small, styles.word, { color: fg }]}>
-        {impactBadgeText(impact, now)}
+      <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, styles.word, { fontFamily: fonts.bodySemiBold, color: fg }]} testID="impact-word">
+        {impactBadgeText(impact)}
       </Text>
     </Pressable>
   );
@@ -44,6 +44,7 @@ const styles = StyleSheet.create({
   pill: {
     minHeight: 22,
     flexShrink: 1,
+    maxWidth: '100%',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
@@ -51,5 +52,6 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
     borderRadius: radius.sm,
   },
-  word: { fontFamily: fonts.bodySemiBold },
+  // Shrinks so long words wrap inside the pill at big text sizes instead of spilling out.
+  word: { flexShrink: 1 },
 });

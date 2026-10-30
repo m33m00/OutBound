@@ -1,20 +1,99 @@
-import { EmptyState } from '@/ui/EmptyState';
-import { TabScreen } from '@/ui/TabScreen';
+import { useFocusEffect } from 'expo-router';
+import { useCallback, useMemo, useState } from 'react';
+import { StyleSheet, View } from 'react-native';
 
-/** Request feed: your airline's asks (Q-042). Empty state until the requests backend exists. */
+import { flightLookupKey, useFlightStatuses } from '@/live';
+import { spacing } from '@/theme';
+import { answerText, requestTitle, sampleFeed, type LoadAnswer } from '@/requests/requests';
+import { useRequests } from '@/requests/RequestsProvider';
+import { forSpeech } from '@/search/format';
+import { legLookup, legStatus } from '@/search/statusTags';
+import { SCHEDULE_SOURCE } from '@/search/useRouteSearch';
+import { EmptyState } from '@/ui/EmptyState';
+import { ListGroup, SectionFooter } from '@/ui/ListGroup';
+import { ReportSheet } from '@/ui/ReportSheet';
+import { RequestRow } from '@/ui/RequestRow';
+import { TabScreen } from '@/ui/TabScreen';
+import { useAnnounceLater } from '@/ui/useAnnounceLater';
+import { useSheetContent } from '@/ui/useSheetContent';
+
+/**
+ * Request feed (Q-042): asks about your airline’s flights, answered with what
+ * you see on the board (DECISIONS.md "Reports and requests"). Until the
+ * requests backend exists, it shows example asks on sample flights so the
+ * screen looks the way it will (design round 31); answers stay on this screen.
+ */
 export default function FeedScreen() {
+  // Read the clock each time the tab shows, so "asked 12m ago" stays true.
+  const [now, setNow] = useState(Date.now());
+  useFocusEffect(useCallback(() => setNow(Date.now()), []));
+  const asks = useMemo(() => (SCHEDULE_SOURCE === 'live' ? [] : sampleFeed(now)), [now]);
+  const { report } = useRequests();
+  const [answers, setAnswers] = useState<Record<string, LoadAnswer>>({});
+  const [reporting, setReporting] = useState<string | null>(null);
+  const sheet = useSheetContent(reporting);
+  // Said once the sheet has closed, or VoiceOver drops it.
+  const announce = useAnnounceLater();
+  // A delayed or canceled flight shows on its request, like in My Trips (round 51).
+  const live = SCHEDULE_SOURCE === 'live';
+  const lookups = useMemo(() => asks.map((r) => legLookup(r.flight)), [asks]);
+  const statuses = useFlightStatuses(lookups, live ? {} : SAMPLE_STATUS_OPTIONS);
+  const legFor = (r: (typeof asks)[number]) => legStatus(r.flight, statuses.byKey[flightLookupKey(legLookup(r.flight))]);
+  const sheetFlight = asks.find((r) => r.id === sheet.shown)?.flight ?? null;
+
+  const withAnswers = asks.map((r) => (answers[r.id] ? { ...r, answer: answers[r.id] } : r));
+  const open = withAnswers.filter((r) => !r.answer);
+  const done = withAnswers.filter((r) => r.answer);
+
+  const submit = (o: number, l: number) => {
+    const req = asks.find((r) => r.id === reporting);
+    if (!req) return;
+    const answer: LoadAnswer = { open: o, listed: l, at: Date.now(), byYou: true };
+    setAnswers((a) => ({ ...a, [req.id]: answer }));
+    // Your answer is your report on that flight, so Search shows it too.
+    report(req.flight, o, l);
+    setReporting(null);
+    announce(forSpeech(`Answered ${requestTitle(req)}: ${answerText(answer)}`));
+  };
+
   return (
     <TabScreen title="Feed">
-      <EmptyState
-        icon="text.bubble"
-        title="No requests yet"
-        body="Seat requests aren't live yet. When they are, this is where you help people at your airline get on."
-        points={[
-          'Asks from people at your airline',
-          'Answer with open seats and nonrevs listed',
-          'Your own asks show up here too',
-        ]}
+      {open.length ? (
+        <View style={styles.section}>
+          <ListGroup title="Requests on your airline’s flights">
+            {open.map((r) => (
+              <RequestRow key={r.id} request={r} now={now} leg={legFor(r)} onAnswer={() => setReporting(r.id)} />
+            ))}
+          </ListGroup>
+          <SectionFooter>Answer with what you see on the departure board. People who ask only see the numbers, never who answered.</SectionFooter>
+        </View>
+      ) : (
+        <EmptyState
+          icon="text.bubble"
+          title="No requests right now"
+          body="When someone asks about one of your airline’s flights, it shows up here so you can answer with open seats and nonrevs listed."
+        />
+      )}
+      {done.length ? (
+        <ListGroup title="You answered">
+          {done.map((r) => (
+            <RequestRow key={r.id} request={r} now={now} leg={legFor(r)} />
+          ))}
+        </ListGroup>
+      ) : null}
+      <ReportSheet
+        flight={sheetFlight}
+        visible={sheet.visible}
+        now={now}
+        onCancel={() => setReporting(null)}
+        onSubmit={submit}
       />
     </TabScreen>
   );
 }
+
+const SAMPLE_STATUS_OPTIONS = { config: null } as const;
+
+const styles = StyleSheet.create({
+  section: { gap: spacing.group },
+});

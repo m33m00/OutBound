@@ -85,9 +85,14 @@ export function defaultCamera(vp: Viewport): GlobeCamera {
   return { center: DEFAULT_CENTER, radius: fitRadius(vp) };
 }
 
+/** Degrees the globe turns per pt of finger travel at this radius. */
+export function dragDegreesPerPt(radius: number): number {
+  return (180 / (Math.PI * radius)) * DRAG_GAIN;
+}
+
 /** Rotate by a drag of (dx, dy) pt from `start`. Drag right/down shows what is west/north. */
 export function panCamera(start: GlobeCamera, dx: number, dy: number): GlobeCamera {
-  const k = (180 / (Math.PI * start.radius)) * DRAG_GAIN;
+  const k = dragDegreesPerPt(start.radius);
   return {
     center: [normalizeLon(start.center[0] - dx * k), clampLat(start.center[1] + dy * k)],
     radius: start.radius,

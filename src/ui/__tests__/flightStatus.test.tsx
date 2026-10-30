@@ -7,8 +7,8 @@ import type { FlightStatusEntry } from '@/live/flightStatus';
 import { parseFlightStatus } from '../../../supabase/functions/_shared/flightStatus';
 import { ADB_DELAYED } from '@/live/fixtures/flight-status-samples';
 
-import { FlightStatusSheet } from '../FlightStatusSheet';
-import { ageText, delayText, movementTimes, placeText, sampleResponse } from '../flightStatusText';
+import { FlightStatusSheet, type FlightLoadActions } from '../FlightStatusSheet';
+import { ageText, delayText, movementLead, movementSpoken, movementTimes, placeText, sampleResponse } from '../flightStatusText';
 import { ResultRow } from '../ResultRow';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -35,6 +35,11 @@ describe('flight status text', () => {
   });
   it('times and gates', () => {
     expect(movementTimes(status.departure, 'America/New_York')).toContain('Estimated');
+    // The time that matters now leads, on screen and for VoiceOver (John, 2026-10-30).
+    const lead = movementLead(status.departure, 'America/New_York')!;
+    expect(lead.label).toBe('Estimated');
+    expect(lead.was).not.toBeNull();
+    expect(movementSpoken(status.departure, 'America/New_York')).toBe(`Estimated ${lead.time}, scheduled ${lead.was}`);
     expect(placeText(status.departure)).toBe('Terminal S · Gate B22');
     expect(placeText(status.arrival)).toBe('Terminal A');
     expect(placeText({ ...status.arrival, terminal: null })).toBe('Gate not posted yet');
@@ -133,7 +138,7 @@ describe('sample status in the sheet (design round 4)', () => {
     expect(res.status!.arrival.airport).toBe('LAX');
   });
 
-  it('shows the sample, labeled, asks no server and offers no Refresh', async () => {
+  it('shows the sample like a real status (no label since round 30), asks no server and offers no Refresh', async () => {
     const f = (await itinerary()).legs[0].flight;
     const fetcher = jest.fn();
     await act(async () => {
@@ -149,10 +154,127 @@ describe('sample status in the sheet (design round 4)', () => {
     });
     expect(fetcher).not.toHaveBeenCalled();
     const texts = r!.root.findAll((n) => typeof n.props.children === 'string').map((n) => n.props.children);
-    expect(texts).toContain('Sample status');
+    expect(texts.some((t) => /sample/i.test(String(t)))).toBe(false);
+    expect(texts).not.toContain('Data from AeroDataBox.');
     expect(texts).toContain('Delayed');
     expect(texts).toContain('DL 2210');
     expect(texts).toContain('Updated 2m ago');
     expect(r!.root.findAll((n) => n.props.accessibilityLabel === 'Refresh flight status')).toHaveLength(0);
+  });
+});
+
+describe('seats card in the flight sheet (design round 32)', () => {
+  let r: ReactTestRenderer | undefined;
+  afterEach(() => {
+    act(() => r?.unmount());
+    clearFlightStatusMemo();
+  });
+  const btn = (label: string) =>
+    r!.root.find((n) => typeof n.type !== 'string' && n.props.accessibilityLabel === label && n.props.onPress);
+  const texts = () => r!.root.findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string').map((n) => n.props.children as string);
+
+  const render = async (load: Partial<FlightLoadActions>) => {
+    const f = (await itinerary()).legs[0].flight;
+    const full: FlightLoadActions = { reportWindow: 'open', askState: 'ready', yourReport: null, onAsk: jest.fn(), onReport: jest.fn(), ...load };
+    await act(async () => {
+      r = create(<FlightStatusSheet flight={f} now={NOW} onClose={jest.fn()} sample={null} liveOptions={{ fetcher: jest.fn(), config: null }} load={full} />);
+    });
+    return full;
+  };
+
+  it('Report Load opens the report page in the same sheet; Submit hands back both numbers and returns', async () => {
+    const load = await render({});
+    act(() => btn('Report Load').props.onPress());
+    expect(texts()).toContain('Report Load');
+    const box = r!.root.find((n) => n.props.accessibilityLabel === 'Open seats, On the departure board' && n.props.onChangeText);
+    act(() => box.props.onChangeText('12'));
+    act(() => btn('Submit Report').props.onPress());
+    expect(load.onReport).toHaveBeenCalledWith(12, 0);
+    expect(r!.root.findAll((n) => n.props.testID === 'load-card').length).toBeGreaterThan(0);
+  });
+
+  it('Cancel on the report page goes back to the status without reporting', async () => {
+    const load = await render({});
+    act(() => btn('Report Load').props.onPress());
+    act(() => r!.root.find((n) => n.props.testID === 'sheet-action' && n.props.onPress).props.onPress());
+    expect(load.onReport).not.toHaveBeenCalled();
+    expect(r!.root.findAll((n) => n.props.testID === 'load-card').length).toBeGreaterThan(0);
+  });
+
+  it('asks once: Asked is off and points to My Trips', async () => {
+    const load = await render({ askState: 'asked' });
+    expect(btn('Asked').props.disabled).toBe(true);
+    expect(texts()).toContain('Asked. The answer shows in My Trips.');
+    expect(load.onAsk).not.toHaveBeenCalled();
+  });
+
+  it('after the window Report Again is off and says why; your report reads in full words', async () => {
+    await render({ reportWindow: 'closed', yourReport: { open: 18, listed: 3, at: NOW - 5 * 60_000, byYou: true } });
+    expect(btn('Report Again').props.disabled).toBe(true);
+    expect(texts()).toContain('Reports closed 2 hours after this flight left.');
+    const line = r!.root.find((n) => typeof n.type === 'string' && String(n.props.accessibilityLabel).startsWith('You reported'));
+    expect(line.props.accessibilityLabel).toBe('You reported Good, 18 open, 3 listed, 5 minutes ago');
+  });
+
+  it('more than a week out, Report Load says when reports open', async () => {
+    await render({ reportWindow: 'early' });
+    expect(btn('Report Load').props.disabled).toBe(true);
+    expect(texts()).toContain('Reports open 7 days before departure.');
+  });
+
+  it('Asked stays full strength: a confirmation, not a dead button', async () => {
+    await render({ askState: 'asked' });
+    const asked = btn('Asked');
+    const flat = Object.assign({}, ...[asked.props.style({ pressed: false })].flat(Infinity).filter(Boolean));
+    expect(flat.opacity).toBe(1);
+  });
+});
+
+describe('ask answered or taken back (round 34)', () => {
+  let r: ReactTestRenderer | undefined;
+  afterEach(() => {
+    act(() => r?.unmount());
+    clearFlightStatusMemo();
+  });
+  const render = async (load: Partial<FlightLoadActions>) => {
+    const f = (await itinerary()).legs[0].flight;
+    const full: FlightLoadActions = { reportWindow: 'open', askState: 'asked', yourReport: null, onAsk: jest.fn(), onReport: jest.fn(), ...load };
+    await act(async () => {
+      r = create(<FlightStatusSheet flight={f} now={NOW} onClose={jest.fn()} sample={null} liveOptions={{ fetcher: jest.fn(), config: null }} load={full} />);
+    });
+    return full;
+  };
+
+  it('a waiting ask offers Cancel Request', async () => {
+    const onCancelAsk = jest.fn();
+    await render({ onCancelAsk });
+    act(() => r!.root.find((n) => n.props.accessibilityLabel === 'Cancel Request' && n.props.onPress).props.onPress());
+    expect(onCancelAsk).toHaveBeenCalled();
+  });
+
+  it('an answered ask shows the numbers instead of the ask button', async () => {
+    await render({ onCancelAsk: jest.fn(), askAnswer: { open: 12, listed: 4, at: NOW - 9 * 60_000 } });
+    expect(r!.root.findAll((n) => n.props.accessibilityLabel === 'Asked')).toHaveLength(0);
+    expect(r!.root.findAll((n) => n.props.accessibilityLabel === 'Cancel Request')).toHaveLength(0);
+    const line = r!.root.find((n) => typeof n.type === 'string' && String(n.props.accessibilityLabel).startsWith('Your request was answered'));
+    expect(line.props.accessibilityLabel).toBe('Your request was answered: Okay, 12 open, 4 listed, 9 minutes ago');
+  });
+});
+
+describe('ask note from My Trips (round 34 review)', () => {
+  let r: ReactTestRenderer | undefined;
+  afterEach(() => {
+    act(() => r?.unmount());
+    clearFlightStatusMemo();
+  });
+  it('a waiting ask opened from My Trips says it is waiting, not "shows in My Trips"', async () => {
+    const f = (await itinerary()).legs[0].flight;
+    const load: FlightLoadActions = { reportWindow: 'open', askState: 'asked', yourReport: null, onAsk: jest.fn(), onReport: jest.fn(), fromTrips: true };
+    await act(async () => {
+      r = create(<FlightStatusSheet flight={f} now={NOW} onClose={jest.fn()} sample={null} liveOptions={{ fetcher: jest.fn(), config: null }} load={load} />);
+    });
+    const texts = r!.root.findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string').map((n) => n.props.children);
+    expect(texts).toContain('Waiting for an answer.');
+    expect(texts).not.toContain('Asked. The answer shows in My Trips.');
   });
 });

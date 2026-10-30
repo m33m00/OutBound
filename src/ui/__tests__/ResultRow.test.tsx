@@ -90,8 +90,9 @@ describe('ResultRow', () => {
     act(() => row.props.onAccessibilityAction({ nativeEvent: { actionName: 'impact' } }));
     expect(onImpact).toHaveBeenCalledWith(it.id);
     const texts = root.findAll((n) => typeof n.props.children === 'string').map((n) => n.props.children);
-    // The badge names the airport (design round 25).
-    expect(texts).toContain('Likely delays · LAX · 5m ago');
+    // The badge is just the word; the airport and age are in the sheet (Q-072, John: C).
+    expect(texts).toContain('Likely delays');
+    expect(texts.some((t) => / ago$/.test(String(t)) && String(t).startsWith('Likely'))).toBe(false);
     const pill = root.findAll((n) => n.props.hitSlop != null)[0];
     expect(pill.props.hitSlop).toEqual({ top: 11, bottom: 11, left: 10, right: 10 });
   });
@@ -188,7 +189,9 @@ describe('ResultRow', () => {
     const times = root.findAll((n) => n.props.testID === 'row-times' && typeof n.type === 'string')[0];
     const flat = (n: unknown): string =>
       typeof n === 'string' ? n : Array.isArray(n) ? n.map(flat).join('') : n && typeof n === 'object' && 'props' in n ? flat((n as { props: { children?: unknown } }).props.children) : '';
-    expect(flat(times.props.children)).toMatch(/9:00 AM 9:25 AM – \d+:\d+ [AP]M \d+:\d+ [AP]M/);
+    // Each time keeps its number and AM/PM together (non-breaking space, design round 26).
+    // New time first; the old one follows small and struck (John, 2026-10-30).
+    expect(flat(times.props.children)).toBe('9:25\u00a0AM\u00a09:00\u00a0AM – 11:45\u00a0AM\u00a011:20\u00a0AM');
     const row = root.findAll((n) => n.props.accessibilityRole === 'button')[0];
     expect(row.props.accessibilityLabel).toContain('Delayed 25 minutes, was 9:00 AM, now 9:25 AM');
     // The weather/FAA badge slot stays separate from status tags.
@@ -206,5 +209,23 @@ describe('ResultRow', () => {
       r!.update(<ResultRow itinerary={it} selected={false} now={NOW} onPress={jest.fn()} status={statusFor(it, live(it, 'departed'))} />);
     });
     expect(strings(r!.root)).toContain('Departed');
+  });
+});
+
+describe('ResultRow at big text sizes (design round 26)', () => {
+  let r: ReactTestRenderer | undefined;
+  afterEach(() => act(() => r?.unmount()));
+
+  it('puts the seat chip under the times, left-aligned, and lets it wrap instead of clipping', async () => {
+    // Jest's default font scale is 2, which is past STACK_TOP_LINE_SCALE.
+    const it = await fullItinerary();
+    await act(async () => {
+      r = create(<ResultRow itinerary={it} selected={false} now={NOW} onPress={jest.fn()} />);
+    });
+    const chip = r!.root.findAll((n) => n.props.testID === 'seat-summary' && typeof n.type === 'string')[0];
+    const flat = (style: unknown) => Object.assign({}, ...([style] as unknown[]).flat(3).filter(Boolean));
+    expect(flat(chip.props.style)).toMatchObject({ flexShrink: 1, maxWidth: '100%' });
+    const holder = r!.root.findAll((n) => n.props.testID === 'top-right' && typeof n.type === 'string')[0];
+    expect(flat(holder.props.style)).toMatchObject({ flexBasis: '100%', justifyContent: 'flex-start' });
   });
 });

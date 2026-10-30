@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { pickerSections, type PickerItem } from '@/search/airports';
 import { minTapTarget, radius, spacing, textStyles, useColors } from '@/theme';
 
+import { selectionTick } from './haptics';
 import { Icon } from './Icon';
 import { pressStyle } from './press';
 import { SheetHeader } from './SheetHeader';
@@ -26,6 +27,14 @@ export function AirportPicker({ visible, title, onPick, onClose, current, neares
   const [query, setQuery] = useState('');
   const sections = pickerSections(query, { nearest, homes });
   const empty = sections.every((s) => s.data.length === 0);
+  // Same tick as every other pick (design round 10).
+  const pick = (code: string) => {
+    selectionTick();
+    setQuery('');
+    onPick(code);
+  };
+  // Return picks the top match once something is typed (design round 29).
+  const topMatch = query.trim() ? sections.find((s) => s.data.length)?.data[0]?.airport.code : undefined;
 
   const close = () => {
     setQuery('');
@@ -37,10 +46,7 @@ export function AirportPicker({ visible, title, onPick, onClose, current, neares
     const on = airport.code === current;
     return (
       <Pressable
-        onPress={() => {
-          setQuery('');
-          onPick(airport.code);
-        }}
+        onPress={() => pick(airport.code)}
         accessibilityRole="button"
         accessibilityState={{ selected: on }}
         accessibilityLabel={[airport.code, airport.name, tag].filter(Boolean).join(', ')}
@@ -52,7 +58,7 @@ export function AirportPicker({ visible, title, onPick, onClose, current, neares
         {tag ? (
           // Amber = "you" (DECISIONS.md): your homes and where you are.
           <View style={[styles.tag, { backgroundColor: c.youBg }]}>
-            <Text style={[textStyles.small, { color: c.youText }]}>{tag}</Text>
+            <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.youText }]}>{tag}</Text>
           </View>
         ) : null}
         {on ? (
@@ -83,7 +89,8 @@ export function AirportPicker({ visible, title, onPick, onClose, current, neares
             autoCapitalize="characters"
             autoCorrect={false}
             clearButtonMode="while-editing"
-            returnKeyType="done"
+            returnKeyType={topMatch ? 'go' : 'done'}
+            onSubmitEditing={() => topMatch && pick(topMatch)}
             accessibilityLabel="Search airports"
             style={[textStyles.body, styles.field, { color: c.text }]}
           />

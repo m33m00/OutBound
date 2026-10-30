@@ -10,7 +10,9 @@
 import { AIRPORTS, localDate, type Flight, type Itinerary } from '@/engine';
 import { flightLookupKey, type FlightLookup, type FlightStatus, type Movement } from '@/live';
 
-import { formatDuration, formatTime } from './format';
+import { formatDuration, formatTime, spokenDuration } from './format';
+
+export { spokenDuration };
 
 const MIN = 60_000;
 
@@ -89,15 +91,6 @@ export function statusLookups(itineraries: readonly Itinerary[]): FlightLookup[]
     }
   }
   return [...seen.values()];
-}
-
-/** "25 minutes", "1 hour 30 minutes", "2 hours". */
-export function spokenDuration(min: number): string {
-  const h = Math.floor(min / 60);
-  const m = min % 60;
-  const hs = h ? `${h} ${h === 1 ? 'hour' : 'hours'}` : '';
-  const mins = m || !h ? `${m} ${m === 1 ? 'minute' : 'minutes'}` : '';
-  return [hs, mins].filter(Boolean).join(' ');
 }
 
 /** New departure time for a delayed leg: actual, else estimated, else scheduled + delay. */

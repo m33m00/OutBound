@@ -241,12 +241,12 @@ A) Keep top bar only  B) Four bottom tabs: Search, Feed, My Trips, Profile
 Recommendation: B.
 Answer: John (2026-10-21), four tabs: Search, Feed, My Trips, Profile. Feed = request feed (your airline's asks, per existing Requests rules). My Trips = your own open requests (max 5) plus saved routes. Supersedes "No tabs" (Design system). "Saved routes" is new with no rules yet; details open/provisional (see Q-043). Unblocks new backlog item 16.
 
-### Q-043 Saved routes details  (Open)
+### Q-043 Saved routes details  (Answered 2026-10-30)
 Context: Q-042 puts "saved routes" in My Trips, but there are no rules for it. Non-blocking: item 16 ships placeholders.
 A) Save from a result row or the selected route; stored on the phone (AsyncStorage) for now, no cap  B) Same, but cap at 10  C) John specifies
 Also open: does a saved route keep its date, or re-search when opened?
 Recommendation: A, re-search for the saved date when opened; add a cap only if the list gets unwieldy.
-Answer: (John)
+Answer: John (2026-10-30), "A, no limit": saved on the phone, no cap, opening one re-runs the search for its date. Recorded in DECISIONS.md (Design system). Built as backlog 53.
 
 ### Q-044 Combined route legend  (Answered 2026-10-21)
 Context: Friend-tester feedback: the tier color key and the solid/dashed key are two lists.
@@ -405,6 +405,52 @@ B) Open the list scrolled to the "Now" line; departed routes are a short scroll 
 C) Fold them into one "3 already left" row you can open
 Recommendation: B, because it keeps your order but starts you at flights you can still catch.
 Answer: John (2026-10-30), "Yes" = B.
+
+### Q-067 Which airline is "your airline"?  (Open)
+Context: The Feed shows asks about your airline's flights, and your answers count for that airline (DECISIONS: "feed shows only your airline"). There are no accounts yet, so round 31 assumes WN for the example requests. Nothing in the app names an airline.
+A) Ask once on first launch ("Which airline do you work for?"), changeable in Settings
+B) Wait for accounts (sign-up sets it); keep WN for the examples until then
+C) Let people follow more than one airline's asks (for example, a partner's)
+Recommendation: B, because accounts already have to know your airline to keep reports to the right people, and asking twice is extra work.
+
+### Q-068 Wording you decided that now reads differently from the rest  (Open: B only)
+Context: Round 36 made the app use one word per thing ("your", "request", "main home"). A few strings you decided earlier were left as they are.
+A) Change "Use my location" to "Use your location" in Settings and Profile (the launch card already says "your"). Done in round 36 (the old wording was only in a superseded decision line); say if you want it back.
+B) Change the results banner "No Flights Found on Selected Date" to sentence case, "No flights found for this date", and "Show Them" to "Show Routes"
+C) Keep all of them as they are
+Recommendation: A and B, because every other notice and setting in the app uses "your" and sentence case, and "Show Routes" says what the button does when VoiceOver reads it alone.
+
+### Q-069 Should To start filled in on first launch?  (Answered 2026-10-30)
+Context: Search opens with To set to LAX for everyone. Nothing in DECISIONS asks for that. For someone who lives near LAX, From and To can end up the same, and a new person may not notice To was picked for them.
+A) Keep LAX as the starting To
+B) Start To empty with "Choose airport", like From
+C) Start To at the main home when one is set and you're away from it, else empty
+Recommendation: B, because a blank To makes the first step obvious and never picks a city for you; Get Home already covers going home.
+Answer: John (2026-10-30), "Start it blank": B.
+
+### Q-070 When a flight is delayed, should Leave By use the new time?  (Answered 2026-10-30)
+Context: Leave By counts back from the scheduled departure. If live status says the flight now leaves 40 minutes late, the card still says "Be at DAL by 1:15 PM". Standby lists and gates often follow the new time, but a delay can also shrink again.
+A) Keep the scheduled time (safest, never late)
+B) Use the delayed time when live status has one, and say so ("Delayed to 2:40 PM")
+C) Keep the scheduled time and add a line under it: "Flight delayed to 2:40 PM"
+Recommendation: C, because it never makes you late if the delay shrinks, and you still see the new time.
+Answer: John (2026-10-30), "C".
+
+### Q-071 Notification switches before push exists  (Answered 2026-10-30)
+Context: Settings has "Answers to your requests" and "Requests on your airline’s flights". They save your choice, but nothing is sent yet because push notifications aren't built. You asked to remove placeholder stuff, and a switch that does nothing is close to that.
+A) Keep them, with a line under them: "Notifications start once requests go live."
+B) Hide the section until push works
+C) Keep them as they are
+Recommendation: A, because your choice is ready the day push ships and the line stops it feeling broken.
+Answer: John (2026-10-30), "1A".
+
+### Q-072 Delay badge on the result row's top line  (Answered 2026-10-30)
+Context: On a 390pt iPhone, times, the seat chip and a delay badge like "Likely delays · ORD · 4m ago" rarely fit on one line, so rows grow to 3 or 4 lines and fewer routes show. Q-001 treats seats and live data as equals.
+A) Keep the badge on the top line
+B) Move the badge to the bottom line next to the flight tags, without the age (the sheet still shows it)
+C) Keep it on top but short: icon and word only ("Likely delays"), airport and age in the sheet
+Recommendation: C, because delays stay as prominent as seats while most rows fit on two lines.
+Answer: John (2026-10-30), "2C".
 
 Provisional defaults for backlog 3 (not John-decided; John may override any time):
 - FAA cache TTL 5 min server-side; serve stale on FAA error.

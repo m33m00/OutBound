@@ -4,6 +4,7 @@
  * bad or old saved value can't break search.
  */
 import { AIRPORTS, areaFor, DEFAULT_SEARCH_OPTIONS, type SearchOptions } from '@/engine';
+import type { MapsApp } from '@/search/directions';
 
 /**
  * The search settings people can adjust (DECISIONS.md: "All adjustable").
@@ -36,6 +37,17 @@ export interface Homes {
   extras: string[];
 }
 
+/**
+ * Push notifications (DECISIONS.md: requests push to same-airline testers,
+ * max 5 a day, mutable, and to the requester on answer). Design round 35.
+ */
+export interface NotifySettings {
+  /** When someone answers your request. */
+  answers: boolean;
+  /** When someone asks about your airline's flight (at most 5 a day). */
+  airlineAsks: boolean;
+}
+
 export interface Settings {
   homes: Homes;
   /** Be at the airport this long before departure (Q-003, default 75). */
@@ -55,6 +67,9 @@ export interface Settings {
   search: SearchFilters;
   /** Area toggle per airport code, last choice (Q-048). Missing = off. */
   areaOn: Record<string, boolean>;
+  notify: NotifySettings;
+  /** Where the Leave By card opens directions (provisional, John left it open 2026-10-30). */
+  mapsApp: MapsApp;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -66,6 +81,8 @@ export const DEFAULT_SETTINGS: Settings = {
   radarOn: true,
   search: DEFAULT_FILTERS,
   areaOn: {},
+  notify: { answers: false, airlineAsks: false },
+  mapsApp: 'apple',
 };
 
 export const SETTINGS_KEY = 'outbound.settings.v1';
@@ -95,6 +112,7 @@ export function parseSettings(raw: unknown): Settings {
     Object.entries(a).filter((e): e is [string, boolean] => known(e[0]) && typeof e[1] === 'boolean'),
   );
   const useLocation = bool(o.useLocation, DEFAULT_SETTINGS.useLocation);
+  const n = (o.notify && typeof o.notify === 'object' ? o.notify : {}) as Record<string, unknown>;
   return {
     homes: { main, extras },
     bufferMin: num(o.bufferMin, DEFAULT_SETTINGS.bufferMin, LIMITS.bufferMin),
@@ -110,6 +128,11 @@ export function parseSettings(raw: unknown): Settings {
       maxLayoverMin: num(s.maxLayoverMin, d.maxLayoverMin, LIMITS.maxLayoverMin),
     },
     areaOn,
+    notify: {
+      answers: bool(n.answers, DEFAULT_SETTINGS.notify.answers),
+      airlineAsks: bool(n.airlineAsks, DEFAULT_SETTINGS.notify.airlineAsks),
+    },
+    mapsApp: o.mapsApp === 'google' ? 'google' : 'apple',
   };
 }
 

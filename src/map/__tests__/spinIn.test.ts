@@ -1,5 +1,5 @@
 import { globeOrigin, type GlobeCamera, type Viewport } from '../camera';
-import { FLY_MS, interpolateCamera, planRetarget, sameCamera } from '../flyTo';
+import { FLY_MS, interpolateCamera, planRetarget, REFRAME_MS, sameCamera } from '../flyTo';
 import { markSpinInDone, resetSpinInForTests, shouldSpinIn, SPIN_IN, spinStartCamera } from '../spinIn';
 
 const vp: Viewport = { width: 390, height: 700, insets: { top: 0, right: 0, bottom: 300, left: 0 } };
@@ -63,6 +63,46 @@ describe('retarget during the spin-in', () => {
       durationMs: 1000,
       spin: true,
     });
-    expect(planRetarget({ isNewTarget: false, from: mid, to: target, running: null, reduceMotion: false, nowMs: 1000 })).toEqual({ kind: 'jump' });
+  });
+
+  it('a re-frame at rest glides with the panel, and jumps under Reduce Motion or when nothing moved (design round 29)', () => {
+    expect(planRetarget({ isNewTarget: false, from: mid, to: target, running: null, reduceMotion: false, nowMs: 1000 })).toEqual({
+      kind: 'fly',
+      durationMs: REFRAME_MS,
+      spin: false,
+    });
+    expect(planRetarget({ isNewTarget: false, from: mid, to: target, running: null, reduceMotion: true, nowMs: 1000 })).toEqual({ kind: 'jump' });
+    expect(planRetarget({ isNewTarget: false, from: target, to: target, running: null, reduceMotion: false, nowMs: 1000 })).toEqual({ kind: 'jump' });
+  });
+});
+
+describe('your location arrives during the spin-in (design round 30)', () => {
+  const s = spinStartCamera(target, vp);
+  const mid = interpolateCamera(s, target, 0.4);
+  const running = { to: target, endsAt: 2000, spin: true };
+  const home: GlobeCamera = { center: [-97.04, 32.9], radius: 180 };
+
+  it('keeps spinning to the new resting spot for the time left', () => {
+    expect(planRetarget({ isNewTarget: true, homeOnly: true, from: mid, to: home, running, reduceMotion: false, nowMs: 1000 })).toEqual({
+      kind: 'continue',
+      durationMs: 1000,
+      spin: true,
+    });
+  });
+
+  it('a real new target (results) still cuts the spin short', () => {
+    expect(planRetarget({ isNewTarget: true, homeOnly: false, from: mid, to: home, running, reduceMotion: false, nowMs: 1000 })).toEqual({
+      kind: 'fly',
+      durationMs: FLY_MS,
+      spin: false,
+    });
+  });
+
+  it('with no spin running, a new resting spot flies as usual', () => {
+    expect(planRetarget({ isNewTarget: true, homeOnly: true, from: target, to: home, running: null, reduceMotion: false, nowMs: 1000 })).toEqual({
+      kind: 'fly',
+      durationMs: FLY_MS,
+      spin: false,
+    });
   });
 });

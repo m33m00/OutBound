@@ -1,15 +1,18 @@
 import { Children, Fragment, type ReactNode } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
 import { minTapTarget, radius, spacing, textStyles, useColors } from '@/theme';
 
 import { Icon } from './Icon';
 
+/** From this text size a row's value goes under its label. */
+const STACK_VALUE_SCALE = 1.3;
+
 /** Small uppercase heading above a grouped card (iOS Settings style). */
 export function SectionHeader({ title }: { title: string }) {
   const c = useColors();
   return (
-    <Text style={[textStyles.small, styles.title, { color: c.muted }]} accessibilityRole="header">
+    <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, styles.title, { color: c.muted }]} accessibilityRole="header">
       {title.toUpperCase()}
     </Text>
   );
@@ -18,7 +21,7 @@ export function SectionHeader({ title }: { title: string }) {
 /** Explanation under a grouped card. */
 export function SectionFooter({ children }: { children: ReactNode }) {
   const c = useColors();
-  return <Text style={[textStyles.small, styles.footer, { color: c.muted }]}>{children}</Text>;
+  return <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, styles.footer, { color: c.muted }]}>{children}</Text>;
 }
 
 /**
@@ -51,22 +54,30 @@ export interface ListRowProps {
   /** Tappable row with a chevron when given. */
   onPress?: () => void;
   accessibilityHint?: string;
+  /** The value is an action to take (accent), not a setting. */
+  valueAccent?: boolean;
 }
 
 /** One row: label (+ detail) on the left, value and chevron on the right. */
-export function ListRow({ label, value, detail, onPress, accessibilityHint }: ListRowProps) {
+export function ListRow({ label, value, detail, onPress, accessibilityHint, valueAccent }: ListRowProps) {
   const c = useColors();
+  // Big text: the value goes under the label so neither gets cut off.
+  const stacked = useWindowDimensions().fontScale >= STACK_VALUE_SCALE;
+  const valueText = value ? (
+    <Text
+      style={[textStyles.bodyStrong, !stacked && styles.value, { color: valueAccent ? c.accent : c.muted }]}
+      numberOfLines={stacked ? undefined : 2}>
+      {value}
+    </Text>
+  ) : null;
   const content = (
     <>
       <View style={styles.left}>
         <Text style={[textStyles.body, { color: c.text }]}>{label}</Text>
-        {detail ? <Text style={[textStyles.small, { color: c.muted }]}>{detail}</Text> : null}
+        {stacked ? valueText : null}
+        {detail ? <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>{detail}</Text> : null}
       </View>
-      {value ? (
-        <Text style={[textStyles.bodyStrong, styles.value, { color: c.muted }]} numberOfLines={2}>
-          {value}
-        </Text>
-      ) : null}
+      {stacked ? null : valueText}
       {onPress ? (
         <Icon
           name="chevron.right"

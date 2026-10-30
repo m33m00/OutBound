@@ -22,7 +22,7 @@ export function BackButton({ label, onPress, accessibilityLabel }: { label: stri
         tintColor={c.accent}
         fallback={<Text style={[textStyles.heading, { color: c.accent }]}>‹</Text>}
       />
-      {label ? <Text style={[textStyles.heading, { color: c.accent }]}>{label}</Text> : null}
+      {label ? <Text lineBreakStrategyIOS="push-out" style={[textStyles.heading, { color: c.accent }]}>{label}</Text> : null}
     </Pressable>
   );
 }

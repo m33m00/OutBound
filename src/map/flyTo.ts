@@ -11,6 +11,8 @@ import { normalizeLon, type GlobeCamera } from './camera';
 export const FLY_MS = 900;
 /** Fraction the globe shrinks at mid-flight, for a sense of travel. */
 export const FLY_ZOOM_BUMP = 0.12;
+/** A re-frame for a panel size change: about as long as the panel's own spring. */
+export const REFRAME_MS = 350;
 
 export function easeCubicInOut(t: number): number {
   const x = Math.max(0, Math.min(1, t));
@@ -87,17 +89,31 @@ export type RetargetPlan =
  *   Reduce Motion;
  * - the same target re-framed (layout or panel change) mid-flight: keep
  *   flying to the re-framed camera for the time left (a spin stays a spin);
- * - otherwise jump.
+ * - the same target re-framed at rest (the panel changed size): glide over
+ *   REFRAME_MS so the globe moves with the panel instead of snapping
+ *   (design round 29);
+ * - a new resting spot (`homeOnly`) during the spin-in: the spin carries on
+ *   to it for the time left (design round 30);
+ * - otherwise (Reduce Motion, or nothing moved) jump.
  */
 export function planRetarget(input: {
   isNewTarget: boolean;
+  /**
+   * The new target only moves the resting spot (your location arrived):
+   * a running spin-in keeps spinning to it instead of being cut short.
+   */
+  homeOnly?: boolean;
   from: GlobeCamera;
   to: GlobeCamera;
   running: RunningFlight | null;
   reduceMotion: boolean;
   nowMs: number;
 }): RetargetPlan {
-  const { isNewTarget, from, to, running, reduceMotion, nowMs } = input;
+  const { isNewTarget, homeOnly, from, to, running, reduceMotion, nowMs } = input;
+  if (isNewTarget && homeOnly && running?.spin && !reduceMotion) {
+    const left = running.endsAt - nowMs;
+    if (left > 50) return { kind: 'continue', durationMs: left, spin: true };
+  }
   if (isNewTarget) {
     const plan = planCameraMove(from, to, reduceMotion);
     return plan.animate ? { kind: 'fly', durationMs: plan.durationMs, spin: false } : { kind: 'jump' };
@@ -106,5 +122,6 @@ export function planRetarget(input: {
     const left = running.endsAt - nowMs;
     if (left > 50) return { kind: 'continue', durationMs: left, spin: running.spin };
   }
+  if (!reduceMotion && !sameCamera(from, to)) return { kind: 'fly', durationMs: REFRAME_MS, spin: false };
   return { kind: 'jump' };
 }

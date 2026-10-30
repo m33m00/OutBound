@@ -62,11 +62,21 @@ export function DayStepper({
         style={styles.middle}
         accessible
         accessibilityLabel={[current?.long ?? label, detail].filter(Boolean).join(', ')}>
-        <Text style={[textStyles.heading, styles.label, { color: c.text }]} numberOfLines={1}>
+        {/* Shrinks a little before cutting off (big or bold text). */}
+        <Text
+          style={[textStyles.heading, styles.label, { color: c.text }]}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.8}>
           {label}
         </Text>
         {detail ? (
-          <Text style={[textStyles.small, styles.label, { color: c.muted }]} numberOfLines={1} testID="day-detail">
+          <Text
+            style={[textStyles.small, styles.label, { color: c.muted }]}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.8}
+            testID="day-detail">
             {detail}
           </Text>
         ) : null}
