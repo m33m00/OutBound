@@ -1,6 +1,6 @@
 import Constants from 'expo-constants';
 import { router } from 'expo-router';
-import { StyleSheet, Text } from 'react-native';
+import { Platform, StyleSheet, Text } from 'react-native';
 
 import { useSettings } from '@/settings/SettingsProvider';
 import { profileSummary, SETTINGS_SECTION_TITLE, settingsSectionFor } from '@/settings/profileSummary';
@@ -24,7 +24,7 @@ export default function ProfileScreen() {
   return (
     <TabScreen title="Profile">
       <ListGroup title="Your setup">
-        {profileSummary(settings).map((row) => (
+        {profileSummary(settings, Platform.OS === 'ios').map((row) => (
           <ListRow
             key={row.key}
             label={row.label}

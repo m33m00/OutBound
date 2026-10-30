@@ -8,7 +8,7 @@ import { parseFlightStatus } from '../../../supabase/functions/_shared/flightSta
 import { ADB_DELAYED } from '@/live/fixtures/flight-status-samples';
 
 import { FlightStatusSheet, type FlightLoadActions } from '../FlightStatusSheet';
-import { ageText, delayText, movementTimes, placeText, sampleResponse } from '../flightStatusText';
+import { ageText, delayText, movementLead, movementSpoken, movementTimes, placeText, sampleResponse } from '../flightStatusText';
 import { ResultRow } from '../ResultRow';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -35,6 +35,11 @@ describe('flight status text', () => {
   });
   it('times and gates', () => {
     expect(movementTimes(status.departure, 'America/New_York')).toContain('Estimated');
+    // The time that matters now leads, on screen and for VoiceOver (John, 2026-10-30).
+    const lead = movementLead(status.departure, 'America/New_York')!;
+    expect(lead.label).toBe('Estimated');
+    expect(lead.was).not.toBeNull();
+    expect(movementSpoken(status.departure, 'America/New_York')).toBe(`Estimated ${lead.time}, scheduled ${lead.was}`);
     expect(placeText(status.departure)).toBe('Terminal S · Gate B22');
     expect(placeText(status.arrival)).toBe('Terminal A');
     expect(placeText({ ...status.arrival, terminal: null })).toBe('Gate not posted yet');

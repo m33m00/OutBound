@@ -11,7 +11,7 @@ import { formatAge, forSpeech, TIER_WORD } from '@/search/format';
 import { radius, spacing, textStyles, useColors } from '@/theme';
 
 import { Button } from './Buttons';
-import { ageText, delayText, movementLead, movementTimes, placeText, sampleResponse, STATE_WORD } from './flightStatusText';
+import { ageText, delayText, movementLead, movementSpoken, placeText, sampleResponse, STATE_WORD } from './flightStatusText';
 import { Icon } from './Icon';
 import { useFocusOnMount } from './focusOnMount';
 import { pressStyle } from './press';
@@ -109,7 +109,7 @@ export function FlightStatusSheet({ flight, visible, now, onClose, liveOptions, 
       <View
         key={label}
         accessible
-        accessibilityLabel={forSpeech([`${label}, ${code}`, delay, movementTimes(m, tz), placeText(m)].filter(Boolean).join('. '))}
+        accessibilityLabel={forSpeech([`${label}, ${code}`, delay, movementSpoken(m, tz), placeText(m)].filter(Boolean).join('. '))}
         style={[styles.card, { backgroundColor: c.surface, borderColor: c.line }]}>
         <View style={styles.top}>
           <Text style={[textStyles.number, { color: c.text }]}>{code}</Text>

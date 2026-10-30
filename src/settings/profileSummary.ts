@@ -3,11 +3,12 @@
  * Profile tab shows what's set without opening Settings. Pure, for tests.
  */
 import { AIRPORTS } from '@/engine';
+import { MAPS_APP_NAME } from '@/search/directions';
 
 import { homeAirports, type Settings } from './settings';
 
 export interface SummaryRow {
-  key: 'home' | 'otherHomes' | 'buffer' | 'location' | 'notify' | 'search';
+  key: 'home' | 'otherHomes' | 'buffer' | 'maps' | 'location' | 'notify' | 'search';
   label: string;
   value: string;
   /** Second line under the label (airport name, etc.). */
@@ -31,7 +32,8 @@ export function notifyText(s: Settings): string {
   return 'Off';
 }
 
-export function profileSummary(s: Settings): SummaryRow[] {
+/** `ios`: only iPhone has a maps choice (Android always opens Google Maps). */
+export function profileSummary(s: Settings, ios = true): SummaryRow[] {
   const main = s.homes.main;
   const others = homeAirports(s.homes).filter((h) => !h.main);
   return [
@@ -51,6 +53,8 @@ export function profileSummary(s: Settings): SummaryRow[] {
     { key: 'location', label: 'Use your location', value: s.useLocation ? 'On' : 'Off' },
     { key: 'notify', label: 'Notifications', value: notifyText(s) },
     { key: 'buffer', label: 'Airport buffer', value: `${s.bufferMin} min`, detail: 'Before departure' },
+    // Where the Leave By card opens directions (round 49); Android has no choice.
+    ...(ios ? [{ key: 'maps' as const, label: 'Directions', value: MAPS_APP_NAME[s.mapsApp] }] : []),
     { key: 'search', label: 'Search defaults', value: stopsText(s.search.maxStops) },
   ];
 }
@@ -62,6 +66,7 @@ const SECTION_FOR: Record<SummaryRow['key'], SettingsSection> = {
   home: 'homes',
   otherHomes: 'homes',
   buffer: 'leaveBy',
+  maps: 'leaveBy',
   location: 'location',
   notify: 'notify',
   search: 'search',

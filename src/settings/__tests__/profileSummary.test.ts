@@ -47,8 +47,14 @@ describe('profileSummary', () => {
       'location',
       'notify',
       'buffer',
+      'maps',
       'search',
     ]);
+  });
+
+  it('names the maps app on iPhone only (round 49)', () => {
+    expect(row({ ...DEFAULT_SETTINGS, mapsApp: 'google' }, 'maps').value).toBe('Google Maps');
+    expect(profileSummary(DEFAULT_SETTINGS, false).some((r) => r.key === 'maps')).toBe(false);
   });
 });
 

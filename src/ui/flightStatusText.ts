@@ -48,6 +48,13 @@ export function movementLead(m: Movement, tz: string): { time: string; label: st
   return { time: formatTime(b.ms, tz), label: b.label, was: moved ? formatTime(sched, tz) : null };
 }
 
+/** For VoiceOver, in the order the card shows it: "Estimated 2:40 PM, scheduled 2:15 PM". */
+export function movementSpoken(m: Movement, tz: string): string {
+  const lead = movementLead(m, tz);
+  if (!lead) return '';
+  return lead.was ? `${lead.label} ${lead.time}, scheduled ${lead.was}` : `${lead.label} ${lead.time}`;
+}
+
 /** "Terminal 3 · Gate K12"; "Gate not posted yet" when neither is known. */
 export function placeText(m: Movement): string {
   const parts = [m.terminal ? `Terminal ${m.terminal}` : null, m.gate ? `Gate ${m.gate}` : null].filter(Boolean);
