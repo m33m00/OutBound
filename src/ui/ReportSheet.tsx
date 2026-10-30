@@ -53,6 +53,28 @@ export interface ReportSheetProps {
  */
 export function ReportSheet({ flight, visible, now, onCancel, onSubmit }: ReportSheetProps) {
   const c = useColors();
+  return (
+    <Modal visible={visible ?? flight !== null} animationType="slide" presentationStyle="pageSheet" onRequestClose={onCancel}>
+      <SafeAreaView style={[styles.screen, { backgroundColor: c.bg }]} edges={['top', 'bottom']}>
+        <ReportForm flight={flight} now={now} onCancel={onCancel} onSubmit={onSubmit} />
+      </SafeAreaView>
+    </Modal>
+  );
+}
+
+export interface ReportFormProps {
+  flight: Flight | null;
+  now: number;
+  onCancel: () => void;
+  onSubmit: (open: number, listed: number) => void;
+}
+
+/**
+ * The Report Load page itself (header, fields, Submit), as a sheet of its
+ * own (Feed) or as a page inside the flight sheet (Search, round 32).
+ */
+export function ReportForm({ flight, now, onCancel, onSubmit }: ReportFormProps) {
+  const c = useColors();
   const [open, setOpen] = useState(0);
   const [listed, setListed] = useState(0);
   // Nothing set yet: no tier shown and Submit stays off, so a stray tap can't report a false Full.
@@ -76,78 +98,76 @@ export function ReportSheet({ flight, visible, now, onCancel, onSubmit }: Report
   const subtitle = flight ? `${flight.airline} ${flight.flightNumber} · ${flight.from} → ${flight.to}` : undefined;
 
   return (
-    <Modal visible={visible ?? flight !== null} animationType="slide" presentationStyle="pageSheet" onRequestClose={onCancel}>
-      <SafeAreaView style={[styles.screen, { backgroundColor: c.bg }]} edges={['top', 'bottom']}>
-        <SheetHeader title="Report Load" subtitle={subtitle} action="Cancel" onAction={onCancel} />
-        <ScrollView
-          contentContainerStyle={styles.body}
-          keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="interactive"
-          automaticallyAdjustKeyboardInsets>
-          {flight ? <Text style={[textStyles.body, { color: c.muted }]}>{departsText(flight, now)}</Text> : null}
-          <NumberField
-            label="Open seats"
-            caption="On the board"
-            value={open}
-            max={MAX_OPEN}
-            onChange={(v) => {
-              setTouched(true);
-              setOpen(clampReport('open', v));
-            }}
-          />
-          <NumberField
-            label="Nonrevs listed"
-            caption="On the standby list"
-            value={listed}
-            max={MAX_LISTED}
-            onChange={(v) => {
-              setTouched(true);
-              setListed(clampReport('listed', v));
-            }}
-          />
-          <View
-            style={[styles.tier, { backgroundColor: c.surface, borderColor: c.line }]}
-            accessible
-            accessibilityLiveRegion="polite"
-            accessibilityLabel={forSpeech(tierLine)}
-            testID="report-tier">
-            {touched ? (
-              <>
-                <View style={[styles.dot, { backgroundColor: c[TIER_MARK[tier]] }]} />
-                <Text style={[textStyles.heading, { color: c[TIER_FG[tier]] }]}>{TIER_WORD[tier]}</Text>
-                <Text style={[textStyles.body, styles.after, { color: c.muted }]}>{afterListText(open, listed)}</Text>
-              </>
-            ) : (
-              <Text style={[textStyles.body, styles.after, { color: c.muted }]}>{tierLine}</Text>
-            )}
+    <>
+      <SheetHeader title="Report Load" subtitle={subtitle} action="Cancel" onAction={onCancel} />
+      <ScrollView
+        contentContainerStyle={styles.body}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="interactive"
+        automaticallyAdjustKeyboardInsets>
+        {flight ? <Text style={[textStyles.body, { color: c.muted }]}>{departsText(flight, now)}</Text> : null}
+        <NumberField
+          label="Open seats"
+          caption="On the board"
+          value={open}
+          max={MAX_OPEN}
+          onChange={(v) => {
+            setTouched(true);
+            setOpen(clampReport('open', v));
+          }}
+        />
+        <NumberField
+          label="Nonrevs listed"
+          caption="On the standby list"
+          value={listed}
+          max={MAX_LISTED}
+          onChange={(v) => {
+            setTouched(true);
+            setListed(clampReport('listed', v));
+          }}
+        />
+        <View
+          style={[styles.tier, { backgroundColor: c.surface, borderColor: c.line }]}
+          accessible
+          accessibilityLiveRegion="polite"
+          accessibilityLabel={forSpeech(tierLine)}
+          testID="report-tier">
+          {touched ? (
+            <>
+              <View style={[styles.dot, { backgroundColor: c[TIER_MARK[tier]] }]} />
+              <Text style={[textStyles.heading, { color: c[TIER_FG[tier]] }]}>{TIER_WORD[tier]}</Text>
+              <Text style={[textStyles.body, styles.after, { color: c.muted }]}>{afterListText(open, listed)}</Text>
+            </>
+          ) : (
+            <Text style={[textStyles.body, styles.after, { color: c.muted }]}>{tierLine}</Text>
+          )}
+        </View>
+        <Text style={[textStyles.small, { color: c.muted }]}>
+          Follow your airline’s rules on sharing loads. Reports are anonymous to other employees.
+        </Text>
+        <Button
+          label="Submit Report"
+          disabled={!touched}
+          onPress={() => {
+            Keyboard.dismiss();
+            onSubmit(open, listed);
+          }}
+        />
+      </ScrollView>
+      {Platform.OS === 'ios' ? (
+        <InputAccessoryView nativeID={KEYBOARD_BAR_ID}>
+          <View style={[styles.keyboardBar, { backgroundColor: c.surface2, borderTopColor: c.line }]}>
+            <Pressable
+              onPress={Keyboard.dismiss}
+              accessibilityRole="button"
+              accessibilityLabel="Done"
+              style={pressStyle(styles.keyboardDone, 'link')}>
+              <Text style={[textStyles.heading, { color: c.accent }]}>Done</Text>
+            </Pressable>
           </View>
-          <Text style={[textStyles.small, { color: c.muted }]}>
-            Follow your airline’s rules on sharing loads. Reports are anonymous to other employees.
-          </Text>
-          <Button
-            label="Submit Report"
-            disabled={!touched}
-            onPress={() => {
-              Keyboard.dismiss();
-              onSubmit(open, listed);
-            }}
-          />
-        </ScrollView>
-        {Platform.OS === 'ios' ? (
-          <InputAccessoryView nativeID={KEYBOARD_BAR_ID}>
-            <View style={[styles.keyboardBar, { backgroundColor: c.surface2, borderTopColor: c.line }]}>
-              <Pressable
-                onPress={Keyboard.dismiss}
-                accessibilityRole="button"
-                accessibilityLabel="Done"
-                style={pressStyle(styles.keyboardDone, 'link')}>
-                <Text style={[textStyles.heading, { color: c.accent }]}>Done</Text>
-              </Pressable>
-            </View>
-          </InputAccessoryView>
-        ) : null}
-      </SafeAreaView>
-    </Modal>
+        </InputAccessoryView>
+      ) : null}
+    </>
   );
 }
 

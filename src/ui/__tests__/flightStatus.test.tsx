@@ -7,7 +7,7 @@ import type { FlightStatusEntry } from '@/live/flightStatus';
 import { parseFlightStatus } from '../../../supabase/functions/_shared/flightStatus';
 import { ADB_DELAYED } from '@/live/fixtures/flight-status-samples';
 
-import { FlightStatusSheet } from '../FlightStatusSheet';
+import { FlightStatusSheet, type FlightLoadActions } from '../FlightStatusSheet';
 import { ageText, delayText, movementTimes, placeText, sampleResponse } from '../flightStatusText';
 import { ResultRow } from '../ResultRow';
 
@@ -155,5 +155,57 @@ describe('sample status in the sheet (design round 4)', () => {
     expect(texts).toContain('DL 2210');
     expect(texts).toContain('Updated 2m ago');
     expect(r!.root.findAll((n) => n.props.accessibilityLabel === 'Refresh flight status')).toHaveLength(0);
+  });
+});
+
+describe('seats card in the flight sheet (design round 32)', () => {
+  let r: ReactTestRenderer | undefined;
+  afterEach(() => {
+    act(() => r?.unmount());
+    clearFlightStatusMemo();
+  });
+  const btn = (label: string) =>
+    r!.root.find((n) => typeof n.type !== 'string' && n.props.accessibilityLabel === label && n.props.onPress);
+  const texts = () => r!.root.findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string').map((n) => n.props.children as string);
+
+  const render = async (load: Partial<FlightLoadActions>) => {
+    const f = (await itinerary()).legs[0].flight;
+    const full: FlightLoadActions = { canReport: true, askState: 'ready', yourReport: null, onAsk: jest.fn(), onReport: jest.fn(), ...load };
+    await act(async () => {
+      r = create(<FlightStatusSheet flight={f} now={NOW} onClose={jest.fn()} sample={null} liveOptions={{ fetcher: jest.fn(), config: null }} load={full} />);
+    });
+    return full;
+  };
+
+  it('Report Load opens the report page in the same sheet; Submit hands back both numbers and returns', async () => {
+    const load = await render({});
+    act(() => btn('Report Load').props.onPress());
+    expect(texts()).toContain('Report Load');
+    const box = r!.root.find((n) => n.props.accessibilityLabel === 'Open seats, On the board' && n.props.onChangeText);
+    act(() => box.props.onChangeText('12'));
+    act(() => btn('Submit Report').props.onPress());
+    expect(load.onReport).toHaveBeenCalledWith(12, 0);
+    expect(r!.root.findAll((n) => n.props.testID === 'load-card').length).toBeGreaterThan(0);
+  });
+
+  it('Cancel on the report page goes back to the status without reporting', async () => {
+    const load = await render({});
+    act(() => btn('Report Load').props.onPress());
+    act(() => r!.root.find((n) => n.props.testID === 'sheet-action' && n.props.onPress).props.onPress());
+    expect(load.onReport).not.toHaveBeenCalled();
+    expect(r!.root.findAll((n) => n.props.testID === 'load-card').length).toBeGreaterThan(0);
+  });
+
+  it('asks once: Asked is off and points to My Trips', async () => {
+    const load = await render({ askState: 'asked' });
+    expect(btn('Asked').props.disabled).toBe(true);
+    expect(texts()).toContain('Asked. The answer shows in My Trips.');
+    expect(load.onAsk).not.toHaveBeenCalled();
+  });
+
+  it('outside the report window Report Load is off and says why; your report shows with its age', async () => {
+    await render({ canReport: false, yourReport: { open: 18, listed: 3, at: NOW - 5 * 60_000, byYou: true } });
+    expect(btn('Report Again').props.disabled).toBe(true);
+    expect(texts()).toContain('You reported Good · 18 open · 3 listed · 5m ago');
   });
 });

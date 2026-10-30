@@ -1,6 +1,6 @@
 import { router, useFocusEffect, useNavigation } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { BackHandler, FlatList, StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
+import { AccessibilityInfo, BackHandler, FlatList, StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AIRPORTS, areaFor, localDate, toRouteLine, type Flight, type Itinerary } from '@/engine';
@@ -20,6 +20,8 @@ import { Appear } from '@/ui/Appear';
 import { useSettings } from '@/settings/SettingsProvider';
 import { changedFilters, DEFAULT_FILTERS, homeAirports, type SearchFilters } from '@/settings/settings';
 import { FiltersModal } from '@/ui/FiltersModal';
+import { askNote, inReportWindow } from '@/requests/requests';
+import { useRequests } from '@/requests/RequestsProvider';
 import { FlightStatusSheet } from '@/ui/FlightStatusSheet';
 import { ImpactSheet } from '@/ui/ImpactSheet';
 import { LeaveByCard } from '@/ui/LeaveByCard';
@@ -176,6 +178,7 @@ export default function HomeScreen() {
   const [statusFlight, setStatusFlight] = useState<Flight | null>(null);
   // Sheets keep their content while they slide away (design round 29).
   const statusSheet = useSheetContent(statusFlight);
+  const requests = useRequests();
   const impactSheet = useSheetContent(impactFor);
   const pickerSheet = useSheetContent(picking);
 
@@ -524,6 +527,22 @@ export default function HomeScreen() {
           statusSheet.shown && flightStatuses.sample
             ? (flightStatuses.byKey[flightLookupKey(legLookup(statusSheet.shown))] ?? null)
             : null
+        }
+        load={
+          statusSheet.shown
+            ? {
+                canReport: inReportWindow(statusSheet.shown, now),
+                askState: requests.askStateFor(statusSheet.shown, now),
+                yourReport: requests.reportFor(statusSheet.shown),
+                onAsk: () => {
+                  if (!statusSheet.shown) return;
+                  requests.ask(statusSheet.shown);
+                  selectionTick();
+                  AccessibilityInfo.announceForAccessibility(askNote('asked'));
+                },
+                onReport: (open, listed) => statusSheet.shown && requests.report(statusSheet.shown, open, listed),
+              }
+            : undefined
         }
       />
       <FiltersModal

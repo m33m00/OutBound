@@ -131,3 +131,42 @@ export function afterListText(open: number, listed: number): string {
   if (net <= 0) return 'No seats after the list';
   return `${net} ${net === 1 ? 'seat' : 'seats'} after the list`;
 }
+
+/** Reports open 7 days before departure and close 2 hours after (DECISIONS.md). */
+export const REPORT_OPENS_BEFORE_MS = 7 * 24 * 3600_000;
+export const REPORT_CLOSES_AFTER_MS = 2 * 3600_000;
+
+/** Whether a flight can take a report now. */
+export const inReportWindow = (f: Flight, now: number) =>
+  now >= f.departUtc - REPORT_OPENS_BEFORE_MS && now <= f.departUtc + REPORT_CLOSES_AFTER_MS;
+
+/** One flight on one day, whichever list it came from. */
+export const flightKey = (f: Flight) => `${f.airline}${f.flightNumber}-${f.from}-${f.departUtc}`;
+
+/** Asks still waiting for an answer. */
+export const openRequestCount = (mine: LoadRequest[]) => mine.filter((r) => !r.answer).length;
+
+/** ready: can ask; asked: already asked about this flight; full: 5 asks still waiting; left: the flight has gone. */
+export type AskState = 'ready' | 'asked' | 'full' | 'left';
+
+export function askState(mine: LoadRequest[], flight: Flight, now: number): AskState {
+  const key = flightKey(flight);
+  if (mine.some((r) => flightKey(r.flight) === key)) return 'asked';
+  if (flight.departUtc <= now) return 'left';
+  if (openRequestCount(mine) >= MAX_OPEN_REQUESTS) return 'full';
+  return 'ready';
+}
+
+/** Your asks with a new one on top, or unchanged when you can't ask. */
+export function addAsk(mine: LoadRequest[], flight: Flight, now: number): LoadRequest[] {
+  if (askState(mine, flight, now) !== 'ready') return mine;
+  return [{ id: `mine-${flightKey(flight)}`, flight, askedAt: now }, ...mine];
+}
+
+/** The line under Ask for Load. */
+export function askNote(state: AskState): string {
+  if (state === 'asked') return 'Asked. The answer shows in My Trips.';
+  if (state === 'left') return 'This flight has left, so there’s no one to ask.';
+  if (state === 'full') return `You have ${MAX_OPEN_REQUESTS} requests waiting. Ask again once one is answered.`;
+  return 'Ask someone at this airline what the board shows.';
+}

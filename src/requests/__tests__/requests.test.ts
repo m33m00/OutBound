@@ -1,7 +1,13 @@
-import { AIRPORTS, localDate } from '@/engine';
+import { AIRPORTS, localDate, type Flight } from '@/engine';
 
 import {
+  addAsk,
   afterListText,
+  askNote,
+  askState,
+  inReportWindow,
+  openRequestCount,
+  type LoadRequest,
   answerText,
   answerTier,
   clampReport,
@@ -78,5 +84,54 @@ describe('request words', () => {
     expect(clampReport('open', -2)).toBe(0);
     expect(clampReport('open', 4.6)).toBe(5);
     expect(clampReport('listed', Number.NaN)).toBe(0);
+  });
+});
+
+describe('asking and reporting from a flight (round 32)', () => {
+  const NOW2 = Date.UTC(2026, 9, 30, 13);
+  const flight = (n: number, departUtc = NOW2 + 3 * 3600_000): Flight => ({
+    id: `F${n}`,
+    airline: 'AA',
+    flightNumber: String(1000 + n),
+    from: 'DFW',
+    to: 'LAX',
+    departUtc,
+    arriveUtc: departUtc + 3 * 3600_000,
+  });
+
+  it('reports open a week before and close two hours after departure', () => {
+    const f = flight(1);
+    expect(inReportWindow(f, f.departUtc - 7 * 24 * 3600_000)).toBe(true);
+    expect(inReportWindow(f, f.departUtc - 7 * 24 * 3600_000 - 1)).toBe(false);
+    expect(inReportWindow(f, f.departUtc + 2 * 3600_000)).toBe(true);
+    expect(inReportWindow(f, f.departUtc + 2 * 3600_000 + 1)).toBe(false);
+  });
+
+  it('one ask per flight, newest on top, and the same flight from another list counts', () => {
+    let mine: LoadRequest[] = [];
+    mine = addAsk(mine, flight(1), NOW2);
+    expect(mine).toHaveLength(1);
+    expect(askState(mine, { ...flight(1), id: 'other-id' }, NOW2)).toBe('asked');
+    expect(addAsk(mine, flight(1), NOW2)).toBe(mine);
+    mine = addAsk(mine, flight(2), NOW2 + 1);
+    expect(mine[0].flight.flightNumber).toBe('1002');
+  });
+
+  it('stops at five waiting asks; an answered one frees a slot', () => {
+    let mine: LoadRequest[] = [];
+    for (let i = 1; i <= MAX_OPEN_REQUESTS; i++) mine = addAsk(mine, flight(i), NOW2);
+    expect(openRequestCount(mine)).toBe(5);
+    expect(askState(mine, flight(9), NOW2)).toBe('full');
+    mine = mine.map((r, i) => (i === 0 ? { ...r, answer: { open: 9, listed: 2, at: NOW2 } } : r));
+    expect(askState(mine, flight(9), NOW2)).toBe('ready');
+  });
+
+  it('no asks on a flight that has left, and the note says why', () => {
+    const gone = flight(3, NOW2 - 60_000);
+    expect(askState([], gone, NOW2)).toBe('left');
+    expect(addAsk([], gone, NOW2)).toHaveLength(0);
+    expect(askNote('left')).toMatch(/left/);
+    expect(askNote('full')).toContain('5 requests waiting');
+    expect(askNote('asked')).toContain('My Trips');
   });
 });

@@ -1,16 +1,20 @@
-import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { AccessibilityInfo, ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AIRPORTS, localDate, type Flight } from '@/engine';
 import { useFlightStatus, type FlightLookup, type UseFlightStatusOptions, type Movement } from '@/live';
 import type { FlightStatusEntry } from '@/live/flightStatus';
+import { answerText, askNote, type AskState, type LoadAnswer } from '@/requests/requests';
 import { shortDate } from '@/search/dates';
-import { forSpeech } from '@/search/format';
+import { formatAge, forSpeech } from '@/search/format';
 import { radius, spacing, textStyles, useColors } from '@/theme';
 
+import { Button } from './Buttons';
 import { ageText, delayText, movementTimes, placeText, sampleResponse, STATE_WORD } from './flightStatusText';
 import { Icon } from './Icon';
 import { pressStyle } from './press';
+import { ReportForm } from './ReportSheet';
 import { STATE_TONE, TONE_BG, TONE_FG } from './statusTone';
 import { SheetHeader } from './SheetHeader';
 
@@ -28,6 +32,18 @@ export interface FlightStatusSheetProps {
    * labeled, and asks no server, so it always matches the row's tag.
    */
   sample?: FlightStatusEntry | null;
+  /** Seats card (design round 32): report what the board shows, or ask someone at the airline. */
+  load?: FlightLoadActions;
+}
+
+export interface FlightLoadActions {
+  /** Inside the report window (7 days before to 2 hours after departure). */
+  canReport: boolean;
+  askState: AskState;
+  /** Your report on this flight this session. */
+  yourReport: LoadAnswer | null;
+  onAsk: () => void;
+  onReport: (open: number, listed: number) => void;
 }
 
 export function lookupForFlight(f: Flight): FlightLookup {
@@ -36,8 +52,12 @@ export function lookupForFlight(f: Flight): FlightLookup {
 }
 
 /** Status for one opened flight: state, times with delay, gates and terminals, and how old it is. Text only. */
-export function FlightStatusSheet({ flight, visible, now, onClose, liveOptions, sample }: FlightStatusSheetProps) {
+export function FlightStatusSheet({ flight, visible, now, onClose, liveOptions, sample, load }: FlightStatusSheetProps) {
   const c = useColors();
+  // Report Load opens as a page inside this sheet (a second sheet on top can't open while one is up).
+  const [reporting, setReporting] = useState(false);
+  const flightId = flight?.id;
+  useEffect(() => setReporting(false), [flightId]);
   const lookup = flight ? lookupForFlight(flight) : null;
   const isSample = !!(flight && sample);
   const live = useFlightStatus(isSample ? null : lookup, liveOptions);
@@ -73,70 +93,119 @@ export function FlightStatusSheet({ flight, visible, now, onClose, liveOptions, 
   return (
     <Modal visible={visible ?? flight !== null} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <SafeAreaView style={[styles.screen, { backgroundColor: c.bg }]} edges={['top', 'bottom']}>
-        <SheetHeader title={title} subtitle={subtitle || undefined} action="Done" onAction={onClose} />
-        <ScrollView contentContainerStyle={styles.body}>
-          {error === 'not_configured' ? (
-            <Text style={[textStyles.body, { color: c.muted }]}>Flight status is not connected yet.</Text>
-          ) : null}
-          {error === 'fetch_failed' && !response ? (
-            <Text style={[textStyles.body, { color: c.text }]}>Couldn’t get flight status. Try again in a moment.</Text>
-          ) : null}
-          {loading && !response ? <ActivityIndicator accessibilityLabel="Loading flight status" /> : null}
-          {response && !status ? (
-            <Text style={[textStyles.body, { color: c.text }]}>
-              {response.state === 'unavailable'
-                ? "Couldn’t get flight status. Try again in a moment."
-                : "The airline data source doesn’t list this flight yet."}
-            </Text>
-          ) : null}
-          {status && flight ? (
-            <>
-              {/* Same colors as the row tags (Q-050); the word carries the state. */}
-              <View
-                accessible
-                accessibilityLabel={`Status: ${STATE_WORD[status.state]}`}
-                style={[
-                  styles.state,
-                  {
-                    backgroundColor: tone ? c[TONE_BG[tone]] : c.surface2,
-                    // Gray tones get an edge, like the row tag, so the pill shows on the page.
-                    borderColor: !tone || tone === 'gone' ? c.line2 : c[TONE_BG[tone]],
-                  },
-                ]}>
-                {tone === 'canceled' ? (
-                  <Icon name="xmark.circle" size={20} tintColor={c[TONE_FG[tone]]} fallback={null} />
-                ) : null}
-                <Text style={[textStyles.title, { color: tone ? c[TONE_FG[tone]] : c.text }]}>
-                  {STATE_WORD[status.state]}
+        {reporting && load && flight ? (
+          <ReportForm
+            flight={flight}
+            now={now}
+            onCancel={() => setReporting(false)}
+            onSubmit={(open, listed) => {
+              load.onReport(open, listed);
+              setReporting(false);
+              AccessibilityInfo.announceForAccessibility('Report sent. Thanks.');
+            }}
+          />
+        ) : (
+          <>
+            <SheetHeader title={title} subtitle={subtitle || undefined} action="Done" onAction={onClose} />
+            <ScrollView contentContainerStyle={styles.body}>
+              {error === 'not_configured' ? (
+                <Text style={[textStyles.body, { color: c.muted }]}>Flight status is not connected yet.</Text>
+              ) : null}
+              {error === 'fetch_failed' && !response ? (
+                <Text style={[textStyles.body, { color: c.text }]}>Couldn’t get flight status. Try again in a moment.</Text>
+              ) : null}
+              {loading && !response ? <ActivityIndicator accessibilityLabel="Loading flight status" /> : null}
+              {response && !status ? (
+                <Text style={[textStyles.body, { color: c.text }]}>
+                  {response.state === 'unavailable'
+                    ? "Couldn’t get flight status. Try again in a moment."
+                    : "The airline data source doesn’t list this flight yet."}
                 </Text>
-              </View>
-              {side('Departs', flight.from, status.departure)}
-              {side('Arrives', flight.to, status.arrival)}
-            </>
-          ) : null}
-          {response ? <Text style={[textStyles.small, { color: c.muted }]}>{ageText(response, now)}</Text> : null}
-          {error === 'fetch_failed' && response ? (
-            <Text style={[textStyles.small, { color: c.muted }]}>Couldn’t refresh just now; showing the last status.</Text>
-          ) : null}
-          {error !== 'not_configured' && !isSample ? (
-            <Pressable
-              onPress={() => refresh()}
-              accessibilityRole="button"
-              accessibilityLabel="Refresh flight status"
-              style={pressStyle(styles.refresh, 'link')}>
-              <Text style={[textStyles.bodyStrong, { color: c.accent }]}>{loading ? 'Refreshing…' : 'Refresh'}</Text>
-            </Pressable>
-          ) : null}
-          <Text style={[textStyles.small, { color: c.muted }]}>
-            {isSample
-              ? 'Times are local to each airport.'
-              : 'Times are local to each airport. Refresh works about every 2 minutes.'}
-          </Text>
-          {/* The source line names a real feed, so it shows only for live status (round 30: no sample labels). */}
-          {isSample ? null : <Text style={[textStyles.small, { color: c.muted }]}>Data from AeroDataBox.</Text>}
-        </ScrollView>
+              ) : null}
+              {status && flight ? (
+                <>
+                  {/* Same colors as the row tags (Q-050); the word carries the state. */}
+                  <View
+                    accessible
+                    accessibilityLabel={`Status: ${STATE_WORD[status.state]}`}
+                    style={[
+                      styles.state,
+                      {
+                        backgroundColor: tone ? c[TONE_BG[tone]] : c.surface2,
+                        // Gray tones get an edge, like the row tag, so the pill shows on the page.
+                        borderColor: !tone || tone === 'gone' ? c.line2 : c[TONE_BG[tone]],
+                      },
+                    ]}>
+                    {tone === 'canceled' ? (
+                      <Icon name="xmark.circle" size={20} tintColor={c[TONE_FG[tone]]} fallback={null} />
+                    ) : null}
+                    <Text style={[textStyles.title, { color: tone ? c[TONE_FG[tone]] : c.text }]}>
+                      {STATE_WORD[status.state]}
+                    </Text>
+                  </View>
+                  {side('Departs', flight.from, status.departure)}
+                  {side('Arrives', flight.to, status.arrival)}
+                </>
+              ) : null}
+              {response ? <Text style={[textStyles.small, { color: c.muted }]}>{ageText(response, now)}</Text> : null}
+              {error === 'fetch_failed' && response ? (
+                <Text style={[textStyles.small, { color: c.muted }]}>Couldn’t refresh just now; showing the last status.</Text>
+              ) : null}
+              {error !== 'not_configured' && !isSample ? (
+                <Pressable
+                  onPress={() => refresh()}
+                  accessibilityRole="button"
+                  accessibilityLabel="Refresh flight status"
+                  style={pressStyle(styles.refresh, 'link')}>
+                  <Text style={[textStyles.bodyStrong, { color: c.accent }]}>{loading ? 'Refreshing…' : 'Refresh'}</Text>
+                </Pressable>
+              ) : null}
+              <Text style={[textStyles.small, { color: c.muted }]}>
+                {isSample
+                  ? 'Times are local to each airport.'
+                  : 'Times are local to each airport. Refresh works about every 2 minutes.'}
+              </Text>
+              {/* The source line names a real feed, so it shows only for live status (round 30: no sample labels). */}
+              {isSample ? null : <Text style={[textStyles.small, { color: c.muted }]}>Data from AeroDataBox.</Text>}
+              {load && flight ? <LoadCard load={load} now={now} onReport={() => setReporting(true)} /> : null}
+            </ScrollView>
+          </>
+        )}
       </SafeAreaView>
     </Modal>
+  );
+}
+
+/** Seats: your report if you made one, then Report Load and Ask for Load. */
+function LoadCard({ load, now, onReport }: { load: FlightLoadActions; now: number; onReport: () => void }) {
+  const c = useColors();
+  const { canReport, askState, yourReport, onAsk } = load;
+  const reportLine = yourReport
+    ? `You reported ${answerText(yourReport)} · ${formatAge(yourReport.at, now)}`
+    : canReport
+      ? 'Seen the board? Report the open seats and the standby list.'
+      : 'Reports close 2 hours after departure.';
+  return (
+    <View style={[styles.load, { backgroundColor: c.surface, borderColor: c.line }]} testID="load-card">
+      <Text style={[textStyles.heading, { color: c.text }]} accessibilityRole="header">
+        Seats
+      </Text>
+      <Text style={[textStyles.body, { color: yourReport ? c.text : c.muted }]}>{reportLine}</Text>
+      <Button
+        label={yourReport ? 'Report Again' : 'Report Load'}
+        onPress={onReport}
+        disabled={!canReport}
+      />
+      <View style={[styles.loadRule, { backgroundColor: c.line }]} />
+      <Text style={[textStyles.body, { color: c.muted }]}>{askNote(askState)}</Text>
+      <Button
+        label={askState === 'asked' ? 'Asked' : 'Ask for Load'}
+        kind="secondary"
+        icon={askState === 'asked' ? 'checkmark' : undefined}
+        onPress={onAsk}
+        disabled={askState !== 'ready'}
+      />
+    </View>
   );
 }
 
@@ -158,4 +227,6 @@ const styles = StyleSheet.create({
   top: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: spacing.group },
   trailing: { marginLeft: 'auto', flexShrink: 1 },
   refresh: { minHeight: 44, justifyContent: 'center', alignSelf: 'flex-start' },
+  load: { borderRadius: radius.md, borderWidth: StyleSheet.hairlineWidth, padding: spacing.rowX, gap: spacing.group },
+  loadRule: { height: StyleSheet.hairlineWidth, marginVertical: 4 },
 });

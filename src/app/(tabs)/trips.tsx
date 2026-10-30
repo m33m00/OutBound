@@ -1,9 +1,9 @@
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { MAX_OPEN_REQUESTS, sampleMine } from '@/requests/requests';
-import { SCHEDULE_SOURCE } from '@/search/useRouteSearch';
+import { MAX_OPEN_REQUESTS, openRequestCount } from '@/requests/requests';
+import { useRequests } from '@/requests/RequestsProvider';
 import { spacing } from '@/theme';
 import { confirmRemove } from '@/trips/confirmRemove';
 import { isPast, savedRouteTitle, sortSaved } from '@/trips/savedRoutes';
@@ -19,7 +19,8 @@ import { TabScreen } from '@/ui/TabScreen';
  * Your own load requests and saved routes (Q-042). Saved routes (Q-043, John
  * 2026-10-30): no limit, and opening one runs its day's search again in the
  * Search tab. Until the requests backend exists, "Your requests" shows
- * example asks on sample flights (design round 31).
+ * example asks on sample flights (design round 31) plus any you make from a
+ * flight in Search this session (round 32).
  */
 export default function TripsScreen() {
   const { routes, loaded, open, remove } = useSavedRoutes();
@@ -27,8 +28,8 @@ export default function TripsScreen() {
   const [now, setNow] = useState(Date.now());
   useFocusEffect(useCallback(() => setNow(Date.now()), []));
   const list = sortSaved(routes, now);
-  const requests = useMemo(() => (SCHEDULE_SOURCE === 'live' ? [] : sampleMine(now)), [now]);
-  const openCount = requests.filter((r) => !r.answer).length;
+  const { mine: requests } = useRequests();
+  const openCount = openRequestCount(requests);
 
   if (!list.length && !requests.length) {
     return (

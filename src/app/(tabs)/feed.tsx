@@ -4,6 +4,7 @@ import { AccessibilityInfo, StyleSheet, View } from 'react-native';
 
 import { spacing } from '@/theme';
 import { answerText, requestTitle, sampleFeed, type LoadAnswer } from '@/requests/requests';
+import { useRequests } from '@/requests/RequestsProvider';
 import { forSpeech } from '@/search/format';
 import { SCHEDULE_SOURCE } from '@/search/useRouteSearch';
 import { EmptyState } from '@/ui/EmptyState';
@@ -24,6 +25,7 @@ export default function FeedScreen() {
   const [now, setNow] = useState(Date.now());
   useFocusEffect(useCallback(() => setNow(Date.now()), []));
   const asks = useMemo(() => (SCHEDULE_SOURCE === 'live' ? [] : sampleFeed(now)), [now]);
+  const { report } = useRequests();
   const [answers, setAnswers] = useState<Record<string, LoadAnswer>>({});
   const [reporting, setReporting] = useState<string | null>(null);
   const sheet = useSheetContent(reporting);
@@ -38,6 +40,8 @@ export default function FeedScreen() {
     if (!req) return;
     const answer: LoadAnswer = { open: o, listed: l, at: Date.now(), byYou: true };
     setAnswers((a) => ({ ...a, [req.id]: answer }));
+    // Your answer is your report on that flight, so Search shows it too.
+    report(req.flight, o, l);
     setReporting(null);
     AccessibilityInfo.announceForAccessibility(
       forSpeech(`Answered ${requestTitle(req)}: ${answerText(answer)}`),

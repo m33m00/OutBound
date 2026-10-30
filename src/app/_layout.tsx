@@ -5,6 +5,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
+import { RequestsProvider } from '@/requests/RequestsProvider';
 import { SettingsProvider } from '@/settings/SettingsProvider';
 import { colors, fontAssets, useColorSchemeName } from '@/theme';
 import { SavedRoutesProvider } from '@/trips/SavedRoutesProvider';
@@ -41,12 +42,14 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SettingsProvider>
         <SavedRoutesProvider>
-          <LocationProvider>
-            <ThemeProvider value={navTheme}>
-              <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
-              <Stack screenOptions={{ headerShown: false }} />
-            </ThemeProvider>
-          </LocationProvider>
+          <RequestsProvider>
+            <LocationProvider>
+              <ThemeProvider value={navTheme}>
+                <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
+                <Stack screenOptions={{ headerShown: false }} />
+              </ThemeProvider>
+            </LocationProvider>
+          </RequestsProvider>
         </SavedRoutesProvider>
       </SettingsProvider>
     </GestureHandlerRootView>
