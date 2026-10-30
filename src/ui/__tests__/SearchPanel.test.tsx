@@ -142,8 +142,8 @@ describe('SearchPanel first run (design round 39)', () => {
     const onSwap = jest.fn();
     r = render(1, { origin: null, onSwap });
     const swap = r.root.findAll((n) => n.props.accessibilityLabel === 'Swap from and to' && n.props.onPress)[0];
-    act(() => swap.props.onPress());
-    expect(onSwap).not.toHaveBeenCalled();
+    expect(swap.props.disabled).toBe(true);
+    expect(swap.props.accessibilityHint).toBe('Choose both airports first');
   });
 
   it('shows what the empty From card is waiting on', () => {

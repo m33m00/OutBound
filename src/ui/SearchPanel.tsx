@@ -108,7 +108,9 @@ export function AirportCard({ label, code, emptyText = 'Choose airport', onPress
         accessibilityLabel={
           code
             ? `${label}: ${code}, ${name}${whole ? `, all ${area.city} airports` : ''}. Change`
-            : `${label}: ${emptyText.replace(/…$/, '').toLowerCase()}`
+            : emptyText === 'Choose airport'
+              ? `${label}: choose an airport`
+              : `${label}: ${emptyText} Choose an airport`
         }
         style={pressStyle(styles.cardButton, 'link')}>
         <Text style={[textStyles.small, styles.cardLabel, { color: c.muted }]} maxFontSizeMultiplier={LABEL_MAX_SCALE}>
@@ -154,6 +156,7 @@ export function SearchPanel(p: SearchPanelProps) {
   const wrapChips = fontScale >= WRAP_CHIPS_SCALE;
   // Why Find Routes is off, for VoiceOver and (same airport) on screen.
   const sameAirport = !!p.origin && p.origin === p.destination;
+  const canSwap = !!p.origin && !!p.destination;
   const findBlocked = !p.origin
     ? 'Choose where you’re flying from first'
     : !p.destination
@@ -246,11 +249,14 @@ export function SearchPanel(p: SearchPanelProps) {
           onToggleArea={() => p.origin && p.onToggleArea(p.origin)}
         />
         <Pressable
-          // Swapping with one side empty would only clear the other.
-          onPress={withTick(() => p.origin && p.destination && p.onSwap())}
+          onPress={withTick(p.onSwap)}
+          // Off with one side empty: swapping would only clear the other.
+          disabled={!canSwap}
           accessibilityRole="button"
           accessibilityLabel="Swap from and to"
-          style={pressStyle([styles.swap, { backgroundColor: c.surface, borderColor: c.line }])}>
+          accessibilityHint={canSwap ? undefined : 'Choose both airports first'}
+          accessibilityState={{ disabled: !canSwap }}
+          style={pressStyle([styles.swap, { backgroundColor: c.surface, borderColor: c.line, opacity: canSwap ? 1 : 0.5 }])}>
           <Icon
             name="arrow.left.arrow.right"
             size={18}
@@ -302,7 +308,7 @@ export function SearchPanel(p: SearchPanelProps) {
           accessibilityRole="button"
           accessibilityLabel="Set your main home to use Get Home"
           accessibilityHint="Opens Settings at Homes"
-          style={pressStyle([styles.hint, styles.homeHint, { backgroundColor: c.surface2 }], 'link')}>
+          style={pressStyle([styles.hint, styles.homeHint, { backgroundColor: c.accentSoft }], 'link')}>
           <Icon
             name="house"
             size={15}
@@ -365,6 +371,13 @@ const styles = StyleSheet.create({
   actions: { flexDirection: 'row', gap: spacing.group },
   find: { flex: 1 },
   hint: { minHeight: minTapTarget, justifyContent: 'center' },
-  homeHint: { flexDirection: 'row', alignItems: 'center', gap: spacing.group, paddingHorizontal: spacing.rowX, borderRadius: radius.sm },
+  homeHint: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.group,
+    paddingHorizontal: spacing.rowX,
+    paddingVertical: 10,
+    borderRadius: radius.md,
+  },
   homeHintText: { flexShrink: 1 },
 });

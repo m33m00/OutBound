@@ -424,7 +424,7 @@ export default function HomeScreen() {
                       : locationStatus === 'locating'
                         ? 'Finding nearest airport…'
                         : locationStatus === 'denied'
-                          ? 'Location is off. Choose an airport'
+                          ? 'Location is off.'
                           : undefined
                   }
                   onPickDestination={() => setPicking('destination')}
