@@ -214,9 +214,15 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
             </Text>
             <View style={styles.pager}>
               <StepArrow dir="prev" onPress={step(focusIndex - 1)} />
+              {/* VoiceOver: swipe up or down here to flip routes (the arrows stay for Voice Control). */}
               <Text
                 style={[textStyles.body, { color: c.muted }]}
-                accessibilityLabel={`Route ${focusIndex + 1} of ${results.length}`}>
+                testID="route-count"
+                accessible
+                accessibilityRole="adjustable"
+                accessibilityLabel={`Route ${focusIndex + 1} of ${results.length}`}
+                accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
+                onAccessibilityAction={(e) => step(focusIndex + (e.nativeEvent.actionName === 'increment' ? 1 : -1))?.()}>
                 {focusIndex + 1} of {results.length}
               </Text>
               <StepArrow dir="next" onPress={step(focusIndex + 1)} />

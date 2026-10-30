@@ -75,6 +75,13 @@ describe('ResultsPanel', () => {
     expect(arrow('next').props.accessibilityState).toEqual({ disabled: true });
     act(() => arrow('prev').props.onPress());
     expect(onSelect).toHaveBeenCalledWith(list[0].id);
+    // VoiceOver flips routes by swiping on the count; nothing past the end.
+    const count = r!.root.findAll((n) => n.props.testID === 'route-count' && n.props.accessibilityRole === 'adjustable')[0];
+    onSelect.mockClear();
+    act(() => count.props.onAccessibilityAction({ nativeEvent: { actionName: 'increment' } }));
+    expect(onSelect).not.toHaveBeenCalled();
+    act(() => count.props.onAccessibilityAction({ nativeEvent: { actionName: 'decrement' } }));
+    expect(onSelect).toHaveBeenCalledWith(list[0].id);
     // Back to all routes closes the view.
     const back = r!.root.findAll((n) => n.props.accessibilityLabel === 'Back to all routes' && n.props.onPress)[0];
     act(() => back.props.onPress());

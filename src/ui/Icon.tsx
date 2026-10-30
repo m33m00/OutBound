@@ -29,6 +29,7 @@ export const MATERIAL: Partial<Record<SFSymbol, keyof typeof MaterialIcons.glyph
   'exclamationmark.triangle': 'warning-amber',
   'exclamationmark.triangle.fill': 'warning',
   'wifi.exclamationmark': 'wifi-off',
+  'house.fill': 'home',
 };
 
 export interface IconProps {

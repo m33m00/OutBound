@@ -5,9 +5,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { pickerSections, type PickerItem } from '@/search/airports';
 import { minTapTarget, radius, spacing, textStyles, useColors } from '@/theme';
 
-import { Button } from './Buttons';
 import { Icon } from './Icon';
 import { pressStyle } from './press';
+import { SheetHeader } from './SheetHeader';
 
 export interface AirportPickerProps {
   visible: boolean;
@@ -71,12 +71,7 @@ export function AirportPicker({ visible, title, onPick, onClose, current, neares
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={close}>
       <SafeAreaView style={[styles.screen, { backgroundColor: c.bg }]} edges={['top', 'bottom']}>
-        <View style={styles.header}>
-          <Text style={[textStyles.title, { color: c.text }]} accessibilityRole="header">
-            {title}
-          </Text>
-          <Button label="Cancel" kind="secondary" onPress={close} />
-        </View>
+        <SheetHeader title={title} action="Cancel" onAction={close} />
         <View style={[styles.input, { backgroundColor: c.surface, borderColor: c.line }]}>
           <Icon name="magnifyingglass" size={16} tintColor={c.faint} fallback={null} />
           <TextInput
@@ -125,12 +120,6 @@ export function AirportPicker({ visible, title, onPick, onClose, current, neares
 
 const styles = StyleSheet.create({
   screen: { flex: 1, paddingHorizontal: spacing.page },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: spacing.section,
-  },
   input: {
     minHeight: minTapTarget,
     borderWidth: 1,

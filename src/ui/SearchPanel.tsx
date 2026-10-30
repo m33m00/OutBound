@@ -245,6 +245,15 @@ export function SearchPanel(p: SearchPanelProps) {
         />
       </View>
 
+      {/* Away from home, Get Home is the main button (Q-063, John 2026-10-30). */}
+      {p.onGetHome ? (
+        <Button
+          label="Get Home"
+          icon="house.fill"
+          onPress={p.onGetHome}
+          accessibilityLabel="Get Home: search to your main home"
+        />
+      ) : null}
       {/* The main action sits right under From/To so it's in view at half height. */}
       <View style={styles.actions}>
         <Button
@@ -255,14 +264,12 @@ export function SearchPanel(p: SearchPanelProps) {
         />
         <Button
           label="Find Routes"
+          kind={p.onGetHome ? 'secondary' : 'primary'}
           onPress={p.onFind}
           disabled={!p.origin || !p.destination || p.origin === p.destination}
           style={styles.find}
         />
       </View>
-      {p.onGetHome ? (
-        <Button label="Get Home" kind="secondary" onPress={p.onGetHome} accessibilityLabel="Get Home: search to your main home" />
-      ) : null}
       {p.onSetHome ? (
         <Pressable onPress={p.onSetHome} accessibilityRole="button" style={pressStyle(styles.hint, 'link')}>
           <Text style={[textStyles.small, { color: c.accent }]}>Set your home airport in Profile ›</Text>

@@ -6,10 +6,10 @@ import { formatAge } from '@/search/format';
 import { IMPACT_WORD } from '@/search/impactText';
 import { radius, spacing, textStyles, useColors } from '@/theme';
 
-import { Button } from './Buttons';
 import { Icon } from './Icon';
 import { IMPACT_ICON } from './ImpactBadge';
 import { SampleLabel } from './ResultsPanel';
+import { SheetHeader } from './SheetHeader';
 
 export interface ImpactSheetProps {
   visible: boolean;
@@ -29,15 +29,7 @@ export function ImpactSheet({ visible, title, subtitle, impact, now, sample, onC
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <SafeAreaView style={[styles.screen, { backgroundColor: c.bg }]} edges={['top', 'bottom']}>
-        <View style={styles.header}>
-          <View style={styles.title}>
-            <Text style={[textStyles.title, { color: c.text }]} accessibilityRole="header">
-              {title}
-            </Text>
-            {subtitle ? <Text style={[textStyles.bodyStrong, { color: c.muted }]}>{subtitle}</Text> : null}
-          </View>
-          <Button label="Done" onPress={onClose} />
-        </View>
+        <SheetHeader title={title} subtitle={subtitle || undefined} action="Done" onAction={onClose} />
         <ScrollView contentContainerStyle={styles.body}>
           {sample ? (
             <View style={styles.sampleRow} accessible accessibilityLabel="Sample delays and weather. Live data is not connected yet.">
@@ -102,14 +94,6 @@ export function ImpactSheet({ visible, title, subtitle, impact, now, sample, onC
 
 const styles = StyleSheet.create({
   screen: { flex: 1, paddingHorizontal: spacing.page },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: spacing.section,
-    gap: spacing.group,
-  },
-  title: { flex: 1, gap: 2 },
   sampleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.group, flexWrap: 'wrap' },
   sampleNote: { flexShrink: 1 },
   body: { gap: spacing.section, paddingBottom: spacing.page },

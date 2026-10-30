@@ -376,12 +376,12 @@ C) Tighten in place: keep the half sheet but open results taller (~70%), make th
 Recommendation: A, because it gives the list room (about 6 routes on screen) and adds the missing step (a route card) while keeping the globe as the place you see where a flight goes.
 Answer: John (2026-10-30), "Results take over" = A.
 
-### Q-063 Should Get Home be the main button when you're away from home?  (Open 2026-10-30)
+### Q-063 Should Get Home be the main button when you're away from home?  (Answered 2026-10-30)
 Context: On Search, Find Routes is the filled blue button and Get Home is a lighter one under it. When your location says you're away from your main home, Get Home is probably the thing you came for.
 A) Keep Find Routes as the main button everywhere
 B) When you're away from home (location on), Get Home becomes the filled button and Find Routes the lighter one
 Recommendation: B, because one tap home is the most common trip for a nonrev away from base.
-Default while open: A.
+Answer: John (2026-10-30), "Yes, make it main" = B. Get Home shows whenever From isn't one of your homes (Q-026), so it is the main button whenever it shows.
 
 Provisional defaults for backlog 3 (not John-decided; John may override any time):
 - FAA cache TTL 5 min server-side; serve stale on FAA error.

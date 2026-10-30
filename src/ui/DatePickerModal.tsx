@@ -1,11 +1,11 @@
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { Modal, StyleSheet, Text, View } from 'react-native';
+import { Modal, StyleSheet, Text } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { fromPickerDate, toPickerDate } from '@/search/dates';
 import { spacing, textStyles, useColors, useColorSchemeName } from '@/theme';
 
-import { Button } from './Buttons';
+import { SheetHeader } from './SheetHeader';
 
 export interface DatePickerModalProps {
   visible: boolean;
@@ -24,12 +24,7 @@ export function DatePickerModal({ visible, date, min, max, onPick, onClose }: Da
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <SafeAreaView style={[styles.screen, { backgroundColor: c.bg }]} edges={['top', 'bottom']}>
-        <View style={styles.header}>
-          <Text style={[textStyles.title, { color: c.text }]} accessibilityRole="header">
-            Date
-          </Text>
-          <Button label="Done" onPress={onClose} />
-        </View>
+        <SheetHeader title="Date" action="Done" onAction={onClose} />
         <DateTimePicker
           value={toPickerDate(date)}
           mode="date"
@@ -52,10 +47,4 @@ export function DatePickerModal({ visible, date, min, max, onPick, onClose }: Da
 
 const styles = StyleSheet.create({
   screen: { flex: 1, paddingHorizontal: spacing.page, gap: spacing.section },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: spacing.section,
-  },
 });

@@ -53,3 +53,4 @@ Each item names its owner. One item per work session. spec-keeper runs a pre-fli
 | 46 | Results take over: tall list, slim rows, route card on select (Q-062, John 2026-10-30) | main | P1 | Done (design round 21) |
 | 47 | Picked route: own view, Leave By on top, larger type, taller panel; review fixes (John 2026-10-30) | main | P1 | Done (design round 22) |
 | 48 | Full-width day switcher on results (John 2026-10-30); review fixes: route card stays open on tap, outlined Use Location, Find Routes above the fold | main | P1 | Built (design round 23, branch claude/project-thread-fzqwou); confirm on device |
+| 49 | Get Home is the main button when away from home (Q-063, John 2026-10-30); shared sheet header with Done/Cancel text buttons; VoiceOver swipe to flip routes | main | P1 | Built (design round 24, branch claude/project-thread-fzqwou); confirm on device |
