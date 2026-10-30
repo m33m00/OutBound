@@ -12,6 +12,8 @@ export interface SummaryRow {
   value: string;
   /** Second line under the label (airport name, etc.). */
   detail?: string;
+  /** Something to set up: the value shows as an action (accent). */
+  prompt?: boolean;
 }
 
 /** "Nonstop only", "Up to 1 stop", "Up to 3 stops". */
@@ -36,7 +38,8 @@ export function profileSummary(s: Settings): SummaryRow[] {
     {
       key: 'home',
       label: 'Main home',
-      value: main ?? 'Not set',
+      value: main ?? 'Set Up',
+      prompt: !main,
       detail: main ? AIRPORTS[main]?.name : 'Used for Get Home and when location is off',
     },
     {

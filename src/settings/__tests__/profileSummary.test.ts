@@ -14,7 +14,8 @@ describe('stopsText', () => {
 describe('profileSummary', () => {
   it('shows defaults when nothing is set', () => {
     const s = DEFAULT_SETTINGS;
-    expect(row(s, 'home').value).toBe('Not set');
+    expect(row(s, 'home').value).toBe('Set Up');
+    expect(row(s, 'home').prompt).toBe(true);
     expect(row(s, 'otherHomes').value).toBe('None');
     expect(row(s, 'buffer').value).toBe('75 min');
     expect(row(s, 'location').value).toBe('Off');

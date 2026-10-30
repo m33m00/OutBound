@@ -30,6 +30,7 @@ export default function ProfileScreen() {
             label={row.label}
             value={row.value}
             detail={row.detail}
+            valueAccent={row.prompt}
             onPress={() => openSettings(row.key)}
             accessibilityHint={`Opens Settings at ${SETTINGS_SECTION_TITLE[settingsSectionFor(row.key)]}`}
           />

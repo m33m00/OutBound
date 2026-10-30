@@ -54,16 +54,18 @@ export interface ListRowProps {
   /** Tappable row with a chevron when given. */
   onPress?: () => void;
   accessibilityHint?: string;
+  /** The value is an action to take (accent), not a setting. */
+  valueAccent?: boolean;
 }
 
 /** One row: label (+ detail) on the left, value and chevron on the right. */
-export function ListRow({ label, value, detail, onPress, accessibilityHint }: ListRowProps) {
+export function ListRow({ label, value, detail, onPress, accessibilityHint, valueAccent }: ListRowProps) {
   const c = useColors();
   // Big text: the value goes under the label so neither gets cut off.
   const stacked = useWindowDimensions().fontScale >= STACK_VALUE_SCALE;
   const valueText = value ? (
     <Text
-      style={[textStyles.bodyStrong, !stacked && styles.value, { color: c.muted }]}
+      style={[textStyles.bodyStrong, !stacked && styles.value, { color: valueAccent ? c.accent : c.muted }]}
       numberOfLines={stacked ? undefined : 2}>
       {value}
     </Text>
