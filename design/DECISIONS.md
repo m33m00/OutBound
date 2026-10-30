@@ -155,6 +155,7 @@ Condensed from the project docs: MVP decisions (through v8.8), design direction 
   - Feed = request feed (your airline's asks, per Reports and requests rules). My Trips = your own open requests (max 5) plus saved routes.
   - Saved routes = new concept, details open/provisional (Q-043). Feed and My Trips are placeholders until the requests backend exists.
   - Provisional: tab targets >=44pt; Settings still reached from Profile (Q-024).
+  - Provisional (design round 1, 2026-10-30; not John-decided, John may override): Feed and My Trips show an empty-state card (icon, heading, one sentence, list of what will show there) until requests exist; My Trips offers Find Routes. Profile lists main home, other homes, airport buffer, location and search defaults as rows that open Settings, then an About group (Flights: Sample data, Airport delays: FAA, Weather: NOAA Aviation Weather, Radar: NOAA/NWS MRMS, Version) and the "Follow your airline's rules on sharing loads" notice.
 - Filters button (Q-046, 2026-10-21, John): gets an SF Symbol icon (like the tab bar icons) so its purpose is clear at a glance. Label stays "Filters".
 - Airline badges: colored pill + plane glyph + IATA code. No logos.
 
