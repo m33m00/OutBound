@@ -222,6 +222,8 @@ export default function HomeScreen() {
   const filtersChanged = changedFilters(filters, settings.search);
   const selected = results.find((r) => r.id === selectedId);
   const firstLeg = selected?.legs[0].flight;
+  const impactIt = impactFor ? results.find((r) => r.id === impactFor) : undefined;
+  const impactRoute = impactIt ? [impactIt.origin, ...impactIt.legs.map((l) => l.flight.to)].join(' → ') : null;
 
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: c.bg }]} edges={['top']}>
@@ -371,6 +373,7 @@ export default function HomeScreen() {
       <ImpactSheet
         visible={impactFor !== null}
         title="Delays and weather"
+        subtitle={impactRoute}
         impact={impactFor ? (impacts.byId[impactFor] ?? null) : null}
         now={now}
         sample={sampleImpacts}

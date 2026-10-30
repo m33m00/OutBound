@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useSettings } from '@/settings/SettingsProvider';
@@ -8,11 +8,11 @@ import { AIRPORTS } from '@/engine';
 import { homeAirports, LIMITS } from '@/settings/settings';
 import { minTapTarget, radius, spacing, textStyles, useColors } from '@/theme';
 import { AirportPicker } from '@/ui/AirportPicker';
+import { BackButton } from '@/ui/BackButton';
 import { Button } from '@/ui/Buttons';
 import { FiltersForm } from '@/ui/FiltersForm';
 import { Stepper } from '@/ui/Stepper';
 import { useSharedLocation } from '@/ui/LocationProvider';
-import { pressStyle } from '@/ui/press';
 
 /** Tester settings (backlog 12; Q-003, Q-024). Saved on this phone (Q-025). */
 export default function SettingsScreen() {
@@ -32,13 +32,7 @@ export default function SettingsScreen() {
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: c.bg }]} edges={['top', 'bottom']}>
       <View style={styles.header}>
-        <Pressable
-          onPress={() => router.back()}
-          accessibilityRole="button"
-          accessibilityLabel="Back"
-          style={pressStyle(styles.back, 'link')}>
-          <Text style={[textStyles.heading, { color: c.accent }]}>‹ Back</Text>
-        </Pressable>
+        <BackButton label="Back" onPress={() => router.back()} />
       </View>
       <ScrollView contentContainerStyle={styles.body}>
         <Text style={[textStyles.title, { color: c.text }]} accessibilityRole="header">
@@ -142,7 +136,6 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   header: { paddingHorizontal: spacing.page, minHeight: minTapTarget, justifyContent: 'center' },
-  back: { minHeight: minTapTarget, justifyContent: 'center', alignSelf: 'flex-start', paddingRight: spacing.page },
   body: { paddingHorizontal: spacing.page, paddingBottom: spacing.page * 2, gap: spacing.section },
   group: {
     borderRadius: radius.md,
