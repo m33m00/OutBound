@@ -1,12 +1,13 @@
 import { forwardRef, type ReactNode } from 'react';
 import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
 
-import { areaFor, type Flight, type Itinerary, type SearchRequest } from '@/engine';
+import { AIRPORTS, areaFor, type Flight, type Itinerary, type SearchRequest } from '@/engine';
 import type { RouteImpact } from '@/live';
 import { shortDate, type DateChip } from '@/search/dates';
+import { formatTime } from '@/search/format';
 import { departedFirst, type RowStatus } from '@/search/statusTags';
 import type { SearchState } from '@/search/useRouteSearch';
-import { radius, spacing, textStyles, useColors } from '@/theme';
+import { fonts, radius, spacing, textStyles, useColors } from '@/theme';
 
 import { BackButton } from './BackButton';
 import { Button } from './Buttons';
@@ -56,6 +57,7 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
     p.statuses,
   );
   const full = results.filter((r) => r.isFull).length;
+  const nowAt = nowLineIndex(results, p.now, p.statuses);
   const stepsDays = !!(p.days && p.onDay);
   // With the day stepper the date is in the stepper, so this line keeps only the count.
   const summary = [
@@ -169,7 +171,7 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
         contentContainerStyle={styles.list}
         ListHeaderComponent={header}
         ItemSeparatorComponent={() => <View style={styles.sep} />}
-        renderItem={({ item }) => {
+        renderItem={({ item, index }) => {
           const selected = item.id === p.selectedId;
           const row = (
             <ResultRow
@@ -186,13 +188,22 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
           );
           // The card sits under its own row and scrolls with it, so the half-height sheet
           // still shows the route you picked (it used to sit above the list and push it away).
-          return selected && p.selectedCard ? (
-            <View style={styles.selectedBlock} testID="selected-block">
-              {row}
-              {p.selectedCard}
+          const block =
+            selected && p.selectedCard ? (
+              <View style={styles.selectedBlock} testID="selected-block">
+                {row}
+                {p.selectedCard}
+              </View>
+            ) : (
+              row
+            );
+          if (index !== nowAt) return block;
+          const tz = AIRPORTS[item.origin]?.tz;
+          return (
+            <View style={styles.selectedBlock}>
+              <NowLine time={tz ? formatTime(p.now, tz) : null} />
+              {block}
             </View>
-          ) : (
-            row
           );
         }}
         onScrollToIndexFailed={() => {}}
@@ -219,6 +230,32 @@ export function areaLines(request: SearchRequest): string[] {
     line(request.origin, request.originArea, 'Leaving from'),
     line(request.destination, request.destinationArea, 'Landing at'),
   ].filter((l): l is string => l != null);
+}
+
+/**
+ * Where the "Now" line goes in departure order: above the first route still
+ * to leave, only when routes that already left sit above it (so today only).
+ * -1 when there's no line.
+ */
+export function nowLineIndex(results: Itinerary[], now: number, statuses?: Record<string, RowStatus>): number {
+  const i = results.findIndex((it) => it.departUtc >= now && !statuses?.[it.id]?.dimmed);
+  return i > 0 ? i : -1;
+}
+
+/** Thin rule with "Now · 9:40 PM" (origin time) between routes that left and routes to come. */
+function NowLine({ time }: { time: string | null }) {
+  const c = useColors();
+  return (
+    <View
+      style={styles.nowLine}
+      testID="now-line"
+      accessible
+      accessibilityLabel={`Now${time ? `, ${time}` : ''}. Flights below haven’t left yet.`}>
+      <View style={[styles.rule, { backgroundColor: c.accent }]} />
+      <Text style={[textStyles.small, styles.nowText, { color: c.accent }]}>{time ? `Now · ${time}` : 'Now'}</Text>
+      <View style={[styles.rule, { backgroundColor: c.accent }]} />
+    </View>
+  );
 }
 
 /** Results label text for what is sample data; null when nothing is. */
@@ -255,4 +292,7 @@ const styles = StyleSheet.create({
   errorText: { flex: 1, gap: 2 },
   labels: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-end', gap: 4, flexShrink: 1 },
   footer: { paddingTop: spacing.section },
+  nowLine: { flexDirection: 'row', alignItems: 'center', gap: spacing.group, paddingTop: 2 },
+  rule: { flex: 1, height: StyleSheet.hairlineWidth * 2 },
+  nowText: { fontFamily: fonts.bodySemiBold },
 });

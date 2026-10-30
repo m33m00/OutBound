@@ -59,6 +59,7 @@ Condensed from the project docs: MVP decisions (through v8.8), design direction 
 - Sort default (2026-10-30, John: "Flight options should be sorted by departure time. It's weird seeing some earlier flights listed later. If a flight already departed it should be at the top and grey'd out"): departure time, earliest first. Routes that already left sit at the top, grayed. Full routes stay in time order, grayed with a red edge.
   - Provisional (design round 19, not John-decided): ties go to earlier arrival, then fewer stops, then best availability. "Already left" for graying and floating to the top means live Departed/Arrived on the first leg (Q-050: never guess Departed from the schedule); see Q-061. A departed row's seat chips keep their words but drop tier colors.
   - Provisional (design round 19, not John-decided): the list is still 10 routes. When more than 10 match, it keeps at most the 3 that left most recently (by schedule) and fills the rest with routes still to leave, so a late-day search isn't all gone flights (`pickResults` in `src/engine/search.ts`); see Q-061.
+  - Provisional (design round 20, not John-decided): when routes that already left sit above routes still to go (today's searches), a thin accent "Now · 9:40 PM" line (origin time) separates them.
 - Own schedule DB from daily AeroDataBox pulls (~30 airports). No live calls per search.
 
 ## Seat availability
