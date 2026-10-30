@@ -1,4 +1,4 @@
-import { matchAirports, SEARCH_AIRPORTS } from '../airports';
+import { matchAirports, pickerSections, SEARCH_AIRPORTS } from '../airports';
 import { dateChips, fromPickerDate, QUICK_DATE_CHIPS, shortDate, toPickerDate } from '../dates';
 
 describe('matchAirports', () => {
@@ -46,5 +46,37 @@ describe('calendar dates', () => {
   it('round-trips picker dates as calendar days', () => {
     expect(fromPickerDate(toPickerDate('2026-11-02'))).toBe('2026-11-02');
     expect(fromPickerDate(new Date(2026, 0, 5, 23, 59))).toBe('2026-01-05');
+  });
+});
+
+describe('pickerSections (design round 3)', () => {
+  it('puts nearest, then homes, above all airports when nothing is typed', () => {
+    const s = pickerSections('', {
+      nearest: 'DFW',
+      homes: [
+        { code: 'DAL', main: true },
+        { code: 'DFW', main: false },
+        { code: 'LAX', main: false },
+      ],
+    });
+    expect(s.map((x) => x.title)).toEqual(['Your airports', 'All airports']);
+    expect(s[0].data.map((d) => [d.airport.code, d.tag])).toEqual([
+      ['DFW', 'Nearest'],
+      ['DAL', 'Main home'],
+      ['LAX', 'Home'],
+    ]);
+    expect(s[1].data.length).toBeGreaterThan(10);
+  });
+
+  it('shows one plain list with nothing to suggest or while typing', () => {
+    expect(pickerSections('').map((x) => x.title)).toEqual([null]);
+    const typed = pickerSections('la', { nearest: 'DFW' });
+    expect(typed).toHaveLength(1);
+    expect(typed[0].title).toBeNull();
+    expect(typed[0].data[0].airport.code).toBe('LAX');
+  });
+
+  it('skips codes the app has no data for', () => {
+    expect(pickerSections('', { nearest: 'ZZZ' })[0].title).toBeNull();
   });
 });

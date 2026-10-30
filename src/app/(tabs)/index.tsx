@@ -358,6 +358,9 @@ export default function HomeScreen() {
       <AirportPicker
         visible={picking !== null}
         title={picking === 'origin' ? 'From' : 'To'}
+        current={picking === 'origin' ? origin : destination}
+        nearest={nearest}
+        homes={homes}
         onPick={(code) => {
           if (picking === 'origin') setPickedOrigin(code);
           else setDestination(code);

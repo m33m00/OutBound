@@ -124,6 +124,7 @@ export default function SettingsScreen() {
       <AirportPicker
         visible={picking !== null}
         title={picking === 'main' ? 'Main home' : 'Add home'}
+        current={picking === 'main' ? homes.main : null}
         onPick={(code) => {
           if (picking === 'main') {
             update({ homes: { main: code, extras: homes.extras.filter((x) => x !== code) } });

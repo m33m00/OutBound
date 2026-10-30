@@ -41,3 +41,42 @@ export function nearestAirport(lat: number, lon: number, airports: readonly Airp
   }
   return best;
 }
+
+export interface PickerItem {
+  airport: Airport;
+  /** Why it's in the quick list: "Nearest", "Main home", "Home". */
+  tag?: string;
+}
+
+export interface PickerSection {
+  /** Null = no heading (a typed search). */
+  title: string | null;
+  data: PickerItem[];
+}
+
+/**
+ * Airport picker sections (design round 3). With no query: "Your airports"
+ * (nearest first, then main home, then other homes) above "All airports".
+ * A typed query shows one plain list of matches.
+ */
+export function pickerSections(
+  query: string,
+  quick: { nearest?: string | null; homes?: readonly { code: string; main: boolean }[] } = {},
+  airports: readonly Airport[] = SEARCH_AIRPORTS,
+): PickerSection[] {
+  const matches = matchAirports(query, airports).map((airport) => ({ airport }));
+  if (query.trim()) return [{ title: null, data: matches }];
+  const byCode = new Map(airports.map((a) => [a.code, a]));
+  const mine: PickerItem[] = [];
+  const add = (code: string | null | undefined, tag: string) => {
+    const airport = code ? byCode.get(code) : undefined;
+    if (airport && !mine.some((m) => m.airport.code === airport.code)) mine.push({ airport, tag });
+  };
+  add(quick.nearest, 'Nearest');
+  for (const h of quick.homes ?? []) add(h.code, h.main ? 'Main home' : 'Home');
+  if (!mine.length) return [{ title: null, data: matches }];
+  return [
+    { title: 'Your airports', data: mine },
+    { title: 'All airports', data: matches },
+  ];
+}
