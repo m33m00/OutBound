@@ -352,6 +352,22 @@ C) Move the badge down to its own line and put the seat summary top-right
 Recommendation: B, because it puts both headline facts on the first line without moving anything you already use.
 Answer: John (2026-10-30), "Go with your lean" = give seat availability more visual weight on the row (B: route-level seat summary on the top line).
 
+### Q-060 Sort control after the switch to departure order  (Open 2026-10-30)
+Context: You asked for results in departure time order. Q-058 had approved a sort control with Earliest arrival as the default.
+A) No sort control; departure order only
+B) A small control with Departure time (default) and Most seats
+C) Departure time (default), Earliest arrival and Most seats
+Recommendation: A for now, because Most seats means little on sample loads; add B with the schedule DB and reports.
+Default while open: no sort control (backlog 43 on hold).
+
+### Q-061 What counts as "already departed"  (Open 2026-10-30)
+Context: You said flights that already departed go at the top, grayed. Q-050 said never guess Departed from the schedule, so today a row grays only when live status says Departed or Arrived. Also, with departure order a busy day could fill the 10-route list with flights that already left.
+A) Gray and float only on live Departed/Arrived; keep at most 3 already-left routes when more than 10 match
+B) Also gray when the scheduled time has passed and there's no live status yet
+C) Hide routes that left more than an hour ago
+Recommendation: A, because a delayed flight past its scheduled time may still be at the gate, and you'd want to see it.
+Default while open: A.
+
 Provisional defaults for backlog 3 (not John-decided; John may override any time):
 - FAA cache TTL 5 min server-side; serve stale on FAA error.
 - One national NAS feed fetch, filtered on read.

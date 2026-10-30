@@ -131,6 +131,7 @@ export const ResultRow = memo(function ResultRow({
   // Departed rows are dimmed with a gray fill and edge; text keeps 4.5:1.
   const dimmed = !!status?.dimmed;
   const timeColor = dimmed ? c.muted : c.text;
+  const neutralSeats = (source: string) => dimmed || source === 'typical';
   return (
     <Pressable
       onPress={withTick(() => onPress(it.id))}
@@ -177,8 +178,10 @@ export const ResultRow = memo(function ResultRow({
           </Text>
           <View style={styles.topRight}>
             {summary ? (
-              <View style={[styles.summary, { backgroundColor: c[TIER_BG[it.tier]] }]} testID="seat-summary">
-                <Text style={[textStyles.bodyStrong, { color: c[TIER_FG[it.tier]] }]}>{summary}</Text>
+              <View
+                style={[styles.summary, { backgroundColor: dimmed ? c.surface : c[TIER_BG[it.tier]] }]}
+                testID="seat-summary">
+                <Text style={[textStyles.bodyStrong, { color: dimmed ? c.muted : c[TIER_FG[it.tier]] }]}>{summary}</Text>
               </View>
             ) : null}
             <View style={styles.badgeSlot} testID="badge-slot">
@@ -214,12 +217,19 @@ export const ResultRow = memo(function ResultRow({
                 <View
                   style={[
                     styles.tierChip,
-                    { backgroundColor: leg.seats.source === 'typical' ? c.surface2 : c[TIER_BG[leg.seats.tier]] },
+                    // A route that already left keeps its seat words but drops the tier colors.
+                    {
+                      backgroundColor: dimmed
+                        ? c.surface
+                        : leg.seats.source === 'typical'
+                          ? c.surface2
+                          : c[TIER_BG[leg.seats.tier]],
+                    },
                   ]}>
                   <Text
                     style={[
                       textStyles.small,
-                      { color: leg.seats.source === 'typical' ? c.muted : c[TIER_FG[leg.seats.tier]] },
+                      { color: neutralSeats(leg.seats.source) ? c.muted : c[TIER_FG[leg.seats.tier]] },
                     ]}>
                     {seatText(leg.seats, now)}
                   </Text>

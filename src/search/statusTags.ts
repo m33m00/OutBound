@@ -219,6 +219,18 @@ export function rowStatus(
   };
 }
 
+/**
+ * Routes whose first leg has left (live Departed / Arrived) go to the top,
+ * grayed, keeping departure order inside each group (John, 2026-10-30). The
+ * results list and its scroll-to-row both read this order.
+ */
+export function departedFirst<T extends { id: string }>(results: T[], statuses?: Record<string, RowStatus>): T[] {
+  if (!statuses) return results;
+  const gone = results.filter((it) => statuses[it.id]?.dimmed);
+  if (!gone.length || gone.length === results.length) return results;
+  return [...gone, ...results.filter((it) => !statuses[it.id]?.dimmed)];
+}
+
 // ---------------------------------------------------------------- empty results (Q-047)
 
 export type ResultsBanner =

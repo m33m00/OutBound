@@ -4,6 +4,7 @@ import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import { createMemoryProvider, searchItineraries, zonedToUtc } from '@/engine';
 import { flightLookupKey, type FlightStatus } from '@/live';
 import { legLookup, rowStatus } from '@/search/statusTags';
+import { colors } from '@/theme';
 
 import { ResultRow } from '../ResultRow';
 
@@ -115,6 +116,19 @@ describe('ResultRow', () => {
     expect(words[0]).toMatch(/^Tight · 2 open$/);
     const texts = r!.root.findAll((n) => typeof n.props.children === 'string').map((n) => n.props.children as string);
     expect(texts.some((t) => t.endsWith('· reported just now'))).toBe(true);
+  });
+
+  it('grays the seat summary on a route that already left, keeping its words', async () => {
+    const it = await fullItinerary();
+    const status = { legs: [], risks: [], dimmed: true, canceled: false, spoken: ['Departed'] };
+    await act(async () => {
+      r = create(<ResultRow itinerary={it} selected={false} now={NOW} onPress={jest.fn()} status={status} />);
+    });
+    const summary = r!.root.findAll((n) => n.props.testID === 'seat-summary' && typeof n.type === 'string')[0];
+    const text = summary.findAll((n) => typeof n.props.children === 'string')[0];
+    const flat = (style: unknown) => Object.assign({}, ...([style] as unknown[]).flat(3).filter(Boolean));
+    expect(flat(text.props.style).color).toBe(colors.light.muted);
+    expect(text.props.children).toBe('Full · no open seats');
   });
 
   it('shows Checking… while live data loads', async () => {

@@ -55,7 +55,10 @@ Condensed from the project docs: MVP decisions (through v8.8), design direction 
     - Dimmed row = gray fill/edge + muted time (not opacity, for contrast).
     - Canceled color open: Q-050 said "existing most-severe delay color" (magenta, likelyDelays) but also "red"; the only existing red is the Full seat tier. Built a dedicated red: light #c8102e / #fde0e3 / #9e0d24, dark #ff4d5e / #3a1018 / #ffa3ad, plus xmark.circle icon. See Q-053.
     - "Sample status" label while statuses are sample. While flights are sample data the app always uses sample statuses (`useFlightStatuses` with config null).
-- Sort default: earliest arrival; tie-break fewer stops, then best availability. Full routes stay in time order, grayed with a red edge (2026-10-06). Best bet is an optional sort.
+- ~~Sort default: earliest arrival; tie-break fewer stops, then best availability. Full routes stay in time order, grayed with a red edge (2026-10-06). Best bet is an optional sort.~~ (superseded 2026-10-30)
+- Sort default (2026-10-30, John: "Flight options should be sorted by departure time. It's weird seeing some earlier flights listed later. If a flight already departed it should be at the top and grey'd out"): departure time, earliest first. Routes that already left sit at the top, grayed. Full routes stay in time order, grayed with a red edge.
+  - Provisional (design round 19, not John-decided): ties go to earlier arrival, then fewer stops, then best availability. "Already left" for graying and floating to the top means live Departed/Arrived on the first leg (Q-050: never guess Departed from the schedule); see Q-061. A departed row's seat chips keep their words but drop tier colors.
+  - Provisional (design round 19, not John-decided): the list is still 10 routes. When more than 10 match, it keeps at most the 3 that left most recently (by schedule) and fills the rest with routes still to leave, so a late-day search isn't all gone flights (`pickResults` in `src/engine/search.ts`); see Q-061.
 - Own schedule DB from daily AeroDataBox pulls (~30 airports). No live calls per search.
 
 ## Seat availability
@@ -168,7 +171,7 @@ Condensed from the project docs: MVP decisions (through v8.8), design direction 
   - Area pill matches Q-048: outline gray "+ Area" when off, solid accent-blue "All Dallas" when on.
   - Results let you change the date and the filters in place, without going back to search.
     - Provisional (design round 18, 2026-10-30; not John-decided): the results header shows "‹ Wed, Oct 30 ›" to step one day at a time inside the 0-7 day window (arrows dim at the ends) and a Filters button with the changed count; either re-runs the search in place. The date line under it keeps only the route count.
-  - Results get a sort control; still the top 10 routes of the current sort; default stays earliest arrival.
+  - Results get a sort control; still the top 10 routes of the current sort; ~~default stays earliest arrival~~ (default is departure time since 2026-10-30; whether the control is still wanted is Q-060).
   - Seat availability gets more visual weight on each result row (a route-level seat summary on the top line).
 - Provisional (design round 14, 2026-10-30; not John-decided): Android and web show the closest Material icon wherever iPhone shows an SF Symbol (tab bar, buttons, chevrons, sheets), via `src/ui/Icon.tsx`; a symbol with no match keeps its text fallback.
 - App icon (Q-055, 2026-10-30, John: A, "You design it"): Ice Mix ink blue (#1D3D84) background, white route arc from an amber origin dot (amber = you), white plane leaving up-right. Same mark on Android adaptive icon and favicon. Source `design/assets/make-icon.py`.

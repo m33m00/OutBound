@@ -1,8 +1,8 @@
 import { createMemoryProvider } from '../memoryProvider';
 import { createSampleProvider } from '../sample/sampleProvider';
-import { searchItineraries, searchRoutes } from '../search';
+import { KEEP_LEFT, pickResults, searchItineraries, searchRoutes } from '../search';
 import { toRouteLine } from '../toRouteLine';
-import type { Flight, SearchOptions, SeatReport } from '../types';
+import type { Flight, Itinerary, SearchOptions, SeatReport } from '../types';
 
 import { DATE, NOW, flight, seats } from '../testHelpers';
 
@@ -181,17 +181,26 @@ describe('searchItineraries: airport areas (Dallas: DAL, DFW)', () => {
 });
 
 describe('searchItineraries: sort and limit', () => {
-  it('sorts by earliest arrival, then fewer stops, then availability', async () => {
+  it('sorts by departure time, then earlier arrival, fewer stops and availability', async () => {
     const flights = [
-      flight('late', 'AA', 'BNA', 'LAX', '12:00', 260), // arrives last
+      flight('late', 'AA', 'BNA', 'LAX', '12:00', 260), // leaves last
       flight('n1', 'AA', 'BNA', 'LAX', '08:00', 260), // nonstop, 10:20 PT
-      flight('c1', 'AA', 'BNA', 'ORD', '06:00', 60), // 1 stop, same arrival
+      flight('c1', 'AA', 'BNA', 'ORD', '06:00', 60), // 1 stop, leaves first
       flight('c2', 'AA', 'ORD', 'LAX', '08:00', 260),
-      flight('n2', 'UA', 'BNA', 'LAX', '08:00', 260), // nonstop, same arrival, better seats
+      flight('n2', 'UA', 'BNA', 'LAX', '08:00', 260), // same departure as n1, better seats
+      flight('slow', 'DL', 'BNA', 'LAX', '08:00', 300), // same departure, arrives later
     ];
     const reports = { n1: seats('reported', 3), n2: seats('estimate', 40) };
     const result = await search(flights, 'BNA', 'LAX', {}, reports);
-    expect(ids(result)).toEqual(['n2', 'n1', 'c1+c2', 'late']);
+    expect(ids(result)).toEqual(['c1+c2', 'n2', 'n1', 'slow', 'late']);
+  });
+
+  it('lists an earlier departure first even when it arrives later', async () => {
+    const flights = [
+      flight('fast', 'AA', 'BNA', 'LAX', '09:00', 200),
+      flight('early', 'AA', 'BNA', 'LAX', '08:00', 400),
+    ];
+    expect(ids(await search(flights, 'BNA', 'LAX'))).toEqual(['early', 'fast']);
   });
 
   it('keeps full routes in time order and marks them', async () => {
@@ -294,8 +303,46 @@ describe('sample provider', () => {
     const result = await searchItineraries(provider, { origin: 'BNA', destination: 'LAX', date: DATE }, { now: NOW });
     expect(result.length).toBeGreaterThan(3);
     expect(result.length).toBeLessThanOrEqual(10);
-    for (let i = 1; i < result.length; i++) expect(result[i].arriveUtc).toBeGreaterThanOrEqual(result[i - 1].arriveUtc);
+    for (let i = 1; i < result.length; i++) expect(result[i].departUtc).toBeGreaterThanOrEqual(result[i - 1].departUtc);
     expect(result.some((r) => r.stops === 0)).toBe(true);
     expect(result.some((r) => r.stops > 0)).toBe(true);
+  });
+});
+
+describe('pickResults: which 10 to show in departure order', () => {
+  const route = (id: string, departUtc: number) => ({ id, departUtc }) as unknown as Itinerary;
+  const H = 3_600_000;
+  const NOW_MS = Date.UTC(2026, 9, 20, 18);
+  const day = (count: number, firstHour: number) =>
+    Array.from({ length: count }, (_, i) => route(`r${firstHour + i}`, NOW_MS + (firstHour + i) * H));
+
+  it('keeps everything when it fits', () => {
+    const list = day(6, -5);
+    expect(pickResults(list, NOW_MS, 10)).toBe(list);
+  });
+
+  it('keeps the 3 routes that left most recently, then fills with routes still to leave', () => {
+    const list = day(20, -8); // 8 already left, 12 still to leave
+    expect(pickResults(list, NOW_MS, 10).map((r) => r.id)).toEqual([
+      'r-3', 'r-2', 'r-1', 'r0', 'r1', 'r2', 'r3', 'r4', 'r5', 'r6',
+    ]);
+  });
+
+  it('fills with more routes that left when few are still to leave', () => {
+    const list = day(14, -12); // 12 left, 2 still to leave
+    const picked = pickResults(list, NOW_MS, 10).map((r) => r.id);
+    expect(picked).toHaveLength(10);
+    expect(picked.slice(-2)).toEqual(['r0', 'r1']);
+    expect(picked[0]).toBe('r-8');
+  });
+
+  it('shows routes still to leave only, when none left', () => {
+    const list = day(14, 1);
+    expect(pickResults(list, NOW_MS, 10).map((r) => r.id)).toEqual(list.slice(0, 10).map((r) => r.id));
+  });
+
+  it('never keeps more than KEEP_LEFT routes that left when enough are still to leave', () => {
+    const picked = pickResults(day(30, -15), NOW_MS, 10);
+    expect(picked.filter((r) => r.departUtc < NOW_MS)).toHaveLength(KEEP_LEFT);
   });
 });

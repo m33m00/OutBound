@@ -10,7 +10,7 @@ import { nearestAirport } from '@/search/airports';
 import { searchRequest } from '@/search/areas';
 import { dateChips } from '@/search/dates';
 import { chooseOrigin, showLocationCard } from '@/search/origin';
-import { legLookup, resultsBanner, rowStatus, statusLookups } from '@/search/statusTags';
+import { departedFirst, legLookup, resultsBanner, rowStatus, statusLookups } from '@/search/statusTags';
 import { SAMPLE_TZ, SCHEDULE_SOURCE, useRouteSearch } from '@/search/useRouteSearch';
 import { minTapTarget, spacing, textStyles, useColors } from '@/theme';
 import { AirportPicker } from '@/ui/AirportPicker';
@@ -195,12 +195,13 @@ export default function HomeScreen() {
     (id: string | null) => {
       setSelectedId(id);
       if (!id) return;
-      const index = results.findIndex((r) => r.id === id);
+      // Same order as the list: routes that already left sit on top.
+      const index = departedFirst(results, rowStatuses).findIndex((r) => r.id === id);
       // Top of the list, so the leave-by card under the row stays in view.
       if (index >= 0) listRef.current?.scrollToIndex({ index, viewPosition: 0 });
       setSheetIndex((i) => (i === SHEET.full ? SHEET.half : i));
     },
-    [results],
+    [results, rowStatuses],
   );
 
   const onBodyLayout = (e: LayoutChangeEvent) => setBodyHeight(e.nativeEvent.layout.height);

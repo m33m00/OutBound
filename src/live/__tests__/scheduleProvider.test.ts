@@ -122,7 +122,7 @@ describe('createScheduleProvider', () => {
     const s = fakeServer(table);
     const p = createScheduleProvider({ config: CONFIG, fetcher: s.fetcher, now: () => NOW });
     const out = await searchRoutes(p, { origin: 'DAL', destination: 'LAX', date: '2026-10-30' }, { now: NOW });
-    expect(out.results.map((r) => r.pathKey)).toEqual(['DAL>LAX', 'DAL>DEN>LAX']);
+    expect(out.results.map((r) => r.pathKey)).toEqual(['DAL>DEN>LAX', 'DAL>LAX']); // departure order: the DEN connection leaves first
     expect(out.results.every((r) => r.tier === 'unknown')).toBe(true);
     // One read per airport the search touched, not one per flight.
     const airports = s.urls.map((u) => new URL(u).searchParams.get('airport'));

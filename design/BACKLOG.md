@@ -47,5 +47,6 @@ Each item names its owner. One item per work session. spec-keeper runs a pre-fli
 | 40 | Design round 15, area pill (Q-056): outline gray "+ Area" when off, solid blue "✓ All Dallas" when on | main | P1 | Done |
 | 41 | Design round 16, seats first (Q-059): result rows lead with a seat summary for the weakest leg ("Tight · 3 open", tier colors) on the top line, before the delay badge; a nonstop's leg line then keeps only "Reported 5m ago" | main | P1 | Done |
 | 42 | Change date and filters from the results (Q-057) | main | P1 | Done (design round 18) |
-| 43 | Sort control on results: earliest arrival (default), most seats (Q-058) | main | P1 | Open |
+| 43 | Sort control on results: earliest arrival (default), most seats (Q-058) | main | P1 | On hold (Q-060: default is now departure time) |
 | 44 | Remove Flight preview (John, 2026-10-30): Preview Flight button, plane layer, simulated sky clock and their tests removed; leg times, radar and day/night no longer have preview cases | main | P1 | Done |
+| 45 | Results in departure order, routes that already left on top and grayed (John, 2026-10-30) | main | P1 | Done (design round 19) |

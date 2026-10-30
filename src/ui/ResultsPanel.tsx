@@ -4,7 +4,7 @@ import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-nativ
 import { areaFor, type Flight, type Itinerary, type SearchRequest } from '@/engine';
 import type { RouteImpact } from '@/live';
 import { shortDate, type DateChip } from '@/search/dates';
-import type { RowStatus } from '@/search/statusTags';
+import { departedFirst, type RowStatus } from '@/search/statusTags';
 import type { SearchState } from '@/search/useRouteSearch';
 import { radius, spacing, textStyles, useColors } from '@/theme';
 
@@ -51,7 +51,10 @@ export interface ResultsPanelProps {
 export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(function ResultsPanel(p, ref) {
   const c = useColors();
   const { request } = p.state;
-  const results = p.state.status !== 'done' ? [] : p.showingHidden ? p.state.hiddenResults : p.state.results;
+  const results = departedFirst(
+    p.state.status !== 'done' ? [] : p.showingHidden ? p.state.hiddenResults : p.state.results,
+    p.statuses,
+  );
   const full = results.filter((r) => r.isFull).length;
   const stepsDays = !!(p.days && p.onDay);
   // With the day stepper the date is in the stepper, so this line keeps only the count.
