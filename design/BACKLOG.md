@@ -85,3 +85,4 @@ Each item names its owner. One item per work session. spec-keeper runs a pre-fli
 | 78 | Design round 51: Feed requests show live status like My Trips | main | P3 | Built (design round 51, branch claude/project-thread-fzqwou) |
 | 79 | Design round 52: no lone wrapped words on buttons, body text and banners; capped Settings title; My Trips points to the bookmark with a Find Routes button; Q-073 asked | main | P2 | Built (design round 52, branch claude/project-thread-fzqwou) |
 | 80 | Design round 53: empty From or To says Choose airport in blue; denied location says what to do | main | P2 | Built (design round 53, branch claude/project-thread-fzqwou) |
+| 81 | Design round 54: row-shaped placeholders while routes load; couldn't-load says the search is still set | main | P3 | Built (design round 54, branch claude/project-thread-fzqwou) |

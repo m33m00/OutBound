@@ -189,9 +189,15 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
         {topRow}
         <View style={styles.pad}>
           {header}
-          <View style={[styles.state, styles.loading]} accessible accessibilityLabel="Finding routes">
-            <ActivityIndicator color={c.accent} />
-            <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, { color: c.muted }]}>Finding routes…</Text>
+          <View style={styles.loadingBlock} accessible accessibilityLabel="Finding routes">
+            <View style={styles.loading}>
+              <ActivityIndicator color={c.accent} />
+              <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, { color: c.muted }]}>Finding routes…</Text>
+            </View>
+            {/* Row-shaped placeholders so the panel isn't empty while it loads; static, so Reduce Motion needs nothing (round 54). */}
+            {[0, 1, 2, 3].map((i) => (
+              <PlaceholderRow key={i} />
+            ))}
           </View>
         </View>
       </View>
@@ -216,7 +222,9 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
               <View style={styles.errorText}>
                 <Text lineBreakStrategyIOS="push-out" style={[textStyles.heading, { color: c.text }]}>Couldn’t load flights</Text>
                 <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, { color: c.muted }]}>
-                  {p.sampleFlights !== false ? 'Something went wrong. Try again.' : 'Check your connection, then try again.'}
+                  {p.sampleFlights !== false
+                    ? 'Your search is still set. Try again in a moment.'
+                    : 'Check your connection, then try again. Your search is still set.'}
                 </Text>
               </View>
             </View>
@@ -442,9 +450,37 @@ const styles = StyleSheet.create({
   sep: { height: spacing.group },
   state: { paddingVertical: spacing.page, gap: spacing.section, alignItems: 'flex-start' },
   loading: { flexDirection: 'row', alignItems: 'center', gap: spacing.group },
+  loadingBlock: { paddingVertical: spacing.section, gap: spacing.group },
+  placeholder: {
+    borderRadius: radius.md,
+    borderWidth: 1,
+    paddingVertical: spacing.rowY,
+    paddingHorizontal: spacing.rowX,
+    gap: spacing.group,
+  },
+  placeholderLine: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.group },
+  placeholderBar: { borderRadius: 4 },
   errorTop: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.section },
   errorText: { flex: 1, gap: 2 },
   footer: { paddingTop: spacing.section },
   nowLine: { flexDirection: 'row', alignItems: 'center', gap: spacing.group, paddingTop: 2 },
   rule: { flex: 1, height: StyleSheet.hairlineWidth * 2 },
 });
+
+/** A slim result row's shape (times, seat chip; route; airline pills) in gray, while routes load. */
+function PlaceholderRow() {
+  const c = useColors();
+  const fill = { backgroundColor: c.surface2 };
+  return (
+    <View style={[styles.placeholder, { backgroundColor: c.surface, borderColor: c.line }]} testID="placeholder-row">
+      <View style={styles.placeholderLine}>
+        <View style={[styles.placeholderBar, fill, { width: '46%', height: 16 }]} />
+        <View style={[styles.placeholderBar, fill, { width: 64, height: 18 }]} />
+      </View>
+      <View style={[styles.placeholderBar, fill, { width: '38%', height: 12 }]} />
+      <View style={styles.placeholderLine}>
+        <View style={[styles.placeholderBar, fill, { width: 40, height: 16 }]} />
+      </View>
+    </View>
+  );
+}
