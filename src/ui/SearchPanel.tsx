@@ -53,9 +53,9 @@ const listText = (codes: readonly string[]) =>
   codes.length < 2 ? codes.join('') : `${codes.slice(0, -1).join(', ')} and ${codes[codes.length - 1]}`;
 
 /**
- * From/To card. When the airport belongs to an area (Q-048) a pill at the
- * top-right toggles "All {City}": same pill and words in both states, only
- * the fill and mark (+ / check) change. On, the card lists every area airport.
+ * From/To card. When the airport belongs to an area (Q-048, Q-056) a pill at
+ * the top-right toggles it: an outline gray "+ Area" when off, a solid
+ * accent-blue "✓ All {City}" when on. On, the card lists every area airport.
  * The pill sits beside (not inside) the card's button so VoiceOver reaches
  * both, and comes first so it reads in visual order (top-right before code).
  */
@@ -64,7 +64,7 @@ export function AirportCard({ label, code, onPress, areaOn, onToggleArea }: Airp
   const name = code ? AIRPORTS[code]?.name : undefined;
   const area = code ? areaFor(code) : null;
   const whole = area != null && areaOn;
-  const ink = areaOn ? c.onAccent : c.accent;
+  const ink = areaOn ? c.onAccent : c.muted;
   return (
     <View style={[styles.card, { backgroundColor: c.surface2 }]}>
       {area ? (
@@ -77,7 +77,7 @@ export function AirportCard({ label, code, onPress, areaOn, onToggleArea }: Airp
             accessibilityLabel={`Include all ${area.city} airports`}
             accessibilityHint={`Searches ${listText(area.airports)}`}
             hitSlop={PILL_HIT_SLOP}
-            style={pressStyle([styles.areaPill, { borderColor: c.accent }, areaOn ? { backgroundColor: c.accent } : null])}>
+            style={pressStyle([styles.areaPill, { borderColor: areaOn ? c.accent : c.line2 }, areaOn ? { backgroundColor: c.accent } : null])}>
             <Icon
               name={areaOn ? 'checkmark' : 'plus'}
               size={11}
@@ -92,7 +92,7 @@ export function AirportCard({ label, code, onPress, areaOn, onToggleArea }: Airp
               minimumFontScale={0.85}
               maxFontSizeMultiplier={LABEL_MAX_SCALE}
               style={[textStyles.small, styles.pillText, { color: ink }]}>
-              All {area.city}
+              {areaOn ? `All ${area.city}` : 'Area'}
             </Text>
           </Pressable>
         </View>

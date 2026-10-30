@@ -44,7 +44,7 @@ Each item names its owner. One item per work session. spec-keeper runs a pre-fli
 | 37 | Design round 12, larger text on Search: date chips wrap two to a row from 1.2x text size; From/To label and area pill capped at 1.3x so they don't collide; area pill grows instead of clipping; flight status sheet uses curly apostrophes like the rest of the app | main | P1 | Done |
 | 38 | Design round 13, area in results header: a line under the date says when a side searched its whole area ("Landing at any Dallas airport (DAL, DFW)"), so Get Home's title no longer looks like it searched only one airport | main | P1 | Done |
 | 39 | Design round 14, Android icons (backlog 17): shared `Icon` draws SF Symbols on iPhone and the closest Material icon on Android and web (tab bar, buttons, chevrons, sheets, badges); adds `@expo/vector-icons` | main | P2 | Done |
-| 40 | Area pill to gray "+ Area" outline when off (Q-056) | main | P1 | Open |
+| 40 | Design round 15, area pill (Q-056): outline gray "+ Area" when off, solid blue "✓ All Dallas" when on | main | P1 | Done |
 | 41 | Seat summary on the result row's top line (Q-059) | main | P1 | Open |
 | 42 | Change date and filters from the results (Q-057) | main | P1 | Open |
 | 43 | Sort control on results: earliest arrival (default), most seats (Q-058) | main | P1 | Open |
