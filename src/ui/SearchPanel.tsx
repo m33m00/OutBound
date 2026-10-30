@@ -110,7 +110,9 @@ export function AirportCard({ label, code, emptyText = 'Choose airport', onPress
             ? `${label}: ${code}, ${name}${whole ? `, all ${area.city} airports` : ''}. Change`
             : emptyText === 'Choose airport'
               ? `${label}: choose an airport`
-              : `${label}: ${emptyText} Choose an airport`
+              : /choose/i.test(emptyText)
+                ? `${label}: ${emptyText}`
+                : `${label}: ${emptyText} Choose an airport`
         }
         style={pressStyle(styles.cardButton, 'link')}>
         <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, styles.cardLabel, { color: c.muted }]} maxFontSizeMultiplier={LABEL_MAX_SCALE}>
@@ -121,7 +123,15 @@ export function AirportCard({ label, code, emptyText = 'Choose airport', onPress
           <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.text }]}>{area.airports.join(' · ')}</Text>
         ) : null}
         {/* Two lines so long names ("Dallas/Fort Worth International") show at big text sizes. */}
-        <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]} numberOfLines={2}>
+        {/* An empty side says what to do in blue, so a dimmed Find Routes never needs explaining (round 53). */}
+        <Text
+          lineBreakStrategyIOS="push-out"
+          style={[
+            textStyles.small,
+            { color: !code && /choose/i.test(emptyText) ? c.accent : c.muted },
+            !code && /choose/i.test(emptyText) ? { fontFamily: textStyles.bodyStrong.fontFamily } : null,
+          ]}
+          numberOfLines={2}>
           {name ?? emptyText}
         </Text>
       </Pressable>
