@@ -33,15 +33,18 @@ export function LeaveByCard(p: LeaveByCardProps) {
   const result = computeLeaveBy(p);
   const text = leaveByText(result, p.airport.tz);
   const atAirport = result.kind === 'atAirport';
+  const departed = result.kind === 'departed';
   const fresh = p.location != null && p.now - p.location.at <= LOCATION_FRESH_MS;
-  const offerLocation = !fresh && !atAirport && p.locationStatus !== 'locating';
+  // A drive estimate can't help once the flight has left.
+  const offerLocation = !fresh && !atAirport && !departed && p.locationStatus !== 'locating';
   // Say the leave-by line once when a route is picked; VoiceOver focus stays on the row.
   const firstTitle = useRef(text.title);
   useEffect(() => {
     AccessibilityInfo.announceForAccessibility?.(firstTitle.current);
   }, []);
-  const note =
-    p.locationStatus === 'denied'
+  const note = departed
+    ? null
+    : p.locationStatus === 'denied'
       ? 'Location is off for OutBound. Turn it on in iPhone Settings to get a drive estimate.'
       : p.locationStatus === 'locating'
         ? 'Finding your location…'
@@ -49,8 +52,7 @@ export function LeaveByCard(p: LeaveByCardProps) {
 
   // Outlined so it stands out on the tinted card (it used to be gray on light blue).
   const outline = [styles.action, styles.outline, inline && styles.inline, { backgroundColor: c.surface, borderColor: c.accent }];
-  const action =
-    p.locationStatus === 'denied' ? (
+  const action = departed ? null : p.locationStatus === 'denied' ? (
       <Button label="Open Settings" kind="secondary" onPress={() => Linking.openSettings()} style={outline} />
     ) : offerLocation ? (
       <Button label="Use Location" kind="secondary" onPress={p.onUseLocation} style={outline} />
@@ -58,13 +60,13 @@ export function LeaveByCard(p: LeaveByCardProps) {
 
   return (
     // "You're at DFW" is about you, so amber (amber = you), never a seat-tier green.
-    <View style={[styles.card, { backgroundColor: atAirport ? c.youBg : c.accentSoft }]}>
+    <View style={[styles.card, { backgroundColor: atAirport ? c.youBg : departed ? c.surface2 : c.accentSoft }]}>
       <View style={styles.top} testID="leave-by-top">
         <View style={[styles.icon, { backgroundColor: c.surface }]}>
           <Icon
-            name={atAirport ? 'airplane.departure' : 'car.fill'}
+            name={atAirport || departed ? 'airplane.departure' : 'car.fill'}
             size={18}
-            tintColor={atAirport ? c.youText : c.accent}
+            tintColor={atAirport ? c.youText : departed ? c.muted : c.accent}
             fallback={<Text style={[textStyles.heading, { color: c.accent }]}>⏱</Text>}
           />
         </View>

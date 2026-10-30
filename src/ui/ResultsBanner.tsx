@@ -31,6 +31,7 @@ export function ResultsBanner({
       <View style={styles.message}>
         <Text style={[textStyles.body, { color: c.text }]}>
           {banner.text}
+          {banner.kind === 'hidden' ? ' ·' : ''}
         </Text>
         {banner.kind === 'hidden' ? (
           <Pressable

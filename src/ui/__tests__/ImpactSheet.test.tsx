@@ -62,4 +62,18 @@ describe('ImpactSheet VoiceOver (design round 26)', () => {
     const texts = r!.root.findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string').map((n) => n.props.children);
     expect(texts).toContain('No delay or weather data for this route yet.');
   });
+
+  it('says what was checked when there is no forecast (round 41 review)', () => {
+    const base = { ...impact.stations[0], level: 'none' as const, reasons: [], stale: false, noForecast: true };
+    const route: RouteImpact = { ...impact, stations: [{ ...base, code: 'PHX' }, { ...base, code: 'LAX', role: 'destination', asOf: null }] };
+    act(() => {
+      r = create(<ImpactSheet visible title="Delays and weather" impact={route} now={NOW} onClose={jest.fn()} />);
+    });
+    const texts = r!.root.findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string').map((n) => n.props.children);
+    expect(texts).toEqual(expect.arrayContaining(['No FAA delays', 'No weather forecast']));
+    // The forecast line shows once, under the airport whose word doesn't already say it.
+    expect(texts.filter((t) => t === 'No weather forecast for this airport.')).toHaveLength(1);
+    expect(texts).not.toContain('No known disruption');
+  });
 });
+

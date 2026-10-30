@@ -88,6 +88,13 @@ export function FlightStatusSheet({ flight, visible, now, onClose, liveOptions, 
   const { loading, error, refresh } = isSample ? { loading: false, error: null, refresh: live.refresh } : live;
   const response = isSample && flight && sample && lookup ? sampleResponse(sample, flight, lookup.date) : live.response;
   const status = response?.status ?? null;
+  // A new fetch or a new answer replaces the "can't refresh yet" note.
+  useEffect(() => {
+    if (loading) setRefreshNote(null);
+  }, [loading]);
+  useEffect(() => {
+    setRefreshNote(null);
+  }, [response]);
   const title = flight ? `${flight.airline} ${flight.flightNumber}` : 'Flight status';
   const subtitle = flight && lookup ? `${flight.from} → ${flight.to} · ${shortDate(lookup.date)}` : null;
   const tone = status ? STATE_TONE[status.state] : null;
@@ -174,24 +181,31 @@ export function FlightStatusSheet({ flight, visible, now, onClose, liveOptions, 
               ) : null}
               {/* How old the status is sits right under it: an old "Delayed" must say so before anything else. */}
               {response ? (
-                <View style={styles.ageLine}>
-                  {response.stale ? <Icon name="clock" size={14} tintColor={c.text} fallback={null} /> : null}
+                <View style={styles.ageLine} accessible>
+                  {response.stale ? (
+                    <View style={styles.ageIcon} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+                      <Icon name="clock" size={14} tintColor={c.text} fallback={null} />
+                    </View>
+                  ) : null}
                   <Text style={[response.stale ? textStyles.bodyStrong : textStyles.small, styles.ageText, { color: response.stale ? c.text : c.muted }]}>
                     {ageText(response, now)}
                   </Text>
                 </View>
               ) : null}
               {error === 'fetch_failed' && response ? (
-                <Text style={[textStyles.body, { color: c.text }]}>Couldn’t refresh just now; showing the last status.</Text>
+                <Text style={[textStyles.small, { color: c.text }]}>Couldn’t refresh just now; showing the last status.</Text>
               ) : null}
               {error !== 'not_configured' && !isSample ? (
                 <View style={styles.refreshRow}>
                   <Pressable
                     onPress={() => {
                       // Inside the 2-minute wait a tap can't fetch: say so instead of doing nothing.
-                      const started = refresh();
-                      setRefreshNote(started === false ? 'Just updated. You can refresh again in a couple of minutes.' : null);
-                      if (started === false) announce('Just updated. You can refresh again in a couple of minutes.');
+                      // "Just updated" only when the last answer really is fresh.
+                      if (loading || refresh() !== false) return;
+                      const note =
+                        error || response?.stale ? 'Try again in a couple of minutes.' : 'Just updated. You can refresh again in a couple of minutes.';
+                      setRefreshNote(note);
+                      announce(note);
                     }}
                     accessibilityRole="button"
                     accessibilityLabel={loading ? 'Refreshing flight status' : 'Refresh flight status'}
@@ -338,7 +352,8 @@ const styles = StyleSheet.create({
   trailing: { marginLeft: 'auto', flexShrink: 1 },
   refresh: { minHeight: 44, justifyContent: 'center', alignSelf: 'flex-start' },
   refreshRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: spacing.section },
-  ageLine: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  ageLine: { flexDirection: 'row', alignItems: 'flex-start', gap: 6 },
+  ageIcon: { marginTop: 3 },
   ageText: { flexShrink: 1 },
   load: { borderRadius: radius.md, borderWidth: StyleSheet.hairlineWidth, padding: spacing.rowX, gap: spacing.group },
   loadRule: { height: StyleSheet.hairlineWidth, marginVertical: 4 },

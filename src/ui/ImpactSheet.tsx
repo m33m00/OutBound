@@ -35,15 +35,23 @@ export function ImpactSheet({ visible, title, subtitle, impact, now, onClose }: 
           {[...(impact?.stations ?? [])].sort((a, b) => LEVEL_ORDER[a.level] - LEVEL_ORDER[b.level]).map((s) => {
             const likely = s.level === 'likelyDelays';
             const badge = s.level !== 'none';
-            // No badge only means nothing was found; with no data at all, say that instead (DECISIONS G2).
-            const clearWord = s.asOf ? 'No known disruption' : 'No data yet';
+            // No badge only says what was checked. With no forecast (Q-028) only FAA can have been checked.
+            const clearWord = s.noForecast
+              ? s.asOf
+                ? 'No FAA delays'
+                : 'No weather forecast'
+              : s.asOf
+                ? 'No known disruption'
+                : 'No data yet';
+            // The forecast line under the badge, unless the trailing word already says it.
+            const forecastLine = s.noForecast && (badge || s.asOf);
             // One spoken line per station, in words (design round 26).
             const spoken = [
               `${s.code}, ${s.role === 'destination' ? 'destination' : 'connection'}, ${
                 badge ? IMPACT_WORD[s.level as 'caution' | 'likelyDelays'].toLowerCase() : clearWord.toLowerCase()
               }`,
               ...s.reasons.map((r) => `${r.text}, from ${r.source === 'FAA' ? 'FAA' : 'weather'}`),
-              s.noForecast ? 'No weather forecast for this airport' : '',
+              forecastLine ? 'No weather forecast for this airport' : '',
               s.asOf ? `Updated ${forSpeech(formatAge(Date.parse(s.asOf), now))}${s.stale ? ', may be out of date' : ''}` : '',
             ]
               .filter(Boolean)
@@ -79,12 +87,16 @@ export function ImpactSheet({ visible, title, subtitle, impact, now, onClose }: 
                     {r.text} <Text style={{ color: c.muted }}>· {r.source === 'FAA' ? 'FAA' : 'Weather'}</Text>
                   </Text>
                 ))}
-                {s.noForecast ? (
+                {forecastLine ? (
                   <Text style={[textStyles.small, { color: c.muted }]}>No weather forecast for this airport.</Text>
                 ) : null}
                 {s.asOf ? (
                   <View style={styles.ageLine}>
-                    {s.stale ? <Icon name="clock" size={13} tintColor={c.text} /> : null}
+                    {s.stale ? (
+                      <View style={styles.ageIcon}>
+                        <Icon name="clock" size={13} tintColor={c.text} fallback={null} />
+                      </View>
+                    ) : null}
                     <Text style={[s.stale ? textStyles.bodyStrong : textStyles.small, styles.ageText, { color: s.stale ? c.text : c.muted }]}>
                       Updated {formatAge(Date.parse(s.asOf), now)}
                       {s.stale ? ' · may be out of date' : ''}
@@ -94,9 +106,11 @@ export function ImpactSheet({ visible, title, subtitle, impact, now, onClose }: 
               </View>
             );
           })}
-          <Text style={[textStyles.small, { color: c.muted }]}>
-            Sources: FAA airport status and aviationweather.gov forecasts. Checked at connection airports and your destination.
-          </Text>
+          {impact?.stations.length ? (
+            <Text style={[textStyles.small, { color: c.muted }]}>
+              Sources: FAA airport status and aviationweather.gov forecasts. Checked at connection airports and your destination.
+            </Text>
+          ) : null}
         </ScrollView>
       </SafeAreaView>
     </Modal>
@@ -112,7 +126,8 @@ const styles = StyleSheet.create({
   // Wraps at big text sizes; the badge stays right-aligned on whichever line it lands.
   stationTop: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: spacing.group },
   trailing: { marginLeft: 'auto', flexShrink: 1 },
-  ageLine: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  ageLine: { flexDirection: 'row', alignItems: 'flex-start', gap: 6 },
+  ageIcon: { marginTop: 3 },
   ageText: { flexShrink: 1 },
   pill: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 2, borderRadius: radius.sm },
 });

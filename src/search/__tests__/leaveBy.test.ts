@@ -70,4 +70,12 @@ describe('computeLeaveBy', () => {
       sub: 'Be at BNA by 7:45 AM',
     });
   });
+
+  it('says departed, not leave now, once the flight has left (round 42)', () => {
+    const after = DEP + 10 * MIN;
+    const r = run({ now: after, location: { lat: BNA.lat, lon: BNA.lon, at: after } });
+    expect(r).toEqual({ kind: 'departed', airport: 'BNA', departUtc: DEP });
+    expect(leaveByText(r, BNA.tz)).toEqual({ title: 'Departed 9:00 AM', sub: 'This route has left BNA. Pick a later one.' });
+  });
 });
+

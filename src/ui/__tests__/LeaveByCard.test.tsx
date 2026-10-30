@@ -52,4 +52,26 @@ describe('LeaveByCard location button', () => {
     render();
     expect(placement()).toBe('own row');
   });
+
+  it('says Departed and offers no location for a route that already left (round 42)', () => {
+    mockFontScale = 1;
+    act(() => {
+      r = create(
+        <LeaveByCard
+          airport={AIRPORTS.DFW}
+          departUtc={NOW - 600_000}
+          bufferMin={60}
+          now={NOW}
+          location={null}
+          locationStatus="denied"
+          onUseLocation={jest.fn()}
+        />,
+      );
+    });
+    const texts = r!.root.findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string').map((n) => n.props.children as string);
+    expect(texts.some((t) => t.startsWith('Departed '))).toBe(true);
+    expect(r!.root.findAll((n) => /Use Location|Open Settings/.test(String(n.props.accessibilityLabel)))).toHaveLength(0);
+    expect(texts.some((t) => t.startsWith('Location is off'))).toBe(false);
+  });
 });
+
