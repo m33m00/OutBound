@@ -23,6 +23,7 @@ export interface ImpactSheetProps {
 /** Why a route has a delay/weather badge: each station, reasons, source and age. */
 export function ImpactSheet({ visible, title, subtitle, impact, now, onClose }: ImpactSheetProps) {
   const c = useColors();
+  const sorted = [...(impact?.stations ?? [])].sort((a, b) => LEVEL_ORDER[a.level] - LEVEL_ORDER[b.level]);
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <SafeAreaView style={[styles.screen, { backgroundColor: c.bg }]} edges={['top', 'bottom']}>
@@ -32,7 +33,10 @@ export function ImpactSheet({ visible, title, subtitle, impact, now, onClose }: 
             <Text style={[textStyles.body, { color: c.text }]}>No delay or weather data for this route yet.</Text>
           ) : null}
           {/* Worst first, so the airport to worry about is on top; route order otherwise. */}
-          {[...(impact?.stations ?? [])].sort((a, b) => LEVEL_ORDER[a.level] - LEVEL_ORDER[b.level]).map((s) => {
+          {sorted.length > 1 && sorted.some((s, i) => s !== impact?.stations[i]) ? (
+            <Text style={[textStyles.small, { color: c.muted }]}>Worst first</Text>
+          ) : null}
+          {sorted.map((s) => {
             const likely = s.level === 'likelyDelays';
             const badge = s.level !== 'none';
             // No badge only says what was checked. With no forecast (Q-028) only FAA can have been checked.
