@@ -47,6 +47,10 @@ export interface FlightLoadActions {
   yourReport: LoadAnswer | null;
   onAsk: () => void;
   onReport: (open: number, listed: number) => void;
+  /** The answer to your ask, once someone has given one. */
+  askAnswer?: LoadAnswer | null;
+  /** Take back a waiting ask (round 34). */
+  onCancelAsk?: () => void;
 }
 
 export function lookupForFlight(f: Flight): FlightLookup {
@@ -205,7 +209,8 @@ function LoadCard({
   onReport: () => void;
 }) {
   const c = useColors();
-  const { reportWindow, askState, yourReport, onAsk } = load;
+  const { reportWindow, askState, yourReport, onAsk, askAnswer, onCancelAsk } = load;
+  const answerTierWord = askAnswer ? answerTier(askAnswer) : null;
   const headerRef = useFocusOnMount(focus);
   const canReport = reportWindow === 'open';
   const closed = reportClosedNote(reportWindow);
@@ -233,16 +238,39 @@ function LoadCard({
       ) : null}
       <Button label={yourReport ? 'Report Again' : 'Report Load'} onPress={onReport} disabled={!canReport} />
       <View style={[styles.loadRule, { backgroundColor: c.line }]} />
-      <Text style={[textStyles.body, { color: c.muted }]}>{askNote(askState)}</Text>
-      <Button
-        label={asked ? 'Asked' : 'Ask for Load'}
-        kind="secondary"
-        icon={asked ? 'checkmark' : undefined}
-        onPress={onAsk}
-        disabled={askState !== 'ready'}
-        // Asked is a confirmation, not an unavailable button: keep it full strength.
-        style={asked ? styles.undimmed : undefined}
-      />
+      {askAnswer && answerTierWord ? (
+        // Answered: the numbers take the place of the ask button.
+        <Text
+          style={[textStyles.body, { color: c.text }]}
+          accessibilityLabel={forSpeech(`Your ask was answered: ${answerText(askAnswer)} · ${formatAge(askAnswer.at, now)}`)}>
+          {'Answered: '}
+          <Text style={[textStyles.bodyStrong, { color: c[TIER_FG[answerTierWord]] }]}>{TIER_WORD[answerTierWord]}</Text>
+          {` · ${askAnswer.open} open · ${askAnswer.listed} listed · ${formatAge(askAnswer.at, now)}`}
+        </Text>
+      ) : (
+        <>
+          <Text style={[textStyles.body, { color: c.muted }]}>{askNote(askState)}</Text>
+          <Button
+            label={asked ? 'Asked' : 'Ask for Load'}
+            kind="secondary"
+            icon={asked ? 'checkmark' : undefined}
+            onPress={onAsk}
+            disabled={askState !== 'ready'}
+            // Asked is a confirmation, not an unavailable button: keep it full strength.
+            style={asked ? styles.undimmed : undefined}
+          />
+          {asked && onCancelAsk ? (
+            <Pressable
+              onPress={onCancelAsk}
+              accessibilityRole="button"
+              accessibilityLabel="Cancel Request"
+              accessibilityHint="Frees one of your 5 requests"
+              style={pressStyle(styles.cancelAsk, 'link')}>
+              <Text style={[textStyles.bodyStrong, { color: c.accent }]}>Cancel Request</Text>
+            </Pressable>
+          ) : null}
+        </>
+      )}
     </View>
   );
 }
@@ -268,4 +296,5 @@ const styles = StyleSheet.create({
   load: { borderRadius: radius.md, borderWidth: StyleSheet.hairlineWidth, padding: spacing.rowX, gap: spacing.group },
   loadRule: { height: StyleSheet.hairlineWidth, marginVertical: 4 },
   undimmed: { opacity: 1 },
+  cancelAsk: { minHeight: 44, justifyContent: 'center', alignSelf: 'center' },
 });

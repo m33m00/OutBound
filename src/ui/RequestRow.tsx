@@ -4,6 +4,7 @@ import { answerTier, requestDetail, requestTitle, type LoadRequest } from '@/req
 import { forSpeech } from '@/search/format';
 import { minTapTarget, radius, spacing, textStyles, useColors } from '@/theme';
 
+import { Icon } from './Icon';
 import { pressStyle } from './press';
 import { TIER_FG, TIER_MARK } from './tierColors';
 
@@ -14,6 +15,8 @@ export interface RequestRowProps {
   mine?: boolean;
   /** Feed: open the report sheet for this flight. */
   onAnswer?: () => void;
+  /** My Trips: the whole row opens the flight (status, seats, cancel; round 34). */
+  onOpen?: () => void;
 }
 
 /** From this text size the button or badge moves under the text, so the flight never squeezes. */
@@ -24,7 +27,7 @@ const STACK_AT_FONT_SCALE = 1.3;
  * when it leaves and when it was asked; once answered, the tier word with
  * both numbers in the tier color (Q-065). Askers are never named.
  */
-export function RequestRow({ request, now, mine, onAnswer }: RequestRowProps) {
+export function RequestRow({ request, now, mine, onAnswer, onOpen }: RequestRowProps) {
   const c = useColors();
   const { fontScale } = useWindowDimensions();
   const stacked = fontScale >= STACK_AT_FONT_SCALE;
@@ -33,12 +36,13 @@ export function RequestRow({ request, now, mine, onAnswer }: RequestRowProps) {
   const answered = request.answer != null;
   const tier = request.answer ? answerTier(request.answer) : null;
   const status = mine ? (answered ? 'Answered' : 'Waiting') : null;
-  return (
-    <View style={[styles.row, stacked && styles.stacked]} testID="request-row">
+  const label = forSpeech([title, detail, status].filter(Boolean).join('. '));
+  const body = (
+    <>
       <View
         style={stacked ? styles.textStacked : styles.text}
-        accessible
-        accessibilityLabel={forSpeech([title, detail, status].filter(Boolean).join('. '))}>
+        accessible={!onOpen}
+        accessibilityLabel={onOpen ? undefined : label}>
         <Text style={[textStyles.heading, { color: c.text }]}>{title}</Text>
         <View style={styles.detailLine}>
           {tier ? <View style={[styles.dot, { backgroundColor: c[TIER_MARK[tier]] }]} /> : null}
@@ -64,6 +68,25 @@ export function RequestRow({ request, now, mine, onAnswer }: RequestRowProps) {
           <Text style={[textStyles.button, { color: c.onAccent }]}>Answer</Text>
         </Pressable>
       ) : null}
+      {onOpen && !stacked ? <Icon name="chevron.right" size={14} tintColor={c.muted} fallback={null} /> : null}
+    </>
+  );
+  if (onOpen) {
+    return (
+      <Pressable
+        onPress={onOpen}
+        accessibilityRole="button"
+        accessibilityLabel={label}
+        accessibilityHint="Opens the flight"
+        testID="request-row"
+        style={pressStyle([styles.row, stacked && styles.stacked])}>
+        {body}
+      </Pressable>
+    );
+  }
+  return (
+    <View style={[styles.row, stacked && styles.stacked]} testID="request-row">
+      {body}
     </View>
   );
 }

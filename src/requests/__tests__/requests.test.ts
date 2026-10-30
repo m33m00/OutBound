@@ -2,6 +2,8 @@ import { AIRPORTS, localDate, type Flight } from '@/engine';
 
 import {
   addAsk,
+  askFor,
+  cancelAsk,
   afterListText,
   askNote,
   askState,
@@ -139,5 +141,30 @@ describe('asking and reporting from a flight (round 32)', () => {
     expect(askNote('left')).toMatch(/left/);
     expect(askNote('full')).toContain('5 requests waiting');
     expect(askNote('asked')).toContain('My Trips');
+  });
+});
+
+describe('canceling an ask (round 34)', () => {
+  const NOW3 = Date.UTC(2026, 9, 30, 13);
+  const f = (n: number): Flight => ({
+    id: `C${n}`,
+    airline: 'AA',
+    flightNumber: String(2000 + n),
+    from: 'DFW',
+    to: 'ORD',
+    departUtc: NOW3 + 5 * 3600_000,
+    arriveUtc: NOW3 + 7 * 3600_000,
+  });
+
+  it('a waiting ask can be taken back, freeing a slot; an answered one stays', () => {
+    let mine: LoadRequest[] = [];
+    for (let i = 1; i <= MAX_OPEN_REQUESTS; i++) mine = addAsk(mine, f(i), NOW3);
+    expect(askState(mine, f(9), NOW3)).toBe('full');
+    mine = cancelAsk(mine, f(1));
+    expect(askFor(mine, f(1))).toBeNull();
+    expect(askState(mine, f(9), NOW3)).toBe('ready');
+    const answered = mine.map((r, i) => (i === 0 ? { ...r, answer: { open: 3, listed: 1, at: NOW3 } } : r));
+    expect(cancelAsk(answered, answered[0].flight)).toBe(answered);
+    expect(askFor(answered, answered[0].flight)?.answer?.open).toBe(3);
   });
 });

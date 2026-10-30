@@ -181,6 +181,19 @@ export function addAsk(mine: LoadRequest[], flight: Flight, now: number): LoadRe
   return [{ id: `mine-${flightKey(flight)}`, flight, askedAt: now }, ...mine];
 }
 
+/** Your ask on this flight, if any. */
+export const askFor = (mine: LoadRequest[], flight: Flight) => {
+  const key = flightKey(flight);
+  return mine.find((r) => flightKey(r.flight) === key) ?? null;
+};
+
+/** Take back an ask still waiting (frees one of the 5); an answered one stays. */
+export function cancelAsk(mine: LoadRequest[], flight: Flight): LoadRequest[] {
+  const key = flightKey(flight);
+  const next = mine.filter((r) => r.answer || flightKey(r.flight) !== key);
+  return next.length === mine.length ? mine : next;
+}
+
 /** The line under Ask for Load. */
 export function askNote(state: AskState): string {
   if (state === 'asked') return 'Asked. The answer shows in My Trips.';

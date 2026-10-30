@@ -224,3 +224,34 @@ describe('seats card in the flight sheet (design round 32)', () => {
     expect(flat.opacity).toBe(1);
   });
 });
+
+describe('ask answered or taken back (round 34)', () => {
+  let r: ReactTestRenderer | undefined;
+  afterEach(() => {
+    act(() => r?.unmount());
+    clearFlightStatusMemo();
+  });
+  const render = async (load: Partial<FlightLoadActions>) => {
+    const f = (await itinerary()).legs[0].flight;
+    const full: FlightLoadActions = { reportWindow: 'open', askState: 'asked', yourReport: null, onAsk: jest.fn(), onReport: jest.fn(), ...load };
+    await act(async () => {
+      r = create(<FlightStatusSheet flight={f} now={NOW} onClose={jest.fn()} sample={null} liveOptions={{ fetcher: jest.fn(), config: null }} load={full} />);
+    });
+    return full;
+  };
+
+  it('a waiting ask offers Cancel Request', async () => {
+    const onCancelAsk = jest.fn();
+    await render({ onCancelAsk });
+    act(() => r!.root.find((n) => n.props.accessibilityLabel === 'Cancel Request' && n.props.onPress).props.onPress());
+    expect(onCancelAsk).toHaveBeenCalled();
+  });
+
+  it('an answered ask shows the numbers instead of the ask button', async () => {
+    await render({ onCancelAsk: jest.fn(), askAnswer: { open: 12, listed: 4, at: NOW - 9 * 60_000 } });
+    expect(r!.root.findAll((n) => n.props.accessibilityLabel === 'Asked')).toHaveLength(0);
+    expect(r!.root.findAll((n) => n.props.accessibilityLabel === 'Cancel Request')).toHaveLength(0);
+    const line = r!.root.find((n) => typeof n.type === 'string' && String(n.props.accessibilityLabel).startsWith('Your ask was answered'));
+    expect(line.props.accessibilityLabel).toBe('Your ask was answered: Okay, 12 open, 4 listed, 9 minutes ago');
+  });
+});
