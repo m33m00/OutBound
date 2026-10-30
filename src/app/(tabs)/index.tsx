@@ -39,7 +39,6 @@ import { useRadarLayers } from '@/ui/useRadarLayers';
 import { useSheetContent } from '@/ui/useSheetContent';
 import { selectionTick } from '@/ui/haptics';
 
-const DEFAULT_DESTINATION = 'LAX';
 /** Peek height above the home indicator. */
 const PEEK = 132;
 const SHEET = { peek: 0, half: 1, full: 2 } as const;
@@ -59,7 +58,7 @@ const mark = (code: string): MapAirport => ({ code, coord: [AIRPORTS[code].lon, 
  */
 export default function HomeScreen() {
   const c = useColors();
-  const [destination, setDestination] = useState<string | null>(DEFAULT_DESTINATION);
+  const [destination, setDestination] = useState<string | null>(null);
   const [picking, setPicking] = useState<'origin' | 'destination' | null>(null);
   const { settings, loaded: settingsLoaded, update: updateSettings } = useSettings();
   const [filters, setFilters] = useState<SearchFilters>(DEFAULT_FILTERS);
@@ -512,6 +511,7 @@ export default function HomeScreen() {
                         airport={AIRPORTS[firstLeg.from]}
                         departUtc={firstLeg.departUtc}
                         departed={!!(selected && rowStatuses?.[selected.id]?.dimmed)}
+                        delayedText={selected ? (rowStatuses?.[selected.id]?.legs[0]?.newText ?? null) : null}
                         bufferMin={settings.bufferMin}
                         now={now}
                         location={location}

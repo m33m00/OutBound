@@ -21,6 +21,8 @@ export interface LeaveByCardProps {
   onUseLocation: () => void;
   /** Live status says the first flight has left (Q-050: never from the schedule). */
   departed?: boolean;
+  /** Live delayed departure, local text ("2:40 PM"). Shown under the times; leave-by still uses the schedule (Q-070, John: C). */
+  delayedText?: string | null;
 }
 
 /** From this text size the location button gets its own row. */
@@ -58,6 +60,8 @@ export function LeaveByCard(p: LeaveByCardProps) {
       : p.locationStatus === 'locating'
         ? 'Finding your location…'
         : null;
+  // The schedule stays the safe time to work from; the delay is shown, not counted (Q-070).
+  const delayLine = !departed && p.delayedText ? `Flight delayed to ${p.delayedText}` : null;
 
   // Outlined so it stands out on the tinted card (it used to be gray on light blue).
   const outline = [styles.action, styles.outline, inline && styles.inline, { backgroundColor: c.surface, borderColor: c.accent }];
@@ -80,9 +84,12 @@ export function LeaveByCard(p: LeaveByCardProps) {
           />
         </View>
         {/* One VoiceOver element for the text; buttons stay separately reachable. */}
-        <View style={styles.text} accessible accessibilityLabel={forSpeech([text.title, text.sub, note].filter(Boolean).join('. '))}>
+        <View style={styles.text} accessible accessibilityLabel={forSpeech([text.title, text.sub, delayLine, note].filter(Boolean).join('. '))}>
           <Text style={[textStyles.heading, { color: atAirport ? c.youText : c.text }]}>{text.title}</Text>
           <Text style={[textStyles.small, { color: c.muted }]}>{text.sub}</Text>
+          {delayLine ? (
+            <Text style={[textStyles.small, { color: c.caution, fontFamily: textStyles.bodyStrong.fontFamily }]}>{delayLine}</Text>
+          ) : null}
           {note ? <Text style={[textStyles.small, { color: c.muted }]}>{note}</Text> : null}
         </View>
         {action && inline ? action : null}

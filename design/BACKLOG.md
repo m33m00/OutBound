@@ -76,3 +76,4 @@ Each item names its owner. One item per work session. spec-keeper runs a pre-fli
 | 69 | Design round 42: Leave By card says Departed (gray, no location button) when live status says the first flight left | main | P2 | Built (design round 42, branch claude/project-thread-fzqwou) |
 | 70 | Design round 43: Radar button light blue while on but nothing drawn yet; radar age read as its VoiceOver value | main | P3 | Built (design round 43, branch claude/project-thread-fzqwou) |
 | 71 | Design round 44: "Worst first" caption when the delays sheet reorders airports; radar button VoiceOver tests | main | P3 | Built (design round 44, branch claude/project-thread-fzqwou) |
+| 72 | John's answers (2026-10-30): Search starts with To blank (Q-069); Leave By keeps the scheduled time and shows "Flight delayed to …" under it (Q-070) | main | P1 | Built (design round 45, branch claude/project-thread-fzqwou); confirm on device |

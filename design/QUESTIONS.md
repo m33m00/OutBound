@@ -420,19 +420,21 @@ B) Change the results banner "No Flights Found on Selected Date" to sentence cas
 C) Keep all of them as they are
 Recommendation: A and B, because every other notice and setting in the app uses "your" and sentence case, and "Show Routes" says what the button does when VoiceOver reads it alone.
 
-### Q-069 Should To start filled in on first launch?  (Open)
+### Q-069 Should To start filled in on first launch?  (Answered 2026-10-30)
 Context: Search opens with To set to LAX for everyone. Nothing in DECISIONS asks for that. For someone who lives near LAX, From and To can end up the same, and a new person may not notice To was picked for them.
 A) Keep LAX as the starting To
 B) Start To empty with "Choose airport", like From
 C) Start To at the main home when one is set and you're away from it, else empty
 Recommendation: B, because a blank To makes the first step obvious and never picks a city for you; Get Home already covers going home.
+Answer: John (2026-10-30), "Start it blank": B.
 
-### Q-070 When a flight is delayed, should Leave By use the new time?  (Open)
+### Q-070 When a flight is delayed, should Leave By use the new time?  (Answered 2026-10-30)
 Context: Leave By counts back from the scheduled departure. If live status says the flight now leaves 40 minutes late, the card still says "Be at DAL by 1:15 PM". Standby lists and gates often follow the new time, but a delay can also shrink again.
 A) Keep the scheduled time (safest, never late)
 B) Use the delayed time when live status has one, and say so ("Delayed to 2:40 PM")
 C) Keep the scheduled time and add a line under it: "Flight delayed to 2:40 PM"
 Recommendation: C, because it never makes you late if the delay shrinks, and you still see the new time.
+Answer: John (2026-10-30), "C".
 
 Provisional defaults for backlog 3 (not John-decided; John may override any time):
 - FAA cache TTL 5 min server-side; serve stale on FAA error.

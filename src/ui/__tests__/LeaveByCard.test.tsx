@@ -74,5 +74,30 @@ describe('LeaveByCard location button', () => {
     expect(r!.root.findAll((n) => /Use Location|Open Settings/.test(String(n.props.accessibilityLabel)))).toHaveLength(0);
     expect(texts.some((t) => t.startsWith('Location is off'))).toBe(false);
   });
+
+  it('keeps the scheduled leave-by and adds the delay under it (Q-070, John: C)', () => {
+    mockFontScale = 1;
+    act(() => {
+      r = create(
+        <LeaveByCard
+          airport={AIRPORTS.DFW}
+          departUtc={NOW + 4 * 3600_000}
+          bufferMin={60}
+          now={NOW}
+          location={null}
+          locationStatus="idle"
+          onUseLocation={jest.fn()}
+          delayedText="2:40 PM"
+        />,
+      );
+    });
+    const texts = r!.root.findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string').map((n) => n.props.children as string);
+    expect(texts).toContain('Flight delayed to 2:40 PM');
+    // The title still counts back from the schedule: 4 h out minus the 60 min buffer.
+    expect(texts.some((t) => t.startsWith('Be at DFW by '))).toBe(true);
+    const label = r!.root.find((n) => n.props.accessible && typeof n.props.accessibilityLabel === 'string' && n.props.accessibilityLabel.startsWith('Be at')).props
+      .accessibilityLabel as string;
+    expect(label).toContain('Flight delayed to 2:40 PM');
+  });
 });
 
