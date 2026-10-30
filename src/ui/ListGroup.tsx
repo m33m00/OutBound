@@ -84,7 +84,7 @@ export function ListRow({ label, value, detail, onPress, accessibilityHint, valu
           size={13}
           weight="semibold"
           tintColor={c.faint}
-          fallback={<Text lineBreakStrategyIOS="push-out" style={[textStyles.heading, { color: c.faint }]}>›</Text>}
+          fallback={<Text style={[textStyles.heading, { color: c.faint }]}>›</Text>}
         />
       ) : null}
     </>

@@ -186,7 +186,7 @@ export const ResultRow = memo(function ResultRow({
                 {/* What matters now leads: the new time at full size, the old one small and struck after it (John, 2026-10-30). */}
                 {first?.struck && first.newText ? (
                   <>
-                    {keep(first.newText)} <Text style={[styles.was, styles.struck, { color: c.muted }]}>{keep(t.depart)}</Text>
+                    {keep(first.newText)}{'\u00a0'}<Text style={[styles.was, styles.struck, { color: c.muted }]}>{keep(t.depart)}</Text>
                   </>
                 ) : (
                   t.depart
@@ -195,14 +195,14 @@ export const ResultRow = memo(function ResultRow({
                 {/* A late arrival shows like a late departure: old time struck, new time after it. */}
                 {status?.arrival ? (
                   <>
-                    {keep(status.arrival.newText)} <Text style={[styles.was, styles.struck, { color: c.muted }]}>{keep(t.arrive)}</Text>
+                    {keep(status.arrival.newText)}{'\u00a0'}<Text style={[styles.was, styles.struck, { color: c.muted }]}>{keep(t.arrive)}</Text>
                   </>
                 ) : (
                   t.arrive
                 )}
               </>
             )}
-            {t.plusDays ? <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}> {t.plusDays}</Text> : null}
+            {t.plusDays ? <Text style={[textStyles.small, { color: c.muted }]}> {t.plusDays}</Text> : null}
           </Text>
           {/* At big text the times take the line; seats and the delay badge go under them. */}
           <View style={[styles.topRight, stacked && styles.topRightStacked]} testID="top-right">

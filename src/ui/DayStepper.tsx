@@ -51,7 +51,7 @@ export function DayStepper({
         size={16}
         weight="semibold"
         tintColor={c.accent}
-        fallback={<Text lineBreakStrategyIOS="push-out" style={[textStyles.heading, { color: c.accent }]}>{dir === 'prev' ? '‹' : '›'}</Text>}
+        fallback={<Text style={[textStyles.heading, { color: c.accent }]}>{dir === 'prev' ? '‹' : '›'}</Text>}
       />
     </Pressable>
   );

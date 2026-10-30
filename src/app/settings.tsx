@@ -259,11 +259,10 @@ function MapsChoice({ value, onChange }: { value: MapsApp; onChange: (app: MapsA
           );
         })}
       </View>
-      {value === 'google' ? (
-        <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>
-          Opens in Safari if Google Maps isn’t on this iPhone.
-        </Text>
-      ) : null}
+      {/* Always shown, so picking doesn't make the layout jump. */}
+      <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>
+        Google Maps opens in Safari if the app isn’t on this iPhone.
+      </Text>
     </View>
   );
 }

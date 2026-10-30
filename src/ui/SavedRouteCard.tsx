@@ -48,7 +48,7 @@ export function SavedRouteCard({ route, past, now, onOpen, onRemove }: SavedRout
           size={13}
           weight="semibold"
           tintColor={c.faint}
-          fallback={<Text lineBreakStrategyIOS="push-out" style={[textStyles.heading, { color: c.faint }]}>›</Text>}
+          fallback={<Text style={[textStyles.heading, { color: c.faint }]}>›</Text>}
         />
       </View>
       <Pressable
@@ -62,7 +62,7 @@ export function SavedRouteCard({ route, past, now, onOpen, onRemove }: SavedRout
           name="trash"
           size={18}
           tintColor={c.muted}
-          fallback={<Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>Remove</Text>}
+          fallback={<Text style={[textStyles.small, { color: c.muted }]}>Remove</Text>}
         />
       </Pressable>
     </View>

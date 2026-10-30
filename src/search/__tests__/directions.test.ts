@@ -9,7 +9,7 @@ describe('directions to the airport', () => {
 
   it('opens Apple Maps driving directions by default', () => {
     const [url, ...rest] = directionsUrls(AIRPORTS.DAL, 'apple');
-    expect(rest).toHaveLength(0);
+    expect(rest).toEqual([directionsUrls(AIRPORTS.DAL, 'google')[1]]);
     expect(url.startsWith('https://maps.apple.com/?daddr=Dallas%20Love%20Field%20Airport%20(DAL)')).toBe(true);
     expect(url).toContain('dirflg=d');
   });

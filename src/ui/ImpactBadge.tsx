@@ -31,7 +31,7 @@ export function ImpactBadge({ impact, onPress }: { impact: RouteImpact; onPress:
         name={IMPACT_ICON[impact.level]}
         size={12}
         tintColor={fg}
-        fallback={<Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: fg }]}>!</Text>}
+        fallback={<Text style={[textStyles.small, { color: fg }]}>!</Text>}
       />
       <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, styles.word, { fontFamily: fonts.bodySemiBold, color: fg }]} testID="impact-word">
         {impactBadgeText(impact)}

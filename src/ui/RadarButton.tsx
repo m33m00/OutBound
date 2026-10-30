@@ -45,7 +45,7 @@ export function RadarButton({
           name="cloud.rain"
           size={20}
           tintColor={solid ? c.onAccent : on ? c.accent : c.text}
-          fallback={<Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: solid ? c.onAccent : on ? c.accent : c.text }]}>Rain</Text>}
+          fallback={<Text style={[textStyles.small, { color: solid ? c.onAccent : on ? c.accent : c.text }]}>Rain</Text>}
         />
       </Pressable>
       {caption ? (

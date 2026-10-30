@@ -122,7 +122,7 @@ export function FlightStatusSheet({ flight, visible, now, onClose, liveOptions, 
             {lead.time.replace(/ /g, '\u00a0')}
             <Text style={[styles.leadMeta, { color: c.muted }]}>
               {`  ${lead.label}`}
-              {lead.was ? ' · ' : ''}
+              {lead.was ? '\u00a0· ' : ''}
               {lead.was ? <Text style={styles.struck}>{lead.was.replace(/ /g, '\u00a0')}</Text> : null}
             </Text>
           </Text>

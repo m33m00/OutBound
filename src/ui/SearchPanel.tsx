@@ -88,7 +88,7 @@ export function AirportCard({ label, code, emptyText = 'Choose airport', onPress
               size={11}
               weight="bold"
               tintColor={ink}
-              fallback={<Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: ink }]}>{areaOn ? '✓' : '+'}</Text>}
+              fallback={<Text style={[textStyles.small, { color: ink }]}>{areaOn ? '✓' : '+'}</Text>}
             />
             <Text
               numberOfLines={1}
@@ -261,7 +261,7 @@ export function SearchPanel(p: SearchPanelProps) {
             name="arrow.left.arrow.right"
             size={18}
             tintColor={c.accent}
-            fallback={<Text lineBreakStrategyIOS="push-out" style={[textStyles.heading, { color: c.accent }]}>⇄</Text>}
+            fallback={<Text style={[textStyles.heading, { color: c.accent }]}>⇄</Text>}
           />
         </Pressable>
         <AirportCard
@@ -313,7 +313,7 @@ export function SearchPanel(p: SearchPanelProps) {
             name="house"
             size={15}
             tintColor={c.accent}
-            fallback={<Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.accent }]}>⌂</Text>}
+            fallback={<Text style={[textStyles.small, { color: c.accent }]}>⌂</Text>}
           />
           <Text style={[textStyles.bodyStrong, styles.homeHintText, { color: c.accent }]}>Set your main home to use Get Home ›</Text>
         </Pressable>

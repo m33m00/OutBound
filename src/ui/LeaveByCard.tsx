@@ -47,6 +47,8 @@ export function LeaveByCard(p: LeaveByCardProps) {
   const directions = !atAirport && !departed;
   const mapsApp = p.mapsApp ?? 'apple';
   const go = () => void openDirections(p.airport, mapsApp);
+  // "10:45 AM" never splits across lines.
+  const keepTimes = (s: string) => s.replace(/(\d) (AM|PM)/g, '$1\u00a0$2');
   const fresh = p.location != null && p.now - p.location.at <= LOCATION_FRESH_MS;
   // A drive estimate can't help once the flight has left.
   const offerLocation = !fresh && !atAirport && !departed && p.locationStatus !== 'locating';
@@ -111,8 +113,13 @@ export function LeaveByCard(p: LeaveByCardProps) {
           accessibilityRole={directions ? 'button' : undefined}
           accessibilityHint={directions ? `Opens directions in ${MAPS_APP_NAME[mapsApp]}` : undefined}
           onAccessibilityTap={directions ? go : undefined}
+          // TalkBack has no accessibility tap, so activation runs the same.
+          accessibilityActions={directions ? [{ name: 'activate' }] : undefined}
+          onAccessibilityAction={directions ? go : undefined}
           accessibilityLabel={forSpeech([text.title, text.sub, delayLine, note].filter(Boolean).join('. '))}>
-          <Text style={[textStyles.heading, { color: atAirport ? c.youText : c.text }]}>{text.title}</Text>
+          <Text style={[textStyles.heading, { color: atAirport ? c.youText : c.text }]} lineBreakStrategyIOS="push-out">
+            {keepTimes(text.title)}
+          </Text>
         </View>
         {action && inline ? action : null}
         {/* Room for the chevron only when no button sits in the row; the directions icon says it either way. */}
@@ -125,7 +132,7 @@ export function LeaveByCard(p: LeaveByCardProps) {
       {/* The small lines use the card's full width, so they don't squeeze beside the button and drop one word (John, 2026-10-30). */}
       <View style={styles.details} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
         <Text style={[textStyles.small, { color: c.muted }]} lineBreakStrategyIOS="push-out">
-          {text.sub}
+          {keepTimes(text.sub)}
         </Text>
         {delayLine ? (
           <Text
@@ -164,6 +171,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   text: { flex: 1 },
-  // Pulled up under the title row so the card doesn't grow.
-  details: { gap: 2, marginTop: -4 },
+  // Lined up under the title and pulled up so it reads as the title's caption.
+  details: { gap: 2, marginTop: -6, paddingLeft: 34 + spacing.section },
 });

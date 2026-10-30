@@ -17,8 +17,9 @@ export function airportQuery(a: Airport): string {
 }
 
 /**
- * Links to try in order. Google tries its app first, then the web page
- * (which opens the app when iOS can). Other platforms always use Google.
+ * Links to try in order. Google tries its app first; both end with the
+ * Google Maps web page so a tap never does nothing. Other platforms always
+ * use Google.
  */
 export function directionsUrls(a: Airport, app: MapsApp, ios = true): string[] {
   const q = encodeURIComponent(airportQuery(a));
@@ -26,5 +27,5 @@ export function directionsUrls(a: Airport, app: MapsApp, ios = true): string[] {
   const web = `https://www.google.com/maps/dir/?api=1&destination=${q}&travelmode=driving`;
   if (!ios) return [web];
   if (app === 'google') return [`comgooglemaps://?daddr=${q}&center=${near}&directionsmode=driving`, web];
-  return [`https://maps.apple.com/?daddr=${q}&sll=${near}&dirflg=d`];
+  return [`https://maps.apple.com/?daddr=${q}&sll=${near}&dirflg=d`, web];
 }
