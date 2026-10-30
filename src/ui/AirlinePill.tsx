@@ -8,17 +8,27 @@ import { Icon } from './Icon';
  * Airline badge: pill + plane glyph + IATA code (DECISIONS.md: no logos).
  * One neutral accent color for every airline so it never reads as a tier.
  */
-export function AirlinePill({ airline, flightNumber }: { airline: string; flightNumber: string }) {
+export function AirlinePill({
+  airline,
+  flightNumber,
+  large,
+}: {
+  airline: string;
+  flightNumber: string;
+  /** Body-size text, for the route view. */
+  large?: boolean;
+}) {
   const c = useColors();
+  const text = large ? textStyles.bodyStrong : textStyles.small;
   return (
     <View style={[styles.pill, { backgroundColor: c.accentSoft }]}>
       <Icon
         name="airplane"
-        size={11}
+        size={large ? 13 : 11}
         tintColor={c.accent}
         fallback={<Text style={[textStyles.small, { color: c.accent }]}>✈</Text>}
       />
-      <Text style={[textStyles.small, { color: c.accent }]}>
+      <Text style={[text, { color: c.accent }]}>
         {airline} {flightNumber}
       </Text>
     </View>

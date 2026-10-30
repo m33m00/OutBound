@@ -6,11 +6,14 @@ import {
   formatDuration,
   formatTime,
   nearbyNotes,
+  neutralSeatText,
+  routeSeatAge,
   routeSeatSummary,
   rowAccessibilityLabel,
   rowTimes,
   seatSourceText,
   seatText,
+  slimStops,
   stopCount,
   stopsText,
 } from '../format';
@@ -102,6 +105,36 @@ describe('seat summary (Q-059)', () => {
     expect(seatSourceText(seats({}), NOW)).toBe('Reported just now');
     expect(seatSourceText(seats({ source: 'estimate', asOf: NOW - 2 * 3_600_000 }), NOW)).toBe('Est. 2h ago');
     expect(seatSourceText(seats({ source: 'typical' }), NOW)).toBeNull();
+  });
+});
+
+describe('slim row seat and stop text (design round 22)', () => {
+  const NOW = Date.UTC(2026, 9, 19, 12);
+  const seats = (p: Partial<LegSeats>): LegSeats => ({ source: 'reported', tier: 'good', netSeats: 8, asOf: NOW, ...p });
+  const route = (legs: LegSeats[], tier: LegSeats['tier'], connections: { airport: string; layoverMin: number }[] = []) =>
+    ({ tier, stops: connections.length, connections, legs: legs.map((s) => ({ seats: s })) }) as unknown as Parameters<
+      typeof routeSeatSummary
+    >[0];
+
+  it('gives the summary the age of the leg that sets it', () => {
+    const r = route([seats({ tier: 'good', netSeats: 20 }), seats({ tier: 'tight', netSeats: 2, source: 'estimate', asOf: NOW - 3_600_000 })], 'tight');
+    expect(routeSeatAge(r, NOW)).toBe('Est. 1h ago');
+    expect(routeSeatAge(route([seats({ source: 'typical', tier: 'unknown' })], 'unknown'), NOW)).toBeNull();
+  });
+
+  it('keeps typical-only routes neutral but says what is known', () => {
+    const r = route(
+      [seats({ source: 'typical', tier: 'unknown', netSeats: 40, asOf: Date.UTC(2026, 6, 1) }), seats({ source: 'typical', tier: 'unknown', netSeats: 12, asOf: Date.UTC(2026, 6, 1) })],
+      'unknown',
+    );
+    expect(neutralSeatText(r, NOW)).toBe('Typically ~12 open · Jul data');
+    expect(neutralSeatText(route([seats({ source: 'unknown', tier: 'unknown', netSeats: null, asOf: null })], 'unknown'), NOW)).toBe('No data yet');
+  });
+
+  it('adds short connections to the stop count', () => {
+    expect(slimStops(route([seats({})], 'good'))).toBe('Nonstop');
+    expect(slimStops(route([seats({}), seats({})], 'good', [{ airport: 'DEN', layoverMin: 45 }]))).toBe('1 stop · 45m at DEN');
+    expect(slimStops(route([seats({}), seats({})], 'good', [{ airport: 'DEN', layoverMin: 90 }]))).toBe('1 stop');
   });
 });
 

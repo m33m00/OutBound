@@ -1,5 +1,5 @@
 import { forwardRef, type ReactNode } from 'react';
-import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
 import { AIRPORTS, areaFor, type Flight, type Itinerary, type SearchRequest } from '@/engine';
 import type { RouteImpact } from '@/live';
@@ -12,6 +12,8 @@ import { fonts, radius, spacing, textStyles, useColors } from '@/theme';
 import { BackButton } from './BackButton';
 import { Button } from './Buttons';
 import { DayStepper } from './DayStepper';
+import { withTick } from './haptics';
+import { pressStyle } from './press';
 import { Icon } from './Icon';
 import { ResultRow } from './ResultRow';
 
@@ -22,7 +24,7 @@ export interface ResultsPanelProps {
   onSelect: (id: string) => void;
   onBack: () => void;
   onRetry: () => void;
-  /** Leave-by card for the selected route, shown right under its row. */
+  /** Leave-by card for the selected route, shown at the top of its route view (John, 2026-10-30). */
   selectedCard?: ReactNode;
   /** Delay/weather impact per itinerary id (item 7). */
   impacts?: Record<string, RouteImpact>;
@@ -51,7 +53,12 @@ export interface ResultsPanelProps {
 
 export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(function ResultsPanel(p, ref) {
   const c = useColors();
+  const { fontScale } = useWindowDimensions();
+  // At big text sizes Back and Filters shrink to their icons so the route title keeps room.
+  const tight = fontScale >= COMPACT_BAR_SCALE;
   const { request } = p.state;
+  const routeTitle = `${request.origin} → ${request.destination}`;
+  const routeSpoken = `${request.origin} to ${request.destination}`;
   const results = departedFirst(
     p.state.status !== 'done' ? [] : p.showingHidden ? p.state.hiddenResults : p.state.results,
     p.statuses,
@@ -82,16 +89,17 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
   const topRow = (
     <View style={[styles.bar, styles.pad, { borderBottomColor: c.line }]} testID="results-bar">
       <View style={styles.titleRow}>
-        <BackButton label="Search" onPress={p.onBack} accessibilityLabel="Back to search" />
+        <BackButton label={tight ? '' : 'Search'} onPress={p.onBack} accessibilityLabel="Back to search" />
         <Text
           style={[textStyles.heading, styles.title, { color: c.text }]}
           accessibilityRole="header"
-          numberOfLines={1}>
-          {request.origin} → {request.destination}
+          accessibilityLabel={routeSpoken}
+          numberOfLines={2}>
+          {routeTitle}
         </Text>
         {p.onFilters ? (
           <Button
-            label={p.filtersChanged ? `Filters (${p.filtersChanged})` : 'Filters'}
+            label={tight ? (p.filtersChanged ? String(p.filtersChanged) : '') : p.filtersChanged ? `Filters (${p.filtersChanged})` : 'Filters'}
             accessibilityLabel={p.filtersChanged ? `Filters, ${p.filtersChanged} changed` : 'Filters'}
             icon="line.3.horizontal.decrease.circle"
             kind="secondary"
@@ -182,8 +190,60 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
     );
   }
 
+  // A picked route gets its own view (John, 2026-10-30): leave-by on top, then the route
+  // card in larger type. The list stays mounted underneath so it keeps its scroll spot.
+  const focusIndex = p.selectedId ? results.findIndex((r) => r.id === p.selectedId) : -1;
+  const focused = focusIndex >= 0 ? results[focusIndex] : undefined;
+  const step = (to: number) => {
+    const target = results[to];
+    return target ? withTick(() => p.onSelect(target.id)) : undefined;
+  };
+
   return (
     <View style={styles.fill}>
+      {focused ? (
+        <View style={styles.fill} testID="route-view">
+          <View style={[styles.bar, styles.pad, styles.titleRow, { borderBottomColor: c.line }]}>
+            <BackButton
+              label={tight ? '' : 'Routes'}
+              onPress={() => p.onSelect(focused.id)}
+              accessibilityLabel="Back to all routes"
+            />
+            <Text
+              style={[textStyles.heading, styles.title, { color: c.text }]}
+              accessibilityRole="header"
+              accessibilityLabel={routeSpoken}
+              numberOfLines={2}>
+              {routeTitle}
+            </Text>
+            <View style={styles.pager}>
+              <StepArrow dir="prev" onPress={step(focusIndex - 1)} />
+              <Text
+                style={[textStyles.body, { color: c.muted }]}
+                accessibilityLabel={`Route ${focusIndex + 1} of ${results.length}`}>
+                {focusIndex + 1} of {results.length}
+              </Text>
+              <StepArrow dir="next" onPress={step(focusIndex + 1)} />
+            </View>
+          </View>
+          <ScrollView contentContainerStyle={styles.focus}>
+            {p.selectedCard ? <View testID="selected-card">{p.selectedCard}</View> : null}
+            <ResultRow
+              itinerary={focused}
+              selected
+              large
+              now={p.now}
+              onPress={p.onSelect}
+              impact={p.impacts?.[focused.id]}
+              impactLoading={p.impactsLoading}
+              onImpactPress={p.onImpactPress}
+              onLegPress={p.onLegPress}
+              status={p.statuses?.[focused.id]}
+            />
+          </ScrollView>
+        </View>
+      ) : null}
+      <View style={[styles.fill, focused && styles.hidden]}>
       {topRow}
       <FlatList
         ref={ref}
@@ -207,17 +267,7 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
               status={p.statuses?.[item.id]}
             />
           );
-          // The card sits under its own row and scrolls with it, so the half-height sheet
-          // still shows the route you picked (it used to sit above the list and push it away).
-          const block =
-            selected && p.selectedCard ? (
-              <View style={styles.selectedBlock} testID="selected-block">
-                {row}
-                {p.selectedCard}
-              </View>
-            ) : (
-              row
-            );
+          const block = row;
           if (index !== nowAt) return block;
           const tz = AIRPORTS[item.origin]?.tz;
           return (
@@ -234,9 +284,36 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
           </Text>
         }
       />
+      </View>
     </View>
   );
 });
+
+/** Text size at which the results bar shows Back and Filters as icons only. */
+export const COMPACT_BAR_SCALE = 1.3;
+
+/** Previous / next route in the route view; dims at the ends of the list. */
+function StepArrow({ dir, onPress }: { dir: 'prev' | 'next'; onPress?: () => void }) {
+  const c = useColors();
+  return (
+    <Pressable
+      testID={`route-${dir}`}
+      onPress={onPress}
+      disabled={!onPress}
+      accessibilityRole="button"
+      accessibilityLabel={dir === 'prev' ? 'Previous route' : 'Next route'}
+      accessibilityState={{ disabled: !onPress }}
+      style={pressStyle([styles.stepArrow, { opacity: onPress ? 1 : 0.35 }])}>
+      <Icon
+        name={dir === 'prev' ? 'chevron.left' : 'chevron.right'}
+        size={16}
+        weight="semibold"
+        tintColor={c.accent}
+        fallback={<Text style={[textStyles.heading, { color: c.accent }]}>{dir === 'prev' ? '‹' : '›'}</Text>}
+      />
+    </Pressable>
+  );
+}
 
 /**
  * Says when a side searched its whole area (Q-048), since the title shows only
@@ -299,6 +376,10 @@ export function SampleLabel({ text = 'Sample flights' }: { text?: string }) {
 const styles = StyleSheet.create({
   fill: { flex: 1 },
   selectedBlock: { gap: spacing.group },
+  hidden: { display: 'none' },
+  focus: { padding: spacing.page, paddingTop: spacing.section, gap: spacing.section },
+  pager: { flexDirection: 'row', alignItems: 'center' },
+  stepArrow: { width: 36, height: 44, alignItems: 'center', justifyContent: 'center' },
   pad: { paddingHorizontal: spacing.page },
   sample: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: radius.sm },
   list: { paddingHorizontal: spacing.page, paddingBottom: spacing.page * 2 },

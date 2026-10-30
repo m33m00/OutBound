@@ -34,7 +34,7 @@ export function Button({ label, onPress, kind = 'primary', disabled, accessibili
         style,
       ])}>
       {icon ? <Icon name={icon} size={18} tintColor={fg} fallback={null} /> : null}
-      <Text style={[textStyles.button, { color: fg }]}>{label}</Text>
+      {label ? <Text style={[textStyles.button, { color: fg }]}>{label}</Text> : null}
     </Pressable>
   );
 }

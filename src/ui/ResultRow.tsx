@@ -6,11 +6,14 @@ import type { RouteImpact } from '@/live';
 import {
   formatDuration,
   nearbyNotes,
+  neutralSeatText,
+  routeSeatAge,
   routeSeatSummary,
   rowAccessibilityLabel,
   rowTimes,
   seatSourceText,
   seatText,
+  slimStops,
   stopCount,
 } from '@/search/format';
 import { impactSummary } from '@/search/impactText';
@@ -56,6 +59,8 @@ export interface ResultRowProps {
   onLegPress?: (flight: Flight) => void;
   /** Live status tags per leg (Q-050); kept separate from the impact badge. */
   status?: RowStatus;
+  /** Route view (John, 2026-10-30): leg lines in body-size text. */
+  large?: boolean;
 }
 
 /** Row tag kind to tone (Q-050). */
@@ -103,6 +108,7 @@ export const ResultRow = memo(function ResultRow({
   onImpactPress,
   onLegPress,
   status,
+  large,
 }: ResultRowProps) {
   const c = useColors();
   const t = rowTimes(it);
@@ -132,6 +138,9 @@ export const ResultRow = memo(function ResultRow({
   const dimmed = !!status?.dimmed;
   const timeColor = dimmed ? c.muted : c.text;
   const neutralSeats = (source: string) => dimmed || source === 'typical';
+  const legText = large ? textStyles.body : textStyles.small;
+  // Every value shows its age: the summary's comes from the leg that sets it.
+  const summaryAge = summary ? routeSeatAge(it, now) : null;
   return (
     <Pressable
       onPress={withTick(() => onPress(it.id))}
@@ -183,7 +192,12 @@ export const ResultRow = memo(function ResultRow({
                 testID="seat-summary">
                 <Text style={[textStyles.bodyStrong, { color: dimmed ? c.muted : c[TIER_FG[it.tier]] }]}>{summary}</Text>
               </View>
-            ) : null}
+            ) : (
+              // Typical loads stay neutral (no tier word or color) but still say what's known.
+              <Text style={[textStyles.small, { color: c.muted }]} testID="seat-neutral">
+                {neutralSeatText(it, now)}
+              </Text>
+            )}
             <View style={styles.badgeSlot} testID="badge-slot">
               {hasImpact ? (
                 <ImpactBadge impact={impact} now={now} onPress={() => onImpactPress?.(it.id)} />
@@ -198,8 +212,8 @@ export const ResultRow = memo(function ResultRow({
             {[it.origin, ...it.legs.map((l) => l.flight.to)].join(' → ')}
           </Text>
           <Text style={[textStyles.body, { color: c.muted }]}>
-            {/* The route line already names the connections. */}
-            {stopCount(it)} · {formatDuration(it.totalMin)}
+            {/* The route line already names the connections; the slim row adds short layovers. */}
+            {selected ? stopCount(it) : slimStops(it)} · {formatDuration(it.totalMin)}
           </Text>
         </View>
         {selected ? (
@@ -210,15 +224,15 @@ export const ResultRow = memo(function ResultRow({
             const connection = it.connections[i];
             const body = (
               <>
-                <AirlinePill airline={leg.flight.airline} flightNumber={leg.flight.flightNumber} />
-                <Text style={[textStyles.small, { color: c.muted }]}>
+                <AirlinePill airline={leg.flight.airline} flightNumber={leg.flight.flightNumber} large={large} />
+                <Text style={[legText, { color: c.muted }]}>
                   {leg.flight.from} → {leg.flight.to}
                 </Text>
                 {view?.tag ? <StatusTag label={view.tag.label} tone={TONE[view.tag.kind]} /> : null}
                 {/* Leg 0's struck / new time is in the top time line; show it once. */}
                 {view && i > 0 ? <LegTime view={view} /> : null}
                 {legDetailOnly ? (
-                  <Text style={[textStyles.small, { color: c.muted }]}>{seatSourceText(leg.seats, now)}</Text>
+                  <Text style={[legText, { color: c.muted }]}>{seatSourceText(leg.seats, now)}</Text>
                 ) : (
                   <View
                     style={[
@@ -233,7 +247,7 @@ export const ResultRow = memo(function ResultRow({
                     ]}>
                     <Text
                       style={[
-                        textStyles.small,
+                        legText,
                         // A route that already left keeps its seat words but drops the tier colors.
                         { color: neutralSeats(leg.seats.source) ? c.muted : c[TIER_FG[leg.seats.tier]] },
                       ]}>
@@ -269,7 +283,7 @@ export const ResultRow = memo(function ResultRow({
                     <StatusTag label={`Connection at risk · ${risk.airport}`} tone="delayed" />
                   </View>
                 ) : connection ? (
-                  <Text style={[textStyles.small, styles.connection, { color: c.muted, borderColor: c.line2 }]}>
+                  <Text style={[legText, styles.connection, { color: c.muted, borderColor: c.line2 }]}>
                     Connect at {connection.airport} · {formatDuration(connection.layoverMin)}
                     {connection.sameAirline ? '' : ' · change airlines'}
                   </Text>
@@ -292,6 +306,11 @@ export const ResultRow = memo(function ResultRow({
             {status?.risks.map((r) => (
               <StatusTag key={r.index} label={`Connection at risk · ${r.airport}`} tone="delayed" />
             ))}
+            {summaryAge ? (
+              <Text style={[textStyles.small, { color: c.muted }]} testID="seat-age">
+                {summaryAge}
+              </Text>
+            ) : null}
           </View>
         )}
         {nearbyNotes(it).map((note) => (
@@ -322,7 +341,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: spacing.rowY,
     paddingHorizontal: spacing.rowX,
-    gap: 6,
+    gap: spacing.group,
   },
   line: {
     flexDirection: 'row',
@@ -370,7 +389,7 @@ const styles = StyleSheet.create({
     borderLeftWidth: 2,
   },
   legBlock: {
-    gap: 6,
+    gap: spacing.group,
   },
   statusTag: {
     flexShrink: 1,
