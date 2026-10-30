@@ -28,13 +28,19 @@ export function ImpactSheet({ visible, title, subtitle, impact, now, onClose }: 
       <SafeAreaView style={[styles.screen, { backgroundColor: c.bg }]} edges={['top', 'bottom']}>
         <SheetHeader title={title} subtitle={subtitle || undefined} action="Done" onAction={onClose} />
         <ScrollView contentContainerStyle={styles.body}>
-          {impact?.stations.map((s) => {
+          {!impact?.stations.length ? (
+            <Text style={[textStyles.body, { color: c.text }]}>No delay or weather data for this route yet.</Text>
+          ) : null}
+          {/* Worst first, so the airport to worry about is on top; route order otherwise. */}
+          {[...(impact?.stations ?? [])].sort((a, b) => LEVEL_ORDER[a.level] - LEVEL_ORDER[b.level]).map((s) => {
             const likely = s.level === 'likelyDelays';
             const badge = s.level !== 'none';
+            // No badge only means nothing was found; with no data at all, say that instead (DECISIONS G2).
+            const clearWord = s.asOf ? 'No known disruption' : 'No data yet';
             // One spoken line per station, in words (design round 26).
             const spoken = [
               `${s.code}, ${s.role === 'destination' ? 'destination' : 'connection'}, ${
-                badge ? IMPACT_WORD[s.level as 'caution' | 'likelyDelays'].toLowerCase() : 'no disruption'
+                badge ? IMPACT_WORD[s.level as 'caution' | 'likelyDelays'].toLowerCase() : clearWord.toLowerCase()
               }`,
               ...s.reasons.map((r) => `${r.text}, from ${r.source === 'FAA' ? 'FAA' : 'weather'}`),
               s.noForecast ? 'No weather forecast for this airport' : '',
@@ -65,7 +71,7 @@ export function ImpactSheet({ visible, title, subtitle, impact, now, onClose }: 
                       </Text>
                     </View>
                   ) : (
-                    <Text style={[textStyles.body, styles.trailing, { color: c.muted }]}>No disruption</Text>
+                    <Text style={[textStyles.body, styles.trailing, { color: c.muted }]}>{clearWord}</Text>
                   )}
                 </View>
                 {s.reasons.map((r) => (
@@ -77,10 +83,13 @@ export function ImpactSheet({ visible, title, subtitle, impact, now, onClose }: 
                   <Text style={[textStyles.small, { color: c.muted }]}>No weather forecast for this airport.</Text>
                 ) : null}
                 {s.asOf ? (
-                  <Text style={[textStyles.small, { color: c.muted }]}>
-                    Updated {formatAge(Date.parse(s.asOf), now)}
-                    {s.stale ? ' · may be out of date' : ''}
-                  </Text>
+                  <View style={styles.ageLine}>
+                    {s.stale ? <Icon name="clock" size={13} tintColor={c.text} /> : null}
+                    <Text style={[s.stale ? textStyles.bodyStrong : textStyles.small, styles.ageText, { color: s.stale ? c.text : c.muted }]}>
+                      Updated {formatAge(Date.parse(s.asOf), now)}
+                      {s.stale ? ' · may be out of date' : ''}
+                    </Text>
+                  </View>
                 ) : null}
               </View>
             );
@@ -94,6 +103,8 @@ export function ImpactSheet({ visible, title, subtitle, impact, now, onClose }: 
   );
 }
 
+const LEVEL_ORDER = { likelyDelays: 0, caution: 1, none: 2 } as const;
+
 const styles = StyleSheet.create({
   screen: { flex: 1, paddingHorizontal: spacing.page },
   body: { gap: spacing.section, paddingBottom: spacing.page },
@@ -101,5 +112,7 @@ const styles = StyleSheet.create({
   // Wraps at big text sizes; the badge stays right-aligned on whichever line it lands.
   stationTop: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: spacing.group },
   trailing: { marginLeft: 'auto', flexShrink: 1 },
+  ageLine: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  ageText: { flexShrink: 1 },
   pill: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 2, borderRadius: radius.sm },
 });

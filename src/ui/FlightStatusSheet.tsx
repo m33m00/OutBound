@@ -60,6 +60,8 @@ export function lookupForFlight(f: Flight): FlightLookup {
   return { airline: f.airline, flightNumber: f.flightNumber, date: localDate(f.departUtc, tz), from: f.from, departUtc: f.departUtc };
 }
 
+const FETCH_FAILED_TEXT = 'Couldn’t get flight status. Try again in a moment.';
+
 /** Status for one opened flight: state, times with delay, gates and terminals, and how old it is. Text only. */
 export function FlightStatusSheet({ flight, visible, now, onClose, liveOptions, sample, load }: FlightStatusSheetProps) {
   const c = useColors();
@@ -68,10 +70,13 @@ export function FlightStatusSheet({ flight, visible, now, onClose, liveOptions, 
   const announce = useAnnounceLater();
   // Back from the report page: VoiceOver lands on the Seats card again.
   const [backFromReport, setBackFromReport] = useState(false);
+  // Shown after a refresh tap inside the 2-minute wait.
+  const [refreshNote, setRefreshNote] = useState<string | null>(null);
   const flightId = flight?.id;
   useEffect(() => {
     setReporting(false);
     setBackFromReport(false);
+    setRefreshNote(null);
   }, [flightId]);
   const leaveReport = () => {
     setReporting(false);
@@ -132,14 +137,12 @@ export function FlightStatusSheet({ flight, visible, now, onClose, liveOptions, 
                 <Text style={[textStyles.body, { color: c.muted }]}>Flight status isn’t available right now.</Text>
               ) : null}
               {error === 'fetch_failed' && !response ? (
-                <Text style={[textStyles.body, { color: c.text }]}>Couldn’t get flight status. Try again in a moment.</Text>
+                <Text style={[textStyles.body, { color: c.text }]}>{FETCH_FAILED_TEXT}</Text>
               ) : null}
               {loading && !response ? <ActivityIndicator accessibilityLabel="Loading flight status" /> : null}
               {response && !status ? (
                 <Text style={[textStyles.body, { color: c.text }]}>
-                  {response.state === 'unavailable'
-                    ? "Couldn’t get flight status. Try again in a moment."
-                    : "No status for this flight yet."}
+                  {response.state === 'unavailable' ? FETCH_FAILED_TEXT : 'No status for this flight yet.'}
                 </Text>
               ) : null}
               {status && flight ? (
@@ -169,21 +172,38 @@ export function FlightStatusSheet({ flight, visible, now, onClose, liveOptions, 
                   {side('Arrives', flight.to, status.arrival)}
                 </>
               ) : null}
-              {load && flight ? (
-                <LoadCard load={load} now={now} focus={backFromReport} onReport={() => setReporting(true)} />
+              {/* How old the status is sits right under it: an old "Delayed" must say so before anything else. */}
+              {response ? (
+                <View style={styles.ageLine}>
+                  {response.stale ? <Icon name="clock" size={14} tintColor={c.text} fallback={null} /> : null}
+                  <Text style={[response.stale ? textStyles.bodyStrong : textStyles.small, styles.ageText, { color: response.stale ? c.text : c.muted }]}>
+                    {ageText(response, now)}
+                  </Text>
+                </View>
               ) : null}
-              {response ? <Text style={[textStyles.small, { color: c.muted }]}>{ageText(response, now)}</Text> : null}
               {error === 'fetch_failed' && response ? (
-                <Text style={[textStyles.small, { color: c.muted }]}>Couldn’t refresh just now; showing the last status.</Text>
+                <Text style={[textStyles.body, { color: c.text }]}>Couldn’t refresh just now; showing the last status.</Text>
               ) : null}
               {error !== 'not_configured' && !isSample ? (
-                <Pressable
-                  onPress={() => refresh()}
-                  accessibilityRole="button"
-                  accessibilityLabel="Refresh flight status"
-                  style={pressStyle(styles.refresh, 'link')}>
-                  <Text style={[textStyles.bodyStrong, { color: c.accent }]}>{loading ? 'Refreshing…' : 'Refresh'}</Text>
-                </Pressable>
+                <View style={styles.refreshRow}>
+                  <Pressable
+                    onPress={() => {
+                      // Inside the 2-minute wait a tap can't fetch: say so instead of doing nothing.
+                      const started = refresh();
+                      setRefreshNote(started === false ? 'Just updated. You can refresh again in a couple of minutes.' : null);
+                      if (started === false) announce('Just updated. You can refresh again in a couple of minutes.');
+                    }}
+                    accessibilityRole="button"
+                    accessibilityLabel={loading ? 'Refreshing flight status' : 'Refresh flight status'}
+                    accessibilityState={{ busy: loading }}
+                    style={pressStyle(styles.refresh, 'link')}>
+                    <Text style={[textStyles.bodyStrong, { color: c.accent }]}>{loading ? 'Refreshing…' : 'Refresh'}</Text>
+                  </Pressable>
+                  {refreshNote ? <Text style={[textStyles.small, styles.ageText, { color: c.muted }]}>{refreshNote}</Text> : null}
+                </View>
+              ) : null}
+              {load && flight ? (
+                <LoadCard load={load} now={now} focus={backFromReport} onReport={() => setReporting(true)} />
               ) : null}
               <Text style={[textStyles.small, { color: c.muted }]}>
                 {isSample
@@ -317,6 +337,9 @@ const styles = StyleSheet.create({
   top: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: spacing.group },
   trailing: { marginLeft: 'auto', flexShrink: 1 },
   refresh: { minHeight: 44, justifyContent: 'center', alignSelf: 'flex-start' },
+  refreshRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: spacing.section },
+  ageLine: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  ageText: { flexShrink: 1 },
   load: { borderRadius: radius.md, borderWidth: StyleSheet.hairlineWidth, padding: spacing.rowX, gap: spacing.group },
   loadRule: { height: StyleSheet.hairlineWidth, marginVertical: 4 },
   undimmed: { opacity: 1 },
