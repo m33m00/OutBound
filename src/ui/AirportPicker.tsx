@@ -7,6 +7,7 @@ import { matchAirports } from '@/search/airports';
 import { minTapTarget, radius, spacing, textStyles, useColors } from '@/theme';
 
 import { Button } from './Buttons';
+import { pressStyle } from './press';
 
 export interface AirportPickerProps {
   visible: boolean;
@@ -57,7 +58,7 @@ export function AirportPicker({ visible, title, onPick, onClose }: AirportPicker
               }}
               accessibilityRole="button"
               accessibilityLabel={`${item.code}, ${item.name}`}
-              style={[styles.item, { borderColor: c.line }]}>
+              style={pressStyle([styles.item, { borderColor: c.line }])}>
               <Text style={[textStyles.number, styles.code, { color: c.text }]}>{item.code}</Text>
               <Text style={[textStyles.body, { color: c.muted }]}>{item.name}</Text>
             </Pressable>

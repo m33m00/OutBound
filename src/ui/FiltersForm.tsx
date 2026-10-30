@@ -4,6 +4,7 @@ import { LIMITS, type SearchFilters } from '@/settings/settings';
 import { minTapTarget, radius, spacing, textStyles, useColors } from '@/theme';
 
 import { Stepper } from './Stepper';
+import { pressStyle } from './press';
 
 /** Search filter controls, shared by the Filters panel and Settings. */
 export function FiltersForm({ filters: f, onChange }: { filters: SearchFilters; onChange: (f: SearchFilters) => void }) {
@@ -22,7 +23,7 @@ export function FiltersForm({ filters: f, onChange }: { filters: SearchFilters; 
               accessibilityRole="radio"
               accessibilityState={{ checked: on }}
               accessibilityLabel={n === 0 ? 'Nonstop only' : `Up to ${n} ${n === 1 ? 'stop' : 'stops'}`}
-              style={[styles.segment, { backgroundColor: on ? c.accent : c.surface2 }]}>
+              style={pressStyle([styles.segment, { backgroundColor: on ? c.accent : c.surface2 }])}>
               <Text style={[textStyles.bodyStrong, { color: on ? c.onAccent : c.text }]}>
                 {n === 0 ? 'Nonstop' : n}
               </Text>

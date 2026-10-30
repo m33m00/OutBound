@@ -11,6 +11,7 @@ import { fonts, radius, spacing, textStyles, useColors, type ColorToken } from '
 
 import { AirlinePill } from './AirlinePill';
 import { ImpactBadge } from './ImpactBadge';
+import { pressStyle } from './press';
 
 /** Tier text and fill tokens; color is never the only signal (word + number). */
 const TIER_FG: Record<SeatTier, ColorToken> = {
@@ -124,7 +125,7 @@ export const ResultRow = memo(function ResultRow({
         if (e.nativeEvent.actionName === 'impact') onImpactPress?.(it.id);
       }}
       accessibilityHint={selected ? 'Tap to clear the route from the globe' : 'Shows this route on the globe'}
-      style={[
+      style={pressStyle([
         styles.row,
         {
           // Full routes stay in time order, grayed with a red edge; text keeps full contrast.
@@ -132,7 +133,7 @@ export const ResultRow = memo(function ResultRow({
           borderColor: selected ? c.accent : it.isFull ? c.full : c.line,
         },
         (selected || it.isFull) && styles.strongBorder,
-      ]}>
+      ])}>
       {/* Route color = weakest leg. */}
       <View style={[styles.edge, { backgroundColor: dimmed ? c.unknown : c[it.tier] }]} />
       <View style={styles.content}>
@@ -203,7 +204,7 @@ export const ResultRow = memo(function ResultRow({
               ]
                 .filter(Boolean)
                 .join(', ')}
-              style={[styles.legLine, styles.legTap]}>
+              style={pressStyle([styles.legLine, styles.legTap], 'link')}>
               {body}
             </Pressable>
           ) : (

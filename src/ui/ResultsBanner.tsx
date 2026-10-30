@@ -4,6 +4,7 @@ import { AccessibilityInfo, Pressable, StyleSheet, Text, View } from 'react-nati
 
 import type { ResultsBanner as Banner } from '@/search/statusTags';
 import { minTapTarget, radius, spacing, textStyles, useColors } from '@/theme';
+import { pressStyle } from './press';
 
 /**
  * Discreet notice under Find Routes when a search shows nothing (Q-047):
@@ -38,12 +39,12 @@ export function ResultsBanner({
             accessibilityRole="button"
             accessibilityLabel={banner.action}
             accessibilityHint="Shows the hidden routes for this search only. Your filters stay the same."
-            style={styles.link}>
+            style={pressStyle(styles.link, 'link')}>
             <Text style={[textStyles.bodyStrong, { color: c.accent }]}>{banner.action}</Text>
           </Pressable>
         ) : null}
       </View>
-      <Pressable onPress={onDismiss} accessibilityRole="button" accessibilityLabel="Dismiss notice" style={styles.close}>
+      <Pressable onPress={onDismiss} accessibilityRole="button" accessibilityLabel="Dismiss notice" style={pressStyle(styles.close, 'link')}>
         <SymbolView
           name="xmark"
           size={14}

@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, Text } from 'react-native';
 import type { RouteImpact } from '@/live';
 import { impactAge, IMPACT_WORD } from '@/search/impactText';
 import { fonts, radius, textStyles, useColors } from '@/theme';
+import { pressStyle } from './press';
 
 /**
  * Delay/weather badge for a result row (Q-001: equal to the seat tier).
@@ -26,7 +27,7 @@ export function ImpactBadge({ impact, now, onPress }: { impact: RouteImpact; now
       // The row is one VoiceOver element; it exposes this as a custom action.
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
-      style={[styles.pill, { backgroundColor: bg }]}>
+      style={pressStyle([styles.pill, { backgroundColor: bg }])}>
       <SymbolView
         name={IMPACT_ICON[impact.level]}
         size={12}

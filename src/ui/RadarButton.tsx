@@ -2,6 +2,7 @@ import { SymbolView } from 'expo-symbols';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { minTapTarget, radius, spacing, textStyles, useColors } from '@/theme';
+import { pressStyle } from './press';
 
 /** Radar on/off map button (44pt) with its age caption (Q-032). */
 export function RadarButton({ on, caption, onToggle }: { on: boolean; caption: string | null; onToggle: () => void }) {
@@ -14,10 +15,10 @@ export function RadarButton({ on, caption, onToggle }: { on: boolean; caption: s
         accessibilityLabel="Radar"
         accessibilityState={{ checked: on }}
         accessibilityHint={caption ?? undefined}
-        style={[
+        style={pressStyle([
           styles.button,
           { backgroundColor: on ? c.accent : c.surface, borderColor: on ? c.accent : c.line2, shadowColor: c.text },
-        ]}>
+        ])}>
         <SymbolView
           name="cloud.rain"
           size={20}

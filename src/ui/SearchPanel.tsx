@@ -9,6 +9,7 @@ import { minTapTarget, radius, spacing, textStyles, useColors } from '@/theme';
 import { Button } from './Buttons';
 import { DatePickerModal } from './DatePickerModal';
 import { SampleLabel } from './ResultsPanel';
+import { pressStyle } from './press';
 
 export interface SearchPanelProps {
   chips: readonly DateChip[];
@@ -75,7 +76,7 @@ export function AirportCard({ label, code, onPress, areaOn, onToggleArea }: Airp
             accessibilityLabel={`Include all ${area.city} airports`}
             accessibilityHint={`Searches ${listText(area.airports)}`}
             hitSlop={PILL_HIT_SLOP}
-            style={[styles.areaPill, { borderColor: c.accent }, areaOn ? { backgroundColor: c.accent } : null]}>
+            style={pressStyle([styles.areaPill, { borderColor: c.accent }, areaOn ? { backgroundColor: c.accent } : null])}>
             <SymbolView
               name={areaOn ? 'checkmark' : 'plus'}
               size={11}
@@ -102,7 +103,7 @@ export function AirportCard({ label, code, onPress, areaOn, onToggleArea }: Airp
             ? `${label}: ${code}, ${name}${whole ? `, all ${area.city} airports` : ''}. Change`
             : `${label}: choose an airport`
         }
-        style={styles.cardButton}>
+        style={pressStyle(styles.cardButton, 'link')}>
         <Text style={[textStyles.small, styles.cardLabel, { color: c.muted }]}>{label}</Text>
         <Text style={[textStyles.title, { color: code ? c.text : c.faint }]}>{code ?? '—'}</Text>
         {whole ? (
@@ -155,7 +156,7 @@ export function SearchPanel(p: SearchPanelProps) {
               accessibilityRole="button"
               accessibilityLabel={chip.long}
               accessibilityState={{ selected: on }}
-              style={[styles.chip, styles.dateChip, { backgroundColor: on ? c.accent : c.surface2 }]}>
+              style={pressStyle([styles.chip, styles.dateChip, { backgroundColor: on ? c.accent : c.surface2 }])}>
               <Text
                 numberOfLines={1}
                 adjustsFontSizeToFit
@@ -171,12 +172,12 @@ export function SearchPanel(p: SearchPanelProps) {
           accessibilityRole="button"
           accessibilityLabel={later ? `${later.long}. Change date` : 'Pick a later date'}
           accessibilityState={{ selected: !!later }}
-          style={[
+          style={pressStyle([
             styles.chip,
             styles.calendar,
             later ? styles.dateChip : null,
             { backgroundColor: later ? c.accent : c.surface2 },
-          ]}>
+          ])}>
           <SymbolView
             name="calendar"
             size={18}
@@ -215,7 +216,7 @@ export function SearchPanel(p: SearchPanelProps) {
           onPress={p.onSwap}
           accessibilityRole="button"
           accessibilityLabel="Swap from and to"
-          style={[styles.swap, { backgroundColor: c.surface, borderColor: c.line }]}>
+          style={pressStyle([styles.swap, { backgroundColor: c.surface, borderColor: c.line }])}>
           <SymbolView
             name="arrow.left.arrow.right"
             size={18}
@@ -236,7 +237,7 @@ export function SearchPanel(p: SearchPanelProps) {
         <Button label="Get Home" kind="secondary" onPress={p.onGetHome} accessibilityLabel="Get Home: search to your main home" />
       ) : null}
       {p.onSetHome ? (
-        <Pressable onPress={p.onSetHome} accessibilityRole="button" style={styles.hint}>
+        <Pressable onPress={p.onSetHome} accessibilityRole="button" style={pressStyle(styles.hint, 'link')}>
           <Text style={[textStyles.small, { color: c.accent }]}>Set your home airport in Profile ›</Text>
         </Pressable>
       ) : null}

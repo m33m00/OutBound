@@ -10,6 +10,7 @@ import { minTapTarget, radius, spacing, textStyles, useColors } from '@/theme';
 
 import { Button } from './Buttons';
 import { ResultRow } from './ResultRow';
+import { pressStyle } from './press';
 
 export interface ResultsPanelProps {
   state: Exclude<SearchState, { status: 'idle' }>;
@@ -52,7 +53,7 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
         onPress={p.onBack}
         accessibilityRole="button"
         accessibilityLabel="Back to search"
-        style={styles.back}>
+        style={pressStyle(styles.back, 'link')}>
         <Text style={[textStyles.heading, { color: c.accent }]}>‹ Search</Text>
       </Pressable>
       <View style={styles.labels}>

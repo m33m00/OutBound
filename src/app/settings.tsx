@@ -12,6 +12,7 @@ import { Button } from '@/ui/Buttons';
 import { FiltersForm } from '@/ui/FiltersForm';
 import { Stepper } from '@/ui/Stepper';
 import { useSharedLocation } from '@/ui/LocationProvider';
+import { pressStyle } from '@/ui/press';
 
 /** Tester settings (backlog 12; Q-003, Q-024). Saved on this phone (Q-025). */
 export default function SettingsScreen() {
@@ -35,7 +36,7 @@ export default function SettingsScreen() {
           onPress={() => router.back()}
           accessibilityRole="button"
           accessibilityLabel="Back"
-          style={styles.back}>
+          style={pressStyle(styles.back, 'link')}>
           <Text style={[textStyles.heading, { color: c.accent }]}>‹ Back</Text>
         </Pressable>
       </View>

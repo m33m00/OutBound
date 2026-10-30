@@ -7,6 +7,7 @@ import { radius, spacing, textStyles, useColors } from '@/theme';
 
 import { Button } from './Buttons';
 import { ageText, delayText, movementTimes, placeText, STATE_WORD } from './flightStatusText';
+import { pressStyle } from './press';
 
 export interface FlightStatusSheetProps {
   /** The opened flight; null = closed (no request is made). */
@@ -90,7 +91,7 @@ export function FlightStatusSheet({ flight, now, onClose, liveOptions }: FlightS
               onPress={() => refresh()}
               accessibilityRole="button"
               accessibilityLabel="Refresh flight status"
-              style={styles.refresh}>
+              style={pressStyle(styles.refresh, 'link')}>
               <Text style={[textStyles.bodyStrong, { color: c.accent }]}>{loading ? 'Refreshing…' : 'Refresh'}</Text>
             </Pressable>
           ) : null}
