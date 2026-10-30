@@ -15,16 +15,28 @@ export interface DatePickerModalProps {
   max: string;
   onPick: (date: string) => void;
   onClose: () => void;
+  /** Line under the calendar. */
+  note?: string;
+  title?: string;
 }
 
 /** Calendar for days past the quick chips (Q-045). Only 0-7 days out can be picked. */
-export function DatePickerModal({ visible, date, min, max, onPick, onClose }: DatePickerModalProps) {
+export function DatePickerModal({
+  visible,
+  date,
+  min,
+  max,
+  onPick,
+  onClose,
+  note = 'Search up to 7 days out.',
+  title = 'Date',
+}: DatePickerModalProps) {
   const c = useColors();
   const scheme = useColorSchemeName();
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <SafeAreaView style={[styles.screen, { backgroundColor: c.bg }]} edges={['top', 'bottom']}>
-        <SheetHeader title="Date" action="Done" onAction={onClose} />
+        <SheetHeader title={title} action="Done" onAction={onClose} />
         <DateTimePicker
           value={toPickerDate(date)}
           mode="date"
@@ -39,7 +51,7 @@ export function DatePickerModal({ visible, date, min, max, onPick, onClose }: Da
             if (e.type === 'set' || e.type === 'dismissed') onClose();
           }}
         />
-        <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>Search up to 7 days out.</Text>
+        <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>{note}</Text>
       </SafeAreaView>
     </Modal>
   );

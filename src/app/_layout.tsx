@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { AccessibilityInfo } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
+import { LogbookProvider } from '@/logbook/LogbookProvider';
 import { RequestsProvider } from '@/requests/RequestsProvider';
 import { SettingsProvider } from '@/settings/SettingsProvider';
 import { applyBoldText, colors, fontAssets, useColorSchemeName } from '@/theme';
@@ -66,14 +67,16 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SettingsProvider>
         <SavedRoutesProvider>
-          <RequestsProvider>
-            <LocationProvider>
-              <ThemeProvider value={navTheme}>
-                <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
-                <Stack screenOptions={{ headerShown: false }} />
-              </ThemeProvider>
-            </LocationProvider>
-          </RequestsProvider>
+          <LogbookProvider>
+            <RequestsProvider>
+              <LocationProvider>
+                <ThemeProvider value={navTheme}>
+                  <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
+                  <Stack screenOptions={{ headerShown: false }} />
+                </ThemeProvider>
+              </LocationProvider>
+            </RequestsProvider>
+          </LogbookProvider>
         </SavedRoutesProvider>
       </SettingsProvider>
     </GestureHandlerRootView>

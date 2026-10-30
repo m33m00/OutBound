@@ -91,3 +91,4 @@ Each item names its owner. One item per work session. spec-keeper runs a pre-fli
 | 84 | Design round 57: seat labels say your chances (Easy, Likely, Maybe, Long shot, Full; typical "Usually ~N open") (Q-074, John: B) | main | P1 | Built (design round 57, branch claude/project-thread-fzqwou) |
 | 85 | Design round 58: old times on the left of new ones; tagged flights stack with each tag on its leg; hard pull down moves the panel | main | P1 | Built (design round 58, branch claude/project-thread-fzqwou) |
 | 86 | Design round 59: struck original time only in the route card header; legs show the new time or the Canceled tag | main | P1 | Built (design round 59, branch claude/project-thread-fzqwou) |
+| 87 | Logbook tab: totals (flights, miles, airports), flights by month; add by scanning a boarding pass, a screenshot, or typing it in (John: A) | main | P1 | Built (branch claude/project-thread-fzqwou) |
