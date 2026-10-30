@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { formatDuration } from '@/search/format';
 import { minTapTarget, radius, spacing, textStyles, useColors } from '@/theme';
 import { pressStyle } from './press';
+import { withTick } from './haptics';
 
 /** Minus / value / plus row with 44pt buttons. Values in minutes by default. */
 export function Stepper({
@@ -28,7 +29,7 @@ export function Stepper({
     const disabled = next < min || next > max;
     return (
       <Pressable
-        onPress={() => onChange(next)}
+        onPress={withTick(() => onChange(next))}
         disabled={disabled}
         accessibilityRole="button"
         accessibilityLabel={`${sign > 0 ? 'Increase' : 'Decrease'}: ${label}`}

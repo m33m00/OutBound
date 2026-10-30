@@ -159,6 +159,7 @@ Condensed from the project docs: MVP decisions (through v8.8), design direction 
   - Provisional (design round 1, 2026-10-30; not John-decided, John may override): Feed and My Trips show an empty-state card (icon, heading, one sentence, list of what will show there) until requests exist; My Trips offers Find Routes. Profile lists main home, other homes, airport buffer, location and search defaults as rows that open Settings, then an About group (Flights: Sample data, Airport delays: FAA, Weather: NOAA Aviation Weather, Radar: NOAA/NWS MRMS, Version) and the "Follow your airline's rules on sharing loads" notice.
 - Filters button (Q-046, 2026-10-21, John): gets an SF Symbol icon (like the tab bar icons) so its purpose is clear at a glance. Label stays "Filters".
 - Airline badges: colored pill + plane glyph + IATA code. No logos.
+- Provisional (design rounds 2 and 10, 2026-10-30; not John-decided): every tappable dims while pressed; picking controls (date chips, area toggle, swap, max stops, steppers, radar, route select) give a light iOS selection haptic.
 - App icon (Q-055, 2026-10-30, John: A, "You design it"): Ice Mix ink blue (#1D3D84) background, white route arc from an amber origin dot (amber = you), white plane leaving up-right. Same mark on Android adaptive icon and favicon. Source `design/assets/make-icon.py`.
   - Provisional (design round 6, not John-decided): splash = OutBound wordmark (Big Shoulders 700, ink #1D3D84 / dark #9BB8EF) on the theme background (#f6f8fb / #0b1119).
 

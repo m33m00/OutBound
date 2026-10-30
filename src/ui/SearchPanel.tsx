@@ -10,6 +10,7 @@ import { Button } from './Buttons';
 import { DatePickerModal } from './DatePickerModal';
 import { SampleLabel } from './ResultsPanel';
 import { pressStyle } from './press';
+import { withTick } from './haptics';
 
 export interface SearchPanelProps {
   chips: readonly DateChip[];
@@ -70,7 +71,7 @@ export function AirportCard({ label, code, onPress, areaOn, onToggleArea }: Airp
         // Keeps the pill (and its slop) clear of the From/To label on the left.
         <View style={styles.pillSlot} pointerEvents="box-none">
           <Pressable
-            onPress={onToggleArea}
+            onPress={withTick(onToggleArea)}
             accessibilityRole="switch"
             accessibilityState={{ checked: areaOn }}
             accessibilityLabel={`Include all ${area.city} airports`}
@@ -152,7 +153,7 @@ export function SearchPanel(p: SearchPanelProps) {
           return (
             <Pressable
               key={chip.date}
-              onPress={() => p.onDate(chip.date)}
+              onPress={withTick(() => p.onDate(chip.date))}
               accessibilityRole="button"
               accessibilityLabel={chip.long}
               accessibilityState={{ selected: on }}
@@ -213,7 +214,7 @@ export function SearchPanel(p: SearchPanelProps) {
           onToggleArea={() => p.origin && p.onToggleArea(p.origin)}
         />
         <Pressable
-          onPress={p.onSwap}
+          onPress={withTick(p.onSwap)}
           accessibilityRole="button"
           accessibilityLabel="Swap from and to"
           style={pressStyle([styles.swap, { backgroundColor: c.surface, borderColor: c.line }])}>
