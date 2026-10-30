@@ -5,6 +5,7 @@ import { minTapTarget, radius, spacing, textStyles, useColors } from '@/theme';
 
 import { Stepper } from './Stepper';
 import { pressStyle } from './press';
+import { withTick } from './haptics';
 
 /** Search filter controls, shared by the Filters panel and Settings. */
 export function FiltersForm({ filters: f, onChange }: { filters: SearchFilters; onChange: (f: SearchFilters) => void }) {
@@ -19,7 +20,7 @@ export function FiltersForm({ filters: f, onChange }: { filters: SearchFilters; 
           return (
             <Pressable
               key={n}
-              onPress={() => set({ maxStops: n })}
+              onPress={withTick(() => set({ maxStops: n }))}
               accessibilityRole="radio"
               accessibilityState={{ checked: on }}
               accessibilityLabel={n === 0 ? 'Nonstop only' : `Up to ${n} ${n === 1 ? 'stop' : 'stops'}`}

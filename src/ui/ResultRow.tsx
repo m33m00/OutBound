@@ -13,6 +13,7 @@ import { AirlinePill } from './AirlinePill';
 import { ImpactBadge } from './ImpactBadge';
 import { pressStyle } from './press';
 import { TONE_BG, TONE_FG, type Tone } from './statusTone';
+import { withTick } from './haptics';
 
 /** Tier text and fill tokens; color is never the only signal (word + number). */
 const TIER_FG: Record<SeatTier, ColorToken> = {
@@ -110,7 +111,7 @@ export const ResultRow = memo(function ResultRow({
   const timeColor = dimmed ? c.muted : c.text;
   return (
     <Pressable
-      onPress={() => onPress(it.id)}
+      onPress={withTick(() => onPress(it.id))}
       accessibilityRole="button"
       accessibilityState={{ selected }}
       accessibilityLabel={label}

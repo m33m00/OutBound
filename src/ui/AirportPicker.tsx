@@ -46,7 +46,7 @@ export function AirportPicker({ visible, title, onPick, onClose, current, neares
         accessibilityLabel={[airport.code, airport.name, tag].filter(Boolean).join(', ')}
         style={pressStyle([styles.item, { borderColor: c.line }])}>
         <Text style={[textStyles.number, styles.code, { color: c.text }]}>{airport.code}</Text>
-        <Text style={[textStyles.body, styles.name, { color: c.muted }]} numberOfLines={1}>
+        <Text style={[textStyles.body, styles.name, { color: c.muted }]} numberOfLines={2}>
           {airport.name}
         </Text>
         {tag ? (
@@ -151,7 +151,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     paddingVertical: spacing.rowY,
   },
-  code: { width: 52 },
+  code: { minWidth: 52 },
   name: { flex: 1 },
   tag: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: radius.sm },
   empty: { paddingVertical: spacing.page },

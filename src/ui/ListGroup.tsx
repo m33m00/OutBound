@@ -4,6 +4,22 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { minTapTarget, radius, spacing, textStyles, useColors } from '@/theme';
 
+/** Small uppercase heading above a grouped card (iOS Settings style). */
+export function SectionHeader({ title }: { title: string }) {
+  const c = useColors();
+  return (
+    <Text style={[textStyles.small, styles.title, { color: c.muted }]} accessibilityRole="header">
+      {title.toUpperCase()}
+    </Text>
+  );
+}
+
+/** Explanation under a grouped card. */
+export function SectionFooter({ children }: { children: ReactNode }) {
+  const c = useColors();
+  return <Text style={[textStyles.small, styles.footer, { color: c.muted }]}>{children}</Text>;
+}
+
 /**
  * Grouped list card (iOS Settings style): optional heading above, rows
  * separated by hairlines inset to the text.
@@ -13,11 +29,7 @@ export function ListGroup({ title, children }: { title?: string; children: React
   const rows = Children.toArray(children).filter(Boolean);
   return (
     <View style={styles.wrap}>
-      {title ? (
-        <Text style={[textStyles.small, styles.title, { color: c.muted }]} accessibilityRole="header">
-          {title.toUpperCase()}
-        </Text>
-      ) : null}
+      {title ? <SectionHeader title={title} /> : null}
       <View style={[styles.card, { backgroundColor: c.surface, borderColor: c.line }]}>
         {rows.map((row, i) => (
           <Fragment key={i}>
@@ -86,8 +98,9 @@ export function ListRow({ label, value, detail, onPress, accessibilityHint }: Li
 }
 
 const styles = StyleSheet.create({
-  wrap: { gap: 6 },
+  wrap: { gap: spacing.group },
   title: { paddingHorizontal: spacing.rowX, letterSpacing: 0.6 },
+  footer: { paddingHorizontal: spacing.rowX },
   card: { borderRadius: radius.md, borderWidth: StyleSheet.hairlineWidth, overflow: 'hidden' },
   sep: { height: StyleSheet.hairlineWidth, marginLeft: spacing.rowX },
   row: {

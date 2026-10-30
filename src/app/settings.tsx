@@ -9,6 +9,7 @@ import { homeAirports, LIMITS } from '@/settings/settings';
 import { minTapTarget, radius, spacing, textStyles, useColors } from '@/theme';
 import { AirportPicker } from '@/ui/AirportPicker';
 import { BackButton } from '@/ui/BackButton';
+import { SectionFooter, SectionHeader } from '@/ui/ListGroup';
 import { Button } from '@/ui/Buttons';
 import { FiltersForm } from '@/ui/FiltersForm';
 import { Stepper } from '@/ui/Stepper';
@@ -39,77 +40,89 @@ export default function SettingsScreen() {
           Settings
         </Text>
 
-        <View style={[styles.group, { backgroundColor: c.surface, borderColor: c.line }]}>
-          <Text style={[textStyles.heading, { color: c.text }]}>Homes</Text>
-          <Text style={[textStyles.small, { color: c.muted }]}>
-            Search starts from your main home when location is off, and Get Home takes you back to it.
-          </Text>
-          {homeList.length === 0 ? (
-            <Text style={[textStyles.body, { color: c.text }]}>No home airport yet.</Text>
-          ) : (
-            homeList.map((h) => (
-              <View key={h.code} style={styles.row}>
-                <Text style={[textStyles.number, styles.code, { color: c.text }]}>{h.code}</Text>
-                <View style={styles.label}>
-                  <Text style={[textStyles.body, { color: c.text }]}>{AIRPORTS[h.code]?.name}</Text>
-                  <Text style={[textStyles.small, { color: c.muted }]}>
-                    {h.main ? 'Main home' : h.auto ? 'Same area, added automatically' : 'Also home'}
-                  </Text>
+        <View style={styles.section}>
+          <SectionHeader title="Homes" />
+          <View style={[styles.group, { backgroundColor: c.surface, borderColor: c.line }]}>
+            {homeList.length === 0 ? (
+              <Text style={[textStyles.body, styles.empty, { color: c.muted }]}>No home airport yet.</Text>
+            ) : (
+              homeList.map((h, i) => (
+                <View
+                  key={h.code}
+                  style={[styles.row, i > 0 ? [styles.divided, { borderTopColor: c.line }] : null]}>
+                  <Text style={[textStyles.number, styles.code, { color: c.text }]}>{h.code}</Text>
+                  <View style={styles.label}>
+                    <Text style={[textStyles.body, { color: c.text }]}>{AIRPORTS[h.code]?.name}</Text>
+                    <Text style={[textStyles.small, { color: c.youText }]}>
+                      {h.main ? 'Main home' : h.auto ? 'Same area, added automatically' : 'Also home'}
+                    </Text>
+                  </View>
+                  {h.main ? (
+                    <Button label="Change" kind="secondary" onPress={() => setPicking('main')} />
+                  ) : h.auto ? null : (
+                    <Button
+                      label="Remove"
+                      kind="secondary"
+                      accessibilityLabel={`Remove ${h.code} from homes`}
+                      onPress={() => update({ homes: { ...homes, extras: homes.extras.filter((x) => x !== h.code) } })}
+                    />
+                  )}
                 </View>
-                {h.main ? (
-                  <Button label="Change" kind="secondary" onPress={() => setPicking('main')} />
-                ) : h.auto ? null : (
-                  <Button
-                    label="Remove"
-                    kind="secondary"
-                    accessibilityLabel={`Remove ${h.code} from homes`}
-                    onPress={() => update({ homes: { ...homes, extras: homes.extras.filter((x) => x !== h.code) } })}
-                  />
-                )}
-              </View>
-            ))
-          )}
-          <View style={styles.buttons}>
-            {homes.main ? null : <Button label="Set Main Home" onPress={() => setPicking('main')} />}
-            <Button label="Add Airport" kind="secondary" onPress={() => setPicking('extra')} />
+              ))
+            )}
+            <View style={[styles.buttons, { borderTopColor: c.line }]}>
+              {homes.main ? null : <Button label="Set Main Home" onPress={() => setPicking('main')} />}
+              <Button label="Add Airport" kind="secondary" icon="plus" onPress={() => setPicking('extra')} />
+            </View>
           </View>
+          <SectionFooter>
+            Search starts from your main home when location is off, and Get Home takes you back to it.
+          </SectionFooter>
         </View>
 
-        <View style={[styles.group, { backgroundColor: c.surface, borderColor: c.line }]}>
-          <Text style={[textStyles.heading, { color: c.text }]}>Leave-by</Text>
-          <Stepper
-            label="Be at the airport before departure"
-            value={settings.bufferMin}
-            {...LIMITS.bufferMin}
-            format={(v) => `${v} min`}
-            onChange={(v) => update({ bufferMin: v })}
-          />
-          <Text style={[textStyles.small, { color: c.muted }]}>
-            Time to list and clear security. The leave-by card counts back from your first departure.
-          </Text>
-          <View style={styles.row}>
-            <Text style={[textStyles.body, styles.label, { color: c.text }]}>Use my location</Text>
-            <Switch
-              value={settings.useLocation}
-              onValueChange={setUseLocation}
-              accessibilityLabel="Use my location for the drive estimate"
-              trackColor={{ true: c.accent, false: c.line2 }}
-            />
+        <View style={styles.section}>
+          <SectionHeader title="Location" />
+          <View style={[styles.group, { backgroundColor: c.surface, borderColor: c.line }]}>
+            <View style={styles.row}>
+              <Text style={[textStyles.body, styles.label, { color: c.text }]}>Use my location</Text>
+              <Switch
+                value={settings.useLocation}
+                onValueChange={setUseLocation}
+                accessibilityLabel="Use my location for the nearest airport and drive estimate"
+                trackColor={{ true: c.accent, false: c.line2 }}
+              />
+            </View>
           </View>
-          <Text style={[textStyles.small, { color: c.muted }]}>
+          <SectionFooter>
             {status === 'denied'
               ? 'Location is off for OutBound. Turn it on in iPhone Settings, then try again.'
               : // Provisional copy (backlog 23): location now also picks From (Q-051).
                 'Starts searches from the nearest airport and estimates your drive. Only used while the app is open.'}
-          </Text>
+          </SectionFooter>
         </View>
 
-        <View style={[styles.group, { backgroundColor: c.surface, borderColor: c.line }]}>
-          <Text style={[textStyles.heading, { color: c.text }]}>Search defaults</Text>
-          <Text style={[textStyles.small, { color: c.muted }]}>
-            Every search starts with these. Change them for one search in Filters.
-          </Text>
-          <FiltersForm filters={settings.search} onChange={(search) => update({ search })} />
+        <View style={styles.section}>
+          <SectionHeader title="Leave-by" />
+          <View style={[styles.group, { backgroundColor: c.surface, borderColor: c.line }]}>
+            <Stepper
+              label="Be at the airport before departure"
+              value={settings.bufferMin}
+              {...LIMITS.bufferMin}
+              format={(v) => `${v} min`}
+              onChange={(v) => update({ bufferMin: v })}
+            />
+          </View>
+          <SectionFooter>
+            Time to list and clear security. The leave-by card counts back from your first departure.
+          </SectionFooter>
+        </View>
+
+        <View style={styles.section}>
+          <SectionHeader title="Search defaults" />
+          <View style={[styles.group, { backgroundColor: c.surface, borderColor: c.line }]}>
+            <FiltersForm filters={settings.search} onChange={(search) => update({ search })} />
+          </View>
+          <SectionFooter>Every search starts with these. Change them for one search in Filters.</SectionFooter>
         </View>
 
         <Button label="Reset to Defaults" kind="secondary" onPress={reset} />
@@ -145,6 +158,15 @@ const styles = StyleSheet.create({
   },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.group, minHeight: minTapTarget },
   label: { flex: 1 },
-  code: { width: 52 },
-  buttons: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.group },
+  code: { minWidth: 52 },
+  buttons: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.group,
+    paddingTop: spacing.group,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  section: { gap: spacing.group },
+  divided: { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: spacing.group },
+  empty: { paddingVertical: spacing.group },
 });

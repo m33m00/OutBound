@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { minTapTarget, radius, spacing, textStyles, useColors } from '@/theme';
 import { pressStyle } from './press';
+import { withTick } from './haptics';
 
 /** Radar on/off map button (44pt) with its age caption (Q-032). */
 export function RadarButton({ on, caption, onToggle }: { on: boolean; caption: string | null; onToggle: () => void }) {
@@ -10,7 +11,7 @@ export function RadarButton({ on, caption, onToggle }: { on: boolean; caption: s
   return (
     <View style={styles.wrap} pointerEvents="box-none">
       <Pressable
-        onPress={onToggle}
+        onPress={withTick(onToggle)}
         accessibilityRole="switch"
         accessibilityLabel="Radar"
         accessibilityState={{ checked: on }}
