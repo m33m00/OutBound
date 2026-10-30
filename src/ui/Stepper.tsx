@@ -54,8 +54,11 @@ export function Stepper({
   if (stacked) {
     return (
       <View style={styles.stack}>
-        <Text style={[textStyles.body, { color: c.text }]}>{label}</Text>
-        <View style={styles.row} testID="stepper-row">{controls}</View>
+        {/* The buttons already say the label, so VoiceOver skips it here. */}
+        <Text style={[textStyles.body, { color: c.text }]} accessibilityElementsHidden importantForAccessibility="no">
+          {label}
+        </Text>
+        <View style={[styles.row, styles.end]} testID="stepper-row">{controls}</View>
       </View>
     );
   }
@@ -72,6 +75,8 @@ const STACK_SCALE = 1.3;
 
 const styles = StyleSheet.create({
   stack: { gap: 4 },
+  // Controls stay at the right edge, where they sit at normal sizes.
+  end: { justifyContent: 'flex-end' },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.group, minHeight: minTapTarget },
   label: { flex: 1 },
   value: { minWidth: 64, textAlign: 'center' },
