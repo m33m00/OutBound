@@ -4,7 +4,7 @@ import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 
 import { createMemoryProvider, searchItineraries, zonedToUtc } from '@/engine';
 
-import { ResultsPanel } from '../ResultsPanel';
+import { areaLines, ResultsPanel } from '../ResultsPanel';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -72,5 +72,21 @@ describe('ResultsPanel', () => {
       );
     });
     expect(r!.root.findAll((n) => n.props.testID === 'selected-block').length).toBe(0);
+  });
+});
+
+describe('areaLines', () => {
+  it('names the whole area when a side searched it', () => {
+    expect(areaLines({ origin: 'LAX', destination: 'DAL', date: '2026-10-20', destinationArea: true })).toEqual([
+      'Landing at any Dallas airport (DAL, DFW)',
+    ]);
+    expect(areaLines({ origin: 'DFW', destination: 'BNA', date: '2026-10-20', originArea: true })).toEqual([
+      'Leaving from any Dallas airport (DAL, DFW)',
+    ]);
+  });
+
+  it('says nothing when the area is off or the airport has no area', () => {
+    expect(areaLines({ origin: 'DAL', destination: 'LAX', date: '2026-10-20' })).toEqual([]);
+    expect(areaLines({ origin: 'BNA', destination: 'DAL', date: '2026-10-20', originArea: true })).toEqual([]);
   });
 });

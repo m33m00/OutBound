@@ -2,7 +2,7 @@ import { SymbolView } from 'expo-symbols';
 import { forwardRef, type ReactNode } from 'react';
 import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
 
-import type { Flight, Itinerary } from '@/engine';
+import { areaFor, type Flight, type Itinerary, type SearchRequest } from '@/engine';
 import type { RouteImpact } from '@/live';
 import { shortDate } from '@/search/dates';
 import type { RowStatus } from '@/search/statusTags';
@@ -69,6 +69,11 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
           ? ` · ${results.length} ${results.length === 1 ? 'route' : 'routes'}${full ? `, ${full} full` : ''}`
           : ''}
       </Text>
+      {areaLines(request).map((line) => (
+        <Text key={line} style={[textStyles.small, { color: c.muted }]}>
+          {line}
+        </Text>
+      ))}
       {p.showingHidden ? (
         <Text style={[textStyles.small, { color: c.muted }]}>Showing routes your filters hid, for this search only.</Text>
       ) : null}
@@ -165,6 +170,21 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
     </View>
   );
 });
+
+/**
+ * Says when a side searched its whole area (Q-048), since the title shows only
+ * the picked airports: "Leaving from any Dallas airport (DAL, DFW)".
+ */
+export function areaLines(request: SearchRequest): string[] {
+  const line = (code: string, on: boolean | undefined, lead: string) => {
+    const area = on ? areaFor(code) : null;
+    return area ? `${lead} any ${area.city} airport (${area.airports.join(', ')})` : null;
+  };
+  return [
+    line(request.origin, request.originArea, 'Leaving from'),
+    line(request.destination, request.destinationArea, 'Landing at'),
+  ].filter((l): l is string => l != null);
+}
 
 /** Results label text for what is sample data; null when nothing is. */
 export function sampleLabel(flights: boolean, impacts: boolean): string | null {
