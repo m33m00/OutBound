@@ -312,13 +312,13 @@ Recommendation: A for the friends beta, then C once real usage shows in `api_usa
 Also open: real flights have no seat data yet (no reports or estimates exist), so every route shows Unknown until reports land. Sample seats are not mixed in, because they would be made up.
 Answer: (John)
 
-### Q-055 App icon  (Open)
+### Q-055 App icon  (Answered 2026-10-30)
 Context: The home-screen icon is still Expo's default blue "A" (design round 6 fixed the app name and splash: "OutBound" wordmark on the Ice Mix background). The icon is the app's face once it's on TestFlight, so it's a brand choice. No airline logos or trademarks either way.
 A) I draw a simple icon in the Ice Mix look: ink blue (#1D3D84) background with a white arc and plane mark, light and dark variants, for you to approve on device
 B) You sketch or describe what you want and I build it
 C) Leave it until TestFlight
 Recommendation: A, because it's quick to try on device and easy to replace.
-Answer: (John)
+Answer: John (2026-10-30), A ("You design it"). Built in design round 8: ink blue background, white arc from an amber origin dot, white plane. Source: `design/assets/make-icon.py`.
 
 Provisional defaults for backlog 3 (not John-decided; John may override any time):
 - FAA cache TTL 5 min server-side; serve stale on FAA error.
