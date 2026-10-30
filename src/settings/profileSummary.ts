@@ -7,7 +7,7 @@ import { AIRPORTS } from '@/engine';
 import { homeAirports, type Settings } from './settings';
 
 export interface SummaryRow {
-  key: 'home' | 'otherHomes' | 'buffer' | 'location' | 'search';
+  key: 'home' | 'otherHomes' | 'buffer' | 'location' | 'notify' | 'search';
   label: string;
   value: string;
   /** Second line under the label (airport name, etc.). */
@@ -18,6 +18,15 @@ export interface SummaryRow {
 export function stopsText(maxStops: number): string {
   if (maxStops <= 0) return 'Nonstop only';
   return `Up to ${maxStops} ${maxStops === 1 ? 'stop' : 'stops'}`;
+}
+
+/** "On", "Off", "Answers only", "Asks only". */
+export function notifyText(s: Settings): string {
+  const { answers, airlineAsks } = s.notify;
+  if (answers && airlineAsks) return 'On';
+  if (answers) return 'Answers only';
+  if (airlineAsks) return 'Asks only';
+  return 'Off';
 }
 
 export function profileSummary(s: Settings): SummaryRow[] {
@@ -37,18 +46,20 @@ export function profileSummary(s: Settings): SummaryRow[] {
     },
     { key: 'buffer', label: 'Airport buffer', value: `${s.bufferMin} min`, detail: 'Before departure' },
     { key: 'location', label: 'Use my location', value: s.useLocation ? 'On' : 'Off' },
+    { key: 'notify', label: 'Notifications', value: notifyText(s) },
     { key: 'search', label: 'Search defaults', value: stopsText(s.search.maxStops) },
   ];
 }
 
 /** Settings sections a Profile row can open at (backlog 56). */
-export type SettingsSection = 'homes' | 'location' | 'leaveBy' | 'search';
+export type SettingsSection = 'homes' | 'location' | 'notify' | 'leaveBy' | 'search';
 
 const SECTION_FOR: Record<SummaryRow['key'], SettingsSection> = {
   home: 'homes',
   otherHomes: 'homes',
   buffer: 'leaveBy',
   location: 'location',
+  notify: 'notify',
   search: 'search',
 };
 
@@ -56,6 +67,7 @@ const SECTION_FOR: Record<SummaryRow['key'], SettingsSection> = {
 export const SETTINGS_SECTION_TITLE: Record<SettingsSection, string> = {
   homes: 'Homes',
   location: 'Location',
+  notify: 'Notifications',
   leaveBy: 'Leave-by',
   search: 'Search defaults',
 };
@@ -66,5 +78,5 @@ export const settingsSectionFor = (key: SummaryRow['key']): SettingsSection => S
 /** A section from the route's query, or null for anything else. */
 export function parseSettingsSection(raw: unknown): SettingsSection | null {
   const v = Array.isArray(raw) ? raw[0] : raw;
-  return v === 'homes' || v === 'location' || v === 'leaveBy' || v === 'search' ? v : null;
+  return v === 'homes' || v === 'location' || v === 'notify' || v === 'leaveBy' || v === 'search' ? v : null;
 }

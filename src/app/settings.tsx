@@ -116,6 +116,37 @@ export default function SettingsScreen() {
           </SectionFooter>
         </View>
 
+        <View style={styles.section} onLayout={sectionLayout('notify')}>
+          <SectionHeader title="Notifications" />
+          <View style={[styles.group, { backgroundColor: c.surface, borderColor: c.line }]}>
+            <View style={styles.row}>
+              <View style={styles.label}>
+                <Text style={[textStyles.body, { color: c.text }]}>Answers to my requests</Text>
+                <Text style={[textStyles.small, { color: c.muted }]}>As soon as someone replies</Text>
+              </View>
+              <Switch
+                value={settings.notify.answers}
+                onValueChange={(on) => update({ notify: { ...settings.notify, answers: on } })}
+                accessibilityLabel="Answers to my requests"
+                trackColor={{ true: c.accent, false: c.line2 }}
+              />
+            </View>
+            <View style={[styles.row, styles.divided, { borderTopColor: c.line }]}>
+              <View style={styles.label}>
+                <Text style={[textStyles.body, { color: c.text }]}>Asks on my airline’s flights</Text>
+                <Text style={[textStyles.small, { color: c.muted }]}>At most 5 a day</Text>
+              </View>
+              <Switch
+                value={settings.notify.airlineAsks}
+                onValueChange={(on) => update({ notify: { ...settings.notify, airlineAsks: on } })}
+                accessibilityLabel="Asks on my airline’s flights, at most 5 a day"
+                trackColor={{ true: c.accent, false: c.line2 }}
+              />
+            </View>
+          </View>
+          <SectionFooter>Answer an ask with what you see on the board. Nobody sees who asked or who answered.</SectionFooter>
+        </View>
+
         <View style={styles.section} onLayout={sectionLayout('leaveBy')}>
           <SectionHeader title="Leave-by" />
           <View style={[styles.group, { backgroundColor: c.surface, borderColor: c.line }]}>

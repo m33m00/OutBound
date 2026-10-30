@@ -7,6 +7,12 @@ describe('parseSettings', () => {
     expect(parseSettings({ bufferMin: 'x', useLocation: 1, search: 7 })).toEqual(DEFAULT_SETTINGS);
   });
 
+  it('turns both notifications on by default and keeps saved choices', () => {
+    expect(DEFAULT_SETTINGS.notify).toEqual({ answers: true, airlineAsks: true });
+    expect(parseSettings({ notify: { answers: false, airlineAsks: true } }).notify).toEqual({ answers: false, airlineAsks: true });
+    expect(parseSettings({ notify: { answers: 'no' } }).notify).toEqual({ answers: true, airlineAsks: true });
+  });
+
   it('defaults the airport buffer to 75 min (Q-003)', () => {
     expect(DEFAULT_SETTINGS.bufferMin).toBe(75);
   });
@@ -21,6 +27,7 @@ describe('parseSettings', () => {
       radarOn: false,
       search: { ...DEFAULT_FILTERS, maxStops: 1, maxLayoverMin: 300 },
       areaOn: { DAL: true, DFW: false },
+      notify: { answers: true, airlineAsks: false },
     };
     expect(parseSettings(JSON.parse(JSON.stringify(saved)))).toEqual(saved);
   });
