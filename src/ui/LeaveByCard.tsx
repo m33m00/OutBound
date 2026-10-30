@@ -41,9 +41,11 @@ export function LeaveByCard(p: LeaveByCardProps) {
   const fresh = p.location != null && p.now - p.location.at <= LOCATION_FRESH_MS;
   // A drive estimate can't help once the flight has left.
   const offerLocation = !fresh && !atAirport && !departed && p.locationStatus !== 'locating';
+  // The schedule stays the safe time to work from; the delay is shown, not counted (Q-070).
+  const delayLine = !departed && p.delayedText ? `Flight delayed to ${p.delayedText}` : null;
   // Say the leave-by line once when a route is picked; VoiceOver focus stays on the row.
-  // Departed says why too, and is said again if the flight leaves while the card is open.
-  const spokenTitle = departed ? `${text.title}. ${text.sub}` : text.title;
+  // Departed says why too, and is said again if the flight leaves while the card is open; a delay is said with the title.
+  const spokenTitle = departed ? `${text.title}. ${text.sub}` : [text.title, delayLine].filter(Boolean).join('. ');
   const firstTitle = useRef(spokenTitle);
   const wasDeparted = useRef(departed);
   useEffect(() => {
@@ -53,6 +55,12 @@ export function LeaveByCard(p: LeaveByCardProps) {
     if (departed && !wasDeparted.current) AccessibilityInfo.announceForAccessibility?.(spokenTitle);
     wasDeparted.current = departed;
   }, [departed, spokenTitle]);
+  // A delay that turns up after a refresh is said once, like Departed.
+  const lastDelay = useRef(delayLine);
+  useEffect(() => {
+    if (delayLine && delayLine !== lastDelay.current) AccessibilityInfo.announceForAccessibility?.(delayLine);
+    lastDelay.current = delayLine;
+  }, [delayLine]);
   const note = departed
     ? null
     : p.locationStatus === 'denied'
@@ -60,8 +68,6 @@ export function LeaveByCard(p: LeaveByCardProps) {
       : p.locationStatus === 'locating'
         ? 'Finding your location…'
         : null;
-  // The schedule stays the safe time to work from; the delay is shown, not counted (Q-070).
-  const delayLine = !departed && p.delayedText ? `Flight delayed to ${p.delayedText}` : null;
 
   // Outlined so it stands out on the tinted card (it used to be gray on light blue).
   const outline = [styles.action, styles.outline, inline && styles.inline, { backgroundColor: c.surface, borderColor: c.accent }];

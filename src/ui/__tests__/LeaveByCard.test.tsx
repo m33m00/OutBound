@@ -66,6 +66,7 @@ describe('LeaveByCard location button', () => {
           locationStatus="denied"
           onUseLocation={jest.fn()}
           departed
+          delayedText="2:40 PM"
         />,
       );
     });
@@ -73,6 +74,8 @@ describe('LeaveByCard location button', () => {
     expect(texts).toContain('Departed');
     expect(r!.root.findAll((n) => /Use Location|Open Settings/.test(String(n.props.accessibilityLabel)))).toHaveLength(0);
     expect(texts.some((t) => t.startsWith('Location is off'))).toBe(false);
+    // Once it has left, the delay line goes too.
+    expect(texts.some((t) => t.startsWith('Flight delayed'))).toBe(false);
   });
 
   it('keeps the scheduled leave-by and adds the delay under it (Q-070, John: C)', () => {
