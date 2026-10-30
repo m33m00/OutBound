@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
 import { answerTier, requestDetail, requestTitle, type LoadRequest } from '@/requests/requests';
 import { forSpeech } from '@/search/format';
@@ -16,6 +16,9 @@ export interface RequestRowProps {
   onAnswer?: () => void;
 }
 
+/** From this text size the button or badge moves under the text, so the flight never squeezes. */
+const STACK_AT_FONT_SCALE = 1.3;
+
 /**
  * One load request (DECISIONS.md "Reports and requests"): flight and route,
  * when it leaves and when it was asked; once answered, the tier word with
@@ -23,15 +26,17 @@ export interface RequestRowProps {
  */
 export function RequestRow({ request, now, mine, onAnswer }: RequestRowProps) {
   const c = useColors();
+  const { fontScale } = useWindowDimensions();
+  const stacked = fontScale >= STACK_AT_FONT_SCALE;
   const title = requestTitle(request);
   const detail = requestDetail(request, now);
   const answered = request.answer != null;
   const tier = request.answer ? answerTier(request.answer) : null;
   const status = mine ? (answered ? 'Answered' : 'Waiting') : null;
   return (
-    <View style={styles.row} testID="request-row">
+    <View style={[styles.row, stacked && styles.stacked]} testID="request-row">
       <View
-        style={styles.text}
+        style={stacked ? styles.textStacked : styles.text}
         accessible
         accessibilityLabel={forSpeech([title, detail, status].filter(Boolean).join('. '))}>
         <Text style={[textStyles.heading, { color: c.text }]}>{title}</Text>
@@ -42,7 +47,7 @@ export function RequestRow({ request, now, mine, onAnswer }: RequestRowProps) {
       </View>
       {status ? (
         <View
-          style={[styles.badge, { backgroundColor: answered ? c.accentSoft : c.surface2 }]}
+          style={[styles.badge, stacked && styles.selfStart, { backgroundColor: answered ? c.accentSoft : c.surface2 }]}
           importantForAccessibility="no-hide-descendants"
           accessibilityElementsHidden>
           <Text style={[textStyles.small, { color: answered ? c.accent : c.muted }]}>{status}</Text>
@@ -52,10 +57,10 @@ export function RequestRow({ request, now, mine, onAnswer }: RequestRowProps) {
         <Pressable
           onPress={onAnswer}
           accessibilityRole="button"
-          accessibilityLabel="Answer"
-          accessibilityHint={`Report open seats and nonrevs listed on ${forSpeech(title)}`}
+          accessibilityLabel={`Answer ${forSpeech(title)}`}
+          accessibilityHint="Opens Report Load"
           testID="answer-request"
-          style={pressStyle([styles.answer, { backgroundColor: c.accent }])}>
+          style={pressStyle([styles.answer, stacked && styles.selfStart, { backgroundColor: c.accent }])}>
           <Text style={[textStyles.button, { color: c.onAccent }]}>Answer</Text>
         </Pressable>
       ) : null}
@@ -68,14 +73,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.section,
-    paddingHorizontal: spacing.page,
-    paddingVertical: spacing.section,
-    minHeight: minTapTarget + spacing.section,
+    paddingHorizontal: spacing.rowX,
+    paddingVertical: spacing.rowY,
+    minHeight: minTapTarget + spacing.rowY,
   },
+  stacked: { flexDirection: 'column', alignItems: 'stretch', gap: spacing.group },
   text: { flex: 1, gap: 2 },
-  detailLine: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  textStacked: { gap: 2 },
+  selfStart: { alignSelf: 'flex-start' },
+  // Dot sits on the first line when the detail wraps.
+  detailLine: { flexDirection: 'row', alignItems: 'flex-start', gap: 6 },
   detail: { flexShrink: 1 },
-  dot: { width: 8, height: 8, borderRadius: 4 },
+  dot: { width: 8, height: 8, borderRadius: 4, marginTop: 5 },
   badge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: radius.sm },
   answer: {
     minHeight: minTapTarget,

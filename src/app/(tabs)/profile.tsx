@@ -3,7 +3,7 @@ import { router } from 'expo-router';
 import { StyleSheet, Text } from 'react-native';
 
 import { useSettings } from '@/settings/SettingsProvider';
-import { profileSummary, settingsSectionFor } from '@/settings/profileSummary';
+import { profileSummary, SETTINGS_SECTION_TITLE, settingsSectionFor } from '@/settings/profileSummary';
 import { SCHEDULE_SOURCE } from '@/search/useRouteSearch';
 import { spacing, textStyles, useColors } from '@/theme';
 import { ListGroup, ListRow } from '@/ui/ListGroup';
@@ -31,7 +31,7 @@ export default function ProfileScreen() {
             value={row.value}
             detail={row.detail}
             onPress={() => openSettings(row.key)}
-            accessibilityHint="Opens Settings"
+            accessibilityHint={`Opens Settings at ${SETTINGS_SECTION_TITLE[settingsSectionFor(row.key)]}`}
           />
         ))}
       </ListGroup>

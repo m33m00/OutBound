@@ -56,7 +56,7 @@ export default function TripsScreen() {
             ))}
           </ListGroup>
           <SectionFooter>
-            {`${openCount} of ${MAX_OPEN_REQUESTS} open. Someone at that airline answers with what they see on the board.`}
+            {`${openCount} of ${MAX_OPEN_REQUESTS} requests open. Someone at that airline answers with what they see on the board.`}
           </SectionFooter>
         </View>
       ) : null}

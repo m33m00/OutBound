@@ -1,11 +1,23 @@
 import { useEffect, useRef, useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import {
+  AccessibilityInfo,
+  InputAccessoryView,
+  Keyboard,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type { Flight } from '@/engine';
 import { afterListText, answerTier, clampReport, departsText, MAX_LISTED, MAX_OPEN } from '@/requests/requests';
 import { forSpeech, TIER_WORD } from '@/search/format';
-import { fonts, minTapTarget, radius, spacing, textStyles, useColors } from '@/theme';
+import { fonts, minTapTarget, radius, spacing, textStyles, useColors, useColorSchemeName } from '@/theme';
 
 import { Button } from './Buttons';
 import { selectionTick } from './haptics';
@@ -16,6 +28,12 @@ import { TIER_FG, TIER_MARK } from './tierColors';
 /** Hold − or + this long before it starts repeating, then step this often (prototype v9.1). */
 const REPEAT_DELAY_MS = 380;
 const REPEAT_EVERY_MS = 70;
+/** Big numbers stop growing past this text size so "200" never clips. */
+const BIG_TEXT_MAX_SCALE = 1.3;
+/** The number pad has no Return key on iPhone: a Done bar above it closes it. */
+const KEYBOARD_BAR_ID = 'report-load-keyboard';
+/** Wait for the numbers to settle before VoiceOver reads the new tier. */
+const ANNOUNCE_AFTER_MS = 700;
 
 export interface ReportSheetProps {
   /** Flight being reported; null = closed. */
@@ -37,52 +55,97 @@ export function ReportSheet({ flight, visible, now, onCancel, onSubmit }: Report
   const c = useColors();
   const [open, setOpen] = useState(0);
   const [listed, setListed] = useState(0);
+  // Nothing set yet: no tier shown and Submit stays off, so a stray tap can't report a false Full.
+  const [touched, setTouched] = useState(false);
   // Each flight starts from zero.
   const flightId = flight?.id;
   useEffect(() => {
     if (!flightId) return;
     setOpen(0);
     setListed(0);
+    setTouched(false);
   }, [flightId]);
   const tier = answerTier({ open, listed });
-  const tierLine = `${TIER_WORD[tier]} · ${afterListText(open, listed)}`;
+  const tierLine = touched ? `${TIER_WORD[tier]} · ${afterListText(open, listed)}` : 'Set the numbers from the board';
+  // iOS has no live regions: read the tier once the numbers stop moving.
+  useEffect(() => {
+    if (!touched) return;
+    const t = setTimeout(() => AccessibilityInfo.announceForAccessibility(forSpeech(tierLine)), ANNOUNCE_AFTER_MS);
+    return () => clearTimeout(t);
+  }, [tierLine, touched]);
   const subtitle = flight ? `${flight.airline} ${flight.flightNumber} · ${flight.from} → ${flight.to}` : undefined;
 
   return (
     <Modal visible={visible ?? flight !== null} animationType="slide" presentationStyle="pageSheet" onRequestClose={onCancel}>
       <SafeAreaView style={[styles.screen, { backgroundColor: c.bg }]} edges={['top', 'bottom']}>
         <SheetHeader title="Report Load" subtitle={subtitle} action="Cancel" onAction={onCancel} />
-        <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
+        <ScrollView
+          contentContainerStyle={styles.body}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="interactive"
+          automaticallyAdjustKeyboardInsets>
           {flight ? <Text style={[textStyles.body, { color: c.muted }]}>{departsText(flight, now)}</Text> : null}
           <NumberField
             label="Open seats"
             caption="On the board"
             value={open}
             max={MAX_OPEN}
-            onChange={(v) => setOpen(clampReport('open', v))}
+            onChange={(v) => {
+              setTouched(true);
+              setOpen(clampReport('open', v));
+            }}
           />
           <NumberField
             label="Nonrevs listed"
             caption="On the standby list"
             value={listed}
             max={MAX_LISTED}
-            onChange={(v) => setListed(clampReport('listed', v))}
+            onChange={(v) => {
+              setTouched(true);
+              setListed(clampReport('listed', v));
+            }}
           />
           <View
             style={[styles.tier, { backgroundColor: c.surface, borderColor: c.line }]}
             accessible
             accessibilityLiveRegion="polite"
-            accessibilityLabel={tierLine}
+            accessibilityLabel={forSpeech(tierLine)}
             testID="report-tier">
-            <View style={[styles.dot, { backgroundColor: c[TIER_MARK[tier]] }]} />
-            <Text style={[textStyles.heading, { color: c[TIER_FG[tier]] }]}>{TIER_WORD[tier]}</Text>
-            <Text style={[textStyles.body, styles.after, { color: c.muted }]}>{afterListText(open, listed)}</Text>
+            {touched ? (
+              <>
+                <View style={[styles.dot, { backgroundColor: c[TIER_MARK[tier]] }]} />
+                <Text style={[textStyles.heading, { color: c[TIER_FG[tier]] }]}>{TIER_WORD[tier]}</Text>
+                <Text style={[textStyles.body, styles.after, { color: c.muted }]}>{afterListText(open, listed)}</Text>
+              </>
+            ) : (
+              <Text style={[textStyles.body, styles.after, { color: c.muted }]}>{tierLine}</Text>
+            )}
           </View>
           <Text style={[textStyles.small, { color: c.muted }]}>
             Follow your airline’s rules on sharing loads. Reports are anonymous to other employees.
           </Text>
-          <Button label="Submit Report" onPress={() => onSubmit(open, listed)} />
+          <Button
+            label="Submit Report"
+            disabled={!touched}
+            onPress={() => {
+              Keyboard.dismiss();
+              onSubmit(open, listed);
+            }}
+          />
         </ScrollView>
+        {Platform.OS === 'ios' ? (
+          <InputAccessoryView nativeID={KEYBOARD_BAR_ID}>
+            <View style={[styles.keyboardBar, { backgroundColor: c.surface2, borderTopColor: c.line }]}>
+              <Pressable
+                onPress={Keyboard.dismiss}
+                accessibilityRole="button"
+                accessibilityLabel="Done"
+                style={pressStyle(styles.keyboardDone, 'link')}>
+                <Text style={[textStyles.heading, { color: c.accent }]}>Done</Text>
+              </Pressable>
+            </View>
+          </InputAccessoryView>
+        ) : null}
       </SafeAreaView>
     </Modal>
   );
@@ -102,11 +165,13 @@ function NumberField({
   onChange: (v: number) => void;
 }) {
   const c = useColors();
+  const scheme = useColorSchemeName();
   const [text, setText] = useState(String(value));
-  const [typing, setTyping] = useState(false);
+  // Keep the box in step with − / + and with the limit ("999" shows 200);
+  // an empty box while typing counts as 0 and stays empty until you leave it.
   useEffect(() => {
-    if (!typing) setText(String(value));
-  }, [value, typing]);
+    setText((t) => (Number(t || '0') === value ? t : String(value)));
+  }, [value]);
   // Latest value for the hold-to-repeat timer.
   const valueRef = useRef(value);
   valueRef.current = value;
@@ -118,7 +183,11 @@ function NumberField({
   useEffect(() => stop, []);
   const step = (d: 1 | -1) => {
     const next = valueRef.current + d;
-    if (next < 0 || next > max) return;
+    if (next < 0 || next > max) {
+      // Held into a limit: the button turns off and may never get its press-out.
+      stop();
+      return;
+    }
     valueRef.current = next;
     selectionTick();
     onChange(next);
@@ -141,7 +210,9 @@ function NumberField({
         accessibilityValue={{ text: String(value) }}
         accessibilityState={{ disabled }}
         style={pressStyle([styles.stepBtn, { backgroundColor: c.surface2, opacity: disabled ? 0.4 : 1 }])}>
-        <Text style={[styles.stepText, { color: c.text }]}>{d > 0 ? '+' : '−'}</Text>
+        <Text style={[styles.stepText, { color: c.text }]} maxFontSizeMultiplier={BIG_TEXT_MAX_SCALE}>
+          {d > 0 ? '+' : '−'}
+        </Text>
       </Pressable>
     );
   };
@@ -159,17 +230,15 @@ function NumberField({
           onChangeText={(t) => {
             const digits = t.replace(/[^0-9]/g, '').slice(0, 3);
             setText(digits);
-            if (digits) onChange(Number(digits));
+            onChange(digits ? Number(digits) : 0);
           }}
-          onFocus={() => setTyping(true)}
-          onBlur={() => {
-            setTyping(false);
-            if (!text) onChange(0);
-          }}
+          onBlur={() => setText((t) => t || '0')}
           selectTextOnFocus
           keyboardType="number-pad"
-          returnKeyType="done"
+          keyboardAppearance={scheme}
+          inputAccessoryViewID={Platform.OS === 'ios' ? KEYBOARD_BAR_ID : undefined}
           maxLength={3}
+          maxFontSizeMultiplier={BIG_TEXT_MAX_SCALE}
           accessibilityLabel={forSpeech(`${label}, ${caption}`)}
           accessibilityHint="Type a number"
           style={[styles.bignum, { color: c.text, borderColor: c.line }]}
@@ -220,4 +289,11 @@ const styles = StyleSheet.create({
   },
   dot: { width: 10, height: 10, borderRadius: 5 },
   after: { flex: 1 },
+  keyboardBar: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    paddingHorizontal: spacing.page,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  keyboardDone: { minHeight: minTapTarget, justifyContent: 'center' },
 });

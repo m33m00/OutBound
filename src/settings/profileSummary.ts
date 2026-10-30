@@ -52,6 +52,14 @@ const SECTION_FOR: Record<SummaryRow['key'], SettingsSection> = {
   search: 'search',
 };
 
+/** Section headings as Settings shows them, for "Opens Settings at Leave-by". */
+export const SETTINGS_SECTION_TITLE: Record<SettingsSection, string> = {
+  homes: 'Homes',
+  location: 'Location',
+  leaveBy: 'Leave-by',
+  search: 'Search defaults',
+};
+
 /** Which Settings section a Profile row opens at. */
 export const settingsSectionFor = (key: SummaryRow['key']): SettingsSection => SECTION_FOR[key];
 
