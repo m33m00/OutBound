@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FlatList, StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { AIRPORTS, localDate, toRouteLine, type Flight, type Itinerary } from '@/engine';
+import { AIRPORTS, areaFor, localDate, toRouteLine, type Flight, type Itinerary } from '@/engine';
 import { flightLookupKey, sampleRouteImpacts, useFlightStatuses, useRouteImpacts } from '@/live';
 import { GlobeMap, type MapAirport } from '@/map';
 import { nearestAirport } from '@/search/airports';
@@ -111,7 +111,7 @@ export default function HomeScreen() {
     return () => clearInterval(t);
   }, []);
 
-  // Empty search (Q-047): a banner under Find Routes instead of a results
+  // Empty search (Q-047): a banner at the top of the search panel instead of a results
   // panel. "Show Them" lists the hidden routes for this search only; the
   // saved filters don't change. The banner goes away as soon as the date,
   // From or To no longer match the search it describes.
@@ -137,7 +137,7 @@ export default function HomeScreen() {
       setSheetIndex(SHEET.half);
     }
   }, [locationCard, locationCardSeen, showResults]);
-  // An empty search shows its banner under Find Routes, so the panel goes back to half.
+  // An empty search shows its banner at the top of the search panel, so the panel goes back to half.
   const emptyNow = emptyBanner != null && !showHidden;
   useEffect(() => {
     if (emptyNow) setSheetIndex(SHEET.half);
@@ -282,6 +282,7 @@ export default function HomeScreen() {
                 filtersChanged={filtersChanged}
                 onFind={() => runSearch()}
                 onGetHome={awayFromHome ? getHome : undefined}
+                homeName={mainHome ? (areaFor(mainHome)?.city ?? mainHome) : undefined}
                 onSetHome={mainHome ? undefined : () => router.push('/settings')}
                 locationCard={
                   locationCard ? (

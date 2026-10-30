@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useSettings } from '@/settings/SettingsProvider';
 import { AIRPORTS } from '@/engine';
+import { confirmReset } from '@/settings/confirmReset';
 import { homeAirports, LIMITS } from '@/settings/settings';
 import { minTapTarget, radius, spacing, textStyles, useColors } from '@/theme';
 import { AirportPicker } from '@/ui/AirportPicker';
@@ -125,7 +126,8 @@ export default function SettingsScreen() {
           <SectionFooter>Every search starts with these. Change them for one search in Filters.</SectionFooter>
         </View>
 
-        <Button label="Reset to Defaults" kind="secondary" onPress={reset} />
+        {/* Clears homes too, so it asks first (what it should clear is Q-064). */}
+        <Button label="Reset All Settings" kind="secondary" onPress={() => confirmReset(reset)} />
         <Text style={[textStyles.small, { color: c.muted }]}>Saved on this phone.</Text>
       </ScrollView>
       <AirportPicker

@@ -70,6 +70,15 @@ Condensed from the project docs: MVP decisions (through v8.8), design direction 
   - Provisional (design round 23, not John-decided): the route count sits under the date inside the switcher ("Fri, Oct 30" over "8 routes"); the arrows are full-height 44pt targets; sample labels sit on their own centered line under it.
   - Provisional (design round 23, from design review): in the route view the route card no longer closes on a tap (only "‹ Routes" closes it) and drops its blue selected tint, so the Leave By card leads; the route view keeps the sample labels; flipping routes re-reads the Leave By line to VoiceOver; the "‹ 2 of 8 ›" arrows get 4pt of extra hit area. The Leave By card's Use Location / Open Settings button is outlined in blue on white and sits at the end of the time row (own row from 1.3x text size). On Search, Filters and Find Routes sit right under From/To so they show without scrolling; the "Sample flights" label moves to the top bar; the panel opens tall while the "Use your location" card shows.
 - Provisional (design round 24, 2026-10-30; not John-decided): every page sheet (Filters, Date, airport picker, flight status, delays and weather) shares one header: the title on the left and an iOS-style blue text button on the right, "Done" in bold, or "Cancel" in regular weight on the airport picker, instead of a filled Done button that competed with the sheet's own buttons. In the route view, VoiceOver users can swipe up or down on "2 of 8" to flip routes; the arrows stay for Voice Control.
+- Provisional (design round 25, 2026-10-30; from design review, not John-decided):
+  - The empty-search notice (Q-047) sits at the top of the search panel, above the dates, so half height always shows it (it used to sit under Find Routes, and the Get Home row pushed it out of view).
+  - The row's delay badge names the worst airport: "Likely delays · ORD · 4m ago".
+  - When live status moves the arrival at the end of the route by 5+ min, the row strikes the scheduled arrival and shows the expected one, like a late departure.
+  - Get Home says where it goes: "Get Home · Dallas" (area city, since it always searches the whole area) or the home's code when it has no area.
+  - "You're at DFW" on the Leave By card is amber (amber = you), not the Good tier green, which means seats.
+  - The flight status sheet says "Departed", matching the row tag (Q-050), instead of "In the air".
+  - Settings' reset is now "Reset All Settings" and asks first, since it clears your homes (what it should clear is Q-064).
+  - Tapping the panel handle at full height steps down one size instead of jumping to the smallest.
 - Own schedule DB from daily AeroDataBox pulls (~30 airports). No live calls per search.
 
 ## Seat availability

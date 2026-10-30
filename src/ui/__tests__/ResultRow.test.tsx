@@ -89,7 +89,8 @@ describe('ResultRow', () => {
     act(() => row.props.onAccessibilityAction({ nativeEvent: { actionName: 'impact' } }));
     expect(onImpact).toHaveBeenCalledWith(it.id);
     const texts = root.findAll((n) => typeof n.props.children === 'string').map((n) => n.props.children);
-    expect(texts).toContain('Likely delays · 5m ago');
+    // The badge names the airport (design round 25).
+    expect(texts).toContain('Likely delays · LAX · 5m ago');
     const pill = root.findAll((n) => n.props.hitSlop != null)[0];
     expect(pill.props.hitSlop).toEqual({ top: 11, bottom: 11, left: 10, right: 10 });
   });
@@ -180,8 +181,13 @@ describe('ResultRow', () => {
     const root = r!.root;
     expect(strings(root)).toContain('Delayed 25m');
     const struck = root.findAll((n) => (n.type as unknown) === 'Text' && [n.props.style].flat(3).some((st: { textDecorationLine?: string } | undefined) => st?.textDecorationLine === 'line-through'));
-    // Leg 0's old time is struck once, in the top time line only (not again on the leg line).
-    expect(struck).toHaveLength(1);
+    // In the top time line only (not again on the leg line): the old departure, and the old
+    // arrival, since a 25-minute late departure lands about 25 minutes late (design round 25).
+    expect(struck).toHaveLength(2);
+    const times = root.findAll((n) => n.props.testID === 'row-times' && typeof n.type === 'string')[0];
+    const flat = (n: unknown): string =>
+      typeof n === 'string' ? n : Array.isArray(n) ? n.map(flat).join('') : n && typeof n === 'object' && 'props' in n ? flat((n as { props: { children?: unknown } }).props.children) : '';
+    expect(flat(times.props.children)).toMatch(/9:00 AM 9:25 AM – \d+:\d+ [AP]M \d+:\d+ [AP]M/);
     const row = root.findAll((n) => n.props.accessibilityRole === 'button')[0];
     expect(row.props.accessibilityLabel).toContain('Delayed 25 minutes, was 9:00 AM, now 9:25 AM');
     // The weather/FAA badge slot stays separate from status tags.

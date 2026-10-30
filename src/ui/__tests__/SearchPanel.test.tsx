@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 
 import { dateChips } from '@/search/dates';
@@ -14,7 +14,7 @@ jest.mock('react-native/Libraries/Utilities/useWindowDimensions', () => ({
   default: () => ({ width: 393, height: 852, scale: 3, fontScale: mockFontScale }),
 }));
 
-function render(fontScale: number, extra: { onGetHome?: () => void } = {}) {
+function render(fontScale: number, extra: { onGetHome?: () => void; homeName?: string; banner?: React.ReactNode } = {}) {
   mockFontScale = fontScale;
   const chips = dateChips('2026-10-20');
   let r: ReactTestRenderer | undefined;
@@ -95,9 +95,26 @@ describe('SearchPanel main button (Q-063)', () => {
     r = render(1);
     const atHomeFind = fill('Find Routes');
     act(() => r!.unmount());
-    r = render(1, { onGetHome: jest.fn() });
-    expect(order()).toEqual(['Get Home: search to your main home', 'Find Routes']);
+    r = render(1, { onGetHome: jest.fn(), homeName: 'Dallas' });
+    expect(order()).toEqual(['Get Home: search to your main home, Dallas', 'Find Routes']);
+    // It says where it goes before you tap it.
+    expect(r.root.findAll((n) => n.props.children === 'Get Home · Dallas' && typeof n.type === 'string').length).toBe(1);
     expect(fill('Get Home')).toBe(atHomeFind);
     expect(fill('Find Routes')).not.toBe(atHomeFind);
+  });
+});
+
+describe('SearchPanel empty-search notice', () => {
+  let r: ReactTestRenderer | undefined;
+  afterEach(() => {
+    act(() => r?.unmount());
+  });
+
+  it('sits at the top, above the dates, so half height always shows it (design round 25)', () => {
+    r = render(1, { onGetHome: jest.fn(), banner: <View testID="banner" /> });
+    const ids = r.root
+      .findAll((n) => typeof n.type === 'string' && (n.props.testID === 'banner' || n.props.testID === 'date-chips'))
+      .map((n) => n.props.testID);
+    expect(ids).toEqual(['banner', 'date-chips']);
   });
 });

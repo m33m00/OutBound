@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, Text } from 'react-native';
 
 import type { RouteImpact } from '@/live';
-import { impactAge, IMPACT_WORD } from '@/search/impactText';
+import { impactBadgeText } from '@/search/impactText';
 import { fonts, radius, textStyles, useColors } from '@/theme';
 import { Icon } from './Icon';
 import { pressStyle } from './press';
@@ -18,7 +18,6 @@ export function ImpactBadge({ impact, now, onPress }: { impact: RouteImpact; now
   const likely = impact.level === 'likelyDelays';
   const fg = likely ? c.likelyDelays : c.caution;
   const bg = likely ? c.likelyDelaysBg : c.cautionBg;
-  const age = impactAge(impact, now);
   return (
     <Pressable
       onPress={onPress}
@@ -35,7 +34,7 @@ export function ImpactBadge({ impact, now, onPress }: { impact: RouteImpact; now
         fallback={<Text style={[textStyles.small, { color: fg }]}>!</Text>}
       />
       <Text style={[textStyles.small, styles.word, { color: fg }]}>
-        {age ? `${IMPACT_WORD[impact.level]} · ${age}` : IMPACT_WORD[impact.level]}
+        {impactBadgeText(impact, now)}
       </Text>
     </Pressable>
   );

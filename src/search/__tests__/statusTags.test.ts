@@ -128,6 +128,16 @@ describe('rowStatus', () => {
     expect(s.risks).toEqual([]);
   });
 
+  it('gives the expected arrival at the end of the route once it moves 5+ minutes (design round 25)', async () => {
+    const it = await oneStop();
+    // Last leg lands 19:20 PDT; 40m late -> 8:00 PM local.
+    const late = rowStatus(it, { [keyOf(b)]: status(b, 'delayed', 40) }, MINS);
+    expect(late.arrival).toEqual({ newUtc: b.arriveUtc + 40 * MIN, newText: '8:00 PM' });
+    // Within 4 minutes counts as on time; no status on the last leg gives nothing.
+    expect(rowStatus(it, { [keyOf(b)]: status(b, 'scheduled', 0, 4) }, MINS).arrival).toBeUndefined();
+    expect(rowStatus(it, { [keyOf(a)]: status(a, 'delayed', 25) }, MINS).arrival).toBeUndefined();
+  });
+
   it('a delayed onward flight widens the connection', async () => {
     const it = await oneStop();
     const s = rowStatus(it, { [keyOf(a)]: status(a, 'delayed', 25), [keyOf(b)]: status(b, 'delayed', 20) }, MINS);

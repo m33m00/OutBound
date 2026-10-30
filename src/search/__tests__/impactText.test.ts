@@ -1,6 +1,6 @@
 import type { RouteImpact } from '@/live';
 
-import { badgedStations, impactAge, impactSummary } from '../impactText';
+import { badgedStations, impactAge, impactBadgeText, impactSummary } from '../impactText';
 
 const NOW = Date.UTC(2026, 9, 20, 12);
 const iso = (minAgo: number) => new Date(NOW - minAgo * 60_000).toISOString();
@@ -44,5 +44,16 @@ describe('impact text', () => {
     expect(impactAge(impact, NOW)).toBe('12m ago');
     expect(impactAge({ asOf: iso(0) }, NOW)).toBe('just now');
     expect(impactAge({ asOf: null }, NOW)).toBe('');
+  });
+});
+
+describe('impactBadgeText', () => {
+  it('names the worst airport, so a stop at the connection reads differently from one at the end', () => {
+    expect(impactBadgeText(impact, NOW)).toBe('Likely delays · ORD · 12m ago');
+  });
+
+  it('leaves out the age when no time is known and says nothing when there is no impact', () => {
+    expect(impactBadgeText({ ...impact, asOf: null }, NOW)).toBe('Likely delays · ORD');
+    expect(impactBadgeText({ ...impact, level: 'none' }, NOW)).toBe('');
   });
 });
