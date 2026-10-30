@@ -3,6 +3,7 @@ import { Text } from 'react-native';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 
 import { createMemoryProvider, searchItineraries, zonedToUtc } from '@/engine';
+import { dateChips } from '@/search/dates';
 
 import { areaLines, ResultsPanel } from '../ResultsPanel';
 
@@ -88,5 +89,62 @@ describe('areaLines', () => {
   it('says nothing when the area is off or the airport has no area', () => {
     expect(areaLines({ origin: 'DAL', destination: 'LAX', date: '2026-10-20' })).toEqual([]);
     expect(areaLines({ origin: 'BNA', destination: 'DAL', date: '2026-10-20', originArea: true })).toEqual([]);
+  });
+});
+
+describe('ResultsPanel day and filters (Q-057)', () => {
+  let r: ReactTestRenderer | undefined;
+  afterEach(() => act(() => r?.unmount()));
+
+  const texts = () =>
+    r!.root
+      .findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string')
+      .map((n) => n.props.children as string);
+
+  it('steps the day and opens filters from the results header', async () => {
+    const { request, list } = await results();
+    const state = { status: 'done' as const, request, results: list, hiddenCount: 0, hiddenResults: [], searchedAt: NOW };
+    const onDay = jest.fn();
+    const onFilters = jest.fn();
+    await act(async () => {
+      r = create(
+        <ResultsPanel
+          state={state}
+          selectedId={null}
+          now={NOW}
+          onSelect={jest.fn()}
+          onBack={jest.fn()}
+          onRetry={jest.fn()}
+          days={dateChips('2026-10-19')}
+          onDay={onDay}
+          onFilters={onFilters}
+          filtersChanged={2}
+        />,
+      );
+    });
+    // The date lives in the stepper, so the summary keeps only the count.
+    const summary = r!.root.findAll((n) => n.props.testID === 'results-summary' && typeof n.type === 'string')[0];
+    expect(summary.props.children).toBe('2 routes');
+    expect(texts()).toContain('Tue, Oct 20');
+    const next = r!.root.findAll((n) => n.props.testID === 'day-next' && n.props.accessibilityRole === 'button')[0];
+    act(() => next.props.onPress());
+    expect(onDay).toHaveBeenCalledWith('2026-10-21');
+    const filters = r!.root.findAll((n) => n.props.accessibilityLabel === 'Filters, 2 changed' && n.props.onPress)[0];
+    expect(texts()).toContain('Filters (2)');
+    act(() => filters.props.onPress());
+    expect(onFilters).toHaveBeenCalled();
+  });
+
+  it('keeps the plain date line when the header has no day stepper', async () => {
+    const { request, list } = await results();
+    const state = { status: 'done' as const, request, results: list, hiddenCount: 0, hiddenResults: [], searchedAt: NOW };
+    await act(async () => {
+      r = create(
+        <ResultsPanel state={state} selectedId={null} now={NOW} onSelect={jest.fn()} onBack={jest.fn()} onRetry={jest.fn()} />,
+      );
+    });
+    const summary = r!.root.findAll((n) => n.props.testID === 'results-summary' && typeof n.type === 'string')[0];
+    expect(summary.props.children).toBe('Tue, Oct 20 · 2 routes');
+    expect(r!.root.findAll((n) => n.props.testID === 'day-next').length).toBe(0);
   });
 });

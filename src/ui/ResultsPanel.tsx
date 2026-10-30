@@ -3,13 +3,14 @@ import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-nativ
 
 import { areaFor, type Flight, type Itinerary, type SearchRequest } from '@/engine';
 import type { RouteImpact } from '@/live';
-import { shortDate } from '@/search/dates';
+import { shortDate, type DateChip } from '@/search/dates';
 import type { RowStatus } from '@/search/statusTags';
 import type { SearchState } from '@/search/useRouteSearch';
 import { radius, spacing, textStyles, useColors } from '@/theme';
 
 import { BackButton } from './BackButton';
 import { Button } from './Buttons';
+import { DayStepper } from './DayStepper';
 import { Icon } from './Icon';
 import { ResultRow } from './ResultRow';
 
@@ -38,6 +39,13 @@ export interface ResultsPanelProps {
   sampleFlights?: boolean;
   /** "Show Them": routes the filters hid, shown for this search only (Q-047). */
   showingHidden?: boolean;
+  /** The 0-7 day window; with onDay, the header steps days in place (Q-057). */
+  days?: DateChip[];
+  onDay?: (date: string) => void;
+  /** Opens filters from results (Q-057); the search re-runs when they close. */
+  onFilters?: () => void;
+  /** How many filters differ from the saved defaults. */
+  filtersChanged?: number;
 }
 
 export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(function ResultsPanel(p, ref) {
@@ -45,6 +53,16 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
   const { request } = p.state;
   const results = p.state.status !== 'done' ? [] : p.showingHidden ? p.state.hiddenResults : p.state.results;
   const full = results.filter((r) => r.isFull).length;
+  const stepsDays = !!(p.days && p.onDay);
+  // With the day stepper the date is in the stepper, so this line keeps only the count.
+  const summary = [
+    stepsDays ? null : shortDate(request.date),
+    p.state.status === 'done' && results.length
+      ? `${results.length} ${results.length === 1 ? 'route' : 'routes'}${full ? `, ${full} full` : ''}`
+      : null,
+  ]
+    .filter(Boolean)
+    .join(' · ');
 
   // Fixed above the list so the sample-data label never scrolls away.
   const sampleText = sampleLabel(p.sampleFlights !== false, !!p.sampleImpacts);
@@ -63,12 +81,26 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
       <Text style={[textStyles.title, { color: c.text }]} accessibilityRole="header">
         {request.origin} → {request.destination}
       </Text>
-      <Text style={[textStyles.body, { color: c.muted }]}>
-        {shortDate(request.date)}
-        {p.state.status === 'done' && results.length
-          ? ` · ${results.length} ${results.length === 1 ? 'route' : 'routes'}${full ? `, ${full} full` : ''}`
-          : ''}
-      </Text>
+      {stepsDays && p.days && p.onDay ? (
+        <View style={styles.controls}>
+          <DayStepper days={p.days} date={request.date} label={shortDate(request.date)} onDay={p.onDay} />
+          {p.onFilters ? (
+            <Button
+              label={p.filtersChanged ? `Filters (${p.filtersChanged})` : 'Filters'}
+              accessibilityLabel={p.filtersChanged ? `Filters, ${p.filtersChanged} changed` : 'Filters'}
+              icon="line.3.horizontal.decrease.circle"
+              kind="secondary"
+              onPress={p.onFilters}
+              style={styles.filters}
+            />
+          ) : null}
+        </View>
+      ) : null}
+      {summary ? (
+        <Text style={[textStyles.body, { color: c.muted }]} testID="results-summary">
+          {summary}
+        </Text>
+      ) : null}
       {areaLines(request).map((line) => (
         <Text key={line} style={[textStyles.small, { color: c.muted }]}>
           {line}
@@ -210,6 +242,8 @@ const styles = StyleSheet.create({
   sample: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: radius.sm },
   list: { paddingHorizontal: spacing.page, paddingBottom: spacing.page * 2 },
   header: { gap: 2, paddingBottom: spacing.section },
+  controls: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: spacing.group, paddingVertical: 6 },
+  filters: { paddingHorizontal: spacing.section },
   titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   sep: { height: spacing.group },
   state: { paddingVertical: spacing.page, gap: spacing.section, alignItems: 'flex-start' },

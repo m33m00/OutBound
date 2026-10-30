@@ -167,6 +167,7 @@ Condensed from the project docs: MVP decisions (through v8.8), design direction 
 - Design review follow-ups (Q-056 to Q-059, 2026-10-30, John: "Go with your lean"):
   - Area pill matches Q-048: outline gray "+ Area" when off, solid accent-blue "All Dallas" when on.
   - Results let you change the date and the filters in place, without going back to search.
+    - Provisional (design round 18, 2026-10-30; not John-decided): the results header shows "‹ Wed, Oct 30 ›" to step one day at a time inside the 0-7 day window (arrows dim at the ends) and a Filters button with the changed count; either re-runs the search in place. The date line under it keeps only the route count.
   - Results get a sort control; still the top 10 routes of the current sort; default stays earliest arrival.
   - Seat availability gets more visual weight on each result row (a route-level seat summary on the top line).
 - Provisional (design round 14, 2026-10-30; not John-decided): Android and web show the closest Material icon wherever iPhone shows an SF Symbol (tab bar, buttons, chevrons, sheets), via `src/ui/Icon.tsx`; a symbol with no match keeps its text fallback.

@@ -298,6 +298,13 @@ export default function HomeScreen() {
                 sampleStatus={flightStatuses.sample && results.length > 0}
                 sampleFlights={!LIVE_FLIGHTS}
                 showingHidden={showHidden}
+                days={chips}
+                onDay={(d) => {
+                  setDate(d);
+                  rerun(d);
+                }}
+                onFilters={() => setFiltersOpen(true)}
+                filtersChanged={filtersChanged}
                 selectedCard={
                   firstLeg ? (
                     <LeaveByCard
