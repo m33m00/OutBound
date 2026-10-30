@@ -52,7 +52,7 @@ describe('SavedRouteCard', () => {
       r = create(<SavedRouteCard route={route} past now={EARLIER} onOpen={jest.fn()} onRemove={jest.fn()} />);
     });
     const [open] = buttons();
-    expect(open.props.accessibilityLabel).toContain('This day has passed. Opens today’s search.');
+    expect(open.props.accessibilityLabel).toContain('Your saved day has passed. Opens today’s search.');
     expect(open.props.accessibilityHint).toBe('Searches today');
   });
 });

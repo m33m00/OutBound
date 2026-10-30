@@ -28,7 +28,7 @@ export function SavedRouteCard({ route, past, now, onOpen, onRemove }: SavedRout
   const when = savedRouteWhen(route, now);
   const flights = savedRouteFlights(route);
   const shortWhen = when.split(' · ')[0];
-  const pastNote = 'This day has passed. Opens today’s search.';
+  const pastNote = 'Your saved day has passed. Opens today’s search.';
   return (
     <View style={[styles.card, { backgroundColor: c.surface, borderColor: c.line }]} testID="saved-route">
       <Pressable

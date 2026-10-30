@@ -54,17 +54,17 @@ export function DeparturesSheet({ code, visible, flights, now, reportFor, onRepo
     const tier = yours ? answerTier(yours) : null;
     const left = f.departUtc <= now;
     const place = AIRPORTS[f.to]?.name ?? f.to;
-    // Left flights say so in words, not only in the muted time.
+    // Departed flights say so in words, not only in the muted time.
     const detail = yours
       ? `You reported ${answerText(yours)} · ${formatAge(yours.at, now)}`
       : left
-        ? `Left · ${place}`
+        ? `Departed · ${place}`
         : place;
     return (
       <Pressable
         onPress={() => setPicked(f)}
         accessibilityRole="button"
-        accessibilityLabel={forSpeech(`${left ? 'Left' : 'Departs'} ${time} · ${f.airline} ${f.flightNumber} to ${f.to} · ${detail}`)}
+        accessibilityLabel={forSpeech(`${left ? 'Departed' : 'Departs'} ${time} · ${f.airline} ${f.flightNumber} to ${f.to} · ${yours || !left ? detail : place}`)}
         accessibilityHint={yours ? 'Opens Report Load again' : 'Opens Report Load'}
         testID="departure-row"
         style={pressStyle([styles.row, { borderBottomColor: c.line }])}>
@@ -108,7 +108,7 @@ export function DeparturesSheet({ code, visible, flights, now, reportFor, onRepo
         <View style={[styles.page, picked && styles.hidden]}>
           <SheetHeader
             title={code ? `Departures from ${code}` : 'Departures'}
-            subtitle="Pick the flight on the board"
+            subtitle="Pick your flight on the departure board"
             action="Done"
             onAction={onClose}
             focusTitle={back && !picked}

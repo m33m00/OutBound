@@ -59,7 +59,7 @@ export default function SettingsScreen() {
           <SectionHeader title="Homes" />
           <View style={[styles.group, { backgroundColor: c.surface, borderColor: c.line }]}>
             {homeList.length === 0 ? (
-              <Text style={[textStyles.body, styles.empty, { color: c.muted }]}>No home airport yet.</Text>
+              <Text style={[textStyles.body, styles.empty, { color: c.muted }]}>No main home yet.</Text>
             ) : (
               homeList.map((h, i) => (
                 <View
@@ -87,7 +87,7 @@ export default function SettingsScreen() {
             )}
             <View style={[styles.buttons, { borderTopColor: c.line }]}>
               {homes.main ? null : <Button label="Set Main Home" onPress={() => setPicking('main')} />}
-              <Button label="Add Airport" kind="secondary" icon="plus" onPress={() => setPicking('extra')} />
+              <Button label="Add Home" kind="secondary" icon="plus" onPress={() => setPicking('extra')} />
             </View>
           </View>
           <SectionFooter>
@@ -139,7 +139,7 @@ export default function SettingsScreen() {
             </View>
             <View style={[styles.row, styles.divided, { borderTopColor: c.line }]}>
               <View style={styles.label}>
-                <Text style={[textStyles.body, { color: c.text }]}>Asks on your airline’s flights</Text>
+                <Text style={[textStyles.body, { color: c.text }]}>Requests on your airline’s flights</Text>
                 <Text
                   style={[textStyles.small, { color: c.muted }]}
                   accessibilityElementsHidden
@@ -150,14 +150,14 @@ export default function SettingsScreen() {
               <Switch
                 value={settings.notify.airlineAsks}
                 onValueChange={(on) => update({ notify: { ...settings.notify, airlineAsks: on } })}
-                accessibilityLabel="Asks on your airline’s flights"
+                accessibilityLabel="Requests on your airline’s flights"
                 accessibilityHint="At most 5 a day"
                 trackColor={{ true: c.accent, false: c.faint }}
               />
             </View>
           </View>
           <SectionFooter>
-            Other employees can ask about your airline’s flights, at most 5 a day. Nobody sees who asked or who
+            Other employees can ask about your airline’s flights, at most 5 requests a day. Nobody sees who asked or who
             answered.
           </SectionFooter>
         </View>

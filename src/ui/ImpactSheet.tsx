@@ -37,7 +37,7 @@ export function ImpactSheet({ visible, title, subtitle, impact, now, onClose }: 
                 badge ? IMPACT_WORD[s.level as 'caution' | 'likelyDelays'].toLowerCase() : 'no disruption'
               }`,
               ...s.reasons.map((r) => `${r.text}, from ${r.source === 'FAA' ? 'FAA' : 'weather'}`),
-              s.noForecast ? 'Weather forecast not available yet' : '',
+              s.noForecast ? 'No weather forecast for this airport' : '',
               s.asOf ? `Updated ${forSpeech(formatAge(Date.parse(s.asOf), now))}${s.stale ? ', may be out of date' : ''}` : '',
             ]
               .filter(Boolean)
@@ -74,7 +74,7 @@ export function ImpactSheet({ visible, title, subtitle, impact, now, onClose }: 
                   </Text>
                 ))}
                 {s.noForecast ? (
-                  <Text style={[textStyles.small, { color: c.muted }]}>Weather forecast not available yet.</Text>
+                  <Text style={[textStyles.small, { color: c.muted }]}>No weather forecast for this airport.</Text>
                 ) : null}
                 {s.asOf ? (
                   <Text style={[textStyles.small, { color: c.muted }]}>

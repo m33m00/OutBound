@@ -48,7 +48,7 @@ export interface ReportSheetProps {
 /**
  * Report a load (DECISIONS.md "Reports and requests", v9.1 report screen):
  * two big number fields with − and + (hold to go faster, tap the number to
- * type), a live line with the tier and the seats left after the list, the
+ * type), a live line with the tier and the seats left after the standby list, the
  * sharing notice, and Submit Report.
  */
 export function ReportSheet({ flight, visible, now, onCancel, onSubmit }: ReportSheetProps) {
@@ -119,7 +119,7 @@ export function ReportForm({ flight, now, onCancel, onSubmit, focusTitle }: Repo
         {flight ? <Text style={[textStyles.body, { color: c.muted }]}>{departsText(flight, now)}</Text> : null}
         <NumberField
           label="Open seats"
-          caption="On the board"
+          caption="On the departure board"
           value={open}
           max={MAX_OPEN}
           onChange={(v) => {

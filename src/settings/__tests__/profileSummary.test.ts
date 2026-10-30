@@ -35,7 +35,7 @@ describe('profileSummary', () => {
       row({ ...DEFAULT_SETTINGS, notify: { answers, airlineAsks } }, 'notify').value;
     expect(on(true, true)).toBe('On');
     expect(on(true, false)).toBe('Answers only');
-    expect(on(false, true)).toBe('Airline asks only');
+    expect(on(false, true)).toBe('Airline requests only');
     expect(on(false, false)).toBe('Off');
   });
 

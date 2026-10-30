@@ -30,7 +30,7 @@ describe('AirportCard area pill (Q-048, Q-056)', () => {
     const off = render('DFW', false, toggle);
     const p = pill(off);
     expect(p.props.accessibilityState).toEqual({ checked: false });
-    expect(p.props.accessibilityLabel).toBe('Include all Dallas airports');
+    expect(p.props.accessibilityLabel).toBe('Area: include all Dallas airports');
     expect(p.props.accessibilityHint).toBe('Searches DAL and DFW');
     expect(p.props.hitSlop).toEqual({ top: 8, bottom: 8, left: 8, right: 8 });
     expect(textOf(off)).toContain('Area');

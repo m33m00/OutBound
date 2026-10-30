@@ -181,7 +181,7 @@ describe('seats card in the flight sheet (design round 32)', () => {
     const load = await render({});
     act(() => btn('Report Load').props.onPress());
     expect(texts()).toContain('Report Load');
-    const box = r!.root.find((n) => n.props.accessibilityLabel === 'Open seats, On the board' && n.props.onChangeText);
+    const box = r!.root.find((n) => n.props.accessibilityLabel === 'Open seats, On the departure board' && n.props.onChangeText);
     act(() => box.props.onChangeText('12'));
     act(() => btn('Submit Report').props.onPress());
     expect(load.onReport).toHaveBeenCalledWith(12, 0);
@@ -251,8 +251,8 @@ describe('ask answered or taken back (round 34)', () => {
     await render({ onCancelAsk: jest.fn(), askAnswer: { open: 12, listed: 4, at: NOW - 9 * 60_000 } });
     expect(r!.root.findAll((n) => n.props.accessibilityLabel === 'Asked')).toHaveLength(0);
     expect(r!.root.findAll((n) => n.props.accessibilityLabel === 'Cancel Request')).toHaveLength(0);
-    const line = r!.root.find((n) => typeof n.type === 'string' && String(n.props.accessibilityLabel).startsWith('Your ask was answered'));
-    expect(line.props.accessibilityLabel).toBe('Your ask was answered: Okay, 12 open, 4 listed, 9 minutes ago');
+    const line = r!.root.find((n) => typeof n.type === 'string' && String(n.props.accessibilityLabel).startsWith('Your request was answered'));
+    expect(line.props.accessibilityLabel).toBe('Your request was answered: Okay, 12 open, 4 listed, 9 minutes ago');
   });
 });
 

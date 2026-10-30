@@ -128,11 +128,11 @@ export function clampReport(field: 'open' | 'listed', value: number): number {
   return Math.max(0, Math.min(max, Math.round(value)));
 }
 
-/** "6 seats after the list", or "No seats after the list". */
+/** "6 seats after the standby list", or "No seats after the standby list". */
 export function afterListText(open: number, listed: number): string {
   const net = open - listed;
-  if (net <= 0) return 'No seats after the list';
-  return `${net} ${net === 1 ? 'seat' : 'seats'} after the list`;
+  if (net <= 0) return 'No seats after the standby list';
+  return `${net} ${net === 1 ? 'seat' : 'seats'} after the standby list`;
 }
 
 /** Reports open 7 days before departure and close 2 hours after (DECISIONS.md). */

@@ -34,16 +34,16 @@ describe('ReportSheet', () => {
     // Minus is off at zero.
     expect(button(r!, 'Decrease: Open seats').props.disabled).toBe(true);
 
-    const openInput = r!.root.find((n) => n.props.accessibilityLabel === 'Open seats, On the board' && n.props.onChangeText);
+    const openInput = r!.root.find((n) => n.props.accessibilityLabel === 'Open seats, On the departure board' && n.props.onChangeText);
     act(() => openInput.props.onChangeText('2x0'));
-    expect(tier()).toBe('Good, 20 seats after the list');
+    expect(tier()).toBe('Good, 20 seats after the standby list');
     act(() => button(r!, 'Increase: Nonrevs listed').props.onPress());
     act(() => button(r!, 'Increase: Nonrevs listed').props.onPress());
-    expect(tier()).toBe('Good, 18 seats after the list');
+    expect(tier()).toBe('Good, 18 seats after the standby list');
     // The box follows − / + while you're on it.
     expect(openInput.props.value).toBe('20');
     act(() => button(r!, 'Increase: Open seats').props.onPress());
-    expect(r!.root.find((n) => n.props.accessibilityLabel === 'Open seats, On the board' && n.props.onChangeText).props.value).toBe('21');
+    expect(r!.root.find((n) => n.props.accessibilityLabel === 'Open seats, On the departure board' && n.props.onChangeText).props.value).toBe('21');
     act(() => button(r!, 'Decrease: Open seats').props.onPress());
 
     act(() => button(r!, 'Submit Report').props.onPress());

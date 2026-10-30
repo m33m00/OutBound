@@ -20,12 +20,12 @@ export function stopsText(maxStops: number): string {
   return `Up to ${maxStops} ${maxStops === 1 ? 'stop' : 'stops'}`;
 }
 
-/** "On", "Off", "Answers only", "Airline asks only". */
+/** "On", "Off", "Answers only", "Airline requests only". */
 export function notifyText(s: Settings): string {
   const { answers, airlineAsks } = s.notify;
   if (answers && airlineAsks) return 'On';
   if (answers) return 'Answers only';
-  if (airlineAsks) return 'Airline asks only';
+  if (airlineAsks) return 'Airline requests only';
   return 'Off';
 }
 

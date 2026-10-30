@@ -52,12 +52,12 @@ export default function FeedScreen() {
     <TabScreen title="Feed">
       {open.length ? (
         <View style={styles.section}>
-          <ListGroup title="Asks on your airline’s flights">
+          <ListGroup title="Requests on your airline’s flights">
             {open.map((r) => (
               <RequestRow key={r.id} request={r} now={now} onAnswer={() => setReporting(r.id)} />
             ))}
           </ListGroup>
-          <SectionFooter>Answer with what you see on the board. Askers only see the numbers, never who answered.</SectionFooter>
+          <SectionFooter>Answer with what you see on the departure board. People who ask only see the numbers, never who answered.</SectionFooter>
         </View>
       ) : (
         <EmptyState

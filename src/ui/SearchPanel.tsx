@@ -75,7 +75,7 @@ export function AirportCard({ label, code, onPress, areaOn, onToggleArea }: Airp
             onPress={withTick(onToggleArea)}
             accessibilityRole="switch"
             accessibilityState={{ checked: areaOn }}
-            accessibilityLabel={`Include all ${area.city} airports`}
+            accessibilityLabel={`Area: include all ${area.city} airports`}
             accessibilityHint={`Searches ${listText(area.airports)}`}
             hitSlop={PILL_HIT_SLOP}
             style={pressStyle([styles.areaPill, { borderColor: areaOn ? c.accent : c.line2 }, areaOn ? { backgroundColor: c.accent } : null])}>
@@ -258,7 +258,7 @@ export function SearchPanel(p: SearchPanelProps) {
           label={p.homeName ? `Get Home · ${p.homeName}` : 'Get Home'}
           icon="house.fill"
           onPress={p.onGetHome}
-          accessibilityLabel={`Get Home: search to your main home${p.homeName ? `, ${p.homeName}` : ''}`}
+          accessibilityLabel={`Get Home: find routes to your main home${p.homeName ? `, ${p.homeName}` : ''}`}
         />
       ) : null}
       {/* The main action sits right under From/To so it's in view at half height. */}
@@ -279,7 +279,7 @@ export function SearchPanel(p: SearchPanelProps) {
       </View>
       {p.onSetHome ? (
         <Pressable onPress={p.onSetHome} accessibilityRole="button" style={pressStyle(styles.hint, 'link')}>
-          <Text style={[textStyles.small, { color: c.accent }]}>Set your home airport in Profile ›</Text>
+          <Text style={[textStyles.small, { color: c.accent }]}>Set your main home in Profile ›</Text>
         </Pressable>
       ) : null}
       {p.airportCard}

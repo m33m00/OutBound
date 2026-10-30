@@ -67,7 +67,7 @@ export default function TripsScreen() {
             icon="suitcase"
             title="No trips yet"
             body="Pick a route in Search and tap Save Route to keep it here."
-            points={['Up to 5 open seat requests', 'Routes you save from Search']}
+            points={['Up to 5 open requests', 'Routes you save from Search']}
             action={<Button label="Find Routes" icon="magnifyingglass" onPress={() => router.navigate('/')} />}
           />
         ) : null}
@@ -86,7 +86,7 @@ export default function TripsScreen() {
             ))}
           </ListGroup>
           <SectionFooter>
-            {`${openCount} of ${MAX_OPEN_REQUESTS} requests open. Someone at that airline answers with what they see on the board.`}
+            {`${openCount} of ${MAX_OPEN_REQUESTS} requests open. Someone at that airline answers with what they see on the departure board.`}
           </SectionFooter>
         </View>
       ) : null}

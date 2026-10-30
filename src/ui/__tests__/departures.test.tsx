@@ -59,12 +59,12 @@ describe('at-airport card and departures (round 33)', () => {
     expect(texts()).toContain('Departures from DAL');
     const rows = r!.root.findAll((n) => n.props.testID === 'departure-row' && n.props.onPress);
     expect(rows).toHaveLength(2);
-    expect(rows[1].props.accessibilityLabel).toMatch(/^Left /);
-    // Left shows in words too, not only as a muted time.
-    expect(texts().some((t) => t.startsWith('Left · '))).toBe(true);
+    expect(rows[1].props.accessibilityLabel).toMatch(/^Departed /);
+    // Departed shows in words too, not only as a muted time.
+    expect(texts().some((t) => t.startsWith('Departed · '))).toBe(true);
     act(() => rows[0].props.onPress());
     expect(texts()).toContain('Report Load');
-    const box = r!.root.find((n) => n.props.accessibilityLabel === 'Open seats, On the board' && n.props.onChangeText);
+    const box = r!.root.find((n) => n.props.accessibilityLabel === 'Open seats, On the departure board' && n.props.onChangeText);
     act(() => box.props.onChangeText('9'));
     act(() => r!.root.find((n) => typeof n.type !== 'string' && n.props.accessibilityLabel === 'Submit Report' && n.props.onPress).props.onPress());
     expect(onReport).toHaveBeenCalledWith(props.flights[0], 9, 0);

@@ -76,10 +76,10 @@ describe('request words', () => {
     expect(requestDetail({ ...req, answer: { ...a, byYou: true } }, NOW)).toBe('Good · 21 open · 3 listed · you answered 5m ago');
   });
 
-  it('seats after the list', () => {
-    expect(afterListText(9, 3)).toBe('6 seats after the list');
-    expect(afterListText(4, 3)).toBe('1 seat after the list');
-    expect(afterListText(2, 5)).toBe('No seats after the list');
+  it('seats after the standby list', () => {
+    expect(afterListText(9, 3)).toBe('6 seats after the standby list');
+    expect(afterListText(4, 3)).toBe('1 seat after the standby list');
+    expect(afterListText(2, 5)).toBe('No seats after the standby list');
   });
 
   it('report fields stay whole numbers in range (listed 0-250)', () => {

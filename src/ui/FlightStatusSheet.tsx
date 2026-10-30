@@ -129,7 +129,7 @@ export function FlightStatusSheet({ flight, visible, now, onClose, liveOptions, 
             <SheetHeader title={title} subtitle={subtitle || undefined} action="Done" onAction={onClose} />
             <ScrollView contentContainerStyle={styles.body}>
               {error === 'not_configured' ? (
-                <Text style={[textStyles.body, { color: c.muted }]}>Flight status is not connected yet.</Text>
+                <Text style={[textStyles.body, { color: c.muted }]}>Flight status isn’t available right now.</Text>
               ) : null}
               {error === 'fetch_failed' && !response ? (
                 <Text style={[textStyles.body, { color: c.text }]}>Couldn’t get flight status. Try again in a moment.</Text>
@@ -139,7 +139,7 @@ export function FlightStatusSheet({ flight, visible, now, onClose, liveOptions, 
                 <Text style={[textStyles.body, { color: c.text }]}>
                   {response.state === 'unavailable'
                     ? "Couldn’t get flight status. Try again in a moment."
-                    : "The airline data source doesn’t list this flight yet."}
+                    : "No status for this flight yet."}
                 </Text>
               ) : null}
               {status && flight ? (
@@ -186,7 +186,7 @@ export function FlightStatusSheet({ flight, visible, now, onClose, liveOptions, 
               <Text style={[textStyles.small, { color: c.muted }]}>
                 {isSample
                   ? 'Times are local to each airport.'
-                  : 'Times are local to each airport. Refresh works about every 2 minutes.'}
+                  : 'Times are local to each airport. You can refresh every 2 minutes.'}
               </Text>
               {/* The source line names a real feed, so it shows only for live status (round 30: no sample labels). */}
               {isSample ? null : <Text style={[textStyles.small, { color: c.muted }]}>Data from AeroDataBox.</Text>}
@@ -245,7 +245,7 @@ function LoadCard({
         // Answered: the numbers take the place of the ask button.
         <Text
           style={[textStyles.body, { color: c.text }]}
-          accessibilityLabel={forSpeech(`Your ask was answered: ${answerText(askAnswer)} · ${formatAge(askAnswer.at, now)}`)}>
+          accessibilityLabel={forSpeech(`Your request was answered: ${answerText(askAnswer)} · ${formatAge(askAnswer.at, now)}`)}>
           {'Answered: '}
           <Text style={[textStyles.bodyStrong, { color: c[TIER_FG[answerTierWord]] }]}>{TIER_WORD[answerTierWord]}</Text>
           {` · ${askAnswer.open} open · ${askAnswer.listed} listed · ${formatAge(askAnswer.at, now)}`}
