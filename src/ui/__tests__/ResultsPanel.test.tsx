@@ -37,6 +37,22 @@ describe('ResultsPanel', () => {
   let r: ReactTestRenderer | undefined;
   afterEach(() => act(() => r?.unmount()));
 
+  it('goes from loading to results without changing its hooks (round 56 review)', async () => {
+    const { request, list } = await results();
+    const props = { selectedId: list[0].id, now: NOW, onSelect: jest.fn(), onBack: jest.fn(), onRetry: jest.fn() };
+    // No real frames: opening the route schedules a VoiceOver focus that would land in a later test.
+    const raf = jest.spyOn(globalThis, 'requestAnimationFrame').mockImplementation(() => 0);
+    await act(async () => {
+      r = create(<ResultsPanel state={{ status: 'loading', request }} {...props} />);
+    });
+    const done = { status: 'done' as const, request, results: list, hiddenCount: 0, hiddenResults: [], searchedAt: NOW };
+    await act(async () => {
+      r!.update(<ResultsPanel state={done} {...props} />);
+    });
+    expect(r!.root.findAll((n) => n.props.testID === 'route-view' && typeof n.type === 'string').length).toBe(1);
+    raf.mockRestore();
+  });
+
   it('reports the open route height (title bar plus content) so the panel fits it without scrolling (round 56)', async () => {
     const { request, list } = await results();
     const state = { status: 'done' as const, request, results: list, hiddenCount: 0, hiddenResults: [], searchedAt: NOW };

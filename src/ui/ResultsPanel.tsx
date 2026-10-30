@@ -185,6 +185,23 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
     <View style={styles.headerGap} />
   );
 
+  // A picked route gets its own view (John, 2026-10-30); found here, above the loading and
+  // error returns, so the hooks below run on every render.
+  const focusIndex = p.selectedId ? results.findIndex((r) => r.id === p.selectedId) : -1;
+  const focused = focusIndex >= 0 ? results[focusIndex] : undefined;
+  const focusedId = focused?.id;
+  // The open route's bar and content heights, reported together once both are known (round 56).
+  // Content starts over when the route view closes, so a reopened route reports its own height.
+  const [barH, setBarH] = useState(0);
+  const [contentH, setContentH] = useState(0);
+  const { onRouteHeight } = p;
+  useEffect(() => {
+    if (!focusedId) setContentH(0);
+  }, [focusedId]);
+  useEffect(() => {
+    if (focusedId && barH > 0 && contentH > 0) onRouteHeight?.(Math.ceil(barH + contentH));
+  }, [focusedId, barH, contentH, onRouteHeight]);
+
   if (p.state.status === 'loading') {
     return (
       <View style={styles.fill}>
@@ -239,15 +256,6 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
 
   // A picked route gets its own view (John, 2026-10-30): leave-by on top, then the route
   // card in larger type. The list stays mounted underneath so it keeps its scroll spot.
-  const focusIndex = p.selectedId ? results.findIndex((r) => r.id === p.selectedId) : -1;
-  const focused = focusIndex >= 0 ? results[focusIndex] : undefined;
-  // The open route's bar and content heights, reported together once both are known.
-  const [barH, setBarH] = useState(0);
-  const [contentH, setContentH] = useState(0);
-  const { onRouteHeight } = p;
-  useEffect(() => {
-    if (focused && barH > 0 && contentH > 0) onRouteHeight?.(Math.ceil(barH + contentH));
-  }, [focused, barH, contentH, onRouteHeight]);
   const step = (to: number) => {
     const target = results[to];
     return target ? withTick(() => p.onSelect(target.id)) : undefined;

@@ -56,15 +56,20 @@ export const STACK_TOP_LINE_SCALE = 1.3;
 /** "7:05 AM" never splits between the number and AM/PM, so a long time line only wraps at the dash. */
 const keep = (time: string) => time.replace(/ /g, '\u00a0');
 
+/** A leg's scheduled departure at its origin, e.g. "8:00 AM". */
+const legDepartText = (leg: Flight) => formatTime(leg.departUtc, AIRPORTS[leg.from]?.tz ?? 'UTC');
+
 /** Size of the dot that marks each leg on the route card's timeline. */
 const DOT = 10;
+/** Space above and below each leg's text on the timeline. */
+const LEG_PAD = 4;
 
 /** A leg's departure on the timeline: the new time first and the old one small and struck when it moved (John, 2026-10-30). */
-function LegClock({ leg, view, text }: { leg: Flight; view?: LegStatusView; text: TextStyle }) {
+function LegClock({ leg, view, text, dimmed }: { leg: Flight; view?: LegStatusView; text: TextStyle; dimmed: boolean }) {
   const c = useColors();
-  const strong = { fontFamily: fonts.bodySemiBold, color: c.text };
+  const strong = { fontFamily: fonts.bodySemiBold, color: dimmed ? c.muted : c.text };
   if (!view?.struck) {
-    return <Text style={[text, strong]}>{keep(formatTime(leg.departUtc, AIRPORTS[leg.from]?.tz ?? 'UTC'))}</Text>;
+    return <Text style={[text, strong]}>{keep(legDepartText(leg))}</Text>;
   }
   return (
     <Text style={[text, strong]}>
@@ -102,8 +107,10 @@ function LegTimeline({
   const c = useColors();
   const { fontScale } = useWindowDimensions();
   const text = large ? textStyles.body : textStyles.small;
-  // Centers the dot on the first line of text, whatever the text size.
-  const dotTop = Math.max(0, ((text.lineHeight ?? 20) * fontScale - DOT) / 2);
+  // Centers the dot on the first line, whatever the text size: that line is as tall as the
+  // taller of its text and the flight pill (small text plus 2pt padding top and bottom).
+  const firstLine = Math.max((text.lineHeight ?? 20) * fontScale, (textStyles.small.lineHeight ?? 16) * fontScale + 4);
+  const dotTop = LEG_PAD + Math.max(0, (firstLine - DOT) / 2);
   const rail = { backgroundColor: c.line2 };
   return (
     <View testID="leg-timeline">
@@ -113,7 +120,8 @@ function LegTimeline({
         const connection = it.connections[i];
         const last = i === it.legs.length - 1;
         const typical = leg.seats.source === 'typical' || leg.seats.source === 'unknown';
-        const seatColor = dimmed || typical ? c.muted : c[TIER_FG[leg.seats.tier]];
+        // The dot carries the tier color (tier colors only as fills or large numbers); the words stay plain.
+        const seatColor = dimmed || typical ? c.muted : c.text;
         const dotColor = dimmed || typical ? c.unknown : c[leg.seats.tier];
         const seats = sourceOnly ? seatSourceText(leg.seats, now) : seatText(leg.seats, now);
         const body = (
@@ -125,7 +133,7 @@ function LegTimeline({
             <View style={styles.legText}>
               <View style={styles.legTop}>
                 <Text style={[text, styles.shrink, { color: c.muted }]}>
-                  <LegClock leg={leg.flight} view={view} text={text} />
+                  <LegClock leg={leg.flight} view={view} text={text} dimmed={dimmed} />
                   {`  ${leg.flight.from}\u00a0→\u00a0${leg.flight.to}`}
                 </Text>
                 <View style={styles.legFlight}>
@@ -152,9 +160,16 @@ function LegTimeline({
               <Pressable
                 onPress={() => onLegPress(leg.flight)}
                 accessibilityRole="button"
+                // The label replaces what's inside, so it says the leg's time and seats too.
                 accessibilityLabel={[
                   `Flight status, ${leg.flight.airline} ${leg.flight.flightNumber}, ${leg.flight.from} to ${leg.flight.to}`,
+                  view?.struck
+                    ? view.newText
+                      ? `departs ${view.newText}, scheduled ${view.scheduledText}`
+                      : `scheduled ${view.scheduledText}`
+                    : `departs ${legDepartText(leg.flight)}`,
                   view?.tag?.spoken,
+                  forSpeech(seatText(leg.seats, now)),
                 ]
                   .filter(Boolean)
                   .join(', ')}
@@ -456,9 +471,10 @@ const styles = StyleSheet.create({
   railCol: { width: DOT, alignItems: 'center' },
   dot: { width: DOT, height: DOT, borderRadius: DOT / 2 },
   railLine: { flex: 1, width: 2, minHeight: 4 },
-  legText: { flex: 1, gap: 2, paddingVertical: 4 },
+  legText: { flex: 1, gap: 2, paddingVertical: LEG_PAD },
   legTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', columnGap: spacing.group, rowGap: 2 },
-  legFlight: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  // Pinned right, even when it wraps under the time at big text.
+  legFlight: { flexDirection: 'row', alignItems: 'center', gap: 4, marginLeft: 'auto' },
   legSeats: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: spacing.group },
   connection: { paddingVertical: 6 },
   struck: { textDecorationLine: 'line-through' },

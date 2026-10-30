@@ -47,6 +47,8 @@ const SHEET = { peek: 0, half: 1, full: 2 } as const;
 const ROUTE_VIEW_SHARE = 0.56;
 /** The panel's drag handle (44pt) and top edge sit above the route view's own content. */
 const SHEET_CHROME = minTapTarget + 1;
+/** A route this close to full height (pt) opens full instead of a middle stop that would barely differ. */
+const TALL_ROUTE_SLACK = 24;
 
 const airport = (code: string) => AIRPORTS[code];
 const SAMPLE_STATUS_OPTIONS = { config: null } as const;
@@ -115,14 +117,26 @@ export default function HomeScreen() {
   // leave-by and route card read in full while the globe keeps most of the screen.
   // Since round 56 it opens exactly as tall as the route needs, so nothing sits under the
   // fold (John: "I'd like for it to be all in view"), never past the full height.
+  // Paging between routes only ever grows it while the view is open, so the panel and the
+  // globe don't bounce on every flip; it starts over when the route closes.
   const routeOpen = selectedId != null;
   const [routeHeight, setRouteHeight] = useState(0);
+  const onRouteHeight = useCallback((h: number) => setRouteHeight((was) => Math.max(was, h)), []);
+  useEffect(() => {
+    if (!routeOpen) setRouteHeight(0);
+  }, [routeOpen]);
+  const sheetFull = Math.max(bodyHeight, PEEK * 3) - spacing.group;
+  // A route that needs (nearly) the whole height opens full; the middle stop stays a real half
+  // so the handle still does something.
+  const tallRoute = routeOpen && routeHeight > 0 && routeHeight + SHEET_CHROME >= sheetFull - TALL_ROUTE_SLACK;
   const snaps = useMemo(() => {
-    const h = Math.max(bodyHeight, PEEK * 3);
-    const full = h - spacing.group;
-    const route = routeHeight > 0 ? Math.min(full, routeHeight + SHEET_CHROME) : Math.round(h * ROUTE_VIEW_SHARE);
-    return [PEEK, routeOpen ? Math.max(PEEK + 1, route) : Math.round(h * 0.48), full];
-  }, [bodyHeight, routeOpen, routeHeight]);
+    const h = sheetFull + spacing.group;
+    const route = routeHeight > 0 ? routeHeight + SHEET_CHROME : Math.round(h * ROUTE_VIEW_SHARE);
+    return [PEEK, routeOpen && !tallRoute ? Math.max(PEEK + 1, route) : Math.round(h * 0.48), sheetFull];
+  }, [sheetFull, routeOpen, routeHeight, tallRoute]);
+  useEffect(() => {
+    if (tallRoute) setSheetIndex(SHEET.full);
+  }, [tallRoute]);
 
   // Ages ("12m ago") keep counting while results are open.
   const [now, setNow] = useState(Date.now());
@@ -518,7 +532,7 @@ export default function HomeScreen() {
                     setDate(d);
                     rerun(d);
                   }}
-                  onRouteHeight={setRouteHeight}
+                  onRouteHeight={onRouteHeight}
                   onFilters={openFilters}
                   filtersChanged={filtersChanged}
                   note={missingNote}
