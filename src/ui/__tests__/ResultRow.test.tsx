@@ -129,7 +129,7 @@ describe('ResultRow', () => {
     });
     const summary = r!.root.findAll((n) => n.props.testID === 'seat-summary' && typeof n.type === 'string')[0];
     const words = summary.findAll((n) => typeof n.props.children === 'string').map((n) => n.props.children);
-    expect(words[0]).toMatch(/^Tight · 6 open · 4 listed$/);
+    expect(words[0]).toMatch(/^Long shot · 6 open · 4 listed$/);
     const texts = r!.root.findAll((n) => typeof n.props.children === 'string').map((n) => n.props.children as string);
     expect(texts.some((t) => t.endsWith('· reported just now'))).toBe(true);
     // The route card names the connection between the legs.

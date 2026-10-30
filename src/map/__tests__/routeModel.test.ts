@@ -208,19 +208,19 @@ describe('legend and speech', () => {
         tier: 'wide',
         source: 'reported',
         dashed: false,
-        label: 'Wide open (Reported)',
-        accessibilityLabel: 'Wide open, reported, solid line',
+        label: 'Easy (Reported)',
+        accessibilityLabel: 'Easy, reported, solid line',
       },
       {
         key: 'tight:estimate',
         tier: 'tight',
         source: 'estimate',
         dashed: true,
-        label: 'Tight (Estimate)',
-        accessibilityLabel: 'Tight, estimate, dashed line',
+        label: 'Long shot (Estimate)',
+        accessibilityLabel: 'Long shot, estimate, dashed line',
       },
     ]);
-    expect(TIER_LABEL.wide).toBe('Wide open');
+    expect(TIER_LABEL.wide).toBe('Easy');
   });
 
   it('lists only combinations present, deduped, reported before estimate', () => {
@@ -230,7 +230,7 @@ describe('legend and speech', () => {
       L('ORD', 'ATL', 'good', 'reported'),
       L('ATL', 'LGA', 'good', 'estimate'),
     );
-    expect(legendEntries(r).map((e) => e.label)).toEqual(['Good (Reported)', 'Good (Estimate)']);
+    expect(legendEntries(r).map((e) => e.label)).toEqual(['Likely (Reported)', 'Likely (Estimate)']);
   });
 
   it('draws typical and unknown sources in neutral gray, dashed, with no tier word for typical', () => {

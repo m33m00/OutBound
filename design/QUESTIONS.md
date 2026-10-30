@@ -460,12 +460,13 @@ C) Add "Try Tomorrow", plus "Include all Dallas airports" when an area toggle is
 Recommendation: B, because it turns a dead end into one tap without crowding the banner; C adds a second button most searches won't need.
 Answer: John (2026-10-30), B. Built in design round 55.
 
-### Q-074 Seat availability labels  (Open)
+### Q-074 Seat availability labels  (Answered)
 Context: John is open to renaming the seat labels. Today the chip reads "Good · 46 open · 2 listed" (tiers Wide open, Good, Okay, Tight, Full on net seats), and typical loads read "Typically ~1 open · Oct data". Tiers, colors and the numbers stay; only the words change.
 A) Keep them: Wide open · Good · Okay · Tight · Full. Chip: "Good · 46 open · 2 listed". Typical: "Typically ~1 open · Oct data"
 B) Your chances: Easy · Likely · Maybe · Long shot · Full. Chip: "Likely · 46 open · 2 listed". Typical: "Usually ~1 open · Oct avg"
 C) Seats to spare, number first: Lots · Plenty · Some · Few · None. Chip: "Plenty · 44 spare · 46 open · 2 listed". Typical: "Usually ~1 open · Oct avg"
 Recommendation: B, because standby travelers think in "will I get on", and "Likely" says that at a glance where "Good" could mean the seat. Estimates still say "est.", so B doesn't promise more than the data. C adds a third number most people won't need.
+Answer: John (2026-10-30), B (tapped C first, then "Lets go with your recommendation actually"). Built in design round 57.
 
 Provisional defaults for backlog 3 (not John-decided; John may override any time):
 - FAA cache TTL 5 min server-side; serve stale on FAA error.

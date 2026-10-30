@@ -113,7 +113,7 @@ export function departsText(f: Flight, now: number, atUtc: number = f.departUtc)
   return `Departs ${day}${formatTime(atUtc, tz)}`;
 }
 
-/** "Good · 18 open · 3 listed": tier word with both numbers (Q-065). */
+/** "Likely · 18 open · 3 listed": tier word with both numbers (Q-065). */
 export const answerText = (a: LoadAnswer) => `${TIER_WORD[answerTier(a)]} · ${a.open} open · ${a.listed} listed`;
 
 /** Second line of a request row. */

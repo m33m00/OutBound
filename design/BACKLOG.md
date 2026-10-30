@@ -88,3 +88,4 @@ Each item names its owner. One item per work session. spec-keeper runs a pre-fli
 | 81 | Design round 54: row-shaped placeholders while routes load; couldn't-load says the search is still set | main | P3 | Built (design round 54, branch claude/project-thread-fzqwou) |
 | 82 | Design round 55: Try Tomorrow on No Flights Found searches the next day (Q-073, John: B) | main | P2 | Built (design round 55, branch claude/project-thread-fzqwou) |
 | 83 | Design round 56: picked route fits on screen; stops read as a compact leg timeline; Q-074 seat labels asked | main | P1 | Built (design round 56, branch claude/project-thread-fzqwou) |
+| 84 | Design round 57: seat labels say your chances (Easy, Likely, Maybe, Long shot, Full; typical "Usually ~N open") (Q-074, John: B) | main | P1 | Built (design round 57, branch claude/project-thread-fzqwou) |

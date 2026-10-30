@@ -71,9 +71,9 @@ describe('request words', () => {
   it('an answer reads as tier word with both numbers (Q-065)', () => {
     const a = { open: 21, listed: 3, at: NOW - 5 * 60_000 };
     expect(answerTier(a)).toBe('good');
-    expect(answerText(a)).toBe('Good · 21 open · 3 listed');
-    expect(requestDetail({ ...req, answer: a }, NOW)).toBe('Good · 21 open · 3 listed · answered 5m ago');
-    expect(requestDetail({ ...req, answer: { ...a, byYou: true } }, NOW)).toBe('Good · 21 open · 3 listed · you answered 5m ago');
+    expect(answerText(a)).toBe('Likely · 21 open · 3 listed');
+    expect(requestDetail({ ...req, answer: a }, NOW)).toBe('Likely · 21 open · 3 listed · answered 5m ago');
+    expect(requestDetail({ ...req, answer: { ...a, byYou: true } }, NOW)).toBe('Likely · 21 open · 3 listed · you answered 5m ago');
   });
 
   it('seats after the standby list', () => {

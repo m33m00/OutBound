@@ -97,6 +97,7 @@ Condensed from the project docs: MVP decisions (through v8.8), design direction 
 ## Seat availability
 - Source order: crowd report > AA/UA seat-map estimate (Duffel) > typical load (DOT T-100) > unknown.
 - Tiers on net seats (open − listed): Wide open ≥50, Good 15–49, Okay 6–14, Tight 1–5, Full ≤0, Unknown.
+- Seat labels (Q-074, 2026-10-30, John: "Lets go with your recommendation"): the tiers show as your chances of getting on: Easy (≥50), Likely (15–49), Maybe (6–14), Long shot (1–5), Full (≤0). Chip: "Likely · 46 open · 2 listed". Typical loads read "Usually ~1 open · Oct avg" (was "Typically ~1 open · Oct data"). Tier thresholds, colors and numbers are unchanged; the words apply everywhere (rows, route card, map legend, flight sheet, Report Load, requests, VoiceOver). Older lines here that quote Good, Tight, etc. mean the same tiers.
 - Typical loads are neutral: no tier word/color, don't affect route color or the Most seats sort.
 - Route color = weakest leg (list); on the map, selected route keeps per-leg tier colors.
 - Seat maps pulled only when a flight is opened; shared cache. TTL: >48h 6h, 24–48h 2h, <24h 30m, <3h 15m. Refresh with 2-min cooldown.
