@@ -118,10 +118,43 @@ describe('RequestRow', () => {
     const texts = hostTexts(r!);
     expect(texts).toContain('Delayed 25m');
     expect(texts).toContain('2:15\u00a0PM');
-    expect(texts.some((t) => t.startsWith('Departs '))).toBe(true);
     const label = r!.root.find((n) => n.props.testID === 'request-row' && n.props.onPress).props.accessibilityLabel as string;
-    expect(label).toContain('Delayed 25 minutes');
-    expect(label).toContain('Waiting');
+    // Title, new time with the old one, then the delay once, then Waiting.
+    expect(label).toMatch(/Departs .*, scheduled 2:15 PM, asked .*\. Delayed 25 minutes\. Waiting$/);
+    expect(label).not.toContain('now ');
+  });
+
+  it('a canceled flight strikes its time and an answered delay shows the new time on the tag', async () => {
+    const [answered, waiting] = sampleMine(NOW);
+    const canceled = {
+      tag: { kind: 'canceled' as const, label: 'Canceled', spoken: 'Canceled, was 2:15 PM' },
+      struck: true,
+      scheduledUtc: waiting.flight.departUtc,
+      scheduledText: '2:15 PM',
+      newUtc: null,
+      newText: null,
+    };
+    const delayed = {
+      tag: { kind: 'delayed' as const, label: 'Delayed 25m', spoken: 'Delayed 25 minutes, was 2:15 PM, now 2:40 PM' },
+      struck: true,
+      scheduledUtc: answered.flight.departUtc,
+      scheduledText: '2:15 PM',
+      newUtc: answered.flight.departUtc + 25 * 60_000,
+      newText: '2:40 PM',
+    };
+    await act(async () => {
+      r = create(
+        <View>
+          <RequestRow request={waiting} now={NOW} mine leg={canceled} onOpen={jest.fn()} />
+          <RequestRow request={answered} now={NOW} mine leg={delayed} onOpen={jest.fn()} />
+        </View>,
+      );
+    });
+    const texts = hostTexts(r!);
+    expect(texts).toContain('Delayed 25m · now 2:40 PM');
+    const labels = r!.root.findAll((n) => n.props.testID === 'request-row' && n.props.onPress).map((n) => n.props.accessibilityLabel as string);
+    expect(labels[0]).not.toContain('Departs');
+    expect(labels[0]).toContain('Canceled, was 2:15 PM');
   });
 
   it('your own asks say Answered with the numbers, or Waiting, and offer no Answer button', async () => {

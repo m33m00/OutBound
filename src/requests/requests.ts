@@ -122,12 +122,65 @@ export function requestDetail(r: LoadRequest, now: number): string {
   return `${departsText(r.flight, now)} · asked ${formatAge(r.askedAt, now)}`;
 }
 
+/** The live state a waiting request's detail line follows (round 50). */
+export interface RequestLive {
+  kind: 'delayed' | 'departed' | 'arrived' | 'canceled' | 'diverted';
+  scheduledText: string;
+  newUtc: number | null;
+}
+
+/** A waiting request's detail line, split so the row can style the time that matters now. */
+export interface LiveRequestDetail {
+  /** Muted words before the time: "Departs ", "Departs tomorrow ", "Scheduled ". */
+  prefix: string;
+  /** The time that matters now, in full text color; null when there is none (canceled). */
+  time: string | null;
+  /** The scheduled time, small and struck after it (delayed, canceled). */
+  struck: string | null;
+  /** " · asked 20m ago" */
+  tail: string;
+  spoken: string;
+}
+
+const nb = (s: string) => s.replace(/ /g, '\u00a0');
+
 /**
- * A waiting request on a delayed flight leads with the new time; the row puts
- * the scheduled one after it, small and struck (John, 2026-10-30).
+ * Lead with what matters now (John, 2026-10-30): a delay shows the new time
+ * with the scheduled one struck after it; a canceled flight strikes the time;
+ * a flight that left says Scheduled, not a future "Departs". Null: no change.
  */
-export function delayedRequestDetail(r: LoadRequest, now: number, newUtc: number): { lead: string; tail: string } {
-  return { lead: departsText(r.flight, now, newUtc), tail: ` · asked ${formatAge(r.askedAt, now)}` };
+export function liveRequestDetail(r: LoadRequest, now: number, live: RequestLive | null): LiveRequestDetail | null {
+  if (!live || r.answer) return null;
+  const asked = formatAge(r.askedAt, now);
+  const tail = ` · asked\u00a0${nb(asked)}`;
+  const tz = AIRPORTS[r.flight.from].tz;
+  switch (live.kind) {
+    case 'delayed': {
+      if (live.newUtc == null) return null;
+      const lead = departsText(r.flight, now, live.newUtc);
+      const time = formatTime(live.newUtc, tz);
+      return {
+        prefix: `${lead.slice(0, lead.length - time.length)}`,
+        time: nb(time),
+        struck: nb(live.scheduledText),
+        tail,
+        spoken: `${lead}, scheduled ${live.scheduledText}, asked ${asked}`,
+      };
+    }
+    case 'canceled':
+    case 'diverted':
+      // The tag says "Canceled, was 2:15 PM", so speech only adds when it was asked.
+      return { prefix: 'Scheduled ', time: null, struck: nb(live.scheduledText), tail, spoken: `asked ${asked}` };
+    case 'departed':
+    case 'arrived':
+      return {
+        prefix: 'Scheduled ',
+        time: nb(live.scheduledText),
+        struck: null,
+        tail,
+        spoken: `Scheduled ${live.scheduledText}, asked ${asked}`,
+      };
+  }
 }
 
 /** Clamp a report field to its range (whole numbers). */

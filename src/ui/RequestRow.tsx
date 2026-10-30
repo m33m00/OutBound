@@ -1,9 +1,9 @@
 import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
-import { answerTier, delayedRequestDetail, requestDetail, requestTitle, type LoadRequest } from '@/requests/requests';
+import { answerTier, liveRequestDetail, requestDetail, requestTitle, type LoadRequest } from '@/requests/requests';
 import { forSpeech } from '@/search/format';
 import type { LegStatusView } from '@/search/statusTags';
-import { minTapTarget, radius, spacing, textStyles, useColors } from '@/theme';
+import { fonts, minTapTarget, radius, spacing, textStyles, useColors } from '@/theme';
 
 import { Icon } from './Icon';
 import { pressStyle } from './press';
@@ -42,12 +42,14 @@ export function RequestRow({ request, now, mine, onAnswer, onOpen, leg }: Reques
   const status = mine ? (answered ? 'Answered' : 'Waiting') : null;
   // The detail already says "answered 2m ago", so VoiceOver only adds Waiting.
   const spokenStatus = status === 'Waiting' ? status : null;
-  // Waiting on a delayed flight: the new time leads, the old one small and struck after it.
-  const delayed = !answered && leg?.newUtc != null ? delayedRequestDetail(request, now, leg.newUtc) : null;
+  // Waiting: the time that matters now leads (new time first, the old one struck after it).
   const tag = leg?.tag ?? null;
-  const label = forSpeech(
-    [title, delayed ? `${delayed.lead}${delayed.tail}` : detail, tag?.spoken, spokenStatus].filter(Boolean).join('. '),
-  );
+  const live = liveRequestDetail(request, now, tag && leg ? { kind: tag.kind, scheduledText: leg.scheduledText, newUtc: leg.newUtc } : null);
+  // Answered rows show the tier line, so the new time rides on the tag instead.
+  const tagLabel = tag && answered && leg?.newText ? `${tag.label} · now ${leg.newText}` : tag?.label;
+  // The detail line already says the new and old times, so the tag only adds the delay.
+  const tagSpoken = tag ? (live && tag.kind === 'delayed' ? tag.spoken.split(', was ')[0] : tag.spoken) : null;
+  const label = forSpeech([title, live ? live.spoken : detail, tagSpoken, spokenStatus].filter(Boolean).join('. '));
   const body = (
     <>
       <View
@@ -58,12 +60,13 @@ export function RequestRow({ request, now, mine, onAnswer, onOpen, leg }: Reques
         <View style={styles.detailLine}>
           {tier ? <View style={[styles.dot, { backgroundColor: c[TIER_MARK[tier]] }]} /> : null}
           <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, styles.detail, { color: tier ? c[TIER_FG[tier]] : c.muted }]}>
-            {delayed ? (
+            {live ? (
               <>
-                <Text style={{ color: c.text }}>{delayed.lead.replace(/(\d) (AM|PM)/, '$1\u00a0$2')}</Text>
-                {'\u00a0'}
-                <Text style={styles.struck}>{leg!.scheduledText.replace(/ /g, '\u00a0')}</Text>
-                {delayed.tail}
+                {live.prefix}
+                {live.time ? <Text style={{ color: c.text, fontFamily: fonts.bodySemiBold }}>{live.time}</Text> : null}
+                {live.time && live.struck ? '\u00a0' : null}
+                {live.struck ? <Text style={styles.struck}>{live.struck}</Text> : null}
+                {live.tail}
               </>
             ) : (
               detail
@@ -72,7 +75,7 @@ export function RequestRow({ request, now, mine, onAnswer, onOpen, leg }: Reques
         </View>
         {tag ? (
           <View style={styles.tagLine}>
-            <StatusTag label={tag.label} tone={TAG_TONE[tag.kind]} />
+            <StatusTag label={tagLabel ?? tag.label} tone={TAG_TONE[tag.kind]} />
           </View>
         ) : null}
       </View>
@@ -124,7 +127,7 @@ export function RequestRow({ request, now, mine, onAnswer, onOpen, leg }: Reques
 
 const styles = StyleSheet.create({
   struck: { textDecorationLine: 'line-through' },
-  tagLine: { flexDirection: 'row', marginTop: 2 },
+  tagLine: { flexDirection: 'row', marginTop: 4 },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
