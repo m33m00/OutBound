@@ -418,7 +418,7 @@ function NowLine({ time }: { time: string | null }) {
       accessible
       accessibilityLabel={`Now${time ? `, ${time}` : ''}. Flights below haven’t left yet.`}>
       <View style={[styles.rule, { backgroundColor: c.accent }]} />
-      <Text style={[textStyles.small, styles.nowText, { color: c.accent }]}>{time ? `Now · ${time}` : 'Now'}</Text>
+      <Text style={[textStyles.small, { fontFamily: fonts.bodySemiBold, color: c.accent }]}>{time ? `Now · ${time}` : 'Now'}</Text>
       <View style={[styles.rule, { backgroundColor: c.accent }]} />
     </View>
   );
@@ -447,5 +447,4 @@ const styles = StyleSheet.create({
   footer: { paddingTop: spacing.section },
   nowLine: { flexDirection: 'row', alignItems: 'center', gap: spacing.group, paddingTop: 2 },
   rule: { flex: 1, height: StyleSheet.hairlineWidth * 2 },
-  nowText: { fontFamily: fonts.bodySemiBold },
 });

@@ -51,7 +51,8 @@ export function SheetHeader({ title, subtitle, action, onAction, focusTitle = fa
         hitSlop={{ right: spacing.page }}
         style={pressStyle([styles.action, stacked && styles.actionStacked], 'link')}
         testID="sheet-action">
-        <Text style={[textStyles.heading, action === 'Cancel' && styles.cancel, { color: c.accent }]}>{action}</Text>
+        {/* iOS sets Done bold and Cancel regular weight. */}
+        <Text style={[textStyles.heading, action === 'Cancel' && { fontFamily: fonts.bodyMedium }, { color: c.accent }]}>{action}</Text>
       </Pressable>
     </View>
   );
@@ -70,6 +71,4 @@ const styles = StyleSheet.create({
   titleStacked: { flex: 0 },
   actionStacked: { alignSelf: 'flex-end' },
   action: { minHeight: minTapTarget, justifyContent: 'center', paddingLeft: spacing.group },
-  // iOS sets Done bold and Cancel regular weight.
-  cancel: { fontFamily: fonts.bodyMedium },
 });

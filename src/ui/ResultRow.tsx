@@ -73,7 +73,7 @@ function StatusTag({ label, tone }: { label: string; tone: Tone }) {
       {tone === 'canceled' ? (
         <Icon name="xmark.circle" size={12} tintColor={c[TONE_FG[tone]]} fallback={null} />
       ) : null}
-      <Text style={[textStyles.small, styles.tagWord, styles.shrink, { color: c[TONE_FG[tone]] }]}>{label}</Text>
+      <Text style={[textStyles.small, styles.shrink, { fontFamily: fonts.bodySemiBold, color: c[TONE_FG[tone]] }]}>{label}</Text>
     </View>
   );
 }
@@ -435,7 +435,6 @@ const styles = StyleSheet.create({
     borderRadius: radius.sm,
     borderWidth: 1,
   },
-  tagWord: { fontFamily: fonts.bodySemiBold },
   struck: { textDecorationLine: 'line-through' },
   tierChip: {
     flexShrink: 1,

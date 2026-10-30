@@ -244,7 +244,7 @@ function NumberField({
         accessibilityValue={{ text: String(value) }}
         accessibilityState={{ disabled }}
         style={pressStyle([styles.stepBtn, { backgroundColor: c.surface2, opacity: disabled ? 0.4 : 1 }])}>
-        <Text style={[styles.stepText, { color: c.text }]} maxFontSizeMultiplier={BIG_TEXT_MAX_SCALE}>
+        <Text style={[styles.stepText, { fontFamily: fonts.bodyBold, color: c.text }]} maxFontSizeMultiplier={BIG_TEXT_MAX_SCALE}>
           {d > 0 ? '+' : '−'}
         </Text>
       </Pressable>
@@ -276,7 +276,7 @@ function NumberField({
           maxFontSizeMultiplier={BIG_TEXT_MAX_SCALE}
           accessibilityLabel={forSpeech(`${label}, ${caption}`)}
           accessibilityHint={`Type a number from 0 to ${max}`}
-          style={[styles.bignum, { color: c.text, borderColor: c.line }]}
+          style={[styles.bignum, { fontFamily: fonts.displayHeavy, color: c.text, borderColor: c.line }]}
         />
         {btn(1)}
       </View>
@@ -302,12 +302,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  stepText: { fontFamily: fonts.bodyBold, fontSize: 26, lineHeight: 30 },
+  stepText: { fontSize: 26, lineHeight: 30 },
   bignum: {
     flex: 1,
     minHeight: minTapTarget + 12,
     textAlign: 'center',
-    fontFamily: fonts.displayHeavy,
     fontSize: 40,
     lineHeight: 46,
     borderRadius: radius.sm,
