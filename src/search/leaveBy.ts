@@ -35,7 +35,7 @@ export function driveMinutes(km: number): number {
 }
 
 export type LeaveBy =
-  | { kind: 'departed'; airport: string; departUtc: number }
+  | { kind: 'departed'; airport: string }
   | { kind: 'atAirport'; airport: string; departUtc: number }
   | { kind: 'leaveBy'; airport: string; leaveUtc: number; beAtUtc: number; driveMin: number }
   | { kind: 'leaveNow'; airport: string; beAtUtc: number }
@@ -47,12 +47,14 @@ export function computeLeaveBy(input: {
   bufferMin: number;
   now: number;
   location: PhoneLocation | null;
+  /** Live status says the flight has left. Never guessed from the schedule (Q-050). */
+  departed?: boolean;
 }): LeaveBy {
   const { airport, departUtc, bufferMin, now } = input;
   const beAtUtc = departUtc - bufferMin * 60_000;
   const loc = input.location && now - input.location.at <= LOCATION_FRESH_MS ? input.location : null;
   // Results keep routes that already left (grayed, on top); "Leave now" would be wrong for those.
-  if (departUtc <= now) return { kind: 'departed', airport: airport.code, departUtc };
+  if (input.departed) return { kind: 'departed', airport: airport.code };
 
   if (loc) {
     const km = distanceKm(loc.lat, loc.lon, airport.lat, airport.lon);
@@ -78,7 +80,7 @@ export function leaveByText(r: LeaveBy, tz: string): LeaveByText {
   const t = (utc: number) => formatTime(utc, tz);
   switch (r.kind) {
     case 'departed':
-      return { title: `Departed ${t(r.departUtc)}`, sub: `This route has left ${r.airport}. Pick a later one.` };
+      return { title: 'Departed', sub: `This flight has left ${r.airport}. Pick a later route.` };
     case 'atAirport':
       return { title: `You’re at ${r.airport}`, sub: `Departs ${t(r.departUtc)}` };
     case 'leaveBy':

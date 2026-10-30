@@ -403,6 +403,7 @@ export default function HomeScreen() {
           <RadarButton
             on={settings.radarOn}
             caption={radar.caption}
+            showing={radar.showing}
             onToggle={() => updateSettings({ radarOn: !settings.radarOn })}
           />
         ) : null}
@@ -510,6 +511,7 @@ export default function HomeScreen() {
                       <LeaveByCard
                         airport={AIRPORTS[firstLeg.from]}
                         departUtc={firstLeg.departUtc}
+                        departed={!!(selected && rowStatuses?.[selected.id]?.dimmed)}
                         bufferMin={settings.bufferMin}
                         now={now}
                         location={location}

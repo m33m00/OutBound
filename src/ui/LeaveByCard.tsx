@@ -19,6 +19,8 @@ export interface LeaveByCardProps {
   location: PhoneLocation | null;
   locationStatus: LocationStatus;
   onUseLocation: () => void;
+  /** Live status says the first flight has left (Q-050: never from the schedule). */
+  departed?: boolean;
 }
 
 /** From this text size the location button gets its own row. */
@@ -38,10 +40,17 @@ export function LeaveByCard(p: LeaveByCardProps) {
   // A drive estimate can't help once the flight has left.
   const offerLocation = !fresh && !atAirport && !departed && p.locationStatus !== 'locating';
   // Say the leave-by line once when a route is picked; VoiceOver focus stays on the row.
-  const firstTitle = useRef(text.title);
+  // Departed says why too, and is said again if the flight leaves while the card is open.
+  const spokenTitle = departed ? `${text.title}. ${text.sub}` : text.title;
+  const firstTitle = useRef(spokenTitle);
+  const wasDeparted = useRef(departed);
   useEffect(() => {
     AccessibilityInfo.announceForAccessibility?.(firstTitle.current);
   }, []);
+  useEffect(() => {
+    if (departed && !wasDeparted.current) AccessibilityInfo.announceForAccessibility?.(spokenTitle);
+    wasDeparted.current = departed;
+  }, [departed, spokenTitle]);
   const note = departed
     ? null
     : p.locationStatus === 'denied'

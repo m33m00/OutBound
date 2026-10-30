@@ -65,11 +65,12 @@ describe('LeaveByCard location button', () => {
           location={null}
           locationStatus="denied"
           onUseLocation={jest.fn()}
+          departed
         />,
       );
     });
     const texts = r!.root.findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string').map((n) => n.props.children as string);
-    expect(texts.some((t) => t.startsWith('Departed '))).toBe(true);
+    expect(texts).toContain('Departed');
     expect(r!.root.findAll((n) => /Use Location|Open Settings/.test(String(n.props.accessibilityLabel)))).toHaveLength(0);
     expect(texts.some((t) => t.startsWith('Location is off'))).toBe(false);
   });

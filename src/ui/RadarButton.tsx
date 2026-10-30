@@ -5,9 +5,24 @@ import { Icon } from './Icon';
 import { pressStyle } from './press';
 import { withTick } from './haptics';
 
-/** Radar on/off map button (44pt) with its age caption (Q-032). */
-export function RadarButton({ on, caption, onToggle }: { on: boolean; caption: string | null; onToggle: () => void }) {
+/**
+ * Radar on/off map button (44pt) with its age caption (Q-032). On but with
+ * nothing drawn yet (loading, unavailable) it shows a light blue fill, so a
+ * solid blue button always means rain is on the globe.
+ */
+export function RadarButton({
+  on,
+  caption,
+  showing = on,
+  onToggle,
+}: {
+  on: boolean;
+  caption: string | null;
+  showing?: boolean;
+  onToggle: () => void;
+}) {
   const c = useColors();
+  const solid = on && showing;
   return (
     <View style={styles.wrap} pointerEvents="box-none">
       <Pressable
@@ -15,16 +30,22 @@ export function RadarButton({ on, caption, onToggle }: { on: boolean; caption: s
         accessibilityRole="switch"
         accessibilityLabel="Radar"
         accessibilityState={{ checked: on }}
-        accessibilityHint={caption ?? undefined}
+        // The caption is the state ("Radar 4 min ago", "Radar unavailable"), so it's the value, not a hint.
+        accessibilityValue={caption ? { text: caption } : undefined}
+        accessibilityHint={on ? undefined : 'Shows rain on the globe'}
         style={pressStyle([
           styles.button,
-          { backgroundColor: on ? c.accent : c.surface, borderColor: on ? c.accent : c.line2, shadowColor: c.text },
+          {
+            backgroundColor: solid ? c.accent : on ? c.accentSoft : c.surface,
+            borderColor: on ? c.accent : c.line2,
+            shadowColor: c.text,
+          },
         ])}>
         <Icon
           name="cloud.rain"
           size={20}
-          tintColor={on ? c.onAccent : c.text}
-          fallback={<Text style={[textStyles.small, { color: on ? c.onAccent : c.text }]}>Rain</Text>}
+          tintColor={solid ? c.onAccent : on ? c.accent : c.text}
+          fallback={<Text style={[textStyles.small, { color: solid ? c.onAccent : on ? c.accent : c.text }]}>Rain</Text>}
         />
       </Pressable>
       {caption ? (

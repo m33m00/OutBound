@@ -71,11 +71,13 @@ describe('computeLeaveBy', () => {
     });
   });
 
-  it('says departed, not leave now, once the flight has left (round 42)', () => {
+  it('says departed only when live status says so, never from the schedule (round 42, Q-050)', () => {
     const after = DEP + 10 * MIN;
-    const r = run({ now: after, location: { lat: BNA.lat, lon: BNA.lon, at: after } });
-    expect(r).toEqual({ kind: 'departed', airport: 'BNA', departUtc: DEP });
-    expect(leaveByText(r, BNA.tz)).toEqual({ title: 'Departed 9:00 AM', sub: 'This route has left BNA. Pick a later one.' });
+    // Past the scheduled time but no live word: it may be delayed, so still "Leave now".
+    expect(run({ now: after }).kind).toBe('leaveNow');
+    const r = run({ now: after, location: { lat: BNA.lat, lon: BNA.lon, at: after }, departed: true });
+    expect(r).toEqual({ kind: 'departed', airport: 'BNA' });
+    expect(leaveByText(r, BNA.tz)).toEqual({ title: 'Departed', sub: 'This flight has left BNA. Pick a later route.' });
   });
 });
 
