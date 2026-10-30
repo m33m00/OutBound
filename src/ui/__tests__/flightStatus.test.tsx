@@ -170,7 +170,7 @@ describe('seats card in the flight sheet (design round 32)', () => {
 
   const render = async (load: Partial<FlightLoadActions>) => {
     const f = (await itinerary()).legs[0].flight;
-    const full: FlightLoadActions = { canReport: true, askState: 'ready', yourReport: null, onAsk: jest.fn(), onReport: jest.fn(), ...load };
+    const full: FlightLoadActions = { reportWindow: 'open', askState: 'ready', yourReport: null, onAsk: jest.fn(), onReport: jest.fn(), ...load };
     await act(async () => {
       r = create(<FlightStatusSheet flight={f} now={NOW} onClose={jest.fn()} sample={null} liveOptions={{ fetcher: jest.fn(), config: null }} load={full} />);
     });
@@ -203,9 +203,24 @@ describe('seats card in the flight sheet (design round 32)', () => {
     expect(load.onAsk).not.toHaveBeenCalled();
   });
 
-  it('outside the report window Report Load is off and says why; your report shows with its age', async () => {
-    await render({ canReport: false, yourReport: { open: 18, listed: 3, at: NOW - 5 * 60_000, byYou: true } });
+  it('after the window Report Again is off and says why; your report reads in full words', async () => {
+    await render({ reportWindow: 'closed', yourReport: { open: 18, listed: 3, at: NOW - 5 * 60_000, byYou: true } });
     expect(btn('Report Again').props.disabled).toBe(true);
-    expect(texts()).toContain('You reported Good · 18 open · 3 listed · 5m ago');
+    expect(texts()).toContain('Reports closed 2 hours after this flight left.');
+    const line = r!.root.find((n) => typeof n.type === 'string' && String(n.props.accessibilityLabel).startsWith('You reported'));
+    expect(line.props.accessibilityLabel).toBe('You reported Good, 18 open, 3 listed, 5 minutes ago');
+  });
+
+  it('more than a week out, Report Load says when reports open', async () => {
+    await render({ reportWindow: 'early' });
+    expect(btn('Report Load').props.disabled).toBe(true);
+    expect(texts()).toContain('Reports open 7 days before departure.');
+  });
+
+  it('Asked stays full strength: a confirmation, not a dead button', async () => {
+    await render({ askState: 'asked' });
+    const asked = btn('Asked');
+    const flat = Object.assign({}, ...[asked.props.style({ pressed: false })].flat(Infinity).filter(Boolean));
+    expect(flat.opacity).toBe(1);
   });
 });

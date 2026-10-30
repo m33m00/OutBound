@@ -20,7 +20,7 @@ import { Appear } from '@/ui/Appear';
 import { useSettings } from '@/settings/SettingsProvider';
 import { changedFilters, DEFAULT_FILTERS, homeAirports, type SearchFilters } from '@/settings/settings';
 import { FiltersModal } from '@/ui/FiltersModal';
-import { askNote, inReportWindow } from '@/requests/requests';
+import { askNote, reportWindow } from '@/requests/requests';
 import { useRequests } from '@/requests/RequestsProvider';
 import { FlightStatusSheet } from '@/ui/FlightStatusSheet';
 import { ImpactSheet } from '@/ui/ImpactSheet';
@@ -531,7 +531,7 @@ export default function HomeScreen() {
         load={
           statusSheet.shown
             ? {
-                canReport: inReportWindow(statusSheet.shown, now),
+                reportWindow: reportWindow(statusSheet.shown, now),
                 askState: requests.askStateFor(statusSheet.shown, now),
                 yourReport: requests.reportFor(statusSheet.shown),
                 onAsk: () => {

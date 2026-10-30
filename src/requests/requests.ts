@@ -136,9 +136,24 @@ export function afterListText(open: number, listed: number): string {
 export const REPORT_OPENS_BEFORE_MS = 7 * 24 * 3600_000;
 export const REPORT_CLOSES_AFTER_MS = 2 * 3600_000;
 
+/** early: more than 7 days out; open: can report; closed: left over 2 hours ago. */
+export type ReportWindow = 'early' | 'open' | 'closed';
+
+export function reportWindow(f: Flight, now: number): ReportWindow {
+  if (now < f.departUtc - REPORT_OPENS_BEFORE_MS) return 'early';
+  if (now > f.departUtc + REPORT_CLOSES_AFTER_MS) return 'closed';
+  return 'open';
+}
+
 /** Whether a flight can take a report now. */
-export const inReportWindow = (f: Flight, now: number) =>
-  now >= f.departUtc - REPORT_OPENS_BEFORE_MS && now <= f.departUtc + REPORT_CLOSES_AFTER_MS;
+export const inReportWindow = (f: Flight, now: number) => reportWindow(f, now) === 'open';
+
+/** Why Report Load is off, or null when it's on. */
+export function reportClosedNote(w: ReportWindow): string | null {
+  if (w === 'early') return 'Reports open 7 days before departure.';
+  if (w === 'closed') return 'Reports closed 2 hours after this flight left.';
+  return null;
+}
 
 /** One flight on one day, whichever list it came from. */
 export const flightKey = (f: Flight) => `${f.airline}${f.flightNumber}-${f.from}-${f.departUtc}`;
@@ -168,5 +183,5 @@ export function askNote(state: AskState): string {
   if (state === 'asked') return 'Asked. The answer shows in My Trips.';
   if (state === 'left') return 'This flight has left, so there’s no one to ask.';
   if (state === 'full') return `You have ${MAX_OPEN_REQUESTS} requests waiting. Ask again once one is answered.`;
-  return 'Ask someone at this airline what the board shows.';
+  return 'Ask other employees who fly this airline. They won’t see who asked.';
 }

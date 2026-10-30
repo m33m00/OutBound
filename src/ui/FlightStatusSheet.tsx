@@ -5,18 +5,20 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { AIRPORTS, localDate, type Flight } from '@/engine';
 import { useFlightStatus, type FlightLookup, type UseFlightStatusOptions, type Movement } from '@/live';
 import type { FlightStatusEntry } from '@/live/flightStatus';
-import { answerText, askNote, type AskState, type LoadAnswer } from '@/requests/requests';
+import { answerText, answerTier, askNote, reportClosedNote, type AskState, type LoadAnswer, type ReportWindow } from '@/requests/requests';
 import { shortDate } from '@/search/dates';
-import { formatAge, forSpeech } from '@/search/format';
+import { formatAge, forSpeech, TIER_WORD } from '@/search/format';
 import { radius, spacing, textStyles, useColors } from '@/theme';
 
 import { Button } from './Buttons';
 import { ageText, delayText, movementTimes, placeText, sampleResponse, STATE_WORD } from './flightStatusText';
 import { Icon } from './Icon';
+import { useFocusOnMount } from './focusOnMount';
 import { pressStyle } from './press';
 import { ReportForm } from './ReportSheet';
 import { STATE_TONE, TONE_BG, TONE_FG } from './statusTone';
 import { SheetHeader } from './SheetHeader';
+import { TIER_FG } from './tierColors';
 
 export interface FlightStatusSheetProps {
   /** The opened flight; null = closed (no request is made). */
@@ -37,8 +39,8 @@ export interface FlightStatusSheetProps {
 }
 
 export interface FlightLoadActions {
-  /** Inside the report window (7 days before to 2 hours after departure). */
-  canReport: boolean;
+  /** Report window: opens 7 days before departure, closes 2 hours after. */
+  reportWindow: ReportWindow;
   askState: AskState;
   /** Your report on this flight this session. */
   yourReport: LoadAnswer | null;
@@ -56,8 +58,17 @@ export function FlightStatusSheet({ flight, visible, now, onClose, liveOptions, 
   const c = useColors();
   // Report Load opens as a page inside this sheet (a second sheet on top can't open while one is up).
   const [reporting, setReporting] = useState(false);
+  // Back from the report page: VoiceOver lands on the Seats card again.
+  const [backFromReport, setBackFromReport] = useState(false);
   const flightId = flight?.id;
-  useEffect(() => setReporting(false), [flightId]);
+  useEffect(() => {
+    setReporting(false);
+    setBackFromReport(false);
+  }, [flightId]);
+  const leaveReport = () => {
+    setReporting(false);
+    setBackFromReport(true);
+  };
   const lookup = flight ? lookupForFlight(flight) : null;
   const isSample = !!(flight && sample);
   const live = useFlightStatus(isSample ? null : lookup, liveOptions);
@@ -97,11 +108,14 @@ export function FlightStatusSheet({ flight, visible, now, onClose, liveOptions, 
           <ReportForm
             flight={flight}
             now={now}
-            onCancel={() => setReporting(false)}
+            focusTitle
+            onCancel={leaveReport}
             onSubmit={(open, listed) => {
               load.onReport(open, listed);
-              setReporting(false);
-              AccessibilityInfo.announceForAccessibility('Report sent. Thanks.');
+              leaveReport();
+              // After the page swap, or VoiceOver drops it.
+              const said = forSpeech(`Reported ${answerText({ open, listed, at: now })}`);
+              setTimeout(() => AccessibilityInfo.announceForAccessibility(said), 400);
             }}
           />
         ) : (
@@ -147,6 +161,9 @@ export function FlightStatusSheet({ flight, visible, now, onClose, liveOptions, 
                   {side('Arrives', flight.to, status.arrival)}
                 </>
               ) : null}
+              {load && flight ? (
+                <LoadCard load={load} now={now} focus={backFromReport} onReport={() => setReporting(true)} />
+              ) : null}
               {response ? <Text style={[textStyles.small, { color: c.muted }]}>{ageText(response, now)}</Text> : null}
               {error === 'fetch_failed' && response ? (
                 <Text style={[textStyles.small, { color: c.muted }]}>Couldn’t refresh just now; showing the last status.</Text>
@@ -167,7 +184,6 @@ export function FlightStatusSheet({ flight, visible, now, onClose, liveOptions, 
               </Text>
               {/* The source line names a real feed, so it shows only for live status (round 30: no sample labels). */}
               {isSample ? null : <Text style={[textStyles.small, { color: c.muted }]}>Data from AeroDataBox.</Text>}
-              {load && flight ? <LoadCard load={load} now={now} onReport={() => setReporting(true)} /> : null}
             </ScrollView>
           </>
         )}
@@ -177,33 +193,55 @@ export function FlightStatusSheet({ flight, visible, now, onClose, liveOptions, 
 }
 
 /** Seats: your report if you made one, then Report Load and Ask for Load. */
-function LoadCard({ load, now, onReport }: { load: FlightLoadActions; now: number; onReport: () => void }) {
+function LoadCard({
+  load,
+  now,
+  focus,
+  onReport,
+}: {
+  load: FlightLoadActions;
+  now: number;
+  focus: boolean;
+  onReport: () => void;
+}) {
   const c = useColors();
-  const { canReport, askState, yourReport, onAsk } = load;
-  const reportLine = yourReport
-    ? `You reported ${answerText(yourReport)} · ${formatAge(yourReport.at, now)}`
-    : canReport
-      ? 'Seen the board? Report the open seats and the standby list.'
-      : 'Reports close 2 hours after departure.';
+  const { reportWindow, askState, yourReport, onAsk } = load;
+  const headerRef = useFocusOnMount(focus);
+  const canReport = reportWindow === 'open';
+  const closed = reportClosedNote(reportWindow);
+  const tier = yourReport ? answerTier(yourReport) : null;
+  const asked = askState === 'asked';
   return (
     <View style={[styles.load, { backgroundColor: c.surface, borderColor: c.line }]} testID="load-card">
-      <Text style={[textStyles.heading, { color: c.text }]} accessibilityRole="header">
+      <Text ref={headerRef} style={[textStyles.heading, { color: c.text }]} accessibilityRole="header">
         Seats
       </Text>
-      <Text style={[textStyles.body, { color: yourReport ? c.text : c.muted }]}>{reportLine}</Text>
-      <Button
-        label={yourReport ? 'Report Again' : 'Report Load'}
-        onPress={onReport}
-        disabled={!canReport}
-      />
+      {yourReport && tier ? (
+        <Text
+          style={[textStyles.body, { color: c.text }]}
+          accessibilityLabel={forSpeech(`You reported ${answerText(yourReport)} · ${formatAge(yourReport.at, now)}`)}>
+          {/* Amber means you; the tier word keeps its tier color. */}
+          <Text style={{ color: c.youText }}>You reported </Text>
+          <Text style={[textStyles.bodyStrong, { color: c[TIER_FG[tier]] }]}>{TIER_WORD[tier]}</Text>
+          {` · ${yourReport.open} open · ${yourReport.listed} listed · ${formatAge(yourReport.at, now)}`}
+        </Text>
+      ) : null}
+      {closed || !yourReport ? (
+        <Text style={[textStyles.body, { color: c.muted }]}>
+          {closed ?? 'Seen the board? Report the open seats and the standby list.'}
+        </Text>
+      ) : null}
+      <Button label={yourReport ? 'Report Again' : 'Report Load'} onPress={onReport} disabled={!canReport} />
       <View style={[styles.loadRule, { backgroundColor: c.line }]} />
       <Text style={[textStyles.body, { color: c.muted }]}>{askNote(askState)}</Text>
       <Button
-        label={askState === 'asked' ? 'Asked' : 'Ask for Load'}
+        label={asked ? 'Asked' : 'Ask for Load'}
         kind="secondary"
-        icon={askState === 'asked' ? 'checkmark' : undefined}
+        icon={asked ? 'checkmark' : undefined}
         onPress={onAsk}
         disabled={askState !== 'ready'}
+        // Asked is a confirmation, not an unavailable button: keep it full strength.
+        style={asked ? styles.undimmed : undefined}
       />
     </View>
   );
@@ -229,4 +267,5 @@ const styles = StyleSheet.create({
   refresh: { minHeight: 44, justifyContent: 'center', alignSelf: 'flex-start' },
   load: { borderRadius: radius.md, borderWidth: StyleSheet.hairlineWidth, padding: spacing.rowX, gap: spacing.group },
   loadRule: { height: StyleSheet.hairlineWidth, marginVertical: 4 },
+  undimmed: { opacity: 1 },
 });

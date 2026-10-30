@@ -6,6 +6,8 @@ import {
   askNote,
   askState,
   inReportWindow,
+  reportClosedNote,
+  reportWindow,
   openRequestCount,
   type LoadRequest,
   answerText,
@@ -105,6 +107,10 @@ describe('asking and reporting from a flight (round 32)', () => {
     expect(inReportWindow(f, f.departUtc - 7 * 24 * 3600_000 - 1)).toBe(false);
     expect(inReportWindow(f, f.departUtc + 2 * 3600_000)).toBe(true);
     expect(inReportWindow(f, f.departUtc + 2 * 3600_000 + 1)).toBe(false);
+    expect(reportWindow(f, f.departUtc - 8 * 24 * 3600_000)).toBe('early');
+    expect(reportWindow(f, f.departUtc + 3 * 3600_000)).toBe('closed');
+    expect(reportClosedNote('early')).toBe('Reports open 7 days before departure.');
+    expect(reportClosedNote('open')).toBeNull();
   });
 
   it('one ask per flight, newest on top, and the same flight from another list counts', () => {

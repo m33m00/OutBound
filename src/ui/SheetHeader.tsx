@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { forSpeech } from '@/search/format';
 import { fonts, minTapTarget, spacing, textStyles, useColors } from '@/theme';
 
+import { useFocusOnMount } from './focusOnMount';
 import { pressStyle } from './press';
 
 export interface SheetHeaderProps {
@@ -11,18 +12,21 @@ export interface SheetHeaderProps {
   /** "Done" keeps what you did; "Cancel" leaves without a change. */
   action: 'Done' | 'Cancel';
   onAction: () => void;
+  /** VoiceOver starts on the title (a page swapped in inside a sheet). */
+  focusTitle?: boolean;
 }
 
 /**
  * Header for every page sheet (design round 24): title on the left, an iOS-style text
  * button on the right, so Done/Cancel never competes with the sheet's own buttons.
  */
-export function SheetHeader({ title, subtitle, action, onAction }: SheetHeaderProps) {
+export function SheetHeader({ title, subtitle, action, onAction, focusTitle = false }: SheetHeaderProps) {
   const c = useColors();
+  const titleRef = useFocusOnMount(focusTitle);
   return (
     <View style={styles.header}>
       <View style={styles.title}>
-        <Text style={[textStyles.title, { color: c.text }]} accessibilityRole="header">
+        <Text ref={titleRef} style={[textStyles.title, { color: c.text }]} accessibilityRole="header">
           {title}
         </Text>
         {/* "DAL → PHX → LAX" is read "DAL to PHX to LAX". */}

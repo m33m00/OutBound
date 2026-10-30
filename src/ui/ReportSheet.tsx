@@ -67,13 +67,15 @@ export interface ReportFormProps {
   now: number;
   onCancel: () => void;
   onSubmit: (open: number, listed: number) => void;
+  /** Swapped in inside another sheet: VoiceOver starts on the title. */
+  focusTitle?: boolean;
 }
 
 /**
  * The Report Load page itself (header, fields, Submit), as a sheet of its
  * own (Feed) or as a page inside the flight sheet (Search, round 32).
  */
-export function ReportForm({ flight, now, onCancel, onSubmit }: ReportFormProps) {
+export function ReportForm({ flight, now, onCancel, onSubmit, focusTitle }: ReportFormProps) {
   const c = useColors();
   const [open, setOpen] = useState(0);
   const [listed, setListed] = useState(0);
@@ -99,7 +101,16 @@ export function ReportForm({ flight, now, onCancel, onSubmit }: ReportFormProps)
 
   return (
     <>
-      <SheetHeader title="Report Load" subtitle={subtitle} action="Cancel" onAction={onCancel} />
+      <SheetHeader
+        title="Report Load"
+        subtitle={subtitle}
+        action="Cancel"
+        onAction={() => {
+          Keyboard.dismiss();
+          onCancel();
+        }}
+        focusTitle={focusTitle}
+      />
       <ScrollView
         contentContainerStyle={styles.body}
         keyboardShouldPersistTaps="handled"
