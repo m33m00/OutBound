@@ -91,7 +91,7 @@ describe('ResultRow', () => {
     expect(onImpact).toHaveBeenCalledWith(it.id);
     const texts = root.findAll((n) => typeof n.props.children === 'string').map((n) => n.props.children);
     // The badge names the airport (design round 25).
-    expect(texts).toContain('Likely delays · LAX · 5m ago');
+    expect(texts).toContain('Likely delays');
     const pill = root.findAll((n) => n.props.hitSlop != null)[0];
     expect(pill.props.hitSlop).toEqual({ top: 11, bottom: 11, left: 10, right: 10 });
   });

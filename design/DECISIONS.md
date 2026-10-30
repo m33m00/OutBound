@@ -72,7 +72,7 @@ Condensed from the project docs: MVP decisions (through v8.8), design direction 
 - Provisional (design round 24, 2026-10-30; not John-decided): every page sheet (Filters, Date, airport picker, flight status, delays and weather) shares one header: the title on the left and an iOS-style blue text button on the right, "Done" in bold, or "Cancel" in regular weight on the airport picker, instead of a filled Done button that competed with the sheet's own buttons. In the route view, VoiceOver users can swipe up or down on "2 of 8" to flip routes; the arrows stay for Voice Control.
 - Provisional (design round 25, 2026-10-30; from design review, not John-decided):
   - The empty-search notice (Q-047) sits at the top of the search panel, above the dates, so half height always shows it (it used to sit under Find Routes, and the Get Home row pushed it out of view).
-  - The row's delay badge names the worst airport: "Likely delays · ORD · 4m ago".
+  - ~~The row's delay badge names the worst airport: "Likely delays · ORD · 4m ago".~~ (superseded 2026-10-30 by Q-072)
   - When live status moves the arrival at the end of the route by 5+ min, the row strikes the scheduled arrival and shows the expected one, like a late departure.
   - Get Home says where it goes: "Get Home · Dallas" (area city, since it always searches the whole area) or the home's code when it has no area.
   - "You're at DFW" on the Leave By card is amber (amber = you), not the Good tier green, which means seats.
@@ -83,6 +83,8 @@ Condensed from the project docs: MVP decisions (through v8.8), design direction 
 - Seat numbers (Q-065, 2026-10-30, John: "I'd rather see both numbers"): seat text shows open seats and nonrevs listed, not only the net figure: "Tight · 20 open · 17 listed" on the row's seat summary and on each leg in the route card. The tier still comes from net seats (open minus listed). Readings without both numbers fall back to "3 open". Typical loads keep "Typically ~51 open".
 - Search starts with To blank (Q-069, 2026-10-30, John: "Start it blank"): no airport is picked for you; To shows "Choose airport" like From until you pick one. Get Home still fills To with your main home.
 - Leave By with a delayed flight (Q-070, 2026-10-30, John: "C"): the card still counts back from the scheduled departure, and adds "Flight delayed to 2:40 PM" under it when live status has a new time. No delay line once the flight has departed.
+- Notification switches before push (Q-071, 2026-10-30, John: "1A"): Settings keeps both switches, and the section's footer starts "Notifications start once requests go live."
+- Row delay badge (Q-072, 2026-10-30, John: "2C"): the badge on a result row stays on the top line as just the word with its icon ("Likely delays" or "Caution"). The airport, reasons and age are in the delays and weather sheet the badge opens; the row's VoiceOver label still says them.
 - Today's list opens at the "Now" line (Q-066, 2026-10-30, John: "Yes"): when routes that already left sit at the top, results open scrolled so the "Now" line is at the top; the routes that left are a short scroll up. Once you scroll or pick a route, the list stays where you put it.
 - Provisional (design round 26, 2026-10-30; accessibility pass, not John-decided):
   - Dark mode contrast checked for every text/fill pair in use; all pass 4.5:1 (weakest: Tight chip 6.31:1 light). Keep faint text off accentSoft (4.32:1).

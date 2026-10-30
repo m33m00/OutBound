@@ -12,7 +12,7 @@ import { pressStyle } from './press';
  */
 export const IMPACT_ICON = { caution: 'exclamationmark.circle', likelyDelays: 'exclamationmark.triangle.fill' } as const;
 
-export function ImpactBadge({ impact, now, onPress }: { impact: RouteImpact; now: number; onPress: () => void }) {
+export function ImpactBadge({ impact, onPress }: { impact: RouteImpact; onPress: () => void }) {
   const c = useColors();
   if (impact.level === 'none') return null;
   const likely = impact.level === 'likelyDelays';
@@ -34,7 +34,7 @@ export function ImpactBadge({ impact, now, onPress }: { impact: RouteImpact; now
         fallback={<Text style={[textStyles.small, { color: fg }]}>!</Text>}
       />
       <Text style={[textStyles.small, styles.word, { fontFamily: fonts.bodySemiBold, color: fg }]} testID="impact-word">
-        {impactBadgeText(impact, now)}
+        {impactBadgeText(impact)}
       </Text>
     </Pressable>
   );

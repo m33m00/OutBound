@@ -219,7 +219,7 @@ export const ResultRow = memo(function ResultRow({
             )}
             <View style={styles.badgeSlot} testID="badge-slot">
               {hasImpact ? (
-                <ImpactBadge impact={impact} now={now} onPress={() => onImpactPress?.(it.id)} />
+                <ImpactBadge impact={impact} onPress={() => onImpactPress?.(it.id)} />
               ) : impactLoading ? (
                 <Text style={[textStyles.small, { color: c.muted }]}>Checking…</Text>
               ) : null}

@@ -78,3 +78,4 @@ Each item names its owner. One item per work session. spec-keeper runs a pre-fli
 | 71 | Design round 44: "Worst first" caption when the delays sheet reorders airports; radar button VoiceOver tests | main | P3 | Built (design round 44, branch claude/project-thread-fzqwou) |
 | 72 | John's answers (2026-10-30): Search starts with To blank (Q-069); Leave By keeps the scheduled time and shows "Flight delayed to …" under it (Q-070) | main | P1 | Built (design round 45, branch claude/project-thread-fzqwou); confirm on device |
 | 73 | Design round 46: 44pt bookmark, steppers stack at big text, stop counts with units, shorter flight sheet footer | main | P2 | Built (design round 46, branch claude/project-thread-fzqwou) |
+| 74 | John's answers (2026-10-30): notification footer says they start once requests go live (Q-071); row delay badge is just the word (Q-072) | main | P1 | Built (design round 47, branch claude/project-thread-fzqwou); confirm on device |

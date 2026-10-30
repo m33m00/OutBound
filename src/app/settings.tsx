@@ -132,8 +132,8 @@ export default function SettingsScreen() {
             />
           </View>
           <SectionFooter>
-            Other employees can ask about your airline’s flights, at most 5 requests a day. Nobody sees who asked or who
-            answered.
+            Notifications start once requests go live. Other employees can ask about your airline’s flights, at most 5
+            requests a day. Nobody sees who asked or who answered.
           </SectionFooter>
         </View>
 
