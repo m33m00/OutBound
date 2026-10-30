@@ -95,7 +95,7 @@ describe('seat summary (Q-059)', () => {
     ({ tier, legs: legs.map((s) => ({ seats: s })) }) as unknown as Parameters<typeof routeSeatSummary>[0];
 
   it('names the weakest counted leg', () => {
-    expect(routeSeatSummary(route([seats({ tier: 'good', netSeats: 9 }), seats({ tier: 'tight', netSeats: 2 })], 'tight'))).toBe('Long shot · 2 open');
+    expect(routeSeatSummary(route([seats({ tier: 'good', netSeats: 9 }), seats({ tier: 'tight', netSeats: 2 })], 'tight'))).toBe('Long\u00a0shot · 2 open');
     expect(routeSeatSummary(route([seats({ tier: 'full', netSeats: -3 })], 'full'))).toBe('Full · no open seats');
   });
 
@@ -187,7 +187,7 @@ describe('seatCounts (Q-065)', () => {
 describe('forSpeech (design round 26)', () => {
   it('turns visible shorthand into words', () => {
     expect(forSpeech('Usually ~12 open · Jul avg')).toBe('Usually about 12 open, Jul avg');
-    expect(forSpeech('Long shot · 3 open · est. 1m ago')).toBe('Long shot, 3 open, estimated 1 minute ago');
+    expect(forSpeech('Long\u00a0shot · 3 open · est. 1m ago')).toBe('Long\u00a0shot, 3 open, estimated 1 minute ago');
     expect(forSpeech('Est. 2h ago')).toBe('Estimated 2 hours ago');
     expect(forSpeech('DAL → PHX → LAX')).toBe('DAL to PHX to LAX');
     expect(forSpeech('Updated 3d ago')).toBe('Updated 3 days ago');

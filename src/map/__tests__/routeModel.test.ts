@@ -216,8 +216,8 @@ describe('legend and speech', () => {
         tier: 'tight',
         source: 'estimate',
         dashed: true,
-        label: 'Long shot (Estimate)',
-        accessibilityLabel: 'Long shot, estimate, dashed line',
+        label: 'Long\u00a0shot (Estimate)',
+        accessibilityLabel: 'Long\u00a0shot, estimate, dashed line',
       },
     ]);
     expect(TIER_LABEL.wide).toBe('Easy');

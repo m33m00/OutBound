@@ -215,7 +215,7 @@ export const TIER_LABEL: Record<SeatTier, string> = {
   wide: 'Easy',
   good: 'Likely',
   okay: 'Maybe',
-  tight: 'Long shot',
+  tight: 'Long\u00a0shot',
   full: 'Full',
   unknown: 'Unknown',
 };

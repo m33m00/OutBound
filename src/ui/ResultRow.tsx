@@ -64,19 +64,21 @@ const DOT = 10;
 /** Space above and below each leg's text on the timeline. */
 const LEG_PAD = 4;
 
-/** A leg's departure on the timeline: when it moved, the old time small and struck, then the new one (John, 2026-10-30). */
+/**
+ * A leg's departure on the timeline. The struck original lives only in the card's top time
+ * line (John, 2026-10-30), so a delayed leg shows just its new time and a canceled one none.
+ */
 function LegClock({ leg, view, text, dimmed }: { leg: Flight; view?: LegStatusView; text: TextStyle; dimmed: boolean }) {
   const c = useColors();
-  const strong = { fontFamily: fonts.bodySemiBold, color: dimmed ? c.muted : c.text };
-  if (!view?.struck) {
-    return <Text style={[text, strong]}>{keep(legDepartText(leg))}</Text>;
-  }
-  return (
-    <Text style={[text, strong]}>
-      <Text style={[textStyles.small, styles.struck, { color: c.muted }]}>{keep(view.scheduledText)}</Text>
-      {view.newText ? `\u00a0${keep(view.newText)}` : null}
-    </Text>
-  );
+  const time = legClockText(leg, view);
+  if (!time) return null;
+  return <Text style={[text, { fontFamily: fonts.bodySemiBold, color: dimmed ? c.muted : c.text }]}>{keep(time)}</Text>;
+}
+
+/** The time a leg line shows: the new time when it moved, none when canceled or diverted, else the schedule. */
+export function legClockText(leg: Flight, view?: LegStatusView): string | null {
+  if (!view?.struck) return legDepartText(leg);
+  return view.newText;
 }
 
 /**
@@ -134,7 +136,7 @@ function LegTimeline({
               <View style={styles.legTop}>
                 <Text style={[text, styles.shrink, { color: c.muted }]}>
                   <LegClock leg={leg.flight} view={view} text={text} dimmed={dimmed} />
-                  {`  ${leg.flight.from}\u00a0→\u00a0${leg.flight.to}`}
+                  {`${legClockText(leg.flight, view) ? '  ' : ''}${leg.flight.from}\u00a0→\u00a0${leg.flight.to}`}
                 </Text>
                 <View style={styles.legFlight}>
                   <AirlinePill airline={leg.flight.airline} flightNumber={leg.flight.flightNumber} />
@@ -163,11 +165,8 @@ function LegTimeline({
                 // The label replaces what's inside, so it says the leg's time and seats too.
                 accessibilityLabel={[
                   `Flight status, ${leg.flight.airline} ${leg.flight.flightNumber}, ${leg.flight.from} to ${leg.flight.to}`,
-                  view?.struck
-                    ? view.newText
-                      ? `departs ${view.newText}, scheduled ${view.scheduledText}`
-                      : `scheduled ${view.scheduledText}`
-                    : `departs ${legDepartText(leg.flight)}`,
+                  // A canceled leg's tag already says "Canceled, was 10:40 AM".
+                  legClockText(leg.flight, view) ? `departs ${legClockText(leg.flight, view)}` : null,
                   view?.tag?.spoken,
                   forSpeech(seatText(leg.seats, now)),
                 ]

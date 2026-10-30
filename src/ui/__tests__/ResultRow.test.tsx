@@ -129,7 +129,7 @@ describe('ResultRow', () => {
     });
     const summary = r!.root.findAll((n) => n.props.testID === 'seat-summary' && typeof n.type === 'string')[0];
     const words = summary.findAll((n) => typeof n.props.children === 'string').map((n) => n.props.children);
-    expect(words[0]).toMatch(/^Long shot · 6 open · 4 listed$/);
+    expect(words[0]).toMatch(/^Long\u00a0shot · 6 open · 4 listed$/);
     const texts = r!.root.findAll((n) => typeof n.props.children === 'string').map((n) => n.props.children as string);
     expect(texts.some((t) => t.endsWith('· reported just now'))).toBe(true);
     // The route card names the connection between the legs.
@@ -221,6 +221,31 @@ describe('ResultRow', () => {
       r!.update(<ResultRow itinerary={it} selected={false} now={NOW} onPress={jest.fn()} status={statusFor(it, live(it, 'departed'))} />);
     });
     expect(strings(r!.root)).toContain('Departed');
+  });
+
+  it('route card: the struck original shows only in the top line; legs show the new time or nothing (round 59)', async () => {
+    const it = await fullItinerary();
+    const struckTexts = () =>
+      r!.root.findAll((n) => (n.type as unknown) === 'Text' && [n.props.style].flat(3).some((st: { textDecorationLine?: string } | undefined) => st?.textDecorationLine === 'line-through'));
+    await act(async () => {
+      r = create(<ResultRow itinerary={it} selected large now={NOW} onPress={jest.fn()} status={statusFor(it, live(it, 'delayed', 25))} />);
+    });
+    // Old departure and old arrival in the top line, none on the leg.
+    expect(struckTexts()).toHaveLength(2);
+    const timeline = r!.root.findAll((n) => n.props.testID === 'leg-timeline' && typeof n.type === 'string')[0];
+    const legWords = timeline.findAll((n) => typeof n.props.children === 'string').map((n) => n.props.children as string);
+    expect(legWords).toContain('9:25\u00a0AM');
+    expect(legWords).not.toContain('9:00\u00a0AM');
+    await act(async () => {
+      r!.update(<ResultRow itinerary={it} selected large now={NOW} onPress={jest.fn()} status={statusFor(it, live(it, 'canceled'))} />);
+    });
+    // Only the top line is struck; the leg says Canceled with no time.
+    expect(struckTexts()).toHaveLength(1);
+    const after = r!.root.findAll((n) => n.props.testID === 'leg-timeline' && typeof n.type === 'string')[0];
+    const words = after.findAll((n) => typeof n.type === 'string').flatMap((n) => [n.props.children].flat().filter((x): x is string => typeof x === 'string'));
+    expect(words).toContain('Canceled');
+    // No time before the airports (no leading gap either).
+    expect(words).toContain('BNA\u00a0→\u00a0LAX');
   });
 
   it('a canceled second leg: flights stacked, Canceled beside that leg only (round 58)', async () => {
