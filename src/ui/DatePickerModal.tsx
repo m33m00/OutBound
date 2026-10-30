@@ -39,7 +39,7 @@ export function DatePickerModal({ visible, date, min, max, onPick, onClose }: Da
             if (e.type === 'set' || e.type === 'dismissed') onClose();
           }}
         />
-        <Text style={[textStyles.small, { color: c.muted }]}>Search up to 7 days out.</Text>
+        <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>Search up to 7 days out.</Text>
       </SafeAreaView>
     </Modal>
   );

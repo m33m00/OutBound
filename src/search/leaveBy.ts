@@ -84,10 +84,10 @@ export function leaveByText(r: LeaveBy, tz: string): LeaveByText {
     case 'atAirport':
       return { title: `You’re at ${r.airport}`, sub: `Departs ${t(r.departUtc)}` };
     case 'leaveBy':
-      return { title: `Leave by ${t(r.leaveUtc)}`, sub: `~${r.driveMin} min drive from where you are · at ${r.airport} by ${t(r.beAtUtc)}` };
+      return { title: `Leave by ${t(r.leaveUtc)}`, sub: `~${r.driveMin} min drive · at ${r.airport} by ${t(r.beAtUtc)}` };
     case 'leaveNow':
       return { title: 'Leave now', sub: `Be at ${r.airport} by ${t(r.beAtUtc)}` };
     case 'beAt':
-      return { title: `Be at ${r.airport} by ${t(r.beAtUtc)}`, sub: `${r.bufferMin} min before departure to list and clear security` };
+      return { title: `Be at ${r.airport} by ${t(r.beAtUtc)}`, sub: `${r.bufferMin} min early to list and clear security` };
   }
 }

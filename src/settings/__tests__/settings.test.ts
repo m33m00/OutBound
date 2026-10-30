@@ -13,6 +13,12 @@ describe('parseSettings', () => {
     expect(parseSettings({ notify: { answers: 'no' } }).notify).toEqual({ answers: false, airlineAsks: false });
   });
 
+  it('opens directions in Apple Maps unless Google Maps was picked', () => {
+    expect(DEFAULT_SETTINGS.mapsApp).toBe('apple');
+    expect(parseSettings({ mapsApp: 'google' }).mapsApp).toBe('google');
+    expect(parseSettings({ mapsApp: 'waze' }).mapsApp).toBe('apple');
+  });
+
   it('defaults the airport buffer to 75 min (Q-003)', () => {
     expect(DEFAULT_SETTINGS.bufferMin).toBe(75);
   });
@@ -28,6 +34,7 @@ describe('parseSettings', () => {
       search: { ...DEFAULT_FILTERS, maxStops: 1, maxLayoverMin: 300 },
       areaOn: { DAL: true, DFW: false },
       notify: { answers: true, airlineAsks: false },
+      mapsApp: 'google',
     };
     expect(parseSettings(JSON.parse(JSON.stringify(saved)))).toEqual(saved);
   });

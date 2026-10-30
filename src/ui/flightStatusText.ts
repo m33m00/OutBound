@@ -36,6 +36,18 @@ export function movementTimes(m: Movement, tz: string): string {
   return parts.join(' · ');
 }
 
+/**
+ * The time that matters now and the one it replaced (John, 2026-10-30: lead with now, not with the schedule).
+ * `was` is the scheduled time only when the shown time differs from it by a minute or more.
+ */
+export function movementLead(m: Movement, tz: string): { time: string; label: string; was: string | null } | null {
+  const b = bestTime(m);
+  if (!b) return null;
+  const sched = m.scheduledUtc ? Date.parse(m.scheduledUtc) : NaN;
+  const moved = b.label !== 'Scheduled' && Number.isFinite(sched) && Math.abs(b.ms - sched) >= 60_000;
+  return { time: formatTime(b.ms, tz), label: b.label, was: moved ? formatTime(sched, tz) : null };
+}
+
 /** "Terminal 3 · Gate K12"; "Gate not posted yet" when neither is known. */
 export function placeText(m: Movement): string {
   const parts = [m.terminal ? `Terminal ${m.terminal}` : null, m.gate ? `Gate ${m.gate}` : null].filter(Boolean);

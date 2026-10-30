@@ -15,7 +15,7 @@ export function FiltersForm({ filters: f, onChange }: { filters: SearchFilters; 
   const grid = useWindowDimensions().fontScale >= 1.3;
   return (
     <View style={styles.form}>
-      <Text style={[textStyles.heading, { color: c.text }]}>Max stops</Text>
+      <Text lineBreakStrategyIOS="push-out" style={[textStyles.heading, { color: c.text }]}>Max stops</Text>
       <View style={[styles.segments, grid && styles.grid]} accessibilityRole="radiogroup">
         {[0, 1, 2, 3].map((n) => {
           const on = f.maxStops === n;
@@ -40,7 +40,7 @@ export function FiltersForm({ filters: f, onChange }: { filters: SearchFilters; 
         })}
       </View>
 
-      <Text style={[textStyles.heading, { color: c.text }]}>Connections</Text>
+      <Text lineBreakStrategyIOS="push-out" style={[textStyles.heading, { color: c.text }]}>Connections</Text>
       <Stepper
         label="Same airline, at least"
         value={f.minConnectSameAirlineMin}

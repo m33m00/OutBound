@@ -34,7 +34,7 @@ export function ImpactSheet({ visible, title, subtitle, impact, now, onClose }: 
           ) : null}
           {/* Worst first, so the airport to worry about is on top; route order otherwise. */}
           {sorted.length > 1 && sorted.some((s, i) => s !== impact?.stations[i]) ? (
-            <Text style={[textStyles.small, { color: c.muted }]}>Worst first</Text>
+            <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>Worst first</Text>
           ) : null}
           {sorted.map((s) => {
             const likely = s.level === 'likelyDelays';
@@ -68,7 +68,7 @@ export function ImpactSheet({ visible, title, subtitle, impact, now, onClose }: 
                 style={[styles.station, { backgroundColor: c.surface, borderColor: c.line }]}>
                 <View style={styles.stationTop}>
                   <Text style={[textStyles.number, { color: c.text }]}>{s.code}</Text>
-                  <Text style={[textStyles.small, { color: c.muted }]}>
+                  <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>
                     {s.role === 'destination' ? 'Destination' : 'Connection'}
                   </Text>
                   {badge ? (
@@ -92,7 +92,7 @@ export function ImpactSheet({ visible, title, subtitle, impact, now, onClose }: 
                   </Text>
                 ))}
                 {forecastLine ? (
-                  <Text style={[textStyles.small, { color: c.muted }]}>No weather forecast for this airport.</Text>
+                  <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>No weather forecast for this airport.</Text>
                 ) : null}
                 {s.asOf ? (
                   <View style={styles.ageLine}>
@@ -111,7 +111,7 @@ export function ImpactSheet({ visible, title, subtitle, impact, now, onClose }: 
             );
           })}
           {impact?.stations.length ? (
-            <Text style={[textStyles.small, { color: c.muted }]}>
+            <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>
               Sources: FAA airport status and aviationweather.gov forecasts. Checked at connection airports and your destination.
             </Text>
           ) : null}

@@ -58,7 +58,7 @@ export function AirportPicker({ visible, title, onPick, onClose, current, neares
         {tag ? (
           // Amber = "you" (DECISIONS.md): your homes and where you are.
           <View style={[styles.tag, { backgroundColor: c.youBg }]}>
-            <Text style={[textStyles.small, { color: c.youText }]}>{tag}</Text>
+            <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.youText }]}>{tag}</Text>
           </View>
         ) : null}
         {on ? (

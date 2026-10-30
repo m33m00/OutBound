@@ -37,10 +37,10 @@ export function AtAirportCard({ code, upcoming, onBoard, onReport }: AtAirportCa
         accessible
         accessibilityRole="header"
         accessibilityLabel={`At ${code}? Report a load. ${note}`}>
-        <Text style={[textStyles.heading, { color: c.text }]}>
+        <Text lineBreakStrategyIOS="push-out" style={[textStyles.heading, { color: c.text }]}>
           {`At ${code}? Report a load`}
         </Text>
-        <Text style={[textStyles.small, { color: c.muted }]}>{note}</Text>
+        <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>{note}</Text>
       </View>
       {onBoard ? (
         // Secondary: searching stays the main job on this tab.

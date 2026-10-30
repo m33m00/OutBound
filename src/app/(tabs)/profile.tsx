@@ -45,7 +45,7 @@ export default function ProfileScreen() {
         <ListRow label="Radar" value="NOAA/NWS MRMS" />
         {version ? <ListRow label="Version" value={version} /> : null}
       </ListGroup>
-      <Text style={[textStyles.small, styles.note, { color: c.muted }]}>
+      <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, styles.note, { color: c.muted }]}>
         Follow your airline’s rules on sharing loads.
       </Text>
     </TabScreen>

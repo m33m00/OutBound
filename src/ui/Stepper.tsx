@@ -38,7 +38,7 @@ export function Stepper({
         accessibilityValue={{ text: format(value) }}
         accessibilityState={{ disabled }}
         style={pressStyle([styles.stepBtn, { backgroundColor: c.surface2, opacity: disabled ? 0.4 : 1 }])}>
-        <Text style={[textStyles.heading, { color: c.text }]}>{sign > 0 ? '+' : '−'}</Text>
+        <Text lineBreakStrategyIOS="push-out" style={[textStyles.heading, { color: c.text }]}>{sign > 0 ? '+' : '−'}</Text>
       </Pressable>
     );
   };

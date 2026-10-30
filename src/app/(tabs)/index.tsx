@@ -516,6 +516,7 @@ export default function HomeScreen() {
                         now={now}
                         location={location}
                         locationStatus={locationStatus}
+                        mapsApp={settings.mapsApp}
                         onUseLocation={async () => {
                           if (await requestLocation()) updateSettings({ useLocation: true });
                         }}

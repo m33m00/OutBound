@@ -214,7 +214,7 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
                 fallback={null}
               />
               <View style={styles.errorText}>
-                <Text style={[textStyles.heading, { color: c.text }]}>Couldn’t load flights</Text>
+                <Text lineBreakStrategyIOS="push-out" style={[textStyles.heading, { color: c.text }]}>Couldn’t load flights</Text>
                 <Text style={[textStyles.body, { color: c.muted }]}>
                   {p.sampleFlights !== false ? 'Something went wrong. Try again.' : 'Check your connection, then try again.'}
                 </Text>
@@ -346,7 +346,7 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
             listRef.current?.scrollToOffset({ offset: info.averageItemLength * info.index, animated: false })
           }
           ListFooterComponent={
-            <Text style={[textStyles.small, styles.footer, { color: c.muted }]}>
+            <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, styles.footer, { color: c.muted }]}>
               Follow your airline’s rules on sharing loads.
             </Text>
           }
@@ -377,7 +377,7 @@ function StepArrow({ dir, onPress }: { dir: 'prev' | 'next'; onPress?: () => voi
         size={16}
         weight="semibold"
         tintColor={c.accent}
-        fallback={<Text style={[textStyles.heading, { color: c.accent }]}>{dir === 'prev' ? '‹' : '›'}</Text>}
+        fallback={<Text lineBreakStrategyIOS="push-out" style={[textStyles.heading, { color: c.accent }]}>{dir === 'prev' ? '‹' : '›'}</Text>}
       />
     </Pressable>
   );
@@ -418,7 +418,7 @@ function NowLine({ time }: { time: string | null }) {
       accessible
       accessibilityLabel={`Now${time ? `, ${time}` : ''}. Flights below haven’t left yet.`}>
       <View style={[styles.rule, { backgroundColor: c.accent }]} />
-      <Text style={[textStyles.small, { fontFamily: fonts.bodySemiBold, color: c.accent }]}>{time ? `Now · ${time}` : 'Now'}</Text>
+      <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { fontFamily: fonts.bodySemiBold, color: c.accent }]}>{time ? `Now · ${time}` : 'Now'}</Text>
       <View style={[styles.rule, { backgroundColor: c.accent }]} />
     </View>
   );

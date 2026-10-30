@@ -29,7 +29,7 @@ describe('computeLeaveBy', () => {
     expect(r).toEqual({ kind: 'beAt', airport: 'BNA', beAtUtc: DEP - 75 * MIN, bufferMin: 75 });
     expect(leaveByText(r, BNA.tz)).toEqual({
       title: 'Be at BNA by 7:45 AM',
-      sub: '75 min before departure to list and clear security',
+      sub: '75 min early to list and clear security',
     });
   });
 
@@ -42,7 +42,7 @@ describe('computeLeaveBy', () => {
     expect(r).toMatchObject({ kind: 'leaveBy', driveMin: 25, leaveUtc: DEP - 100 * MIN });
     expect(leaveByText(r, BNA.tz)).toEqual({
       title: 'Leave by 7:20 AM',
-      sub: '~25 min drive from where you are · at BNA by 7:45 AM',
+      sub: '~25 min drive · at BNA by 7:45 AM',
     });
   });
 

@@ -88,7 +88,7 @@ export function AirportCard({ label, code, emptyText = 'Choose airport', onPress
               size={11}
               weight="bold"
               tintColor={ink}
-              fallback={<Text style={[textStyles.small, { color: ink }]}>{areaOn ? '✓' : '+'}</Text>}
+              fallback={<Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: ink }]}>{areaOn ? '✓' : '+'}</Text>}
             />
             <Text
               numberOfLines={1}
@@ -113,15 +113,15 @@ export function AirportCard({ label, code, emptyText = 'Choose airport', onPress
               : `${label}: ${emptyText} Choose an airport`
         }
         style={pressStyle(styles.cardButton, 'link')}>
-        <Text style={[textStyles.small, styles.cardLabel, { color: c.muted }]} maxFontSizeMultiplier={LABEL_MAX_SCALE}>
+        <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, styles.cardLabel, { color: c.muted }]} maxFontSizeMultiplier={LABEL_MAX_SCALE}>
           {label}
         </Text>
         <Text style={[textStyles.title, { color: code ? c.text : c.faint }]}>{code ?? '—'}</Text>
         {whole ? (
-          <Text style={[textStyles.small, { color: c.text }]}>{area.airports.join(' · ')}</Text>
+          <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.text }]}>{area.airports.join(' · ')}</Text>
         ) : null}
         {/* Two lines so long names ("Dallas/Fort Worth International") show at big text sizes. */}
-        <Text style={[textStyles.small, { color: c.muted }]} numberOfLines={2}>
+        <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]} numberOfLines={2}>
           {name ?? emptyText}
         </Text>
       </Pressable>
@@ -261,7 +261,7 @@ export function SearchPanel(p: SearchPanelProps) {
             name="arrow.left.arrow.right"
             size={18}
             tintColor={c.accent}
-            fallback={<Text style={[textStyles.heading, { color: c.accent }]}>⇄</Text>}
+            fallback={<Text lineBreakStrategyIOS="push-out" style={[textStyles.heading, { color: c.accent }]}>⇄</Text>}
           />
         </Pressable>
         <AirportCard
@@ -283,7 +283,7 @@ export function SearchPanel(p: SearchPanelProps) {
         />
       ) : null}
       {sameAirport ? (
-        <Text style={[textStyles.small, { color: c.muted }]}>From and To are the same airport. Change one to find routes.</Text>
+        <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>From and To are the same airport. Change one to find routes.</Text>
       ) : null}
       {/* The main action sits right under From/To so it's in view at half height. */}
       <View style={styles.actions}>
@@ -313,7 +313,7 @@ export function SearchPanel(p: SearchPanelProps) {
             name="house"
             size={15}
             tintColor={c.accent}
-            fallback={<Text style={[textStyles.small, { color: c.accent }]}>⌂</Text>}
+            fallback={<Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.accent }]}>⌂</Text>}
           />
           <Text style={[textStyles.bodyStrong, styles.homeHintText, { color: c.accent }]}>Set your main home to use Get Home ›</Text>
         </Pressable>

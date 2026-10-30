@@ -73,19 +73,19 @@ function StatusTag({ label, tone }: { label: string; tone: Tone }) {
       {tone === 'canceled' ? (
         <Icon name="xmark.circle" size={12} tintColor={c[TONE_FG[tone]]} fallback={null} />
       ) : null}
-      <Text style={[textStyles.small, styles.shrink, { fontFamily: fonts.bodySemiBold, color: c[TONE_FG[tone]] }]}>{label}</Text>
+      <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, styles.shrink, { fontFamily: fonts.bodySemiBold, color: c[TONE_FG[tone]] }]}>{label}</Text>
     </View>
   );
 }
 
-/** Leg departure time: struck through when delayed or canceled, with the new time after it. */
+/** Leg departure time when delayed or canceled: the new time first, the old one struck through after it (John, 2026-10-30). */
 function LegTime({ view }: { view: LegStatusView }) {
   const c = useColors();
   if (!view.struck) return null;
   return (
-    <Text style={[textStyles.small, { color: c.muted }]}>
+    <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>
+      {view.newText ? <Text style={{ color: c.text }}>{view.newText} </Text> : null}
       <Text style={styles.struck}>{view.scheduledText}</Text>
-      {view.newText ? <Text style={{ color: c.text }}> {view.newText}</Text> : null}
     </Text>
   );
 }
@@ -183,9 +183,10 @@ export const ResultRow = memo(function ResultRow({
               </Text>
             ) : (
               <>
+                {/* What matters now leads: the new time at full size, the old one small and struck after it (John, 2026-10-30). */}
                 {first?.struck && first.newText ? (
                   <>
-                    <Text style={[styles.struck, { color: c.muted }]}>{t.depart}</Text> {keep(first.newText)}
+                    {keep(first.newText)} <Text style={[styles.was, styles.struck, { color: c.muted }]}>{keep(t.depart)}</Text>
                   </>
                 ) : (
                   t.depart
@@ -194,14 +195,14 @@ export const ResultRow = memo(function ResultRow({
                 {/* A late arrival shows like a late departure: old time struck, new time after it. */}
                 {status?.arrival ? (
                   <>
-                    <Text style={[styles.struck, { color: c.muted }]}>{t.arrive}</Text> {keep(status.arrival.newText)}
+                    {keep(status.arrival.newText)} <Text style={[styles.was, styles.struck, { color: c.muted }]}>{keep(t.arrive)}</Text>
                   </>
                 ) : (
                   t.arrive
                 )}
               </>
             )}
-            {t.plusDays ? <Text style={[textStyles.small, { color: c.muted }]}> {t.plusDays}</Text> : null}
+            {t.plusDays ? <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}> {t.plusDays}</Text> : null}
           </Text>
           {/* At big text the times take the line; seats and the delay badge go under them. */}
           <View style={[styles.topRight, stacked && styles.topRightStacked]} testID="top-right">
@@ -213,7 +214,7 @@ export const ResultRow = memo(function ResultRow({
               </View>
             ) : (
               // Typical loads stay neutral (no tier word or color) but still say what's known.
-              <Text style={[textStyles.small, { color: c.muted }]} testID="seat-neutral">
+              <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]} testID="seat-neutral">
                 {neutralSeatText(it, now)}
               </Text>
             )}
@@ -221,7 +222,7 @@ export const ResultRow = memo(function ResultRow({
               {hasImpact ? (
                 <ImpactBadge impact={impact} onPress={() => onImpactPress?.(it.id)} />
               ) : impactLoading ? (
-                <Text style={[textStyles.small, { color: c.muted }]}>Checking…</Text>
+                <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>Checking…</Text>
               ) : null}
             </View>
           </View>
@@ -334,7 +335,7 @@ export const ResultRow = memo(function ResultRow({
               <StatusTag key={r.index} label={`Connection at risk · ${r.airport}`} tone="delayed" />
             ))}
             {summaryAge ? (
-              <Text style={[textStyles.small, { color: c.muted }]} testID="seat-age">
+              <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]} testID="seat-age">
                 {summaryAge}
               </Text>
             ) : null}
@@ -438,6 +439,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   struck: { textDecorationLine: 'line-through' },
+  // The replaced time inside the big time line: small, so the new time carries the weight.
+  was: { fontFamily: textStyles.small.fontFamily, fontSize: textStyles.small.fontSize },
   tierChip: {
     flexShrink: 1,
     paddingHorizontal: 8,

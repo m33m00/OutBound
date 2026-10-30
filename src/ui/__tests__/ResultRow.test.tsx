@@ -190,7 +190,8 @@ describe('ResultRow', () => {
     const flat = (n: unknown): string =>
       typeof n === 'string' ? n : Array.isArray(n) ? n.map(flat).join('') : n && typeof n === 'object' && 'props' in n ? flat((n as { props: { children?: unknown } }).props.children) : '';
     // Each time keeps its number and AM/PM together (non-breaking space, design round 26).
-    expect(flat(times.props.children)).toBe('9:00\u00a0AM 9:25\u00a0AM – 11:20\u00a0AM 11:45\u00a0AM');
+    // New time first; the old one follows small and struck (John, 2026-10-30).
+    expect(flat(times.props.children)).toBe('9:25\u00a0AM 9:00\u00a0AM – 11:45\u00a0AM 11:20\u00a0AM');
     const row = root.findAll((n) => n.props.accessibilityRole === 'button')[0];
     expect(row.props.accessibilityLabel).toContain('Delayed 25 minutes, was 9:00 AM, now 9:25 AM');
     // The weather/FAA badge slot stays separate from status tags.

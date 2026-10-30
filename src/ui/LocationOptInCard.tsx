@@ -16,11 +16,11 @@ export function LocationOptInCard({ onAllow, onNotNow }: LocationOptInCardProps)
   const c = useColors();
   return (
     <View style={[styles.card, { backgroundColor: c.accentSoft }]}>
-      <Text style={[textStyles.heading, { color: c.text }]} accessibilityRole="header">
+      <Text lineBreakStrategyIOS="push-out" style={[textStyles.heading, { color: c.text }]} accessibilityRole="header">
         Start searches from the airport nearest you?
       </Text>
       {/* Provisional body copy (not John-decided). */}
-      <Text style={[textStyles.small, { color: c.muted }]}>
+      <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>
         Uses your location only to pick the closest airport. Change it anytime in Profile.
       </Text>
       <View style={styles.buttons}>

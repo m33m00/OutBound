@@ -1,13 +1,16 @@
 import { useEffect, useRef } from 'react';
-import { AccessibilityInfo, Linking, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { AccessibilityInfo, Linking, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
 import type { Airport } from '@/engine';
 import { forSpeech } from '@/search/format';
+import { MAPS_APP_NAME, type MapsApp } from '@/search/directions';
 import { computeLeaveBy, leaveByText, LOCATION_FRESH_MS, type PhoneLocation } from '@/search/leaveBy';
 import { radius, spacing, textStyles, useColors } from '@/theme';
 
 import { Button } from './Buttons';
 import { Icon } from './Icon';
+import { openDirections } from './openDirections';
+import { pressStyle } from './press';
 import type { LocationStatus } from './useCurrentLocation';
 
 export interface LeaveByCardProps {
@@ -23,6 +26,8 @@ export interface LeaveByCardProps {
   departed?: boolean;
   /** Live delayed departure, local text ("2:40 PM"). Shown under the times; leave-by still uses the schedule (Q-070, John: C). */
   delayedText?: string | null;
+  /** Where a tap on the card opens directions to the airport (Settings, default Apple Maps). */
+  mapsApp?: MapsApp;
 }
 
 /** From this text size the location button gets its own row. */
@@ -38,6 +43,10 @@ export function LeaveByCard(p: LeaveByCardProps) {
   const text = leaveByText(result, p.airport.tz);
   const atAirport = result.kind === 'atAirport';
   const departed = result.kind === 'departed';
+  // Tap for directions while there's still a trip to the airport (John, 2026-10-30).
+  const directions = !atAirport && !departed;
+  const mapsApp = p.mapsApp ?? 'apple';
+  const go = () => void openDirections(p.airport, mapsApp);
   const fresh = p.location != null && p.now - p.location.at <= LOCATION_FRESH_MS;
   // A drive estimate can't help once the flight has left.
   const offerLocation = !fresh && !atAirport && !departed && p.locationStatus !== 'locating';
@@ -79,30 +88,61 @@ export function LeaveByCard(p: LeaveByCardProps) {
 
   return (
     // "You're at DFW" is about you, so amber (amber = you), never a seat-tier green.
-    <View style={[styles.card, { backgroundColor: atAirport ? c.youBg : departed ? c.surface2 : c.accentSoft }]}>
+    // The whole card opens directions; VoiceOver gets the same from the title, so the location button stays its own stop.
+    <Pressable
+      accessible={false}
+      disabled={!directions}
+      onPress={go}
+      testID="leave-by-card"
+      style={pressStyle([styles.card, { backgroundColor: atAirport ? c.youBg : departed ? c.surface2 : c.accentSoft }])}>
       <View style={styles.top} testID="leave-by-top">
         <View style={[styles.icon, { backgroundColor: c.surface }]}>
           <Icon
-            name={atAirport || departed ? 'airplane.departure' : 'car.fill'}
+            name={atAirport || departed ? 'airplane.departure' : 'arrow.triangle.turn.up.right.diamond.fill'}
             size={18}
             tintColor={atAirport ? c.youText : departed ? c.muted : c.accent}
             fallback={<Text style={[textStyles.heading, { color: c.accent }]}>⏱</Text>}
           />
         </View>
-        {/* One VoiceOver element for the text; buttons stay separately reachable. */}
-        <View style={styles.text} accessible accessibilityLabel={forSpeech([text.title, text.sub, delayLine, note].filter(Boolean).join('. '))}>
+        {/* One VoiceOver element for the text (the lines below are read with the title); buttons stay separately reachable. */}
+        <View
+          style={styles.text}
+          accessible
+          accessibilityRole={directions ? 'button' : undefined}
+          accessibilityHint={directions ? `Opens directions in ${MAPS_APP_NAME[mapsApp]}` : undefined}
+          onAccessibilityTap={directions ? go : undefined}
+          accessibilityLabel={forSpeech([text.title, text.sub, delayLine, note].filter(Boolean).join('. '))}>
           <Text style={[textStyles.heading, { color: atAirport ? c.youText : c.text }]}>{text.title}</Text>
-          <Text style={[textStyles.small, { color: c.muted }]}>{text.sub}</Text>
-          {delayLine ? (
-            <Text style={[textStyles.small, { color: c.caution, fontFamily: textStyles.bodyStrong.fontFamily }]}>{delayLine}</Text>
-          ) : null}
-          {note ? <Text style={[textStyles.small, { color: c.muted }]}>{note}</Text> : null}
         </View>
         {action && inline ? action : null}
+        {/* Room for the chevron only when no button sits in the row; the directions icon says it either way. */}
+        {directions && !(action && inline) ? (
+          <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+            <Icon name="chevron.right" size={13} weight="semibold" tintColor={c.muted} fallback={<Text style={{ color: c.muted }}>›</Text>} />
+          </View>
+        ) : null}
+      </View>
+      {/* The small lines use the card's full width, so they don't squeeze beside the button and drop one word (John, 2026-10-30). */}
+      <View style={styles.details} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+        <Text style={[textStyles.small, { color: c.muted }]} lineBreakStrategyIOS="push-out">
+          {text.sub}
+        </Text>
+        {delayLine ? (
+          <Text
+            style={[textStyles.small, { color: c.caution, fontFamily: textStyles.bodyStrong.fontFamily }]}
+            lineBreakStrategyIOS="push-out">
+            {delayLine}
+          </Text>
+        ) : null}
+        {note ? (
+          <Text style={[textStyles.small, { color: c.muted }]} lineBreakStrategyIOS="push-out">
+            {note}
+          </Text>
+        ) : null}
       </View>
       {/* Own row at large text sizes so the time is never squeezed. */}
       {action && !inline ? action : null}
-    </View>
+    </Pressable>
   );
 }
 
@@ -123,5 +163,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  text: { flex: 1, gap: 2 },
+  text: { flex: 1 },
+  // Pulled up under the title row so the card doesn't grow.
+  details: { gap: 2, marginTop: -4 },
 });

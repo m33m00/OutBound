@@ -11,7 +11,7 @@ import { formatAge, forSpeech, TIER_WORD } from '@/search/format';
 import { radius, spacing, textStyles, useColors } from '@/theme';
 
 import { Button } from './Buttons';
-import { ageText, delayText, movementTimes, placeText, sampleResponse, STATE_WORD } from './flightStatusText';
+import { ageText, delayText, movementLead, movementTimes, placeText, sampleResponse, STATE_WORD } from './flightStatusText';
 import { Icon } from './Icon';
 import { useFocusOnMount } from './focusOnMount';
 import { pressStyle } from './press';
@@ -104,6 +104,7 @@ export function FlightStatusSheet({ flight, visible, now, onClose, liveOptions, 
     const delayWord = delayText(m.delayMin);
     // The title already says "On time" for a scheduled flight; don't repeat it on each card.
     const delay = delayWord === 'On time' && status?.state === 'scheduled' ? null : delayWord;
+    const lead = movementLead(m, tz);
     return (
       <View
         key={label}
@@ -112,10 +113,20 @@ export function FlightStatusSheet({ flight, visible, now, onClose, liveOptions, 
         style={[styles.card, { backgroundColor: c.surface, borderColor: c.line }]}>
         <View style={styles.top}>
           <Text style={[textStyles.number, { color: c.text }]}>{code}</Text>
-          <Text style={[textStyles.small, { color: c.muted }]}>{label}</Text>
+          <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>{label}</Text>
           {delay ? <Text style={[textStyles.bodyStrong, styles.trailing, { color: c.text }]}>{delay}</Text> : null}
         </View>
-        {movementTimes(m, tz) ? <Text style={[textStyles.body, { color: c.text }]}>{movementTimes(m, tz)}</Text> : null}
+        {/* The time that matters now leads at full size; the scheduled one it replaced is small and struck after it. */}
+        {lead ? (
+          <Text style={[textStyles.number, { color: c.text }]}>
+            {lead.time.replace(/ /g, '\u00a0')}
+            <Text style={[styles.leadMeta, { color: c.muted }]}>
+              {`  ${lead.label}`}
+              {lead.was ? ' · ' : ''}
+              {lead.was ? <Text style={styles.struck}>{lead.was.replace(/ /g, '\u00a0')}</Text> : null}
+            </Text>
+          </Text>
+        ) : null}
         <Text style={[textStyles.body, { color: c.muted }]}>{placeText(m)}</Text>
       </View>
     );
@@ -193,7 +204,7 @@ export function FlightStatusSheet({ flight, visible, now, onClose, liveOptions, 
                 </View>
               ) : null}
               {error === 'fetch_failed' && response ? (
-                <Text style={[textStyles.small, { color: c.text }]}>Couldn’t refresh just now; showing the last status.</Text>
+                <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.text }]}>Couldn’t refresh just now; showing the last status.</Text>
               ) : null}
               {error !== 'not_configured' && !isSample ? (
                 <View style={styles.refreshRow}>
@@ -213,16 +224,16 @@ export function FlightStatusSheet({ flight, visible, now, onClose, liveOptions, 
                     style={pressStyle(styles.refresh, 'link')}>
                     <Text style={[textStyles.bodyStrong, { color: c.accent }]}>{loading ? 'Refreshing…' : 'Refresh'}</Text>
                   </Pressable>
-                  {refreshNote ? <Text style={[textStyles.small, styles.ageText, { color: c.muted }]}>{refreshNote}</Text> : null}
+                  {refreshNote ? <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, styles.ageText, { color: c.muted }]}>{refreshNote}</Text> : null}
                 </View>
               ) : null}
               {load && flight ? (
                 <LoadCard load={load} now={now} focus={backFromReport} onReport={() => setReporting(true)} />
               ) : null}
               {/* The 2-minute wait is said when you tap Refresh too soon, so it isn't repeated here. */}
-              <Text style={[textStyles.small, { color: c.muted }]}>Times are local to each airport.</Text>
+              <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>Times are local to each airport.</Text>
               {/* The source line names a real feed, so it shows only for live status (round 30: no sample labels). */}
-              {isSample ? null : <Text style={[textStyles.small, { color: c.muted }]}>Data from AeroDataBox.</Text>}
+              {isSample ? null : <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>Data from AeroDataBox.</Text>}
             </ScrollView>
           </>
         )}
@@ -347,6 +358,8 @@ const styles = StyleSheet.create({
   // Wraps at big text sizes; the delay stays right-aligned on whichever line it lands.
   top: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: spacing.group },
   trailing: { marginLeft: 'auto', flexShrink: 1 },
+  leadMeta: { fontFamily: textStyles.small.fontFamily, fontSize: textStyles.small.fontSize },
+  struck: { textDecorationLine: 'line-through' },
   refresh: { minHeight: 44, justifyContent: 'center', alignSelf: 'flex-start' },
   refreshRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: spacing.section },
   ageLine: { flexDirection: 'row', alignItems: 'flex-start', gap: 6 },

@@ -37,10 +37,10 @@ export function SavedRouteCard({ route, past, now, onOpen, onRemove }: SavedRout
         accessibilityLabel={forSpeech([title, when, `Flights ${flights}`, past ? pastNote : null].filter(Boolean).join('. '))}
         accessibilityHint={past ? 'Searches today' : 'Searches this day again'}
         style={pressStyle(styles.main)}>
-        <Text style={[textStyles.heading, { color: past ? c.muted : c.text }]}>{title}</Text>
+        <Text lineBreakStrategyIOS="push-out" style={[textStyles.heading, { color: past ? c.muted : c.text }]}>{title}</Text>
         <Text style={[textStyles.body, { color: c.muted }]}>{when}</Text>
-        <Text style={[textStyles.small, { color: c.muted }]}>{flights}</Text>
-        {past ? <Text style={[textStyles.small, { color: c.muted }]}>{pastNote}</Text> : null}
+        <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>{flights}</Text>
+        {past ? <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>{pastNote}</Text> : null}
       </Pressable>
       <View style={styles.chevron} importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
         <Icon
@@ -48,7 +48,7 @@ export function SavedRouteCard({ route, past, now, onOpen, onRemove }: SavedRout
           size={13}
           weight="semibold"
           tintColor={c.faint}
-          fallback={<Text style={[textStyles.heading, { color: c.faint }]}>›</Text>}
+          fallback={<Text lineBreakStrategyIOS="push-out" style={[textStyles.heading, { color: c.faint }]}>›</Text>}
         />
       </View>
       <Pressable
@@ -62,7 +62,7 @@ export function SavedRouteCard({ route, past, now, onOpen, onRemove }: SavedRout
           name="trash"
           size={18}
           tintColor={c.muted}
-          fallback={<Text style={[textStyles.small, { color: c.muted }]}>Remove</Text>}
+          fallback={<Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>Remove</Text>}
         />
       </Pressable>
     </View>

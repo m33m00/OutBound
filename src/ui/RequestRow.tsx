@@ -45,10 +45,10 @@ export function RequestRow({ request, now, mine, onAnswer, onOpen }: RequestRowP
         style={stacked ? styles.textStacked : styles.text}
         accessible={!onOpen}
         accessibilityLabel={onOpen ? undefined : label}>
-        <Text style={[textStyles.heading, { color: c.text }]}>{title}</Text>
+        <Text lineBreakStrategyIOS="push-out" style={[textStyles.heading, { color: c.text }]}>{title}</Text>
         <View style={styles.detailLine}>
           {tier ? <View style={[styles.dot, { backgroundColor: c[TIER_MARK[tier]] }]} /> : null}
-          <Text style={[textStyles.small, styles.detail, { color: tier ? c[TIER_FG[tier]] : c.muted }]}>{detail}</Text>
+          <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, styles.detail, { color: tier ? c[TIER_FG[tier]] : c.muted }]}>{detail}</Text>
         </View>
       </View>
       {status ? (
@@ -56,7 +56,7 @@ export function RequestRow({ request, now, mine, onAnswer, onOpen }: RequestRowP
           style={[styles.badge, stacked && styles.selfStart, { backgroundColor: answered ? c.accentSoft : c.surface2 }]}
           importantForAccessibility="no-hide-descendants"
           accessibilityElementsHidden>
-          <Text style={[textStyles.small, { color: answered ? c.accent : c.muted }]}>{status}</Text>
+          <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: answered ? c.accent : c.muted }]}>{status}</Text>
         </View>
       ) : null}
       {!mine && !answered && onAnswer ? (

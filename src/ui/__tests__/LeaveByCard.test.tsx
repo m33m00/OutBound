@@ -4,6 +4,9 @@ import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import { AIRPORTS } from '@/engine';
 
 import { LeaveByCard } from '../LeaveByCard';
+import { openDirections } from '../openDirections';
+
+jest.mock('../openDirections', () => ({ openDirections: jest.fn(() => Promise.resolve(true)) }));
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -102,5 +105,52 @@ describe('LeaveByCard location button', () => {
       .accessibilityLabel as string;
     expect(label).toContain('Flight delayed to 2:40 PM');
   });
-});
 
+  it('opens directions to the airport from a tap or from VoiceOver (John, 2026-10-30)', () => {
+    mockFontScale = 1;
+    const open = openDirections as jest.Mock;
+    open.mockClear();
+    act(() => {
+      r = create(
+        <LeaveByCard
+          airport={AIRPORTS.DFW}
+          departUtc={NOW + 4 * 3600_000}
+          bufferMin={60}
+          now={NOW}
+          location={null}
+          locationStatus="idle"
+          onUseLocation={jest.fn()}
+          mapsApp="google"
+        />,
+      );
+    });
+    const card = r!.root.find((n) => n.props.testID === 'leave-by-card' && typeof n.props.onPress === 'function');
+    act(() => card.props.onPress());
+    expect(open).toHaveBeenCalledWith(AIRPORTS.DFW, 'google');
+    const title = r!.root.find((n) => n.props.accessibilityRole === 'button' && typeof n.props.onAccessibilityTap === 'function');
+    expect(title.props.accessibilityHint).toBe('Opens directions in Google Maps');
+    act(() => title.props.onAccessibilityTap());
+    expect(open).toHaveBeenCalledTimes(2);
+    // The location button is still its own VoiceOver stop.
+    expect(r!.root.findAll((n) => n.props.accessibilityLabel === 'Use Location' && typeof n.type === 'string')).toHaveLength(1);
+  });
+
+  it('offers no directions once the flight has left', () => {
+    act(() => {
+      r = create(
+        <LeaveByCard
+          airport={AIRPORTS.DFW}
+          departUtc={NOW - 600_000}
+          bufferMin={60}
+          now={NOW}
+          location={null}
+          locationStatus="idle"
+          onUseLocation={jest.fn()}
+          departed
+        />,
+      );
+    });
+    expect(r!.root.findAll((n) => n.props.accessibilityRole === 'button' && n.props.onAccessibilityTap)).toHaveLength(0);
+    expect(r!.root.find((n) => n.props.testID === 'leave-by-card' && 'disabled' in n.props).props.disabled).toBe(true);
+  });
+});

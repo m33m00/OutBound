@@ -74,15 +74,15 @@ export function DeparturesSheet({ code, visible, flights, now, reportFor, onRepo
           {time}
         </Text>
         <View style={[styles.text, big && styles.textStacked]}>
-          <Text style={[textStyles.heading, { color: c.text }]}>{`${f.airline} ${f.flightNumber} to ${f.to}`}</Text>
+          <Text lineBreakStrategyIOS="push-out" style={[textStyles.heading, { color: c.text }]}>{`${f.airline} ${f.flightNumber} to ${f.to}`}</Text>
           {yours && tier ? (
-            <Text style={[textStyles.small, { color: c.text }]}>
+            <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.text }]}>
               <Text style={{ color: c.youText }}>You reported </Text>
               <Text style={{ color: c[TIER_FG[tier]], fontFamily: textStyles.bodyStrong.fontFamily }}>{TIER_WORD[tier]}</Text>
               {` · ${yours.open} open · ${yours.listed} listed · ${formatAge(yours.at, now)}`}
             </Text>
           ) : (
-            <Text style={[textStyles.small, { color: c.muted }]} numberOfLines={big ? undefined : 2}>
+            <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]} numberOfLines={big ? undefined : 2}>
               {detail}
             </Text>
           )}

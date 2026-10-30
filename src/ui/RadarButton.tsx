@@ -45,7 +45,7 @@ export function RadarButton({
           name="cloud.rain"
           size={20}
           tintColor={solid ? c.onAccent : on ? c.accent : c.text}
-          fallback={<Text style={[textStyles.small, { color: solid ? c.onAccent : on ? c.accent : c.text }]}>Rain</Text>}
+          fallback={<Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: solid ? c.onAccent : on ? c.accent : c.text }]}>Rain</Text>}
         />
       </Pressable>
       {caption ? (
@@ -53,7 +53,7 @@ export function RadarButton({
           // Hidden from VoiceOver on both platforms; the button's hint already says it.
           importantForAccessibility="no-hide-descendants"
           accessibilityElementsHidden>
-          <Text style={[textStyles.small, { color: c.muted }]}>{caption}</Text>
+          <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>{caption}</Text>
         </View>
       ) : null}
     </View>

@@ -15,6 +15,7 @@ export const MATERIAL: Partial<Record<SFSymbol, keyof typeof MaterialIcons.glyph
   airplane: 'flight',
   'airplane.departure': 'flight-takeoff',
   'car.fill': 'directions-car',
+  'arrow.triangle.turn.up.right.diamond.fill': 'directions',
   xmark: 'close',
   'xmark.circle': 'cancel',
   checkmark: 'check',

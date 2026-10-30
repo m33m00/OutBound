@@ -147,14 +147,14 @@ export function ReportForm({ flight, now, onCancel, onSubmit, focusTitle }: Repo
           {touched ? (
             <>
               <View style={[styles.dot, { backgroundColor: c[TIER_MARK[tier]] }]} />
-              <Text style={[textStyles.heading, { color: c[TIER_FG[tier]] }]}>{TIER_WORD[tier]}</Text>
+              <Text lineBreakStrategyIOS="push-out" style={[textStyles.heading, { color: c[TIER_FG[tier]] }]}>{TIER_WORD[tier]}</Text>
               <Text style={[textStyles.body, styles.after, { color: c.muted }]}>{afterListText(open, listed)}</Text>
             </>
           ) : (
             <Text style={[textStyles.body, styles.after, { color: c.muted }]}>{tierLine}</Text>
           )}
         </View>
-        <Text style={[textStyles.small, { color: c.muted }]}>
+        <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>
           Follow your airline’s rules on sharing loads. Reports are anonymous to other employees.
         </Text>
         <Button
@@ -175,7 +175,7 @@ export function ReportForm({ flight, now, onCancel, onSubmit, focusTitle }: Repo
               accessibilityRole="button"
               accessibilityLabel="Done"
               style={pressStyle(styles.keyboardDone, 'link')}>
-              <Text style={[textStyles.heading, { color: c.accent }]}>Done</Text>
+              <Text lineBreakStrategyIOS="push-out" style={[textStyles.heading, { color: c.accent }]}>Done</Text>
             </Pressable>
           </View>
         </InputAccessoryView>
@@ -255,8 +255,8 @@ function NumberField({
     <View style={[styles.field, { backgroundColor: c.surface, borderColor: c.line }]}>
       {/* The number box says the label and caption, so VoiceOver skips them here. */}
       <View style={styles.fieldLabel} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-        <Text style={[textStyles.heading, { color: c.text }]}>{label}</Text>
-        <Text style={[textStyles.small, { color: c.muted }]}>{caption}</Text>
+        <Text lineBreakStrategyIOS="push-out" style={[textStyles.heading, { color: c.text }]}>{label}</Text>
+        <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>{caption}</Text>
       </View>
       <View style={styles.stepper}>
         {btn(-1)}

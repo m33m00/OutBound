@@ -12,7 +12,7 @@ const STACK_VALUE_SCALE = 1.3;
 export function SectionHeader({ title }: { title: string }) {
   const c = useColors();
   return (
-    <Text style={[textStyles.small, styles.title, { color: c.muted }]} accessibilityRole="header">
+    <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, styles.title, { color: c.muted }]} accessibilityRole="header">
       {title.toUpperCase()}
     </Text>
   );
@@ -21,7 +21,7 @@ export function SectionHeader({ title }: { title: string }) {
 /** Explanation under a grouped card. */
 export function SectionFooter({ children }: { children: ReactNode }) {
   const c = useColors();
-  return <Text style={[textStyles.small, styles.footer, { color: c.muted }]}>{children}</Text>;
+  return <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, styles.footer, { color: c.muted }]}>{children}</Text>;
 }
 
 /**
@@ -75,7 +75,7 @@ export function ListRow({ label, value, detail, onPress, accessibilityHint, valu
       <View style={styles.left}>
         <Text style={[textStyles.body, { color: c.text }]}>{label}</Text>
         {stacked ? valueText : null}
-        {detail ? <Text style={[textStyles.small, { color: c.muted }]}>{detail}</Text> : null}
+        {detail ? <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>{detail}</Text> : null}
       </View>
       {stacked ? null : valueText}
       {onPress ? (
@@ -84,7 +84,7 @@ export function ListRow({ label, value, detail, onPress, accessibilityHint, valu
           size={13}
           weight="semibold"
           tintColor={c.faint}
-          fallback={<Text style={[textStyles.heading, { color: c.faint }]}>›</Text>}
+          fallback={<Text lineBreakStrategyIOS="push-out" style={[textStyles.heading, { color: c.faint }]}>›</Text>}
         />
       ) : null}
     </>

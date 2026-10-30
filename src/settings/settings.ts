@@ -4,6 +4,7 @@
  * bad or old saved value can't break search.
  */
 import { AIRPORTS, areaFor, DEFAULT_SEARCH_OPTIONS, type SearchOptions } from '@/engine';
+import type { MapsApp } from '@/search/directions';
 
 /**
  * The search settings people can adjust (DECISIONS.md: "All adjustable").
@@ -67,6 +68,8 @@ export interface Settings {
   /** Area toggle per airport code, last choice (Q-048). Missing = off. */
   areaOn: Record<string, boolean>;
   notify: NotifySettings;
+  /** Where the Leave By card opens directions (provisional, John left it open 2026-10-30). */
+  mapsApp: MapsApp;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -79,6 +82,7 @@ export const DEFAULT_SETTINGS: Settings = {
   search: DEFAULT_FILTERS,
   areaOn: {},
   notify: { answers: false, airlineAsks: false },
+  mapsApp: 'apple',
 };
 
 export const SETTINGS_KEY = 'outbound.settings.v1';
@@ -128,6 +132,7 @@ export function parseSettings(raw: unknown): Settings {
       answers: bool(n.answers, DEFAULT_SETTINGS.notify.answers),
       airlineAsks: bool(n.airlineAsks, DEFAULT_SETTINGS.notify.airlineAsks),
     },
+    mapsApp: o.mapsApp === 'google' ? 'google' : 'apple',
   };
 }
 

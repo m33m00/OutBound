@@ -26,7 +26,7 @@ export function AirlinePill({
         name="airplane"
         size={large ? 13 : 11}
         tintColor={c.accent}
-        fallback={<Text style={[textStyles.small, { color: c.accent }]}>✈</Text>}
+        fallback={<Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.accent }]}>✈</Text>}
       />
       <Text style={[text, { color: c.accent }]}>
         {airline} {flightNumber}

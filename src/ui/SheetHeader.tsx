@@ -52,7 +52,7 @@ export function SheetHeader({ title, subtitle, action, onAction, focusTitle = fa
         style={pressStyle([styles.action, stacked && styles.actionStacked], 'link')}
         testID="sheet-action">
         {/* iOS sets Done bold and Cancel regular weight (a step lighter under Bold Text too). */}
-        <Text style={[textStyles.heading, action === 'Cancel' && { fontFamily: boldTextOn() ? fonts.body : fonts.bodyMedium }, { color: c.accent }]}>{action}</Text>
+        <Text lineBreakStrategyIOS="push-out" style={[textStyles.heading, action === 'Cancel' && { fontFamily: boldTextOn() ? fonts.body : fonts.bodyMedium }, { color: c.accent }]}>{action}</Text>
       </Pressable>
     </View>
   );
