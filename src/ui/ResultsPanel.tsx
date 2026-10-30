@@ -98,15 +98,18 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
           {header}
           <View style={styles.state}>
             <View style={styles.errorTop} accessible>
+              {/* Sample flights load on the phone, so only live data talks about the connection. */}
               <SymbolView
-                name="wifi.exclamationmark"
+                name={p.sampleFlights !== false ? 'exclamationmark.triangle' : 'wifi.exclamationmark'}
                 size={22}
                 tintColor={c.muted}
                 fallback={null}
               />
               <View style={styles.errorText}>
                 <Text style={[textStyles.heading, { color: c.text }]}>Couldn’t load flights</Text>
-                <Text style={[textStyles.body, { color: c.muted }]}>Check your connection, then try again.</Text>
+                <Text style={[textStyles.body, { color: c.muted }]}>
+                  {p.sampleFlights !== false ? 'Something went wrong. Try again.' : 'Check your connection, then try again.'}
+                </Text>
               </View>
             </View>
             <Button label="Try Again" onPress={p.onRetry} />

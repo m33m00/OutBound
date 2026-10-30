@@ -103,7 +103,14 @@ export function FlightStatusSheet({ flight, now, onClose, liveOptions, sample }:
               <View
                 accessible
                 accessibilityLabel={`Status: ${STATE_WORD[status.state]}`}
-                style={[styles.state, { backgroundColor: tone ? c[TONE_BG[tone]] : c.surface2 }]}>
+                style={[
+                  styles.state,
+                  {
+                    backgroundColor: tone ? c[TONE_BG[tone]] : c.surface2,
+                    // Gray tones get an edge, like the row tag, so the pill shows on the page.
+                    borderColor: !tone || tone === 'gone' ? c.line2 : c[TONE_BG[tone]],
+                  },
+                ]}>
                 {tone === 'canceled' ? (
                   <SymbolView name="xmark.circle" size={20} tintColor={c[TONE_FG[tone]]} fallback={null} />
                 ) : null}
@@ -163,6 +170,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.rowX,
     paddingVertical: 6,
     borderRadius: radius.sm,
+    borderWidth: 1,
   },
   body: { gap: spacing.section, paddingBottom: spacing.page },
   card: { borderRadius: radius.md, borderWidth: StyleSheet.hairlineWidth, padding: spacing.rowX, gap: 4 },

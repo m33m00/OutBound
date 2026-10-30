@@ -53,7 +53,7 @@ export default function SettingsScreen() {
                   <Text style={[textStyles.number, styles.code, { color: c.text }]}>{h.code}</Text>
                   <View style={styles.label}>
                     <Text style={[textStyles.body, { color: c.text }]}>{AIRPORTS[h.code]?.name}</Text>
-                    <Text style={[textStyles.small, { color: h.main ? c.youText : c.muted }]}>
+                    <Text style={[textStyles.small, { color: c.youText }]}>
                       {h.main ? 'Main home' : h.auto ? 'Same area, added automatically' : 'Also home'}
                     </Text>
                   </View>
@@ -158,7 +158,7 @@ const styles = StyleSheet.create({
   },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.group, minHeight: minTapTarget },
   label: { flex: 1 },
-  code: { width: 52 },
+  code: { minWidth: 52 },
   buttons: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -166,7 +166,7 @@ const styles = StyleSheet.create({
     paddingTop: spacing.group,
     borderTopWidth: StyleSheet.hairlineWidth,
   },
-  section: { gap: 6 },
+  section: { gap: spacing.group },
   divided: { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: spacing.group },
   empty: { paddingVertical: spacing.group },
 });

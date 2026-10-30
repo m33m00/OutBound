@@ -383,6 +383,8 @@ export default function HomeScreen() {
         flight={statusFlight}
         now={now}
         onClose={() => setStatusFlight(null)}
+        // Sample flights never ask the live service about a made-up flight.
+        liveOptions={LIVE_FLIGHTS ? undefined : SAMPLE_STATUS_OPTIONS}
         // Sample rows open the same sample status their tag shows.
         sample={
           statusFlight && flightStatuses.sample

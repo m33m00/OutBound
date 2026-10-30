@@ -98,7 +98,7 @@ export function ListRow({ label, value, detail, onPress, accessibilityHint }: Li
 }
 
 const styles = StyleSheet.create({
-  wrap: { gap: 6 },
+  wrap: { gap: spacing.group },
   title: { paddingHorizontal: spacing.rowX, letterSpacing: 0.6 },
   footer: { paddingHorizontal: spacing.rowX },
   card: { borderRadius: radius.md, borderWidth: StyleSheet.hairlineWidth, overflow: 'hidden' },
