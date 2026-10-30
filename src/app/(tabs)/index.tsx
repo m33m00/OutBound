@@ -439,7 +439,7 @@ export default function HomeScreen() {
                   onFind={() => runSearch()}
                   onGetHome={awayFromHome ? getHome : undefined}
                   homeName={mainHome ? (areaFor(mainHome)?.city ?? mainHome) : undefined}
-                  onSetHome={mainHome ? undefined : () => router.push('/settings')}
+                  onSetHome={mainHome ? undefined : () => router.push({ pathname: '/settings', params: { section: 'homes' } })}
                   locationCard={
                     locationCard ? (
                       <LocationOptInCard
