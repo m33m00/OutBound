@@ -84,8 +84,8 @@ function LegTime({ view }: { view: LegStatusView }) {
   if (!view.struck) return null;
   return (
     <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>
-      {view.newText ? <Text style={{ color: c.text }}>{`${view.newText}\u00a0`}</Text> : null}
-      <Text style={styles.struck}>{view.scheduledText}</Text>
+      {view.newText ? <Text style={{ color: c.text }}>{`${keep(view.newText)}\u00a0`}</Text> : null}
+      <Text style={styles.struck}>{keep(view.scheduledText)}</Text>
     </Text>
   );
 }

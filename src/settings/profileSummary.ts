@@ -54,7 +54,7 @@ export function profileSummary(s: Settings, ios = true): SummaryRow[] {
     { key: 'notify', label: 'Notifications', value: notifyText(s) },
     { key: 'buffer', label: 'Airport buffer', value: `${s.bufferMin} min`, detail: 'Before departure' },
     // Where the Leave By card opens directions (round 49); Android has no choice.
-    ...(ios ? [{ key: 'maps' as const, label: 'Directions', value: MAPS_APP_NAME[s.mapsApp] }] : []),
+    ...(ios ? [{ key: 'maps' as const, label: 'Directions open in', value: MAPS_APP_NAME[s.mapsApp] }] : []),
     { key: 'search', label: 'Search defaults', value: stopsText(s.search.maxStops) },
   ];
 }
