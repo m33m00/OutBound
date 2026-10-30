@@ -28,11 +28,14 @@ import { SearchPanel } from '@/ui/SearchPanel';
 import { RadarButton } from '@/ui/RadarButton';
 import { Sheet } from '@/ui/Sheet';
 import { useRadarLayers } from '@/ui/useRadarLayers';
+import { useReducedMotion } from '@/ui/useReducedMotion';
 
 const DEFAULT_DESTINATION = 'LAX';
 /** Peek height above the home indicator. */
 const PEEK = 132;
 const SHEET = { peek: 0, half: 1, full: 2 } as const;
+/** Share of the screen body the panel takes while a route is open. */
+const ROUTE_VIEW_SHARE = 0.56;
 
 const airport = (code: string) => AIRPORTS[code];
 const SAMPLE_STATUS_OPTIONS = { config: null } as const;
@@ -82,6 +85,7 @@ export default function HomeScreen() {
   const [bodyHeight, setBodyHeight] = useState(0);
   const [sheetIndex, setSheetIndex] = useState<number>(SHEET.half);
   const listRef = useRef<FlatList<Itinerary>>(null);
+  const reduceMotion = useReducedMotion();
   const { state, search, reset } = useRouteSearch();
 
   // 0-7 days out, counted in the origin's local calendar (sample-data zone while From is empty).
@@ -92,10 +96,13 @@ export default function HomeScreen() {
     if (!chips.some((chip) => chip.date === date)) setDate(today);
   }, [chips, date, today]);
 
+  // A picked route's view is a little taller than half (John, 2026-10-30) so its
+  // leave-by and route card read in full while the globe keeps most of the screen.
+  const routeOpen = selectedId != null;
   const snaps = useMemo(() => {
     const h = Math.max(bodyHeight, PEEK * 3);
-    return [PEEK, Math.round(h * 0.48), h - spacing.group];
-  }, [bodyHeight]);
+    return [PEEK, Math.round(h * (routeOpen ? ROUTE_VIEW_SHARE : 0.48)), h - spacing.group];
+  }, [bodyHeight, routeOpen]);
 
   // Ages ("12m ago") keep counting while results are open.
   const [now, setNow] = useState(Date.now());
@@ -200,15 +207,10 @@ export default function HomeScreen() {
   const select = useCallback(
     (id: string | null) => {
       setSelectedId(id);
-      if (!id) return;
-      // Picking a route drops the panel to half so the globe shows it, with the route card on top.
-      setSheetIndex(SHEET.half);
-      // Same order as the list: routes that already left sit on top.
-      const index = departedFirst(results, rowStatuses).findIndex((r) => r.id === id);
-      // Top of the list, so the leave-by card under the row stays in view.
-      if (index >= 0) listRef.current?.scrollToIndex({ index, viewPosition: 0 });
+      // Picking a route drops the panel to its route-view height so the globe shows it.
+      if (id) setSheetIndex(SHEET.half);
     },
-    [results, rowStatuses],
+    [],
   );
 
   const onBodyLayout = (e: LayoutChangeEvent) => setBodyHeight(e.nativeEvent.layout.height);
@@ -300,9 +302,15 @@ export default function HomeScreen() {
                 now={now}
                 onSelect={(id) => {
                   if (id !== selectedId) return select(id);
-                  // Closing the route card goes back to the tall list.
+                  // Closing the route view goes back to the tall list, at the route you had open.
                   select(null);
                   setSheetIndex(SHEET.full);
+                  const index = departedFirst(results, rowStatuses).findIndex((r) => r.id === id);
+                  if (index >= 0) {
+                    requestAnimationFrame(() =>
+                      listRef.current?.scrollToIndex({ index, viewPosition: 0.3, animated: !reduceMotion }),
+                    );
+                  }
                 }}
                 onBack={() => {
                   setSelectedId(null);

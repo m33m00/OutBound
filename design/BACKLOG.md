@@ -51,3 +51,4 @@ Each item names its owner. One item per work session. spec-keeper runs a pre-fli
 | 44 | Remove Flight preview (John, 2026-10-30): Preview Flight button, plane layer, simulated sky clock and their tests removed; leg times, radar and day/night no longer have preview cases | main | P1 | Done |
 | 45 | Results in departure order, routes that already left on top and grayed (John, 2026-10-30) | main | P1 | Done (design round 19) |
 | 46 | Results take over: tall list, slim rows, route card on select (Q-062, John 2026-10-30) | main | P1 | Done (design round 21) |
+| 47 | Picked route: own view, Leave By on top, larger type, taller panel; review fixes (John 2026-10-30) | main | P1 | Done (design round 22) |

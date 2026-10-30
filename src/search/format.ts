@@ -84,6 +84,40 @@ export function routeSeatSummary(it: Itinerary): string | null {
   return `${TIER_WORD[it.tier]} · ${least > 0 ? `${least} open` : 'no open seats'}`;
 }
 
+/** The leg that sets the route tier (fewest open seats among the weakest-tier legs); null when Unknown. */
+export function weakestLeg(it: Itinerary): Itinerary['legs'][number] | null {
+  if (it.tier === 'unknown') return null;
+  const legs = it.legs.filter((l) => l.seats.tier === it.tier);
+  if (!legs.length) return null;
+  return legs.reduce((a, b) => ((b.seats.netSeats ?? Infinity) < (a.seats.netSeats ?? Infinity) ? b : a));
+}
+
+/** Age of the route seat summary, from the leg that sets it: "Reported 5m ago". */
+export function routeSeatAge(it: Itinerary, now: number): string | null {
+  const leg = weakestLeg(it);
+  return leg ? seatSourceText(leg.seats, now) : null;
+}
+
+/**
+ * Neutral seat line when a route has no counted tier (only typical loads or no
+ * data): the tightest typical leg, e.g. "Typically ~51 open · Jul data", else "No data yet".
+ */
+export function neutralSeatText(it: Itinerary, now: number): string {
+  const typical = it.legs.filter((l) => l.seats.source === 'typical' && l.seats.netSeats != null);
+  if (!typical.length) return 'No data yet';
+  const least = typical.reduce((a, b) => ((b.seats.netSeats as number) < (a.seats.netSeats as number) ? b : a));
+  return seatText(least.seats, now);
+}
+
+/** Connections shorter than this show their length on the slim row. */
+export const SHORT_LAYOVER_MIN = 60;
+
+/** Slim row stops: "Nonstop", "1 stop", or "1 stop · 45m at DEN" when a connection is short. */
+export function slimStops(it: Itinerary): string {
+  const short = it.connections.filter((c) => c.layoverMin < SHORT_LAYOVER_MIN);
+  return [stopCount(it), ...short.map((c) => `${formatDuration(c.layoverMin)} at ${c.airport}`)].join(' · ');
+}
+
 /** Where a leg's seat number came from and its age: "Reported 5m ago", "Est. 2h ago". */
 export function seatSourceText(seats: LegSeats, now: number): string | null {
   if (seats.asOf == null || (seats.source !== 'reported' && seats.source !== 'estimate')) return null;

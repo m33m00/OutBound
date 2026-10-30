@@ -38,9 +38,9 @@ describe('ResultRow', () => {
     expect(button.props.accessibilityState).toEqual({ selected: false });
     expect(root.findAll((n) => n.props.testID === 'badge-slot').length).toBeGreaterThan(0);
     const texts = root.findAll((n) => typeof n.props.children === 'string').map((n) => n.props.children);
-    // Seats lead the top line (Q-059); the slim row has no per-leg seat chips (Q-062).
+    // Seats lead the top line (Q-059) with their age; the slim row has no per-leg seat chips (Q-062).
     expect(texts).toContain('Full · no open seats');
-    expect(texts).not.toContain('Reported just now');
+    expect(root.findAll((n) => n.props.testID === 'seat-age' && typeof n.type === 'string')[0].props.children).toBe('Reported just now');
     expect(root.findAll((n) => n.props.testID === 'flights-line' && typeof n.type === 'string').length).toBe(1);
     expect(root.findAll((n) => n.props.testID === 'seat-summary').length).toBeGreaterThan(0);
     act(() => button.props.onPress());
