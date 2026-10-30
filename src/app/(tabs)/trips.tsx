@@ -40,7 +40,7 @@ export default function TripsScreen() {
   // A request opens its flight: status, seats, and Cancel Request while it waits (round 34).
   const [flightOpen, setFlightOpen] = useState<Flight | null>(null);
   const flightSheet = useSheetContent(flightOpen);
-  const load = useFlightLoad(flightSheet.shown, now);
+  const load = useFlightLoad(flightSheet.shown, now, { fromTrips: true });
   // Sample flights show the same sample status Search does; live ones ask the status service.
   const live = SCHEDULE_SOURCE === 'live';
   const lookups = useMemo(() => requests.map((r) => legLookup(r.flight)), [requests]);

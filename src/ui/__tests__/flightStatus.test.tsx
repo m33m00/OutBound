@@ -255,3 +255,21 @@ describe('ask answered or taken back (round 34)', () => {
     expect(line.props.accessibilityLabel).toBe('Your ask was answered: Okay, 12 open, 4 listed, 9 minutes ago');
   });
 });
+
+describe('ask note from My Trips (round 34 review)', () => {
+  let r: ReactTestRenderer | undefined;
+  afterEach(() => {
+    act(() => r?.unmount());
+    clearFlightStatusMemo();
+  });
+  it('a waiting ask opened from My Trips says it is waiting, not "shows in My Trips"', async () => {
+    const f = (await itinerary()).legs[0].flight;
+    const load: FlightLoadActions = { reportWindow: 'open', askState: 'asked', yourReport: null, onAsk: jest.fn(), onReport: jest.fn(), fromTrips: true };
+    await act(async () => {
+      r = create(<FlightStatusSheet flight={f} now={NOW} onClose={jest.fn()} sample={null} liveOptions={{ fetcher: jest.fn(), config: null }} load={load} />);
+    });
+    const texts = r!.root.findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string').map((n) => n.props.children);
+    expect(texts).toContain('Waiting for an answer.');
+    expect(texts).not.toContain('Asked. The answer shows in My Trips.');
+  });
+});

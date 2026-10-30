@@ -68,7 +68,11 @@ export function RequestRow({ request, now, mine, onAnswer, onOpen }: RequestRowP
           <Text style={[textStyles.button, { color: c.onAccent }]}>Answer</Text>
         </Pressable>
       ) : null}
-      {onOpen && !stacked ? <Icon name="chevron.right" size={14} tintColor={c.muted} fallback={null} /> : null}
+      {onOpen ? (
+        <View style={stacked ? styles.chevronStacked : undefined}>
+          <Icon name="chevron.right" size={14} tintColor={c.muted} fallback={null} />
+        </View>
+      ) : null}
     </>
   );
   if (onOpen) {
@@ -77,7 +81,7 @@ export function RequestRow({ request, now, mine, onAnswer, onOpen }: RequestRowP
         onPress={onOpen}
         accessibilityRole="button"
         accessibilityLabel={label}
-        accessibilityHint="Opens the flight"
+        accessibilityHint="Opens flight status and seats"
         testID="request-row"
         style={pressStyle([styles.row, stacked && styles.stacked])}>
         {body}
@@ -102,8 +106,10 @@ const styles = StyleSheet.create({
   },
   stacked: { flexDirection: 'column', alignItems: 'stretch', gap: spacing.group },
   text: { flex: 1, gap: 2 },
-  textStacked: { gap: 2 },
+  textStacked: { gap: 2, paddingRight: 20 },
   selfStart: { alignSelf: 'flex-start' },
+  // Large text: the chevron stays, at the row's top right, so the row still reads as tappable.
+  chevronStacked: { position: 'absolute', top: spacing.rowY + 4, right: spacing.rowX },
   // Dot sits on the first line when the detail wraps.
   detailLine: { flexDirection: 'row', alignItems: 'flex-start', gap: 6 },
   detail: { flexShrink: 1 },

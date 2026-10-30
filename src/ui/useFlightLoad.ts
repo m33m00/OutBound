@@ -8,7 +8,11 @@ import type { FlightLoadActions } from './FlightStatusSheet';
 import { selectionTick } from './haptics';
 
 /** The flight sheet's Seats card for this flight: report, ask, cancel (rounds 32 and 34). */
-export function useFlightLoad(flight: Flight | null, now: number): FlightLoadActions | undefined {
+export function useFlightLoad(
+  flight: Flight | null,
+  now: number,
+  opts: { fromTrips?: boolean } = {},
+): FlightLoadActions | undefined {
   const requests = useRequests();
   if (!flight) return undefined;
   return {
@@ -23,8 +27,10 @@ export function useFlightLoad(flight: Flight | null, now: number): FlightLoadAct
     },
     onCancelAsk: () => {
       requests.cancelAsk(flight);
-      AccessibilityInfo.announceForAccessibility('Request canceled');
+      // The button goes away with the ask, so say what happened and what's next.
+      AccessibilityInfo.announceForAccessibility('Request canceled. You can ask again.');
     },
     onReport: (open, listed) => requests.report(flight, open, listed),
+    fromTrips: opts.fromTrips,
   };
 }

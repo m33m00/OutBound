@@ -51,6 +51,8 @@ export interface FlightLoadActions {
   askAnswer?: LoadAnswer | null;
   /** Take back a waiting ask (round 34). */
   onCancelAsk?: () => void;
+  /** Opened from My Trips: a waiting ask says so instead of pointing at My Trips. */
+  fromTrips?: boolean;
 }
 
 export function lookupForFlight(f: Flight): FlightLookup {
@@ -209,7 +211,8 @@ function LoadCard({
   onReport: () => void;
 }) {
   const c = useColors();
-  const { reportWindow, askState, yourReport, onAsk, askAnswer, onCancelAsk } = load;
+  const { reportWindow, askState, yourReport, onAsk, askAnswer, onCancelAsk, fromTrips } = load;
+  const note = askState === 'asked' && fromTrips ? 'Waiting for an answer.' : askNote(askState);
   const answerTierWord = askAnswer ? answerTier(askAnswer) : null;
   const headerRef = useFocusOnMount(focus);
   const canReport = reportWindow === 'open';
@@ -249,7 +252,7 @@ function LoadCard({
         </Text>
       ) : (
         <>
-          <Text style={[textStyles.body, { color: c.muted }]}>{askNote(askState)}</Text>
+          <Text style={[textStyles.body, { color: c.muted }]}>{note}</Text>
           <Button
             label={asked ? 'Asked' : 'Ask for Load'}
             kind="secondary"
@@ -266,7 +269,8 @@ function LoadCard({
               accessibilityLabel="Cancel Request"
               accessibilityHint="Frees one of your 5 requests"
               style={pressStyle(styles.cancelAsk, 'link')}>
-              <Text style={[textStyles.bodyStrong, { color: c.accent }]}>Cancel Request</Text>
+              {/* Regular weight: quieter than the buttons above it. */}
+              <Text style={[textStyles.body, { color: c.accent }]}>Cancel Request</Text>
             </Pressable>
           ) : null}
         </>
