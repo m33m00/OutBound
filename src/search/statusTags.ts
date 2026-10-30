@@ -54,6 +54,8 @@ export interface RowStatus {
   canceled: boolean;
   /** Spoken parts for the row label, in leg order. */
   spoken: string[];
+  /** Expected arrival at the end of the route when live status moves it 5+ min (design round 25). */
+  arrival?: { newUtc: number; newText: string };
 }
 
 export interface ConnectionMins {
@@ -170,6 +172,9 @@ function expectedDeparture(f: Flight, status: FlightStatus | undefined, view: Le
   return firstValid(ms(status?.departure.estimatedUtc), f.departUtc);
 }
 
+/** Under this, an arrival counts as on time (matches "On time" in the flight sheet). */
+const ARRIVAL_SHIFT_MIN = 5;
+
 const GONE: ReadonlySet<LegTagKind> = new Set(['departed', 'arrived']);
 const BROKEN: ReadonlySet<LegTagKind> = new Set(['canceled', 'diverted']);
 
@@ -210,9 +215,17 @@ export function rowStatus(
     ),
     ...risks.map((r) => `Connection at risk at ${r.airport}`),
   ];
+  const last = it.legs[it.legs.length - 1]?.flight;
+  const lastStatus = statuses[statuses.length - 1];
+  const expected = last && lastStatus ? expectedArrival(last, lastStatus, legs[legs.length - 1]) : NaN;
+  const arrival =
+    Number.isFinite(expected) && Math.abs(expected - last.arriveUtc) >= ARRIVAL_SHIFT_MIN * MIN
+      ? { newUtc: expected, newText: formatTime(expected, tz(last.to)) }
+      : undefined;
   return {
     legs,
     risks,
+    ...(arrival ? { arrival } : {}),
     dimmed: first != null && GONE.has(first.kind),
     canceled: legs.some((l) => l.tag != null && BROKEN.has(l.tag.kind)),
     spoken,

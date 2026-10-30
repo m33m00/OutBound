@@ -80,7 +80,9 @@ export function Sheet({ snaps, index, onIndexChange, children }: SheetProps) {
             const step = e.nativeEvent.actionName === 'increment' ? 1 : -1;
             onIndexChange(Math.max(0, Math.min(snaps.length - 1, index + step)));
           }}
-          onPress={() => onIndexChange((index + 1) % snaps.length)}
+          // Tap grows the panel a size; at full it steps back one size instead of
+          // jumping to the smallest (drag or VoiceOver still reach it).
+          onPress={() => onIndexChange(index >= snaps.length - 1 ? Math.max(0, snaps.length - 2) : index + 1)}
           style={styles.handleArea}>
           <View style={[styles.handle, { backgroundColor: c.line2 }]} />
         </Pressable>

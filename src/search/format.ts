@@ -63,25 +63,31 @@ export function seatText(seats: LegSeats, now: number): string {
     const month = seats.asOf == null ? '' : ` · ${MONTHS[new Date(seats.asOf).getUTCMonth()]} data`;
     return `Typically ~${Math.max(0, seats.netSeats)} open${month}`;
   }
-  const open = seats.netSeats > 0 ? `${seats.netSeats} open` : 'no open seats';
+  const open = seatCounts(seats);
   const age = seats.asOf == null ? '' : ` · ${seats.source === 'reported' ? 'reported' : 'est.'} ${formatAge(seats.asOf, now)}`;
   return `${TIER_WORD[seats.tier]} · ${open}${age}`;
 }
 
 /**
  * Route seat summary for the row's top line (Q-059): the weakest counted leg,
- * e.g. "Tight · 3 open". Null when no leg has reported or estimated seats
+ * e.g. "Tight · 20 open · 17 listed". Null when no leg has reported or estimated seats
  * (typical loads stay neutral and stay on their leg).
  */
 export function routeSeatSummary(it: Itinerary): string | null {
   if (it.tier === 'unknown') return null;
-  const nets = it.legs
-    .map((l) => l.seats)
-    .filter((s) => s.tier === it.tier && s.netSeats != null)
-    .map((s) => s.netSeats as number);
-  if (!nets.length) return TIER_WORD[it.tier];
-  const least = Math.min(...nets);
-  return `${TIER_WORD[it.tier]} · ${least > 0 ? `${least} open` : 'no open seats'}`;
+  const leg = weakestLeg(it);
+  if (!leg || leg.seats.netSeats == null) return TIER_WORD[it.tier];
+  return `${TIER_WORD[it.tier]} · ${seatCounts(leg.seats)}`;
+}
+
+/**
+ * Both numbers behind the tier (Q-065, John 2026-10-30): "20 open · 17 listed".
+ * A reading without them (older data) falls back to the net count, "3 open".
+ */
+export function seatCounts(seats: LegSeats): string {
+  if (seats.openSeats != null && seats.listed != null) return `${seats.openSeats} open · ${seats.listed} listed`;
+  const net = seats.netSeats ?? 0;
+  return net > 0 ? `${net} open` : 'no open seats';
 }
 
 /** The leg that sets the route tier (fewest open seats among the weakest-tier legs); null when Unknown. */

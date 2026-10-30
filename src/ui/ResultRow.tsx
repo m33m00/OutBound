@@ -180,13 +180,24 @@ export const ResultRow = memo(function ResultRow({
               <Text style={styles.struck}>
                 {t.depart} – {t.arrive}
               </Text>
-            ) : first?.struck && first.newText ? (
-              <>
-                <Text style={[styles.struck, { color: c.muted }]}>{t.depart}</Text> {first.newText} – {t.arrive}
-              </>
             ) : (
               <>
-                {t.depart} – {t.arrive}
+                {first?.struck && first.newText ? (
+                  <>
+                    <Text style={[styles.struck, { color: c.muted }]}>{t.depart}</Text> {first.newText}
+                  </>
+                ) : (
+                  t.depart
+                )}
+                {' – '}
+                {/* A late arrival shows like a late departure: old time struck, new time after it. */}
+                {status?.arrival ? (
+                  <>
+                    <Text style={[styles.struck, { color: c.muted }]}>{t.arrive}</Text> {status.arrival.newText}
+                  </>
+                ) : (
+                  t.arrive
+                )}
               </>
             )}
             {t.plusDays ? <Text style={[textStyles.small, { color: c.muted }]}> {t.plusDays}</Text> : null}

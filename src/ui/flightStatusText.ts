@@ -5,7 +5,8 @@ import { formatAge, formatTime } from '@/search/format';
 export const STATE_WORD: Record<FlightState, string> = {
   scheduled: 'On time',
   delayed: 'Delayed',
-  departed: 'In the air',
+  // Matches the row tag (Q-050): pushed back may still be taxiing.
+  departed: 'Departed',
   arrived: 'Arrived',
   canceled: 'Canceled',
   diverted: 'Diverted',

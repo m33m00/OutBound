@@ -1,4 +1,4 @@
-import { forwardRef, type ReactNode } from 'react';
+import { forwardRef, useCallback, useEffect, useRef, type ReactNode } from 'react';
 import { ActivityIndicator, FlatList, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
 import { AIRPORTS, areaFor, type Flight, type Itinerary, type SearchRequest } from '@/engine';
@@ -65,6 +65,34 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
   );
   const full = results.filter((r) => r.isFull).length;
   const nowAt = nowLineIndex(results, p.now, p.statuses);
+
+  // Today's list opens at the "Now" line (Q-066, John 2026-10-30): routes that already
+  // left stay above it, a short scroll up. Once you scroll yourself it leaves you be.
+  const listRef = useRef<FlatList<Itinerary> | null>(null);
+  const setListRef = useCallback(
+    (node: FlatList<Itinerary> | null) => {
+      listRef.current = node;
+      if (typeof ref === 'function') ref(node);
+      else if (ref) ref.current = node;
+    },
+    [ref],
+  );
+  const searchKey = p.state.status === 'done' ? `${p.state.searchedAt}:${!!p.showingHidden}` : null;
+  const userScrolled = useRef(false);
+  useEffect(() => {
+    userScrolled.current = false;
+  }, [searchKey]);
+  // Picking a route counts too: coming back should land on that route, not the Now line.
+  useEffect(() => {
+    if (p.selectedId) userScrolled.current = true;
+  }, [p.selectedId]);
+  useEffect(() => {
+    if (searchKey == null || nowAt <= 0 || userScrolled.current) return;
+    const frame = requestAnimationFrame(() =>
+      listRef.current?.scrollToIndex({ index: nowAt, viewPosition: 0, animated: false }),
+    );
+    return () => cancelAnimationFrame(frame);
+  }, [searchKey, nowAt]);
   const stepsDays = !!(p.days && p.onDay);
   // With the day stepper the date is in the stepper, so this line keeps only the count.
   const summary = [
@@ -254,8 +282,11 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
       <View style={[styles.fill, focused && styles.hidden]}>
       {topRow}
       <FlatList
-        ref={ref}
+        ref={setListRef}
         data={results}
+        onScrollBeginDrag={() => {
+          userScrolled.current = true;
+        }}
         keyExtractor={(it) => it.id}
         contentContainerStyle={styles.list}
         ListHeaderComponent={header}
@@ -285,7 +316,10 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
             </View>
           );
         }}
-        onScrollToIndexFailed={() => {}}
+        // Rows aren't measured yet: jump near the row by its average height instead.
+        onScrollToIndexFailed={(info) =>
+          listRef.current?.scrollToOffset({ offset: info.averageItemLength * info.index, animated: false })
+        }
         ListFooterComponent={
           <Text style={[textStyles.small, styles.footer, { color: c.muted }]}>
             Follow your airline’s rules on sharing loads.

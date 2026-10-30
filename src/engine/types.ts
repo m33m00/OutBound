@@ -65,6 +65,9 @@ export interface LegSeats {
   tier: SeatTier;
   /** open - listed; null when unknown. Typical loads keep their number. */
   netSeats: number | null;
+  /** The reading behind netSeats, so both numbers can show (Q-065). */
+  openSeats?: number;
+  listed?: number;
   asOf: number | null;
 }
 

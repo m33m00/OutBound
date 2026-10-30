@@ -19,6 +19,14 @@ export function badgedStations(impact: RouteImpact): StationImpact[] {
   return impact.stations.filter((s) => s.level !== 'none').sort((a, b) => rank(a) - rank(b));
 }
 
+/** Badge words, naming the worst airport: "Likely delays · ORD · 4m ago". */
+export function impactBadgeText(impact: RouteImpact, now: number): string {
+  if (impact.level === 'none') return '';
+  const worst = badgedStations(impact)[0]?.code;
+  const age = impactAge(impact, now);
+  return [IMPACT_WORD[impact.level], worst, age].filter(Boolean).join(' · ');
+}
+
 /** "Likely delays at ORD: Ground stop, Thunderstorms. Caution at LAX: Gusts 32 kt." */
 export function impactSummary(impact: RouteImpact, now: number): string {
   if (impact.level === 'none') return '';

@@ -56,19 +56,20 @@ export function LeaveByCard(p: LeaveByCardProps) {
     ) : null;
 
   return (
-    <View style={[styles.card, { backgroundColor: atAirport ? c.goodBg : c.accentSoft }]}>
+    // "You're at DFW" is about you, so amber (amber = you), never a seat-tier green.
+    <View style={[styles.card, { backgroundColor: atAirport ? c.youBg : c.accentSoft }]}>
       <View style={styles.top} testID="leave-by-top">
         <View style={[styles.icon, { backgroundColor: c.surface }]}>
           <Icon
             name={atAirport ? 'airplane.departure' : 'car.fill'}
             size={18}
-            tintColor={atAirport ? c.goodFg : c.accent}
+            tintColor={atAirport ? c.youText : c.accent}
             fallback={<Text style={[textStyles.heading, { color: c.accent }]}>⏱</Text>}
           />
         </View>
         {/* One VoiceOver element for the text; buttons stay separately reachable. */}
         <View style={styles.text} accessible accessibilityLabel={[text.title, text.sub, note].filter(Boolean).join('. ')}>
-          <Text style={[textStyles.heading, { color: atAirport ? c.goodFg : c.text }]}>{text.title}</Text>
+          <Text style={[textStyles.heading, { color: atAirport ? c.youText : c.text }]}>{text.title}</Text>
           <Text style={[textStyles.small, { color: c.muted }]}>{text.sub}</Text>
           {note ? <Text style={[textStyles.small, { color: c.muted }]}>{note}</Text> : null}
         </View>

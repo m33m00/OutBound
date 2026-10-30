@@ -31,7 +31,7 @@ export function legSeats(reports: readonly SeatReport[]): LegSeats {
   const netSeats = best.openSeats - best.listed;
   // Typical loads are neutral: no tier word or color (DECISIONS.md).
   const tier = best.source === 'typical' ? 'unknown' : tierForNetSeats(netSeats);
-  return { source: best.source, tier, netSeats, asOf: best.asOf };
+  return { source: best.source, tier, netSeats, openSeats: best.openSeats, listed: best.listed, asOf: best.asOf };
 }
 
 /** Route color = weakest leg, counting only reported and estimate legs. */

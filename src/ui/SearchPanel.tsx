@@ -29,11 +29,13 @@ export interface SearchPanelProps {
   onFind: () => void;
   /** Shown when away from home: To = main home, then search (Q-026). */
   onGetHome?: () => void;
+  /** Where Get Home goes: the home's area city ("Dallas") or its code ("BNA"). */
+  homeName?: string;
   /** Shown when no main home is set yet. */
   onSetHome?: () => void;
   /** First-launch location card (Q-051), shown above the dates when given. */
   locationCard?: ReactNode;
-  /** Empty-results notice (Q-047), shown under Find Routes. */
+  /** Empty-results notice (Q-047), shown at the top so it's in view at half height. */
   banner?: ReactNode;
 }
 
@@ -150,6 +152,8 @@ export function SearchPanel(p: SearchPanelProps) {
   return (
     <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
       {p.locationCard}
+      {/* At the top, not under Find Routes: away from home the Get Home row pushed it out of view. */}
+      {p.banner}
       {/* One row, no sideways scroll: date chips share the width, calendar stays 44pt until it holds a date.
           At large text sizes they go two to a row so "Tomorrow" never gets cut off. */}
       <View style={[styles.chips, wrapChips && styles.chipsWrap]} testID="date-chips">
@@ -248,10 +252,10 @@ export function SearchPanel(p: SearchPanelProps) {
       {/* Away from home, Get Home is the main button (Q-063, John 2026-10-30). */}
       {p.onGetHome ? (
         <Button
-          label="Get Home"
+          label={p.homeName ? `Get Home · ${p.homeName}` : 'Get Home'}
           icon="house.fill"
           onPress={p.onGetHome}
-          accessibilityLabel="Get Home: search to your main home"
+          accessibilityLabel={`Get Home: search to your main home${p.homeName ? `, ${p.homeName}` : ''}`}
         />
       ) : null}
       {/* The main action sits right under From/To so it's in view at half height. */}
@@ -276,7 +280,6 @@ export function SearchPanel(p: SearchPanelProps) {
         </Pressable>
       ) : null}
 
-      {p.banner}
     </ScrollView>
   );
 }
