@@ -18,14 +18,14 @@ import {
   stopCount,
 } from '@/search/format';
 import { impactSummary } from '@/search/impactText';
-import type { LegStatusView, LegTagKind, RowStatus } from '@/search/statusTags';
-import { fonts, radius, spacing, textStyles, useBoldText, useColors } from '@/theme';
+import type { LegStatusView, RowStatus } from '@/search/statusTags';
+import { radius, spacing, textStyles, useBoldText, useColors } from '@/theme';
 
 import { AirlinePill } from './AirlinePill';
 import { Icon } from './Icon';
 import { ImpactBadge } from './ImpactBadge';
 import { pressStyle } from './press';
-import { TONE_BG, TONE_FG, type Tone } from './statusTone';
+import { StatusTag, TAG_TONE } from './StatusTag';
 import { withTick } from './haptics';
 import { TIER_BG, TIER_FG } from './tierColors';
 
@@ -49,34 +49,11 @@ export interface ResultRowProps {
   saved?: boolean;
 }
 
-/** Row tag kind to tone (Q-050). */
-const TONE: Record<LegTagKind, Tone> = {
-  delayed: 'delayed',
-  departed: 'gone',
-  arrived: 'gone',
-  canceled: 'canceled',
-  diverted: 'canceled',
-};
-
 /** From this text size the seat chip and delay badge sit left-aligned under the times. */
 export const STACK_TOP_LINE_SCALE = 1.3;
 
 /** "7:05 AM" never splits between the number and AM/PM, so a long time line only wraps at the dash. */
 const keep = (time: string) => time.replace(/ /g, '\u00a0');
-
-function StatusTag({ label, tone }: { label: string; tone: Tone }) {
-  const c = useColors();
-  return (
-    <View
-      style={[styles.statusTag, { backgroundColor: c[TONE_BG[tone]], borderColor: tone === 'gone' ? c.line2 : c[TONE_BG[tone]] }]}>
-      {/* Icon keeps Canceled / Diverted from reading as a Full-tier red edge; the word stays. */}
-      {tone === 'canceled' ? (
-        <Icon name="xmark.circle" size={12} tintColor={c[TONE_FG[tone]]} fallback={null} />
-      ) : null}
-      <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, styles.shrink, { fontFamily: fonts.bodySemiBold, color: c[TONE_FG[tone]] }]}>{label}</Text>
-    </View>
-  );
-}
 
 /** Leg departure time when delayed or canceled: the new time first, the old one struck through after it (John, 2026-10-30). */
 function LegTime({ view }: { view: LegStatusView }) {
@@ -256,7 +233,7 @@ export const ResultRow = memo(function ResultRow({
                 <Text style={[legText, { color: c.muted }]}>
                   {leg.flight.from} → {leg.flight.to}
                 </Text>
-                {view?.tag ? <StatusTag label={view.tag.label} tone={TONE[view.tag.kind]} /> : null}
+                {view?.tag ? <StatusTag label={view.tag.label} tone={TAG_TONE[view.tag.kind]} /> : null}
                 {/* Leg 0's struck / new time is in the top time line; show it once. */}
                 {view && i > 0 ? <LegTime view={view} /> : null}
                 {legDetailOnly ? (
@@ -327,7 +304,7 @@ export const ResultRow = memo(function ResultRow({
               return (
                 <View key={leg.flight.id} style={styles.flight}>
                   <AirlinePill airline={leg.flight.airline} flightNumber={leg.flight.flightNumber} />
-                  {tag ? <StatusTag label={tag.label} tone={TONE[tag.kind]} /> : null}
+                  {tag ? <StatusTag label={tag.label} tone={TAG_TONE[tag.kind]} /> : null}
                 </View>
               );
             })}
@@ -427,16 +404,6 @@ const styles = StyleSheet.create({
   },
   legBlock: {
     gap: spacing.group,
-  },
-  statusTag: {
-    flexShrink: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: radius.sm,
-    borderWidth: 1,
   },
   struck: { textDecorationLine: 'line-through' },
   // The replaced time inside the big time line: small, so the new time carries the weight.

@@ -1,11 +1,13 @@
 import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
-import { answerTier, requestDetail, requestTitle, type LoadRequest } from '@/requests/requests';
+import { answerTier, delayedRequestDetail, requestDetail, requestTitle, type LoadRequest } from '@/requests/requests';
 import { forSpeech } from '@/search/format';
+import type { LegStatusView } from '@/search/statusTags';
 import { minTapTarget, radius, spacing, textStyles, useColors } from '@/theme';
 
 import { Icon } from './Icon';
 import { pressStyle } from './press';
+import { StatusTag, TAG_TONE } from './StatusTag';
 import { TIER_FG, TIER_MARK } from './tierColors';
 
 export interface RequestRowProps {
@@ -17,6 +19,8 @@ export interface RequestRowProps {
   onAnswer?: () => void;
   /** My Trips: the whole row opens the flight (status, seats, cancel; round 34). */
   onOpen?: () => void;
+  /** Live status of the flight (My Trips): a delay, departure or cancel shows on the row (round 50). */
+  leg?: LegStatusView | null;
 }
 
 /** From this text size the button or badge moves under the text, so the flight never squeezes. */
@@ -27,7 +31,7 @@ const STACK_AT_FONT_SCALE = 1.3;
  * when it leaves and when it was asked; once answered, the tier word with
  * both numbers in the tier color (Q-065). Askers are never named.
  */
-export function RequestRow({ request, now, mine, onAnswer, onOpen }: RequestRowProps) {
+export function RequestRow({ request, now, mine, onAnswer, onOpen, leg }: RequestRowProps) {
   const c = useColors();
   const { fontScale } = useWindowDimensions();
   const stacked = fontScale >= STACK_AT_FONT_SCALE;
@@ -38,7 +42,12 @@ export function RequestRow({ request, now, mine, onAnswer, onOpen }: RequestRowP
   const status = mine ? (answered ? 'Answered' : 'Waiting') : null;
   // The detail already says "answered 2m ago", so VoiceOver only adds Waiting.
   const spokenStatus = status === 'Waiting' ? status : null;
-  const label = forSpeech([title, detail, spokenStatus].filter(Boolean).join('. '));
+  // Waiting on a delayed flight: the new time leads, the old one small and struck after it.
+  const delayed = !answered && leg?.newUtc != null ? delayedRequestDetail(request, now, leg.newUtc) : null;
+  const tag = leg?.tag ?? null;
+  const label = forSpeech(
+    [title, delayed ? `${delayed.lead}${delayed.tail}` : detail, tag?.spoken, spokenStatus].filter(Boolean).join('. '),
+  );
   const body = (
     <>
       <View
@@ -48,8 +57,24 @@ export function RequestRow({ request, now, mine, onAnswer, onOpen }: RequestRowP
         <Text lineBreakStrategyIOS="push-out" style={[textStyles.heading, { color: c.text }]}>{title}</Text>
         <View style={styles.detailLine}>
           {tier ? <View style={[styles.dot, { backgroundColor: c[TIER_MARK[tier]] }]} /> : null}
-          <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, styles.detail, { color: tier ? c[TIER_FG[tier]] : c.muted }]}>{detail}</Text>
+          <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, styles.detail, { color: tier ? c[TIER_FG[tier]] : c.muted }]}>
+            {delayed ? (
+              <>
+                <Text style={{ color: c.text }}>{delayed.lead.replace(/(\d) (AM|PM)/, '$1\u00a0$2')}</Text>
+                {'\u00a0'}
+                <Text style={styles.struck}>{leg!.scheduledText.replace(/ /g, '\u00a0')}</Text>
+                {delayed.tail}
+              </>
+            ) : (
+              detail
+            )}
+          </Text>
         </View>
+        {tag ? (
+          <View style={styles.tagLine}>
+            <StatusTag label={tag.label} tone={TAG_TONE[tag.kind]} />
+          </View>
+        ) : null}
       </View>
       {status ? (
         <View
@@ -98,6 +123,8 @@ export function RequestRow({ request, now, mine, onAnswer, onOpen }: RequestRowP
 }
 
 const styles = StyleSheet.create({
+  struck: { textDecorationLine: 'line-through' },
+  tagLine: { flexDirection: 'row', marginTop: 2 },
   row: {
     flexDirection: 'row',
     alignItems: 'center',

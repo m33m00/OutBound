@@ -106,10 +106,11 @@ export const requestTitle = (r: LoadRequest) =>
   `${r.flight.airline} ${r.flight.flightNumber} · ${r.flight.from} → ${r.flight.to}`;
 
 /** "Departs 10:55 AM", local at the origin; "Departs tomorrow 7:30 AM" for the next day there. */
-export function departsText(f: Flight, now: number): string {
+/** `atUtc`: a live delayed time to show instead of the schedule (round 50). */
+export function departsText(f: Flight, now: number, atUtc: number = f.departUtc): string {
   const tz = AIRPORTS[f.from].tz;
-  const day = localDate(f.departUtc, tz) === localDate(now, tz) ? '' : 'tomorrow ';
-  return `Departs ${day}${formatTime(f.departUtc, tz)}`;
+  const day = localDate(atUtc, tz) === localDate(now, tz) ? '' : 'tomorrow ';
+  return `Departs ${day}${formatTime(atUtc, tz)}`;
 }
 
 /** "Good · 18 open · 3 listed": tier word with both numbers (Q-065). */
@@ -119,6 +120,14 @@ export const answerText = (a: LoadAnswer) => `${TIER_WORD[answerTier(a)]} · ${a
 export function requestDetail(r: LoadRequest, now: number): string {
   if (r.answer) return `${answerText(r.answer)} · ${r.answer.byYou ? 'you answered' : 'answered'} ${formatAge(r.answer.at, now)}`;
   return `${departsText(r.flight, now)} · asked ${formatAge(r.askedAt, now)}`;
+}
+
+/**
+ * A waiting request on a delayed flight leads with the new time; the row puts
+ * the scheduled one after it, small and struck (John, 2026-10-30).
+ */
+export function delayedRequestDetail(r: LoadRequest, now: number, newUtc: number): { lead: string; tail: string } {
+  return { lead: departsText(r.flight, now, newUtc), tail: ` · asked ${formatAge(r.askedAt, now)}` };
 }
 
 /** Clamp a report field to its range (whole numbers). */

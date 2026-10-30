@@ -101,6 +101,29 @@ describe('RequestRow', () => {
     expect(label).not.toContain('→');
   });
 
+  it('a waiting ask on a delayed flight leads with the new time and shows the delay (round 50)', async () => {
+    const waiting = sampleMine(NOW)[1];
+    const sched = waiting.flight.departUtc;
+    const leg = {
+      tag: { kind: 'delayed' as const, label: 'Delayed 25m', spoken: 'Delayed 25 minutes' },
+      struck: true,
+      scheduledUtc: sched,
+      scheduledText: '2:15 PM',
+      newUtc: sched + 25 * 60_000,
+      newText: '2:40 PM',
+    };
+    await act(async () => {
+      r = create(<RequestRow request={waiting} now={NOW} mine leg={leg} onOpen={jest.fn()} />);
+    });
+    const texts = hostTexts(r!);
+    expect(texts).toContain('Delayed 25m');
+    expect(texts).toContain('2:15\u00a0PM');
+    expect(texts.some((t) => t.startsWith('Departs '))).toBe(true);
+    const label = r!.root.find((n) => n.props.testID === 'request-row' && n.props.onPress).props.accessibilityLabel as string;
+    expect(label).toContain('Delayed 25 minutes');
+    expect(label).toContain('Waiting');
+  });
+
   it('your own asks say Answered with the numbers, or Waiting, and offer no Answer button', async () => {
     const [answered, waiting] = sampleMine(NOW);
     await act(async () => {

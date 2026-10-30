@@ -6,7 +6,7 @@ import type { Flight } from '@/engine';
 import { flightLookupKey, useFlightStatuses } from '@/live';
 import { MAX_OPEN_REQUESTS, openRequestCount } from '@/requests/requests';
 import { useRequests } from '@/requests/RequestsProvider';
-import { legLookup } from '@/search/statusTags';
+import { legLookup, legStatus } from '@/search/statusTags';
 import { SCHEDULE_SOURCE } from '@/search/useRouteSearch';
 import { spacing } from '@/theme';
 import { confirmRemove } from '@/trips/confirmRemove';
@@ -82,7 +82,14 @@ export default function TripsScreen() {
         <View style={styles.section}>
           <ListGroup title="Your requests">
             {requests.map((r) => (
-              <RequestRow key={r.id} request={r} now={now} mine onOpen={() => setFlightOpen(r.flight)} />
+              <RequestRow
+                key={r.id}
+                request={r}
+                now={now}
+                mine
+                leg={legStatus(r.flight, statuses.byKey[flightLookupKey(legLookup(r.flight))])}
+                onOpen={() => setFlightOpen(r.flight)}
+              />
             ))}
           </ListGroup>
           <SectionFooter>
