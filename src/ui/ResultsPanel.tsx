@@ -16,6 +16,7 @@ import { withTick } from './haptics';
 import { pressStyle } from './press';
 import { Icon } from './Icon';
 import { ResultRow } from './ResultRow';
+import { SaveRouteButton } from './SaveRouteButton';
 
 export interface ResultsPanelProps {
   state: Exclude<SearchState, { status: 'idle' }>;
@@ -49,6 +50,11 @@ export interface ResultsPanelProps {
   onFilters?: () => void;
   /** How many filters differ from the saved defaults. */
   filtersChanged?: number;
+  /** Whether a route is in My Trips (Q-043); with onToggleSave the route view shows Save Route. */
+  isSaved?: (it: Itinerary) => boolean;
+  onToggleSave?: (it: Itinerary) => void;
+  /** One more line under the count, e.g. a saved route that's no longer in the results. */
+  note?: string;
 }
 
 export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(function ResultsPanel(p, ref) {
@@ -154,6 +160,7 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
   const notes = [
     ...(!stepsDays && summary ? [{ key: 'summary', text: summary, testID: 'results-summary', strong: true }] : []),
     ...areaLines(request).map((text) => ({ key: text, text, testID: undefined, strong: false })),
+    ...(p.note ? [{ key: 'note', text: p.note, testID: 'results-note', strong: false }] : []),
     ...(p.showingHidden
       ? [{ key: 'hidden', text: 'Showing routes your filters hid, for this search only.', testID: undefined, strong: false }]
       : []),
@@ -240,6 +247,9 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
               numberOfLines={2}>
               {routeTitle}
             </Text>
+            {p.onToggleSave ? (
+              <SaveRouteButton saved={!!p.isSaved?.(focused)} onPress={() => p.onToggleSave?.(focused)} />
+            ) : null}
             <View style={styles.pager}>
               <StepArrow dir="prev" onPress={step(focusIndex - 1)} />
               {/* VoiceOver: swipe up or down here to flip routes (the arrows stay for Voice Control). */}

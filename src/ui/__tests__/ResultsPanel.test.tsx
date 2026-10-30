@@ -271,4 +271,57 @@ describe('results bar at big text sizes', () => {
     expect(title.props.accessibilityLabel).toBe('BNA to LAX');
     expect(title.props.numberOfLines).toBe(2);
   });
+
+  it('saves a picked route to My Trips and shows when it is saved (Q-043)', async () => {
+    const { request, list } = await results();
+    const state = { status: 'done' as const, request, results: list, hiddenCount: 0, hiddenResults: [], searchedAt: NOW };
+    const onToggleSave = jest.fn();
+    const panel = (saved: boolean) => (
+      <ResultsPanel
+        state={state}
+        selectedId={list[0].id}
+        now={NOW}
+        onSelect={jest.fn()}
+        onBack={jest.fn()}
+        onRetry={jest.fn()}
+        isSaved={() => saved}
+        onToggleSave={onToggleSave}
+      />
+    );
+    await act(async () => {
+      r = create(panel(false));
+    });
+    const button = () => r!.root.findAll((n) => n.props.testID === 'save-route' && n.props.accessibilityRole === 'button')[0];
+    expect(button().props.accessibilityLabel).toBe('Save Route');
+    // In the route header, so it's in view at any panel height and text size.
+    const header = r!.root.findAll((n) => n.props.testID === 'route-view' && typeof n.type === 'string')[0].children[0];
+    expect(typeof header !== 'string' && header.findAll((n) => n.props.testID === 'save-route').length).toBeGreaterThan(0);
+    expect(button().props.accessibilityHint).toBe('Keeps it in My Trips');
+    act(() => button().props.onPress());
+    expect(onToggleSave).toHaveBeenCalledWith(list[0]);
+    await act(async () => r!.update(panel(true)));
+    expect(button().props.accessibilityLabel).toBe('Saved to My Trips');
+    expect(button().props.accessibilityHint).toBe('Removes it from My Trips');
+  });
+
+  it('has no Save Route without a handler, and shows a note under the count', async () => {
+    const { request, list } = await results();
+    const state = { status: 'done' as const, request, results: list, hiddenCount: 0, hiddenResults: [], searchedAt: NOW };
+    await act(async () => {
+      r = create(
+        <ResultsPanel
+          state={state}
+          selectedId={null}
+          now={NOW}
+          onSelect={jest.fn()}
+          onBack={jest.fn()}
+          onRetry={jest.fn()}
+          note="Your saved flights aren’t in this search anymore."
+        />,
+      );
+    });
+    expect(r!.root.findAll((n) => n.props.testID === 'save-route').length).toBe(0);
+    const note = r!.root.findAll((n) => n.props.testID === 'results-note' && typeof n.type === 'string');
+    expect(note[0].props.children).toBe('Your saved flights aren’t in this search anymore.');
+  });
 });

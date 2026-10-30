@@ -241,12 +241,12 @@ A) Keep top bar only  B) Four bottom tabs: Search, Feed, My Trips, Profile
 Recommendation: B.
 Answer: John (2026-10-21), four tabs: Search, Feed, My Trips, Profile. Feed = request feed (your airline's asks, per existing Requests rules). My Trips = your own open requests (max 5) plus saved routes. Supersedes "No tabs" (Design system). "Saved routes" is new with no rules yet; details open/provisional (see Q-043). Unblocks new backlog item 16.
 
-### Q-043 Saved routes details  (Open)
+### Q-043 Saved routes details  (Answered 2026-10-30)
 Context: Q-042 puts "saved routes" in My Trips, but there are no rules for it. Non-blocking: item 16 ships placeholders.
 A) Save from a result row or the selected route; stored on the phone (AsyncStorage) for now, no cap  B) Same, but cap at 10  C) John specifies
 Also open: does a saved route keep its date, or re-search when opened?
 Recommendation: A, re-search for the saved date when opened; add a cap only if the list gets unwieldy.
-Answer: (John)
+Answer: John (2026-10-30), "A, no limit": saved on the phone, no cap, opening one re-runs the search for its date. Recorded in DECISIONS.md (Design system). Built as backlog 53.
 
 ### Q-044 Combined route legend  (Answered 2026-10-21)
 Context: Friend-tester feedback: the tier color key and the solid/dashed key are two lists.

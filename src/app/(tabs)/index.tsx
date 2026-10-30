@@ -13,6 +13,8 @@ import { chooseOrigin, showLocationCard } from '@/search/origin';
 import { departedFirst, legLookup, resultsBanner, rowStatus, statusLookups } from '@/search/statusTags';
 import { SAMPLE_TZ, SCHEDULE_SOURCE, useRouteSearch } from '@/search/useRouteSearch';
 import { minTapTarget, spacing, textStyles, useColors } from '@/theme';
+import { openRequest, reopenOutcome, savedKey, savedRouteFrom, type SavedRoute } from '@/trips/savedRoutes';
+import { useSavedRoutes } from '@/trips/SavedRoutesProvider';
 import { AirportPicker } from '@/ui/AirportPicker';
 import { useSettings } from '@/settings/SettingsProvider';
 import { changedFilters, DEFAULT_FILTERS, homeAirports, type SearchFilters } from '@/settings/settings';
@@ -87,6 +89,7 @@ export default function HomeScreen() {
   const listRef = useRef<FlatList<Itinerary>>(null);
   const reduceMotion = useReducedMotion();
   const { state, search, reset } = useRouteSearch();
+  const saved = useSavedRoutes();
 
   // 0-7 days out, counted in the origin's local calendar (sample-data zone while From is empty).
   const today = localDate(Date.now(), origin ? AIRPORTS[origin].tz : SAMPLE_TZ);
@@ -225,6 +228,38 @@ export default function HomeScreen() {
     [],
   );
 
+  // Opening a saved route from My Trips (Q-043): run its day's search again (today once
+  // that day has passed), then open the same flights if they're still in the results.
+  const { opening, clearOpening } = saved;
+  const [reopening, setReopening] = useState<SavedRoute | null>(null);
+  const [reopenPast, setReopenPast] = useState(false);
+  const [reopenNote, setReopenNote] = useState<{ at: number; text: string } | null>(null);
+  useEffect(() => {
+    if (!opening) return;
+    clearOpening();
+    const request = openRequest(opening, Date.now());
+    setPickedOrigin(request.origin);
+    setDestination(request.destination);
+    setDate(request.date);
+    setSelectedId(null);
+    setSheetIndex(SHEET.full);
+    setReopening(opening);
+    setReopenPast(request.date !== opening.request.date);
+    search(request, filters);
+  }, [opening, clearOpening, search, filters]);
+  useEffect(() => {
+    if (!reopening || state.status === 'idle' || state.status === 'loading') return;
+    setReopening(null);
+    if (state.status !== 'done') return;
+    const outcome = reopenOutcome(state, reopening, reopenPast);
+    if (outcome.kind === 'note') return setReopenNote({ at: state.searchedAt, text: outcome.text });
+    setReopenNote(null);
+    if (outcome.hidden) setShowHidden(true);
+    select(outcome.id);
+  }, [reopening, reopenPast, state, select]);
+  const missingNote =
+    state.status === 'done' && reopenNote?.at === state.searchedAt ? reopenNote.text : undefined;
+
   const onBodyLayout = (e: LayoutChangeEvent) => setBodyHeight(e.nativeEvent.layout.height);
   const filtersChanged = changedFilters(filters, settings.search);
   const selected = results.find((r) => r.id === selectedId);
@@ -348,6 +383,13 @@ export default function HomeScreen() {
                 }}
                 onFilters={() => setFiltersOpen(true)}
                 filtersChanged={filtersChanged}
+                note={missingNote}
+                isSaved={(it) => saved.isSaved(savedKey(it, state.request.date))}
+                onToggleSave={(it) => {
+                  const key = savedKey(it, state.request.date);
+                  if (saved.isSaved(key)) saved.remove(key);
+                  else saved.save(savedRouteFrom(it, state.request, Date.now()));
+                }}
                 selectedCard={
                   firstLeg ? (
                     <LeaveByCard
