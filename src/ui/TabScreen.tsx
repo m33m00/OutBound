@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { spacing, textStyles, useColors } from '@/theme';
 
-/** A tab's page: title plus body. Feed and My Trips are placeholders until requests exist (Q-042). */
+/** A tab's page: title plus a scrolling body. */
 export function TabScreen({ title, children }: { title: string; children: ReactNode }) {
   const c = useColors();
   return (

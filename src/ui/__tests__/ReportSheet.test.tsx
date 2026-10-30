@@ -1,0 +1,100 @@
+import React from 'react';
+import { View } from 'react-native';
+import { act, create, type ReactTestRenderer } from 'react-test-renderer';
+
+import { sampleFeed, sampleMine } from '@/requests/requests';
+
+import { ReportSheet } from '../ReportSheet';
+import { RequestRow } from '../RequestRow';
+
+(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+
+const NOW = Date.UTC(2026, 9, 30, 13);
+const flight = sampleFeed(NOW)[0].flight;
+
+const hostTexts = (r: ReactTestRenderer) =>
+  r.root.findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string').map((n) => n.props.children as string);
+const button = (r: ReactTestRenderer, label: string) =>
+  r.root.find((n) => typeof n.type !== 'string' && n.props.accessibilityLabel === label && n.props.onPress);
+
+describe('ReportSheet', () => {
+  let r: ReactTestRenderer | undefined;
+  afterEach(() => act(() => r?.unmount()));
+
+  it('steps, types and reports the tier live, then submits both numbers', async () => {
+    const onSubmit = jest.fn();
+    await act(async () => {
+      r = create(<ReportSheet flight={flight} now={NOW} onCancel={jest.fn()} onSubmit={onSubmit} />);
+    });
+    expect(hostTexts(r!)).toEqual(expect.arrayContaining(['Report Load', 'Open seats', 'Nonrevs listed']));
+    const tier = () => r!.root.find((n) => n.props.testID === 'report-tier' && typeof n.type === 'string').props.accessibilityLabel;
+    expect(tier()).toBe('Full · No seats after the list');
+    // Minus is off at zero.
+    expect(button(r!, 'Decrease: Open seats').props.disabled).toBe(true);
+
+    const openInput = r!.root.find((n) => n.props.accessibilityLabel === 'Open seats, On the board' && n.props.onChangeText);
+    act(() => openInput.props.onChangeText('2x0'));
+    expect(tier()).toBe('Good · 20 seats after the list');
+    act(() => button(r!, 'Increase: Nonrevs listed').props.onPress());
+    act(() => button(r!, 'Increase: Nonrevs listed').props.onPress());
+    expect(tier()).toBe('Good · 18 seats after the list');
+
+    act(() => button(r!, 'Submit Report').props.onPress());
+    expect(onSubmit).toHaveBeenCalledWith(20, 2);
+  });
+
+  it('typing past the limit stops at the limit', async () => {
+    await act(async () => {
+      r = create(<ReportSheet flight={flight} now={NOW} onCancel={jest.fn()} onSubmit={jest.fn()} />);
+    });
+    const listed = r!.root.find((n) => n.props.accessibilityLabel === 'Nonrevs listed, On the standby list' && n.props.onChangeText);
+    act(() => listed.props.onChangeText('999'));
+    expect(button(r!, 'Increase: Nonrevs listed').props.disabled).toBe(true);
+  });
+
+  it('Cancel leaves without a report', async () => {
+    const onCancel = jest.fn();
+    const onSubmit = jest.fn();
+    await act(async () => {
+      r = create(<ReportSheet flight={flight} now={NOW} onCancel={onCancel} onSubmit={onSubmit} />);
+    });
+    act(() => r!.root.find((n) => n.props.testID === 'sheet-action' && n.props.onPress).props.onPress());
+    expect(onCancel).toHaveBeenCalled();
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+});
+
+describe('RequestRow', () => {
+  let r: ReactTestRenderer | undefined;
+  afterEach(() => act(() => r?.unmount()));
+
+  it('an open ask has an Answer button and never names the asker', async () => {
+    const req = sampleFeed(NOW)[0];
+    const onAnswer = jest.fn();
+    await act(async () => {
+      r = create(<RequestRow request={req} now={NOW} onAnswer={onAnswer} />);
+    });
+    act(() => r!.root.find((n) => n.props.testID === 'answer-request' && n.props.onPress).props.onPress());
+    expect(onAnswer).toHaveBeenCalled();
+    const label = r!.root.find((n) => n.props.accessible && typeof n.props.accessibilityLabel === 'string' && n.props.accessibilityLabel.includes('asked'))
+      .props.accessibilityLabel as string;
+    expect(label).toContain(' to ');
+    expect(label).not.toContain('→');
+  });
+
+  it('your own asks say Answered with the numbers, or Waiting, and offer no Answer button', async () => {
+    const [answered, waiting] = sampleMine(NOW);
+    await act(async () => {
+      r = create(
+        <View>
+          <RequestRow request={answered} now={NOW} mine />
+          <RequestRow request={waiting} now={NOW} mine />
+        </View>,
+      );
+    });
+    const texts = hostTexts(r!);
+    expect(texts).toEqual(expect.arrayContaining(['Answered', 'Waiting']));
+    expect(texts.some((t) => / open · \d+ listed · answered /.test(t))).toBe(true);
+    expect(r!.root.findAll((n) => n.props.testID === 'answer-request')).toHaveLength(0);
+  });
+});

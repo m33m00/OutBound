@@ -406,6 +406,13 @@ C) Fold them into one "3 already left" row you can open
 Recommendation: B, because it keeps your order but starts you at flights you can still catch.
 Answer: John (2026-10-30), "Yes" = B.
 
+### Q-067 Which airline is "your airline"?  (Open)
+Context: The Feed shows asks about your airline's flights, and your answers count for that airline (DECISIONS: "feed shows only your airline"). There are no accounts yet, so round 31 assumes WN for the example requests. Nothing in the app names an airline.
+A) Ask once on first launch ("Which airline do you work for?"), changeable in Settings
+B) Wait for accounts (sign-up sets it); keep WN for the examples until then
+C) Let people follow more than one airline's asks (for example, a partner's)
+Recommendation: B, because accounts already have to know your airline to keep reports to the right people, and asking twice is extra work.
+
 Provisional defaults for backlog 3 (not John-decided; John may override any time):
 - FAA cache TTL 5 min server-side; serve stale on FAA error.
 - One national NAS feed fetch, filtered on read.

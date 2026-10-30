@@ -1,11 +1,12 @@
-import { router } from 'expo-router';
-import { useState } from 'react';
-import { ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { router, useLocalSearchParams } from 'expo-router';
+import { useRef, useState, type ComponentRef } from 'react';
+import { ScrollView, StyleSheet, Switch, Text, View, type LayoutChangeEvent } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useSettings } from '@/settings/SettingsProvider';
 import { AIRPORTS } from '@/engine';
 import { confirmReset } from '@/settings/confirmReset';
+import { parseSettingsSection, type SettingsSection } from '@/settings/profileSummary';
 import { homeAirports, LIMITS } from '@/settings/settings';
 import { minTapTarget, radius, spacing, textStyles, useColors } from '@/theme';
 import { AirportPicker } from '@/ui/AirportPicker';
@@ -28,6 +29,16 @@ export default function SettingsScreen() {
   const pickerSheet = useSheetContent(picking);
   const homeList = homeAirports(homes);
 
+  // Opened from a Profile row: scroll to that row's section once it's laid out (backlog 56).
+  const target = parseSettingsSection(useLocalSearchParams().section);
+  const scrollRef = useRef<ComponentRef<typeof ScrollView>>(null);
+  const scrolled = useRef(false);
+  const sectionLayout = (section: SettingsSection) => (e: LayoutChangeEvent) => {
+    if (section !== target || scrolled.current || section === 'homes') return;
+    scrolled.current = true;
+    scrollRef.current?.scrollTo({ y: Math.max(0, e.nativeEvent.layout.y - spacing.page), animated: false });
+  };
+
   const setUseLocation = async (on: boolean) => {
     if (!on) return update({ useLocation: false });
     // The iOS prompt only ever appears from a tap: this toggle, leave-by's button or the launch card's Allow.
@@ -39,12 +50,12 @@ export default function SettingsScreen() {
       <View style={styles.header}>
         <BackButton label="Back" onPress={() => router.back()} />
       </View>
-      <ScrollView contentContainerStyle={styles.body}>
+      <ScrollView ref={scrollRef} contentContainerStyle={styles.body}>
         <Text style={[textStyles.title, { color: c.text }]} accessibilityRole="header">
           Settings
         </Text>
 
-        <View style={styles.section}>
+        <View style={styles.section} onLayout={sectionLayout('homes')}>
           <SectionHeader title="Homes" />
           <View style={[styles.group, { backgroundColor: c.surface, borderColor: c.line }]}>
             {homeList.length === 0 ? (
@@ -84,7 +95,7 @@ export default function SettingsScreen() {
           </SectionFooter>
         </View>
 
-        <View style={styles.section}>
+        <View style={styles.section} onLayout={sectionLayout('location')}>
           <SectionHeader title="Location" />
           <View style={[styles.group, { backgroundColor: c.surface, borderColor: c.line }]}>
             <View style={styles.row}>
@@ -105,7 +116,7 @@ export default function SettingsScreen() {
           </SectionFooter>
         </View>
 
-        <View style={styles.section}>
+        <View style={styles.section} onLayout={sectionLayout('leaveBy')}>
           <SectionHeader title="Leave-by" />
           <View style={[styles.group, { backgroundColor: c.surface, borderColor: c.line }]}>
             <Stepper
@@ -121,7 +132,7 @@ export default function SettingsScreen() {
           </SectionFooter>
         </View>
 
-        <View style={styles.section}>
+        <View style={styles.section} onLayout={sectionLayout('search')}>
           <SectionHeader title="Search defaults" />
           <View style={[styles.group, { backgroundColor: c.surface, borderColor: c.line }]}>
             <FiltersForm filters={settings.search} onChange={(search) => update({ search })} />

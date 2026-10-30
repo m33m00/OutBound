@@ -40,3 +40,23 @@ export function profileSummary(s: Settings): SummaryRow[] {
     { key: 'search', label: 'Search defaults', value: stopsText(s.search.maxStops) },
   ];
 }
+
+/** Settings sections a Profile row can open at (backlog 56). */
+export type SettingsSection = 'homes' | 'location' | 'leaveBy' | 'search';
+
+const SECTION_FOR: Record<SummaryRow['key'], SettingsSection> = {
+  home: 'homes',
+  otherHomes: 'homes',
+  buffer: 'leaveBy',
+  location: 'location',
+  search: 'search',
+};
+
+/** Which Settings section a Profile row opens at. */
+export const settingsSectionFor = (key: SummaryRow['key']): SettingsSection => SECTION_FOR[key];
+
+/** A section from the route's query, or null for anything else. */
+export function parseSettingsSection(raw: unknown): SettingsSection | null {
+  const v = Array.isArray(raw) ? raw[0] : raw;
+  return v === 'homes' || v === 'location' || v === 'leaveBy' || v === 'search' ? v : null;
+}

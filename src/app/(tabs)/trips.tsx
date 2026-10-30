@@ -1,21 +1,25 @@
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
+import { MAX_OPEN_REQUESTS, sampleMine } from '@/requests/requests';
+import { SCHEDULE_SOURCE } from '@/search/useRouteSearch';
 import { spacing } from '@/theme';
 import { confirmRemove } from '@/trips/confirmRemove';
 import { isPast, savedRouteTitle, sortSaved } from '@/trips/savedRoutes';
 import { useSavedRoutes } from '@/trips/SavedRoutesProvider';
 import { Button } from '@/ui/Buttons';
 import { EmptyState } from '@/ui/EmptyState';
-import { SectionFooter, SectionHeader } from '@/ui/ListGroup';
+import { ListGroup, SectionFooter, SectionHeader } from '@/ui/ListGroup';
+import { RequestRow } from '@/ui/RequestRow';
 import { SavedRouteCard } from '@/ui/SavedRouteCard';
 import { TabScreen } from '@/ui/TabScreen';
 
 /**
- * Your own open requests and saved routes (Q-042). Saved routes (Q-043, John
+ * Your own load requests and saved routes (Q-042). Saved routes (Q-043, John
  * 2026-10-30): no limit, and opening one runs its day's search again in the
- * Search tab. Seat requests come later.
+ * Search tab. Until the requests backend exists, "Your requests" shows
+ * example asks on sample flights (design round 31).
  */
 export default function TripsScreen() {
   const { routes, loaded, open, remove } = useSavedRoutes();
@@ -23,8 +27,10 @@ export default function TripsScreen() {
   const [now, setNow] = useState(Date.now());
   useFocusEffect(useCallback(() => setNow(Date.now()), []));
   const list = sortSaved(routes, now);
+  const requests = useMemo(() => (SCHEDULE_SOURCE === 'live' ? [] : sampleMine(now)), [now]);
+  const openCount = requests.filter((r) => !r.answer).length;
 
-  if (!list.length) {
+  if (!list.length && !requests.length) {
     return (
       <TabScreen title="My Trips">
         {loaded ? (
@@ -42,8 +48,23 @@ export default function TripsScreen() {
 
   return (
     <TabScreen title="My Trips">
+      {requests.length ? (
+        <View style={styles.section}>
+          <ListGroup title="Your requests">
+            {requests.map((r) => (
+              <RequestRow key={r.id} request={r} now={now} mine />
+            ))}
+          </ListGroup>
+          <SectionFooter>
+            {`${openCount} of ${MAX_OPEN_REQUESTS} open. Someone at that airline answers with what they see on the board.`}
+          </SectionFooter>
+        </View>
+      ) : null}
       <View style={styles.section}>
         <SectionHeader title="Saved routes" />
+        {list.length ? null : (
+          <SectionFooter>Pick a route in Search and tap Save Route to keep it here.</SectionFooter>
+        )}
         {list.map((route) => (
           <SavedRouteCard
             key={route.key}
@@ -57,7 +78,9 @@ export default function TripsScreen() {
             onRemove={() => confirmRemove(savedRouteTitle(route), () => remove(route.key))}
           />
         ))}
-        <SectionFooter>Opening a route searches its day again, so seats and times are up to date.</SectionFooter>
+        {list.length ? (
+          <SectionFooter>Opening a route searches its day again, so seats and times are up to date.</SectionFooter>
+        ) : null}
       </View>
     </TabScreen>
   );

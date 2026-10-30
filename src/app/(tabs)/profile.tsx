@@ -3,20 +3,22 @@ import { router } from 'expo-router';
 import { StyleSheet, Text } from 'react-native';
 
 import { useSettings } from '@/settings/SettingsProvider';
-import { profileSummary } from '@/settings/profileSummary';
+import { profileSummary, settingsSectionFor } from '@/settings/profileSummary';
 import { SCHEDULE_SOURCE } from '@/search/useRouteSearch';
 import { spacing, textStyles, useColors } from '@/theme';
 import { ListGroup, ListRow } from '@/ui/ListGroup';
 import { TabScreen } from '@/ui/TabScreen';
 
 /**
- * Profile tab. Shows what's set at a glance; every row opens Settings
- * (Q-024, Q-042). About holds the data credits (radar credit per DECISIONS.md).
+ * Profile tab. Shows what's set at a glance; every row opens Settings at
+ * its section (Q-024, Q-042, backlog 56). About holds the data credits (radar credit per DECISIONS.md).
  */
 export default function ProfileScreen() {
   const c = useColors();
   const { settings } = useSettings();
-  const openSettings = () => router.push('/settings');
+  // Each row opens Settings at its own section (backlog 56).
+  const openSettings = (key: Parameters<typeof settingsSectionFor>[0]) =>
+    router.push({ pathname: '/settings', params: { section: settingsSectionFor(key) } });
   const version = Constants.expoConfig?.version;
 
   return (
@@ -28,7 +30,7 @@ export default function ProfileScreen() {
             label={row.label}
             value={row.value}
             detail={row.detail}
-            onPress={openSettings}
+            onPress={() => openSettings(row.key)}
             accessibilityHint="Opens Settings"
           />
         ))}

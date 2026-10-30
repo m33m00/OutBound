@@ -1,7 +1,7 @@
 import { memo } from 'react';
 import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
-import type { Flight, Itinerary, SeatTier } from '@/engine';
+import type { Flight, Itinerary } from '@/engine';
 import type { RouteImpact } from '@/live';
 import {
   forSpeech,
@@ -19,7 +19,7 @@ import {
 } from '@/search/format';
 import { impactSummary } from '@/search/impactText';
 import type { LegStatusView, LegTagKind, RowStatus } from '@/search/statusTags';
-import { fonts, radius, spacing, textStyles, useColors, type ColorToken } from '@/theme';
+import { fonts, radius, spacing, textStyles, useColors } from '@/theme';
 
 import { AirlinePill } from './AirlinePill';
 import { Icon } from './Icon';
@@ -27,24 +27,7 @@ import { ImpactBadge } from './ImpactBadge';
 import { pressStyle } from './press';
 import { TONE_BG, TONE_FG, type Tone } from './statusTone';
 import { withTick } from './haptics';
-
-/** Tier text and fill tokens; color is never the only signal (word + number). */
-const TIER_FG: Record<SeatTier, ColorToken> = {
-  wide: 'wideFg',
-  good: 'goodFg',
-  okay: 'okayFg',
-  tight: 'tightFg',
-  full: 'fullFg',
-  unknown: 'unknownFg',
-};
-const TIER_BG: Record<SeatTier, ColorToken> = {
-  wide: 'wideBg',
-  good: 'goodBg',
-  okay: 'okayBg',
-  tight: 'tightBg',
-  full: 'fullBg',
-  unknown: 'unknownBg',
-};
+import { TIER_BG, TIER_FG } from './tierColors';
 
 export interface ResultRowProps {
   itinerary: Itinerary;

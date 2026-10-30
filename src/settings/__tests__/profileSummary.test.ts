@@ -1,5 +1,5 @@
 import { DEFAULT_SETTINGS, type Settings } from '../settings';
-import { profileSummary, stopsText } from '../profileSummary';
+import { parseSettingsSection, profileSummary, settingsSectionFor, stopsText } from '../profileSummary';
 
 const row = (s: Settings, key: string) => profileSummary(s).find((r) => r.key === key)!;
 
@@ -38,5 +38,22 @@ describe('profileSummary', () => {
       'location',
       'search',
     ]);
+  });
+});
+
+describe('Profile rows open Settings at their section (backlog 56)', () => {
+  it('every row has a section', () => {
+    for (const row of profileSummary(DEFAULT_SETTINGS)) {
+      expect(['homes', 'location', 'leaveBy', 'search']).toContain(settingsSectionFor(row.key));
+    }
+    expect(settingsSectionFor('otherHomes')).toBe('homes');
+    expect(settingsSectionFor('buffer')).toBe('leaveBy');
+  });
+
+  it('reads only known sections from the link', () => {
+    expect(parseSettingsSection('search')).toBe('search');
+    expect(parseSettingsSection(['location'])).toBe('location');
+    expect(parseSettingsSection('nope')).toBeNull();
+    expect(parseSettingsSection(undefined)).toBeNull();
   });
 });
