@@ -39,7 +39,8 @@ describe('ResultRow', () => {
     expect(root.findAll((n) => n.props.testID === 'badge-slot').length).toBeGreaterThan(0);
     const texts = root.findAll((n) => typeof n.props.children === 'string').map((n) => n.props.children);
     // Seats lead the top line (Q-059) with their age; the slim row has no per-leg seat chips (Q-062).
-    expect(texts).toContain('Full · no open seats');
+    // Both numbers show, so a Full route says why (Q-065, John 2026-10-30).
+    expect(texts).toContain('Full · 4 open · 9 listed');
     expect(root.findAll((n) => n.props.testID === 'seat-age' && typeof n.type === 'string')[0].props.children).toBe('Reported just now');
     expect(root.findAll((n) => n.props.testID === 'flights-line' && typeof n.type === 'string').length).toBe(1);
     expect(root.findAll((n) => n.props.testID === 'seat-summary').length).toBeGreaterThan(0);
@@ -127,7 +128,7 @@ describe('ResultRow', () => {
     });
     const summary = r!.root.findAll((n) => n.props.testID === 'seat-summary' && typeof n.type === 'string')[0];
     const words = summary.findAll((n) => typeof n.props.children === 'string').map((n) => n.props.children);
-    expect(words[0]).toMatch(/^Tight · 2 open$/);
+    expect(words[0]).toMatch(/^Tight · 6 open · 4 listed$/);
     const texts = r!.root.findAll((n) => typeof n.props.children === 'string').map((n) => n.props.children as string);
     expect(texts.some((t) => t.endsWith('· reported just now'))).toBe(true);
     // The route card names the connection between the legs.
@@ -145,7 +146,7 @@ describe('ResultRow', () => {
     const text = summary.findAll((n) => typeof n.props.children === 'string')[0];
     const flat = (style: unknown) => Object.assign({}, ...([style] as unknown[]).flat(3).filter(Boolean));
     expect(flat(text.props.style).color).toBe(colors.light.muted);
-    expect(text.props.children).toBe('Full · no open seats');
+    expect(text.props.children).toBe('Full · 4 open · 9 listed');
   });
 
   it('shows Checking… while live data loads', async () => {

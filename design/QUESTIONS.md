@@ -383,28 +383,28 @@ B) When you're away from home (location on), Get Home becomes the filled button 
 Recommendation: B, because one tap home is the most common trip for a nonrev away from base.
 Answer: John (2026-10-30), "Yes, make it main" = B. Get Home shows whenever From isn't one of your homes (Q-026), so it is the main button whenever it shows.
 
-### Q-064 What should Settings' reset clear?  (Open 2026-10-30)
+### Q-064 What should Settings' reset clear?  (Answered 2026-10-30)
 Context: The Settings reset button cleared everything in one tap: homes (so Get Home disappears), location, radar and search defaults. Round 25 renamed it "Reset All Settings" and added a confirm.
 A) Only search defaults and the airport buffer; homes and location stay
 B) Everything, after a confirm (as built in round 25)
 Recommendation: A, because losing your home is rarely what you mean, and you can clear a home on its own row.
-Default while open: B.
+Answer: John (2026-10-30), "Clear everything" = B.
 
-### Q-065 How should the seat number read?  (Open 2026-10-30)
+### Q-065 How should the seat number read?  (Answered 2026-10-30)
 Context: "Tight · 3 open" is open seats minus nonrevs already listed (net seats, the tier rule). Someone may read "3 open" as the airline's open-seat count.
 A) Keep "3 open"
 B) "3 after listed"
 C) Keep "3 open" on the row, and show both in the route card: "20 open · 17 listed"
 Recommendation: C, because the row stays short and the route card answers "how many are listed?" when you're deciding.
-Default while open: A.
+Answer: John (2026-10-30), "I'd rather see both numbers": both numbers, on the row and in the route card.
 
-### Q-066 Routes that already left take half of today's first screen  (Open 2026-10-30)
+### Q-066 Routes that already left take half of today's first screen  (Answered 2026-10-30)
 Context: On a same-day search, up to 3 departed routes sit at the top (your call, grayed), above the "Now" line, so the flights you can still catch start halfway down.
 A) Keep as is
 B) Open the list scrolled to the "Now" line; departed routes are a short scroll up
 C) Fold them into one "3 already left" row you can open
 Recommendation: B, because it keeps your order but starts you at flights you can still catch.
-Default while open: A.
+Answer: John (2026-10-30), "Yes" = B.
 
 Provisional defaults for backlog 3 (not John-decided; John may override any time):
 - FAA cache TTL 5 min server-side; serve stale on FAA error.

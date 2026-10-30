@@ -16,6 +16,7 @@ import {
   slimStops,
   stopCount,
   stopsText,
+  seatCounts,
 } from '../format';
 
 const DATE = '2026-10-20';
@@ -165,7 +166,18 @@ describe('row text', () => {
       '1': [{ source: 'reported', openSeats: 30, listed: 8, asOf: NOW - 5 * 60_000 }],
     });
     expect(rowAccessibilityLabel(it, NOW)).toBe(
-      'Departs 9:00 AM from BNA, arrives 11:20 AM at LAX, Nonstop, 4h 20m, Route Good, AA 1: Good, 22 open, reported 5m ago',
+      'Departs 9:00 AM from BNA, arrives 11:20 AM at LAX, Nonstop, 4h 20m, Route Good, AA 1: Good, 30 open, 8 listed, reported 5m ago',
     );
+  });
+});
+
+describe('seatCounts (Q-065)', () => {
+  const base: LegSeats = { source: 'reported', tier: 'tight', netSeats: 3, asOf: 0 };
+  it('shows open and listed when the reading has both', () => {
+    expect(seatCounts({ ...base, openSeats: 20, listed: 17 })).toBe('20 open · 17 listed');
+  });
+  it('falls back to the net count for older data', () => {
+    expect(seatCounts(base)).toBe('3 open');
+    expect(seatCounts({ ...base, netSeats: -2, tier: 'full' })).toBe('no open seats');
   });
 });

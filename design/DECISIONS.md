@@ -77,8 +77,11 @@ Condensed from the project docs: MVP decisions (through v8.8), design direction 
   - Get Home says where it goes: "Get Home · Dallas" (area city, since it always searches the whole area) or the home's code when it has no area.
   - "You're at DFW" on the Leave By card is amber (amber = you), not the Good tier green, which means seats.
   - The flight status sheet says "Departed", matching the row tag (Q-050), instead of "In the air".
-  - Settings' reset is now "Reset All Settings" and asks first, since it clears your homes (what it should clear is Q-064).
+  - Settings' reset is now "Reset All Settings" and asks first, since it clears your homes.
   - Tapping the panel handle at full height steps down one size instead of jumping to the smallest.
+- Settings reset (Q-064, 2026-10-30, John: "Clear everything"): "Reset All Settings" clears everything on the phone, homes included, after a confirm.
+- Seat numbers (Q-065, 2026-10-30, John: "I'd rather see both numbers"): seat text shows open seats and nonrevs listed, not only the net figure: "Tight · 20 open · 17 listed" on the row's seat summary and on each leg in the route card. The tier still comes from net seats (open minus listed). Readings without both numbers fall back to "3 open". Typical loads keep "Typically ~51 open".
+- Today's list opens at the "Now" line (Q-066, 2026-10-30, John: "Yes"): when routes that already left sit at the top, results open scrolled so the "Now" line is at the top; the routes that left are a short scroll up. Once you scroll or pick a route, the list stays where you put it.
 - Own schedule DB from daily AeroDataBox pulls (~30 airports). No live calls per search.
 
 ## Seat availability

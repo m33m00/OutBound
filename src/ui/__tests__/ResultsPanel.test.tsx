@@ -1,5 +1,5 @@
 import React from 'react';
-import { Text } from 'react-native';
+import { FlatList, Text } from 'react-native';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 
 import { createMemoryProvider, searchItineraries, zonedToUtc } from '@/engine';
@@ -200,6 +200,40 @@ describe('Now line', () => {
     const lines = r!.root.findAll((n) => n.props.testID === 'now-line' && typeof n.type === 'string');
     expect(lines.length).toBe(1);
     expect(lines[0].props.accessibilityLabel).toBe('Now, 12:00 PM. Flights below haven’t left yet.');
+  });
+
+  it('opens the list at the Now line, with routes that left a scroll up (John, 2026-10-30)', async () => {
+    const { request, list } = await results();
+    const between = zonedToUtc('2026-10-20', '12:00', 'America/Chicago');
+    const raf = jest.spyOn(globalThis, 'requestAnimationFrame').mockImplementation((cb) => {
+      cb(0);
+      return 0;
+    });
+    const scroll = jest.spyOn(FlatList.prototype, 'scrollToIndex').mockImplementation(() => {});
+    const state = { status: 'done' as const, request, results: list, hiddenCount: 0, hiddenResults: [], searchedAt: NOW };
+    await act(async () => {
+      r = create(
+        <ResultsPanel state={state} selectedId={null} now={between} onSelect={jest.fn()} onBack={jest.fn()} onRetry={jest.fn()} />,
+      );
+    });
+    expect(scroll).toHaveBeenCalledWith({ index: 1, viewPosition: 0, animated: false });
+    scroll.mockClear();
+    // Nothing has left yet the day before: the list starts at the top as usual.
+    await act(async () => {
+      r!.update(
+        <ResultsPanel
+          state={{ ...state, searchedAt: NOW + 1 }}
+          selectedId={null}
+          now={NOW}
+          onSelect={jest.fn()}
+          onBack={jest.fn()}
+          onRetry={jest.fn()}
+        />,
+      );
+    });
+    expect(scroll).not.toHaveBeenCalled();
+    scroll.mockRestore();
+    raf.mockRestore();
   });
 });
 

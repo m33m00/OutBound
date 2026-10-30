@@ -52,6 +52,8 @@ describe('legSeats', () => {
       source: 'typical',
       tier: 'unknown',
       netSeats: 80,
+      openSeats: 80,
+      listed: 0,
       asOf: 5,
     });
   });
