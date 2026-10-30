@@ -60,7 +60,7 @@ export default function SettingsScreen() {
           <SectionHeader title="Homes" />
           <View style={[styles.group, { backgroundColor: c.surface, borderColor: c.line }]}>
             {homeList.length === 0 ? (
-              <Text style={[textStyles.body, styles.empty, { color: c.muted }]}>No main home yet.</Text>
+              <Text style={[textStyles.body, styles.empty, { color: c.muted }]}>No main home yet. Set one to get a Get Home button when you’re away.</Text>
             ) : (
               homeList.map((h, i) => (
                 <View

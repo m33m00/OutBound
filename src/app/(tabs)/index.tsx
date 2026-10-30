@@ -418,6 +418,15 @@ export default function HomeScreen() {
                   origin={origin}
                   destination={destination}
                   onPickOrigin={() => setPicking('origin')}
+                  originEmptyText={
+                    origin
+                      ? undefined
+                      : locationStatus === 'locating'
+                        ? 'Finding nearest airport…'
+                        : locationStatus === 'denied'
+                          ? 'Location is off. Choose an airport'
+                          : undefined
+                  }
                   onPickDestination={() => setPicking('destination')}
                   onSwap={() => {
                     setPickedOrigin(destination);

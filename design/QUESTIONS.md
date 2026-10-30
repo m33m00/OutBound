@@ -420,6 +420,13 @@ B) Change the results banner "No Flights Found on Selected Date" to sentence cas
 C) Keep all of them as they are
 Recommendation: A and B, because every other notice and setting in the app uses "your" and sentence case, and "Show Routes" says what the button does when VoiceOver reads it alone.
 
+### Q-069 Should To start filled in on first launch?  (Open)
+Context: Search opens with To set to LAX for everyone. Nothing in DECISIONS asks for that. For someone who lives near LAX, From and To can end up the same, and a new person may not notice To was picked for them.
+A) Keep LAX as the starting To
+B) Start To empty with "Choose airport", like From
+C) Start To at the main home when one is set and you're away from it, else empty
+Recommendation: B, because a blank To makes the first step obvious and never picks a city for you; Get Home already covers going home.
+
 Provisional defaults for backlog 3 (not John-decided; John may override any time):
 - FAA cache TTL 5 min server-side; serve stale on FAA error.
 - One national NAS feed fetch, filtered on read.

@@ -14,7 +14,10 @@ jest.mock('react-native/Libraries/Utilities/useWindowDimensions', () => ({
   default: () => ({ width: 393, height: 852, scale: 3, fontScale: mockFontScale }),
 }));
 
-function render(fontScale: number, extra: { onGetHome?: () => void; homeName?: string; banner?: React.ReactNode } = {}) {
+function render(
+  fontScale: number,
+  extra: Partial<React.ComponentProps<typeof SearchPanel>> = {},
+) {
   mockFontScale = fontScale;
   const chips = dateChips('2026-10-20');
   let r: ReactTestRenderer | undefined;
@@ -116,5 +119,43 @@ describe('SearchPanel empty-search notice', () => {
       .findAll((n) => typeof n.type === 'string' && (n.props.testID === 'banner' || n.props.testID === 'date-chips'))
       .map((n) => n.props.testID);
     expect(ids).toEqual(['banner', 'date-chips']);
+  });
+});
+
+describe('SearchPanel first run (design round 39)', () => {
+  let r: ReactTestRenderer | undefined;
+  afterEach(() => act(() => r?.unmount()));
+  const texts = () =>
+    r!.root.findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string').map((n) => n.props.children as string);
+  const find = () => r!.root.findAll((n) => n.props.accessibilityLabel === 'Find Routes' && n.props.onPress)[0];
+
+  it('says why Find Routes is off', () => {
+    r = render(1, { origin: null });
+    expect(find().props.accessibilityHint).toBe('Choose where you’re flying from first');
+    act(() => r!.unmount());
+    r = render(1, { origin: 'LAX', destination: 'LAX' });
+    expect(find().props.accessibilityHint).toBe('From and To are the same airport');
+    expect(texts()).toContain('From and To are the same airport. Change one to find routes.');
+  });
+
+  it('does not swap when one side is empty, so To is not wiped', () => {
+    const onSwap = jest.fn();
+    r = render(1, { origin: null, onSwap });
+    const swap = r.root.findAll((n) => n.props.accessibilityLabel === 'Swap from and to' && n.props.onPress)[0];
+    act(() => swap.props.onPress());
+    expect(onSwap).not.toHaveBeenCalled();
+  });
+
+  it('shows what the empty From card is waiting on', () => {
+    r = render(1, { origin: null, originEmptyText: 'Finding nearest airport…' });
+    expect(texts()).toContain('Finding nearest airport…');
+  });
+
+  it('offers the main home as the way to Get Home', () => {
+    const onSetHome = jest.fn();
+    r = render(1, { onSetHome });
+    const link = r.root.findAll((n) => n.props.accessibilityLabel === 'Set your main home to use Get Home' && n.props.onPress)[0];
+    act(() => link.props.onPress());
+    expect(onSetHome).toHaveBeenCalled();
   });
 });

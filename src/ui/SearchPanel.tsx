@@ -18,6 +18,8 @@ export interface SearchPanelProps {
   origin: string | null;
   destination: string | null;
   onPickOrigin: () => void;
+  /** What the empty From card says ("Finding nearest airport…" after Allow); default "Choose airport". */
+  originEmptyText?: string;
   onPickDestination: () => void;
   onSwap: () => void;
   /** Area toggle per airport code (Q-048); missing = off. */
@@ -44,6 +46,8 @@ export interface SearchPanelProps {
 interface AirportCardProps {
   label: string;
   code: string | null;
+  /** Second line while empty; defaults to "Choose airport". */
+  emptyText?: string;
   onPress: () => void;
   areaOn: boolean;
   onToggleArea: () => void;
@@ -60,7 +64,7 @@ const listText = (codes: readonly string[]) =>
  * The pill sits beside (not inside) the card's button so VoiceOver reaches
  * both, and comes first so it reads in visual order (top-right before code).
  */
-export function AirportCard({ label, code, onPress, areaOn, onToggleArea }: AirportCardProps) {
+export function AirportCard({ label, code, emptyText = 'Choose airport', onPress, areaOn, onToggleArea }: AirportCardProps) {
   const c = useColors();
   const name = code ? AIRPORTS[code]?.name : undefined;
   const area = code ? areaFor(code) : null;
@@ -104,7 +108,7 @@ export function AirportCard({ label, code, onPress, areaOn, onToggleArea }: Airp
         accessibilityLabel={
           code
             ? `${label}: ${code}, ${name}${whole ? `, all ${area.city} airports` : ''}. Change`
-            : `${label}: choose an airport`
+            : `${label}: ${emptyText.replace(/…$/, '').toLowerCase()}`
         }
         style={pressStyle(styles.cardButton, 'link')}>
         <Text style={[textStyles.small, styles.cardLabel, { color: c.muted }]} maxFontSizeMultiplier={LABEL_MAX_SCALE}>
@@ -116,7 +120,7 @@ export function AirportCard({ label, code, onPress, areaOn, onToggleArea }: Airp
         ) : null}
         {/* Two lines so long names ("Dallas/Fort Worth International") show at big text sizes. */}
         <Text style={[textStyles.small, { color: c.muted }]} numberOfLines={2}>
-          {name ?? 'Choose airport'}
+          {name ?? emptyText}
         </Text>
       </Pressable>
     </View>
@@ -148,6 +152,15 @@ export function SearchPanel(p: SearchPanelProps) {
   const c = useColors();
   const { fontScale } = useWindowDimensions();
   const wrapChips = fontScale >= WRAP_CHIPS_SCALE;
+  // Why Find Routes is off, for VoiceOver and (same airport) on screen.
+  const sameAirport = !!p.origin && p.origin === p.destination;
+  const findBlocked = !p.origin
+    ? 'Choose where you’re flying from first'
+    : !p.destination
+      ? 'Choose where you’re going first'
+      : sameAirport
+        ? 'From and To are the same airport'
+        : undefined;
   const [calendarOpen, setCalendarOpen] = useState(false);
   const quick = p.chips.slice(0, QUICK_DATE_CHIPS);
   // A day past the chips shows on the calendar button itself.
@@ -227,12 +240,14 @@ export function SearchPanel(p: SearchPanelProps) {
         <AirportCard
           label="From"
           code={p.origin}
+          emptyText={p.originEmptyText}
           onPress={p.onPickOrigin}
           areaOn={!!(p.origin && p.areaOn[p.origin])}
           onToggleArea={() => p.origin && p.onToggleArea(p.origin)}
         />
         <Pressable
-          onPress={withTick(p.onSwap)}
+          // Swapping with one side empty would only clear the other.
+          onPress={withTick(() => p.origin && p.destination && p.onSwap())}
           accessibilityRole="button"
           accessibilityLabel="Swap from and to"
           style={pressStyle([styles.swap, { backgroundColor: c.surface, borderColor: c.line }])}>
@@ -261,6 +276,9 @@ export function SearchPanel(p: SearchPanelProps) {
           accessibilityLabel={`Get Home: find routes to your main home${p.homeName ? `, ${p.homeName}` : ''}`}
         />
       ) : null}
+      {sameAirport ? (
+        <Text style={[textStyles.small, { color: c.muted }]}>From and To are the same airport. Change one to find routes.</Text>
+      ) : null}
       {/* The main action sits right under From/To so it's in view at half height. */}
       <View style={styles.actions}>
         <Button
@@ -274,12 +292,24 @@ export function SearchPanel(p: SearchPanelProps) {
           kind={p.onGetHome ? 'secondary' : 'primary'}
           onPress={p.onFind}
           disabled={!p.origin || !p.destination || p.origin === p.destination}
+          accessibilityHint={findBlocked}
           style={styles.find}
         />
       </View>
       {p.onSetHome ? (
-        <Pressable onPress={p.onSetHome} accessibilityRole="button" style={pressStyle(styles.hint, 'link')}>
-          <Text style={[textStyles.small, { color: c.accent }]}>Set your main home in Profile ›</Text>
+        <Pressable
+          onPress={p.onSetHome}
+          accessibilityRole="button"
+          accessibilityLabel="Set your main home to use Get Home"
+          accessibilityHint="Opens Settings at Homes"
+          style={pressStyle([styles.hint, styles.homeHint, { backgroundColor: c.surface2 }], 'link')}>
+          <Icon
+            name="house"
+            size={15}
+            tintColor={c.accent}
+            fallback={<Text style={[textStyles.small, { color: c.accent }]}>⌂</Text>}
+          />
+          <Text style={[textStyles.bodyStrong, styles.homeHintText, { color: c.accent }]}>Set your main home to use Get Home ›</Text>
         </Pressable>
       ) : null}
       {p.airportCard}
@@ -335,4 +365,6 @@ const styles = StyleSheet.create({
   actions: { flexDirection: 'row', gap: spacing.group },
   find: { flex: 1 },
   hint: { minHeight: minTapTarget, justifyContent: 'center' },
+  homeHint: { flexDirection: 'row', alignItems: 'center', gap: spacing.group, paddingHorizontal: spacing.rowX, borderRadius: radius.sm },
+  homeHintText: { flexShrink: 1 },
 });

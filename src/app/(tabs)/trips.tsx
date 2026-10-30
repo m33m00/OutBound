@@ -66,8 +66,8 @@ export default function TripsScreen() {
           <EmptyState
             icon="suitcase"
             title="No trips yet"
-            body="Pick a route in Search and tap Save Route to keep it here."
-            points={['Up to 5 open requests', 'Routes you save from Search']}
+            body="Pick a route in Search and tap the bookmark to keep it here."
+            points={['Answers when you Ask for Load on a flight', 'Routes you save from Search']}
             action={<Button label="Find Routes" icon="magnifyingglass" onPress={() => router.navigate('/')} />}
           />
         ) : null}
@@ -93,7 +93,7 @@ export default function TripsScreen() {
       <View style={styles.section}>
         <SectionHeader title="Saved routes" />
         {list.length ? null : (
-          <SectionFooter>Pick a route in Search and tap Save Route to keep it here.</SectionFooter>
+          <SectionFooter>Pick a route in Search and tap the bookmark to keep it here.</SectionFooter>
         )}
         {list.map((route) => (
           <SavedRouteCard
