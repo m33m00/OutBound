@@ -224,6 +224,12 @@ function LoadCard({
   // After Cancel Request the link goes away: VoiceOver moves to the note above Ask for Load.
   const [canceled, setCanceled] = useState(false);
   const noteRef = useFocusOnMount(canceled && askState === 'ready');
+  // Once focus has moved, forget the cancel so a later change doesn't pull focus again.
+  useEffect(() => {
+    if (!canceled || askState !== 'ready') return;
+    const t = setTimeout(() => setCanceled(false), 300);
+    return () => clearTimeout(t);
+  }, [canceled, askState]);
   return (
     <View style={[styles.load, { backgroundColor: c.surface, borderColor: c.line }]} testID="load-card">
       <Text ref={headerRef} style={[textStyles.heading, { color: c.text }]} accessibilityRole="header">

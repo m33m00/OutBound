@@ -16,6 +16,7 @@ import { Button } from '@/ui/Buttons';
 import { FiltersForm } from '@/ui/FiltersForm';
 import { Stepper } from '@/ui/Stepper';
 import { useSharedLocation } from '@/ui/LocationProvider';
+import { pressStyle } from '@/ui/press';
 import { useSheetContent } from '@/ui/useSheetContent';
 
 /** Tester settings (backlog 12; Q-003, Q-024). Saved on this phone (Q-025). */
@@ -209,7 +210,7 @@ function SwitchRow({
       accessibilityState={{ checked: value }}
       accessibilityLabel={label}
       accessibilityHint={hint ?? caption}
-      style={[styles.row, divided && [styles.divided, { borderTopColor: c.line }]]}>
+      style={pressStyle([styles.row, divided && [styles.divided, { borderTopColor: c.line }]])}>
       <View style={styles.label}>
         <Text style={[textStyles.body, { color: c.text }]}>{label}</Text>
         {caption ? <Text style={[textStyles.small, { color: c.muted }]}>{caption}</Text> : null}

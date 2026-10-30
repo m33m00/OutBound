@@ -240,6 +240,8 @@ function NumberField({
         disabled={disabled}
         accessibilityRole="button"
         accessibilityLabel={`${d > 0 ? 'Increase' : 'Decrease'}: ${label}`}
+        // VoiceOver stays on − or + and reads the new number from here.
+        accessibilityValue={{ text: String(value) }}
         accessibilityState={{ disabled }}
         style={pressStyle([styles.stepBtn, { backgroundColor: c.surface2, opacity: disabled ? 0.4 : 1 }])}>
         <Text style={[styles.stepText, { color: c.text }]} maxFontSizeMultiplier={BIG_TEXT_MAX_SCALE}>
