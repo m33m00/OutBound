@@ -212,7 +212,8 @@ export default function HomeScreen() {
       setSelectedId(id);
       if (!id) return;
       const index = results.findIndex((r) => r.id === id);
-      if (index >= 0) listRef.current?.scrollToIndex({ index, viewPosition: 0.2 });
+      // Top of the list, so the leave-by card under the row stays in view.
+      if (index >= 0) listRef.current?.scrollToIndex({ index, viewPosition: 0 });
       setSheetIndex((i) => (i === SHEET.full ? SHEET.half : i));
     },
     [results],

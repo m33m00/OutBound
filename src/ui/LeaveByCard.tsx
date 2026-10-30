@@ -1,5 +1,6 @@
 import { SymbolView } from 'expo-symbols';
-import { Linking, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useRef } from 'react';
+import { AccessibilityInfo, Linking, StyleSheet, Text, View } from 'react-native';
 
 import type { Airport } from '@/engine';
 import { computeLeaveBy, leaveByText, LOCATION_FRESH_MS, type PhoneLocation } from '@/search/leaveBy';
@@ -27,6 +28,11 @@ export function LeaveByCard(p: LeaveByCardProps) {
   const atAirport = result.kind === 'atAirport';
   const fresh = p.location != null && p.now - p.location.at <= LOCATION_FRESH_MS;
   const offerLocation = !fresh && !atAirport && p.locationStatus !== 'locating';
+  // Say the leave-by line once when a route is picked; VoiceOver focus stays on the row.
+  const firstTitle = useRef(text.title);
+  useEffect(() => {
+    AccessibilityInfo.announceForAccessibility?.(firstTitle.current);
+  }, []);
   const note =
     p.locationStatus === 'denied'
       ? 'Location is off for OutBound. Turn it on in iPhone Settings to get a drive estimate.'

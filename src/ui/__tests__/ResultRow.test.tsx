@@ -76,6 +76,20 @@ describe('ResultRow', () => {
     expect(pill.props.hitSlop).toEqual({ top: 11, bottom: 11, left: 10, right: 10 });
   });
 
+  it('reaches each leg flight status as a VoiceOver action; stops line skips the airports', async () => {
+    const it = await fullItinerary();
+    const onLeg = jest.fn();
+    await act(async () => {
+      r = create(<ResultRow itinerary={it} selected={false} now={NOW} onPress={jest.fn()} onLegPress={onLeg} />);
+    });
+    const row = r!.root.findAll((n) => n.props.accessibilityRole === 'button')[0];
+    expect(row.props.accessibilityActions).toEqual([{ name: 'leg-0', label: 'Flight status, AA 1' }]);
+    act(() => row.props.onAccessibilityAction({ nativeEvent: { actionName: 'leg-0' } }));
+    expect(onLeg).toHaveBeenCalledWith(it.legs[0].flight);
+    const texts = r!.root.findAll((n) => n.props.children != null).flatMap((n) => [n.props.children].flat());
+    expect(texts).toContain('Nonstop');
+  });
+
   it('shows Checking… while live data loads', async () => {
     const it = await fullItinerary();
     await act(async () => {

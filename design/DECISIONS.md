@@ -160,6 +160,7 @@ Condensed from the project docs: MVP decisions (through v8.8), design direction 
 - Filters button (Q-046, 2026-10-21, John): gets an SF Symbol icon (like the tab bar icons) so its purpose is clear at a glance. Label stays "Filters".
 - Airline badges: colored pill + plane glyph + IATA code. No logos.
 - Provisional (design rounds 2 and 10, 2026-10-30; not John-decided): every tappable dims while pressed; picking controls (date chips, area toggle, swap, max stops, steppers, radar, route select) give a light iOS selection haptic.
+- Provisional (design round 11, 2026-10-30; not John-decided): the leave-by card and Preview Flight sit directly under the selected route's row and scroll with it (they used to sit above the list and could push the picked row out of the half-height panel); picking a route scrolls its row to the top and VoiceOver says the leave-by line once. Each leg's flight status is a VoiceOver action on the row. The row's stops line reads "1 stop · 5h 10m" because the route line above it already names the connections (VoiceOver still says "1 stop via DEN").
 - App icon (Q-055, 2026-10-30, John: A, "You design it"): Ice Mix ink blue (#1D3D84) background, white route arc from an amber origin dot (amber = you), white plane leaving up-right. Same mark on Android adaptive icon and favicon. Source `design/assets/make-icon.py`.
   - Provisional (design round 6, not John-decided): splash = OutBound wordmark (Big Shoulders 700, ink #1D3D84 / dark #9BB8EF) on the theme background (#f6f8fb / #0b1119).
 

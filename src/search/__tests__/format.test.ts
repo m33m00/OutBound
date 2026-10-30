@@ -9,6 +9,7 @@ import {
   rowAccessibilityLabel,
   rowTimes,
   seatText,
+  stopCount,
   stopsText,
 } from '../format';
 
@@ -88,6 +89,7 @@ describe('row text', () => {
       'BNA',
     );
     expect(stopsText(it)).toBe('1 stop · ORD');
+    expect(stopCount(it)).toBe('1 stop');
     expect(rowTimes(it)).toEqual({ depart: '9:00 PM', arrive: '6:40 AM', plusDays: '+1' });
   });
 

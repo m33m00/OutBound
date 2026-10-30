@@ -68,11 +68,15 @@ export function seatText(seats: LegSeats, now: number): string {
   return `${TIER_WORD[seats.tier]} · ${open}${age}`;
 }
 
+/** "Nonstop", "1 stop", "2 stops". */
+export function stopCount(it: Itinerary): string {
+  return it.stops ? `${it.stops} ${it.stops === 1 ? 'stop' : 'stops'}` : 'Nonstop';
+}
+
 /** "Nonstop", "1 stop · DEN", "2 stops · DEN, ORD". */
 export function stopsText(it: Itinerary): string {
   if (!it.stops) return 'Nonstop';
-  const where = it.connections.map((c) => c.airport).join(', ');
-  return `${it.stops} ${it.stops === 1 ? 'stop' : 'stops'} · ${where}`;
+  return `${stopCount(it)} · ${it.connections.map((c) => c.airport).join(', ')}`;
 }
 
 /** "35 min from DFW", or "near DFW" when the transfer time is unknown. */
