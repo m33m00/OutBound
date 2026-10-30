@@ -1,4 +1,4 @@
-import { forwardRef, useCallback, useEffect, useRef, type ComponentRef, type ReactNode } from 'react';
+import { forwardRef, useCallback, useEffect, useRef, useState, type ComponentRef, type ReactNode } from 'react';
 import { AccessibilityInfo, ActivityIndicator, FlatList, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
 import { AIRPORTS, areaFor, type Flight, type Itinerary, type SearchRequest } from '@/engine';
@@ -52,6 +52,8 @@ export interface ResultsPanelProps {
   onToggleSave?: (it: Itinerary) => void;
   /** One more line under the count, e.g. a saved route that's no longer in the results. */
   note?: string;
+  /** Height the open route needs (title bar plus everything under it), so the panel can fit it without scrolling (round 56). */
+  onRouteHeight?: (height: number) => void;
 }
 
 export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(function ResultsPanel(p, ref) {
@@ -239,6 +241,13 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
   // card in larger type. The list stays mounted underneath so it keeps its scroll spot.
   const focusIndex = p.selectedId ? results.findIndex((r) => r.id === p.selectedId) : -1;
   const focused = focusIndex >= 0 ? results[focusIndex] : undefined;
+  // The open route's bar and content heights, reported together once both are known.
+  const [barH, setBarH] = useState(0);
+  const [contentH, setContentH] = useState(0);
+  const { onRouteHeight } = p;
+  useEffect(() => {
+    if (focused && barH > 0 && contentH > 0) onRouteHeight?.(Math.ceil(barH + contentH));
+  }, [focused, barH, contentH, onRouteHeight]);
   const step = (to: number) => {
     const target = results[to];
     return target ? withTick(() => p.onSelect(target.id)) : undefined;
@@ -250,7 +259,9 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
         // A picked route slides in a little from the right, like a push (design round 29).
         <Appear kind="push">
           <View style={styles.fill} testID="route-view">
-            <View style={[styles.bar, styles.pad, styles.titleRow, { borderBottomColor: c.line }]}>
+            <View
+              style={[styles.bar, styles.pad, styles.titleRow, { borderBottomColor: c.line }]}
+              onLayout={(e) => setBarH(e.nativeEvent.layout.height)}>
               <BackButton
                 label={tight ? '' : 'Routes'}
                 onPress={() => p.onSelect(focused.id)}
@@ -286,7 +297,10 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
             {/* Flipping to another route fades the card in so the change registers. */}
             <Appear trigger={focused.id}>
               {/* Keyed by route so each one opens at its top. */}
-              <ScrollView key={focused.id} contentContainerStyle={styles.focus}>
+              <ScrollView
+                key={focused.id}
+                contentContainerStyle={styles.focus}
+                onContentSizeChange={(_, h) => setContentH(h)}>
                 {/* Keyed by route so paging re-announces the new Leave By time. */}
                 {p.selectedCard ? (
                   <View testID="selected-card" key={focused.id}>

@@ -37,6 +37,32 @@ describe('ResultsPanel', () => {
   let r: ReactTestRenderer | undefined;
   afterEach(() => act(() => r?.unmount()));
 
+  it('reports the open route height (title bar plus content) so the panel fits it without scrolling (round 56)', async () => {
+    const { request, list } = await results();
+    const state = { status: 'done' as const, request, results: list, hiddenCount: 0, hiddenResults: [], searchedAt: NOW };
+    const onRouteHeight = jest.fn();
+    await act(async () => {
+      r = create(
+        <ResultsPanel
+          state={state}
+          selectedId={list[0].id}
+          now={NOW}
+          onSelect={jest.fn()}
+          onBack={jest.fn()}
+          onRetry={jest.fn()}
+          onRouteHeight={onRouteHeight}
+        />,
+      );
+    });
+    const view = r!.root.findAll((n) => n.props.testID === 'route-view' && typeof n.type === 'string')[0];
+    const bar = view.findAll((n) => typeof n.props.onLayout === 'function')[0];
+    const scroll = view.findAll((n) => typeof n.props.onContentSizeChange === 'function')[0];
+    act(() => bar.props.onLayout({ nativeEvent: { layout: { x: 0, y: 0, width: 393, height: 60.4 } } }));
+    expect(onRouteHeight).not.toHaveBeenCalled();
+    act(() => scroll.props.onContentSizeChange(393, 300));
+    expect(onRouteHeight).toHaveBeenLastCalledWith(361);
+  });
+
   it('opens a picked route in its own view: leave-by on top, then the route card (John, 2026-10-30)', async () => {
     const { request, list } = await results();
     expect(list.length).toBe(2);

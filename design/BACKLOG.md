@@ -87,3 +87,4 @@ Each item names its owner. One item per work session. spec-keeper runs a pre-fli
 | 80 | Design round 53: empty From or To says Choose airport in blue; denied location says what to do | main | P2 | Built (design round 53, branch claude/project-thread-fzqwou) |
 | 81 | Design round 54: row-shaped placeholders while routes load; couldn't-load says the search is still set | main | P3 | Built (design round 54, branch claude/project-thread-fzqwou) |
 | 82 | Design round 55: Try Tomorrow on No Flights Found searches the next day (Q-073, John: B) | main | P2 | Built (design round 55, branch claude/project-thread-fzqwou) |
+| 83 | Design round 56: picked route fits on screen; stops read as a compact leg timeline; Q-074 seat labels asked | main | P1 | Built (design round 56, branch claude/project-thread-fzqwou) |

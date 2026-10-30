@@ -43,8 +43,10 @@ import { selectionTick } from '@/ui/haptics';
 /** Peek height above the home indicator. */
 const PEEK = 132;
 const SHEET = { peek: 0, half: 1, full: 2 } as const;
-/** Share of the screen body the panel takes while a route is open. */
+/** Share of the screen body the panel takes while a route is open, until its content is measured. */
 const ROUTE_VIEW_SHARE = 0.56;
+/** The panel's drag handle (44pt) and top edge sit above the route view's own content. */
+const SHEET_CHROME = minTapTarget + 1;
 
 const airport = (code: string) => AIRPORTS[code];
 const SAMPLE_STATUS_OPTIONS = { config: null } as const;
@@ -111,11 +113,16 @@ export default function HomeScreen() {
 
   // A picked route's view is a little taller than half (John, 2026-10-30) so its
   // leave-by and route card read in full while the globe keeps most of the screen.
+  // Since round 56 it opens exactly as tall as the route needs, so nothing sits under the
+  // fold (John: "I'd like for it to be all in view"), never past the full height.
   const routeOpen = selectedId != null;
+  const [routeHeight, setRouteHeight] = useState(0);
   const snaps = useMemo(() => {
     const h = Math.max(bodyHeight, PEEK * 3);
-    return [PEEK, Math.round(h * (routeOpen ? ROUTE_VIEW_SHARE : 0.48)), h - spacing.group];
-  }, [bodyHeight, routeOpen]);
+    const full = h - spacing.group;
+    const route = routeHeight > 0 ? Math.min(full, routeHeight + SHEET_CHROME) : Math.round(h * ROUTE_VIEW_SHARE);
+    return [PEEK, routeOpen ? Math.max(PEEK + 1, route) : Math.round(h * 0.48), full];
+  }, [bodyHeight, routeOpen, routeHeight]);
 
   // Ages ("12m ago") keep counting while results are open.
   const [now, setNow] = useState(Date.now());
@@ -511,6 +518,7 @@ export default function HomeScreen() {
                     setDate(d);
                     rerun(d);
                   }}
+                  onRouteHeight={setRouteHeight}
                   onFilters={openFilters}
                   filtersChanged={filtersChanged}
                   note={missingNote}

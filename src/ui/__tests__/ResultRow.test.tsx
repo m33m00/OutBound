@@ -135,6 +135,15 @@ describe('ResultRow', () => {
     // The route card names the connection between the legs.
     const all = r!.root.findAll((n) => typeof n.type === 'string' && n.props.children != null).map((n) => [n.props.children].flat().join(''));
     expect(all).toContain('Connect at DEN · 1h 30m');
+    // Stops read as a timeline (round 56): one dot per leg in its seat color, no second seat chip.
+    const timeline = r!.root.findAll((n) => n.props.testID === 'leg-timeline' && typeof n.type === 'string');
+    expect(timeline.length).toBe(1);
+    expect(timeline[0].findAll((n) => n.props.testID === 'leg-dot' && typeof n.type === 'string').length).toBe(2);
+    const chips = r!.root.findAll((n) => n.props.testID === 'seat-summary' && typeof n.type === 'string');
+    expect(chips.length).toBe(1);
+    // Each leg line leads with its own departure time.
+    expect(all).toContain('8:00\u00a0AM');
+    expect(all.some((t) => t.endsWith('  BNA\u00a0→\u00a0DEN'))).toBe(true);
   });
 
   it('grays the seat summary on a route that already left, keeping its words', async () => {

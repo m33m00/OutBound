@@ -1,11 +1,12 @@
 import { memo } from 'react';
-import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { Pressable, StyleSheet, Text, type TextStyle, useWindowDimensions, View } from 'react-native';
 
-import type { Flight, Itinerary } from '@/engine';
+import { AIRPORTS, type Flight, type Itinerary } from '@/engine';
 import type { RouteImpact } from '@/live';
 import {
   forSpeech,
   formatDuration,
+  formatTime,
   nearbyNotes,
   neutralSeatText,
   routeSeatAge,
@@ -19,7 +20,7 @@ import {
 } from '@/search/format';
 import { impactSummary } from '@/search/impactText';
 import type { LegStatusView, RowStatus } from '@/search/statusTags';
-import { radius, spacing, textStyles, useBoldText, useColors } from '@/theme';
+import { fonts, radius, spacing, textStyles, useBoldText, useColors } from '@/theme';
 
 import { AirlinePill } from './AirlinePill';
 import { Icon } from './Icon';
@@ -55,15 +56,136 @@ export const STACK_TOP_LINE_SCALE = 1.3;
 /** "7:05 AM" never splits between the number and AM/PM, so a long time line only wraps at the dash. */
 const keep = (time: string) => time.replace(/ /g, '\u00a0');
 
-/** Leg departure time when delayed or canceled: the new time first, the old one struck through after it (John, 2026-10-30). */
-function LegTime({ view }: { view: LegStatusView }) {
+/** Size of the dot that marks each leg on the route card's timeline. */
+const DOT = 10;
+
+/** A leg's departure on the timeline: the new time first and the old one small and struck when it moved (John, 2026-10-30). */
+function LegClock({ leg, view, text }: { leg: Flight; view?: LegStatusView; text: TextStyle }) {
   const c = useColors();
-  if (!view.struck) return null;
+  const strong = { fontFamily: fonts.bodySemiBold, color: c.text };
+  if (!view?.struck) {
+    return <Text style={[text, strong]}>{keep(formatTime(leg.departUtc, AIRPORTS[leg.from]?.tz ?? 'UTC'))}</Text>;
+  }
   return (
-    <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>
-      {view.newText ? <Text style={{ color: c.text }}>{`${keep(view.newText)}\u00a0`}</Text> : null}
-      <Text style={styles.struck}>{keep(view.scheduledText)}</Text>
+    <Text style={[text, strong]}>
+      {view.newText ? `${keep(view.newText)}\u00a0` : null}
+      <Text style={[textStyles.small, styles.struck, { color: c.muted }]}>{keep(view.scheduledText)}</Text>
     </Text>
+  );
+}
+
+/**
+ * The route card's legs (design round 56, John asked for stops to read at a glance):
+ * a thin line down the left with a dot per leg in that leg's seat color. Each leg is one
+ * tap target: departure time, airports and flight on the first line, its seats under them.
+ * Each connection is a short line between legs. The route's overall seats stay in the
+ * chip at the top, so legs carry plain colored text, not a second chip.
+ */
+function LegTimeline({
+  itinerary: it,
+  status,
+  now,
+  large,
+  dimmed,
+  sourceOnly,
+  onLegPress,
+}: {
+  itinerary: Itinerary;
+  status?: RowStatus;
+  now: number;
+  large: boolean;
+  dimmed: boolean;
+  /** A nonstop: the top chip already says the seats, so its leg keeps only the source and age. */
+  sourceOnly: boolean;
+  onLegPress?: (flight: Flight) => void;
+}) {
+  const c = useColors();
+  const { fontScale } = useWindowDimensions();
+  const text = large ? textStyles.body : textStyles.small;
+  // Centers the dot on the first line of text, whatever the text size.
+  const dotTop = Math.max(0, ((text.lineHeight ?? 20) * fontScale - DOT) / 2);
+  const rail = { backgroundColor: c.line2 };
+  return (
+    <View testID="leg-timeline">
+      {it.legs.map((leg, i) => {
+        const view = status?.legs[i];
+        const risk = status?.risks.find((r) => r.index === i);
+        const connection = it.connections[i];
+        const last = i === it.legs.length - 1;
+        const typical = leg.seats.source === 'typical' || leg.seats.source === 'unknown';
+        const seatColor = dimmed || typical ? c.muted : c[TIER_FG[leg.seats.tier]];
+        const dotColor = dimmed || typical ? c.unknown : c[leg.seats.tier];
+        const seats = sourceOnly ? seatSourceText(leg.seats, now) : seatText(leg.seats, now);
+        const body = (
+          <>
+            <View style={styles.railCol}>
+              <View style={[styles.dot, { marginTop: dotTop, backgroundColor: dotColor }]} testID="leg-dot" />
+              {last ? null : <View style={[styles.railLine, rail]} />}
+            </View>
+            <View style={styles.legText}>
+              <View style={styles.legTop}>
+                <Text style={[text, styles.shrink, { color: c.muted }]}>
+                  <LegClock leg={leg.flight} view={view} text={text} />
+                  {`  ${leg.flight.from}\u00a0→\u00a0${leg.flight.to}`}
+                </Text>
+                <View style={styles.legFlight}>
+                  <AirlinePill airline={leg.flight.airline} flightNumber={leg.flight.flightNumber} />
+                  {onLegPress ? <Icon name="chevron.right" size={12} tintColor={c.muted} fallback={null} /> : null}
+                </View>
+              </View>
+              {view?.tag || seats ? (
+                <View style={styles.legSeats}>
+                  {view?.tag ? <StatusTag label={view.tag.label} tone={TAG_TONE[view.tag.kind]} /> : null}
+                  {seats ? (
+                    <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, styles.shrink, { color: seatColor }]}>
+                      {seats}
+                    </Text>
+                  ) : null}
+                </View>
+              ) : null}
+            </View>
+          </>
+        );
+        return (
+          <View key={leg.flight.id}>
+            {onLegPress ? (
+              <Pressable
+                onPress={() => onLegPress(leg.flight)}
+                accessibilityRole="button"
+                accessibilityLabel={[
+                  `Flight status, ${leg.flight.airline} ${leg.flight.flightNumber}, ${leg.flight.from} to ${leg.flight.to}`,
+                  view?.tag?.spoken,
+                ]
+                  .filter(Boolean)
+                  .join(', ')}
+                style={pressStyle([styles.leg, styles.legTap], 'link')}>
+                {body}
+              </Pressable>
+            ) : (
+              <View style={styles.leg}>{body}</View>
+            )}
+            {/* At the connecting airport, i.e. after the inbound leg (Q-050). */}
+            {last ? null : (
+              <View style={styles.leg}>
+                <View style={styles.railCol}>
+                  <View style={[styles.railLine, rail]} />
+                </View>
+                <View style={[styles.legText, styles.connection]}>
+                  {risk ? (
+                    <StatusTag label={`Connection at risk · ${risk.airport}`} tone="delayed" />
+                  ) : connection ? (
+                    <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>
+                      Connect at {connection.airport} · {formatDuration(connection.layoverMin)}
+                      {connection.sameAirline ? '' : ' · change airlines'}
+                    </Text>
+                  ) : null}
+                </View>
+              </View>
+            )}
+          </View>
+        );
+      })}
+    </View>
   );
 }
 
@@ -115,8 +237,6 @@ export const ResultRow = memo(function ResultRow({
   // Departed rows are dimmed with a gray fill and edge; text keeps 4.5:1.
   const dimmed = !!status?.dimmed;
   const timeColor = dimmed ? c.muted : c.text;
-  const neutralSeats = (source: string) => dimmed || source === 'typical';
-  const legText = large ? textStyles.body : textStyles.small;
   const highlight = selected && !large;
   // Every value shows its age: the summary's comes from the leg that sets it.
   const summaryAge = summary ? routeSeatAge(it, now) : null;
@@ -222,80 +342,16 @@ export const ResultRow = memo(function ResultRow({
           </Text>
         </View>
         {selected ? (
-          // Route card (Q-062): each leg with its seats and status, and each connection.
-          it.legs.map((leg, i) => {
-            const view = status?.legs[i];
-            const risk = status?.risks.find((r) => r.index === i);
-            const connection = it.connections[i];
-            const body = (
-              <>
-                <AirlinePill airline={leg.flight.airline} flightNumber={leg.flight.flightNumber} large={large} />
-                <Text style={[legText, { color: c.muted }]}>
-                  {leg.flight.from} → {leg.flight.to}
-                </Text>
-                {view?.tag ? <StatusTag label={view.tag.label} tone={TAG_TONE[view.tag.kind]} /> : null}
-                {/* Leg 0's struck / new time is in the top time line; show it once. */}
-                {view && i > 0 ? <LegTime view={view} /> : null}
-                {legDetailOnly ? (
-                  <Text style={[legText, { color: c.muted }]}>{seatSourceText(leg.seats, now)}</Text>
-                ) : (
-                  <View
-                    style={[
-                      styles.tierChip,
-                      {
-                        backgroundColor: dimmed
-                          ? c.surface
-                          : leg.seats.source === 'typical'
-                            ? c.surface2
-                            : c[TIER_BG[leg.seats.tier]],
-                      },
-                    ]}>
-                    <Text
-                      style={[
-                        legText,
-                        // A route that already left keeps its seat words but drops the tier colors.
-                        { color: neutralSeats(leg.seats.source) ? c.muted : c[TIER_FG[leg.seats.tier]] },
-                      ]}>
-                      {seatText(leg.seats, now)}
-                    </Text>
-                  </View>
-                )}
-              </>
-            );
-            const line = onLegPress ? (
-              <Pressable
-                onPress={() => onLegPress(leg.flight)}
-                accessibilityRole="button"
-                accessibilityLabel={[
-                  `Flight status, ${leg.flight.airline} ${leg.flight.flightNumber}, ${leg.flight.from} to ${leg.flight.to}`,
-                  view?.tag?.spoken,
-                ]
-                  .filter(Boolean)
-                  .join(', ')}
-                style={pressStyle([styles.legLine, styles.legTap], 'link')}>
-                {body}
-                <Icon name="chevron.right" size={12} tintColor={c.muted} fallback={null} />
-              </Pressable>
-            ) : (
-              <View style={styles.legLine}>{body}</View>
-            );
-            return (
-              <View key={leg.flight.id} style={styles.legBlock}>
-                {line}
-                {/* At the connecting airport, i.e. after the inbound leg (Q-050). */}
-                {risk ? (
-                  <View style={styles.legLine}>
-                    <StatusTag label={`Connection at risk · ${risk.airport}`} tone="delayed" />
-                  </View>
-                ) : connection ? (
-                  <Text style={[legText, styles.connection, { color: c.muted, borderColor: c.line2 }]}>
-                    Connect at {connection.airport} · {formatDuration(connection.layoverMin)}
-                    {connection.sameAirline ? '' : ' · change airlines'}
-                  </Text>
-                ) : null}
-              </View>
-            );
-          })
+          // Route card (Q-062): one leg per line on a thin timeline, connections between (design round 56).
+          <LegTimeline
+            itinerary={it}
+            status={status}
+            now={now}
+            large={!!large}
+            dimmed={dimmed}
+            sourceOnly={legDetailOnly}
+            onLegPress={onLegPress}
+          />
         ) : (
           // Slim row: who flies it and anything live; seats per leg live in the route card.
           <View style={styles.legLine} testID="flights-line">
@@ -389,29 +445,23 @@ const styles = StyleSheet.create({
     gap: spacing.group,
     flexWrap: 'wrap',
   },
-  legTap: {
-    minHeight: 44,
-  },
   flight: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
   },
-  connection: {
-    marginLeft: 10,
-    paddingLeft: 10,
-    borderLeftWidth: 2,
-  },
-  legBlock: {
-    gap: spacing.group,
-  },
+  // Timeline (design round 56): rows touch so the line runs unbroken from leg to leg.
+  leg: { flexDirection: 'row', gap: spacing.section },
+  legTap: { minHeight: 44 },
+  railCol: { width: DOT, alignItems: 'center' },
+  dot: { width: DOT, height: DOT, borderRadius: DOT / 2 },
+  railLine: { flex: 1, width: 2, minHeight: 4 },
+  legText: { flex: 1, gap: 2, paddingVertical: 4 },
+  legTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', columnGap: spacing.group, rowGap: 2 },
+  legFlight: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  legSeats: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: spacing.group },
+  connection: { paddingVertical: 6 },
   struck: { textDecorationLine: 'line-through' },
   // The replaced time inside the big time line: small, so the new time carries the weight.
   was: { fontFamily: textStyles.small.fontFamily, fontSize: textStyles.small.fontSize },
-  tierChip: {
-    flexShrink: 1,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: radius.sm,
-  },
 });
