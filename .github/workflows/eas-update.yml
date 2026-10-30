@@ -1,0 +1,78 @@
+# Publishes the app to EAS Update on every push to main and the design
+# branch, so the latest version opens in Expo Go on a phone without a Mac
+# running `npx expo start`. Free tier; needs the EXPO_TOKEN repository secret
+# (Settings > Secrets and variables > Actions). Without it the job skips.
+#
+# The update uses sample data only: no Supabase keys are added here.
+name: Publish to Expo Go
+
+on:
+  push:
+    branches: [main, claude/project-thread-fzqwou]
+  workflow_dispatch:
+
+concurrency:
+  group: eas-update-${{ github.ref_name }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check for the Expo token
+        id: token
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          if [ -z "$EXPO_TOKEN" ]; then
+            echo "::notice::EXPO_TOKEN isn't set yet, so nothing was published."
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.token.outputs.ok == 'true'
+
+      - uses: actions/setup-node@v4
+        if: steps.token.outputs.ok == 'true'
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: expo/expo-github-action@v8
+        if: steps.token.outputs.ok == 'true'
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Install
+        if: steps.token.outputs.ok == 'true'
+        run: npm ci
+
+      # Creates the "outbound" project on the token's Expo account the first
+      # time, then links to it; points expo-updates at it for this run only.
+      - name: Link the Expo project
+        if: steps.token.outputs.ok == 'true'
+        run: |
+          eas init --non-interactive --force
+          ID=$(jq -r '.expo.extra.eas.projectId // empty' app.json)
+          if [ -z "$ID" ]; then echo "::error::eas init didn't set a project ID."; exit 1; fi
+          jq --arg url "https://u.expo.dev/$ID" '.expo.updates.url = $url' app.json > app.json.tmp
+          mv app.json.tmp app.json
+
+      - name: Publish the update
+        if: steps.token.outputs.ok == 'true'
+        env:
+          BRANCH: ${{ github.ref_name }}
+          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+        run: |
+          MESSAGE=$(printf '%s' "${COMMIT_MESSAGE:-Manual publish}" | head -n 1)
+          eas update --branch "$BRANCH" --message "$MESSAGE" --environment preview --non-interactive
+          {
+            echo "### Published to Expo Go"
+            echo "Open Expo Go, sign in, then Projects > outbound > branch \`$BRANCH\` and tap the newest update."
+          } >> "$GITHUB_STEP_SUMMARY"
