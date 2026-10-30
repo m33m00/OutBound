@@ -19,7 +19,7 @@ import {
 } from '@/search/format';
 import { impactSummary } from '@/search/impactText';
 import type { LegStatusView, LegTagKind, RowStatus } from '@/search/statusTags';
-import { fonts, radius, spacing, textStyles, useColors } from '@/theme';
+import { fonts, radius, spacing, textStyles, useBoldText, useColors } from '@/theme';
 
 import { AirlinePill } from './AirlinePill';
 import { Icon } from './Icon';
@@ -104,6 +104,8 @@ export const ResultRow = memo(function ResultRow({
   saved,
 }: ResultRowProps) {
   const c = useColors();
+  // A memo row redraws when Bold Text changes.
+  useBoldText();
   const { fontScale } = useWindowDimensions();
   const stacked = fontScale >= STACK_TOP_LINE_SCALE;
   const rt = rowTimes(it);

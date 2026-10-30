@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
 import { forSpeech } from '@/search/format';
-import { fonts, minTapTarget, spacing, textStyles, useColors } from '@/theme';
+import { boldTextOn, fonts, minTapTarget, spacing, textStyles, useColors } from '@/theme';
 
 import { useFocusOnMount } from './focusOnMount';
 import { pressStyle } from './press';
@@ -51,8 +51,8 @@ export function SheetHeader({ title, subtitle, action, onAction, focusTitle = fa
         hitSlop={{ right: spacing.page }}
         style={pressStyle([styles.action, stacked && styles.actionStacked], 'link')}
         testID="sheet-action">
-        {/* iOS sets Done bold and Cancel regular weight. */}
-        <Text style={[textStyles.heading, action === 'Cancel' && { fontFamily: fonts.bodyMedium }, { color: c.accent }]}>{action}</Text>
+        {/* iOS sets Done bold and Cancel regular weight (a step lighter under Bold Text too). */}
+        <Text style={[textStyles.heading, action === 'Cancel' && { fontFamily: boldTextOn() ? fonts.body : fonts.bodyMedium }, { color: c.accent }]}>{action}</Text>
       </Pressable>
     </View>
   );

@@ -21,11 +21,20 @@ export default function RootLayout() {
   const [boldChecked, setBoldChecked] = useState(false);
   useEffect(() => {
     let live = true;
-    AccessibilityInfo.isBoldTextEnabled()
-      .then((on) => applyBoldText(on))
+    // A change that arrives first wins over the launch read.
+    let changed = false;
+    const sub = AccessibilityInfo.addEventListener('boldTextChanged', (on: boolean) => {
+      changed = true;
+      applyBoldText(on);
+    });
+    // Wrapped so a platform without the check (web) still starts.
+    Promise.resolve()
+      .then(() => AccessibilityInfo.isBoldTextEnabled())
+      .then((on) => {
+        if (!changed) applyBoldText(on);
+      })
       .catch(() => {})
       .finally(() => live && setBoldChecked(true));
-    const sub = AccessibilityInfo.addEventListener('boldTextChanged', applyBoldText);
     return () => {
       live = false;
       sub.remove();

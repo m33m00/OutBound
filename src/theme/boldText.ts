@@ -1,3 +1,5 @@
+import { useSyncExternalStore } from 'react';
+
 import { fonts } from './fonts';
 import { textStyles } from './typography';
 
@@ -6,8 +8,9 @@ import { textStyles } from './typography';
  * fonts don't follow it on their own, because each weight is its own family,
  * so with it on every style steps up a weight: regular and medium to
  * semibold or bold, the display face to its heavier cut (design round 38).
- * Applied once before the first screen draws, and again if the setting
- * changes (screens pick it up as they redraw).
+ * Applied once before the first screen draws. If the setting changes while
+ * the app is open, parts that don't redraw on their own (tab bar, result
+ * rows, map labels) follow through `useBoldText`.
  */
 const HEAVIER: Record<string, string> = {
   Manrope_400Regular: 'Manrope_600SemiBold',
@@ -31,9 +34,20 @@ const baseText = Object.fromEntries(Object.entries(textStyles).map(([k, s]) => [
 
 let boldOn = false;
 export const boldTextOn = () => boldOn;
+const listeners = new Set<() => void>();
+const subscribe = (fn: () => void) => {
+  listeners.add(fn);
+  return () => listeners.delete(fn);
+};
+
+/** Whether Bold Text is on; redraws the caller when it changes. */
+export function useBoldText(): boolean {
+  return useSyncExternalStore(subscribe, boldTextOn, boldTextOn);
+}
 
 /** Step every font and text style up a weight (on) or back to the design (off). */
 export function applyBoldText(on: boolean): void {
+  const changed = on !== boldOn;
   boldOn = on;
   const f = fonts as Record<keyof typeof fonts, string>;
   for (const k of Object.keys(baseFonts) as (keyof typeof fonts)[]) {
@@ -43,4 +57,5 @@ export function applyBoldText(on: boolean): void {
   for (const k of Object.keys(baseText) as (keyof typeof textStyles)[]) {
     t[k].fontFamily = on ? heavierFont(baseText[k]) : baseText[k];
   }
+  if (changed) listeners.forEach((fn) => fn());
 }

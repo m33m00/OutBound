@@ -1,4 +1,8 @@
-import { applyBoldText, boldTextOn, heavierFont } from '../boldText';
+import React from 'react';
+import { Text } from 'react-native';
+import { act, create } from 'react-test-renderer';
+
+import { applyBoldText, boldTextOn, heavierFont, useBoldText } from '../boldText';
 import { fonts } from '../fonts';
 import { textStyles } from '../typography';
 
@@ -28,5 +32,20 @@ describe('Bold Text', () => {
     applyBoldText(true);
     applyBoldText(true);
     expect(textStyles.body.fontFamily).toBe('Manrope_600SemiBold');
+  });
+
+  it('redraws parts that watch it when the setting changes', () => {
+    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+    function Probe() {
+      return <Text>{useBoldText() ? 'bold' : 'regular'}</Text>;
+    }
+    let r: ReturnType<typeof create> | undefined;
+    act(() => {
+      r = create(<Probe />);
+    });
+    expect(r!.root.findByType(Text).props.children).toBe('regular');
+    act(() => applyBoldText(true));
+    expect(r!.root.findByType(Text).props.children).toBe('bold');
+    act(() => r!.unmount());
   });
 });
