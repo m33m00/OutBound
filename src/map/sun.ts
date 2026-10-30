@@ -58,7 +58,7 @@ export const SUN_HIGHLIGHT = {
   /**
    * Fade the highlight out as the subsolar point nears the limb, instead of
    * the prototype's hard on/off when it crosses (provisional; avoids a pop
-   * while the preview moves the sun).
+   * as the sun moves).
    */
   fadeZ: 0.15,
 } as const;
@@ -144,20 +144,3 @@ export function sunFromKey(key: string): LonLat {
 
 /** Real-time sky clock: tick at most once a minute while idle. */
 export const SKY_IDLE_TICK_MS = 60_000;
-/** During a flight preview the sky follows the simulated time at about 9 Hz. */
-export const SKY_PREVIEW_MS = 110;
-
-/**
- * Next sky time to draw: real time when idle; during a preview the
- * simulated time, but only once SKY_PREVIEW_MS has passed since the last
- * update (wall clock). Returns `prev` when nothing should change.
- */
-export function nextSkyTime(
-  prev: { utc: number; at: number },
-  input: { nowMs: number; wallMs: number; simUtc: number | null },
-): { utc: number; at: number } {
-  const target = input.simUtc ?? input.nowMs;
-  if (target === prev.utc) return prev;
-  if (input.simUtc != null && input.wallMs - prev.at < SKY_PREVIEW_MS) return prev;
-  return { utc: target, at: input.wallMs };
-}

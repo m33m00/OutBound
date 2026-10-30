@@ -8,7 +8,7 @@
  * (x, y, sqrt(1 - x^2 - y^2)), dots it with the sun direction (a uniform,
  * computed once per record on the JS side) and applies the same night /
  * dusk curve as sun.ts. Recording is one drawCircle, so re-recording on
- * camera change, sun change or preview (~9 Hz) costs next to nothing; the
+ * camera change or sun change costs next to nothing; the
  * GPU does the per-pixel work. A vertex mesh with per-vertex colors was the
  * alternative, but the dusk band is only a few degrees wide, so it would
  * need a dense grid (and per-record JS work) to avoid banding.

@@ -13,22 +13,19 @@
  *   rim picture    limb and edge, cached per camera
  *   marks picture  home pins, origin dot, destination rings, labels (item 9),
  *                  airport status badges (item 7) and the selected route's
- *                  leg flight-time pills (item 15, hidden while a preview
- *                  plays); above the rim so the limb never dims a label
- *   plane          flight preview plane (item 11): a glyph picture recorded
- *                  once per accent, moved by a Reanimated shared value
- *                  transform each frame (no React re-render per frame)
+ *                  leg flight-time pills (item 15); above the rim so the
+ *                  limb never dims a label
  *   legend         React Native view, only while a route is selected
  *
- * Item 11 also adds the launch spin-in (spinIn.ts) and the flight preview
- * (preview.ts, useFlightPreview.ts). Radar is hidden while a preview plays.
+ * Item 11 also adds the launch spin-in (spinIn.ts). The flight preview was
+ * removed on 2026-10-30 (John: the app doesn't need it).
  *
  * Gestures run on the JS thread (d3 projection and picture recording live
  * there): pan rotates, pinch zooms, a tap (no movement) selects a route or
  * clears the selection. Camera targets fly (flyTo.ts) unless Reduce Motion
  * is on, then they jump.
  */
-import { Canvas, Group, Picture } from '@shopify/react-native-skia';
+import { Canvas, Picture } from '@shopify/react-native-skia';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   AppState,
@@ -38,7 +35,6 @@ import {
   type LayoutChangeEvent,
 } from 'react-native';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
-import { useSharedValue } from 'react-native-reanimated';
 
 import { useColors, useColorSchemeName } from '@/theme';
 
@@ -50,7 +46,7 @@ import {
   type GlobeCamera,
   type Viewport,
 } from './camera';
-import { easeCubicInOut, FLY_MS, interpolateCamera, planRetarget, sameCamera, type RunningFlight } from './flyTo';
+import { easeCubicInOut, interpolateCamera, planRetarget, sameCamera, type RunningFlight } from './flyTo';
 import { routeFrameTarget } from './framing';
 import { globeColors } from './globeColors';
 import { hitTestRoutes } from './hitTest';
@@ -63,11 +59,8 @@ import { makeRadarImageCache, recordRadarLayer } from './radarLayer';
 import type { CameraTarget, GlobeMapProps, RouteLine } from './types';
 import { useReduceMotionStatus } from './useReduceMotion';
 import { recordNightLayer } from './nightLayer';
-import { planePose, type PreviewSample } from './preview';
-import { planeTransform, recordPlaneGlyph, type PlaneTransform } from './previewLayer';
 import { markSpinInDone, shouldSpinIn, SPIN_IN, spinStartCamera } from './spinIn';
 import { NIGHT_THEME, SKY_IDLE_TICK_MS, sunFromKey, sunKey, sunPosition } from './sun';
-import { useFlightPreview } from './useFlightPreview';
 import { makeLiftedProjector } from './arcs';
 import { useLegTimeFont, useMarkFonts } from './markFonts';
 import { legTimeColors, legTimeSpecs, legTimesSummary } from './legTimes';
@@ -93,8 +86,6 @@ export function GlobeMap({
   destinations,
   airportStatus,
   radar,
-  preview,
-  onPreviewState,
   cameraTarget,
   insets,
   interactive = true,
@@ -314,8 +305,8 @@ export function GlobeMap({
   );
   const statusSpoken = useMemo(() => statusSummary(JSON.parse(statusKey)), [statusKey]);
   const statusColorSet = useMemo(() => statusColors(palette), [palette]);
-  // Leg flight-time pills (item 15): selected route only, hidden during a
-  // preview, kept off the legend (measured below).
+  // Leg flight-time pills (item 15): selected route only, kept off the
+  // legend (measured below).
   const legTimeFont = useLegTimeFont();
   const legTimeColorSet = useMemo(() => legTimeColors(palette), [palette]);
   const [legendBox, setLegendBox] = useState<Box | null>(null);
@@ -361,50 +352,7 @@ export function GlobeMap({
     return recordRadarLayer({ camera, viewport, layers: radarImages, opacity: RADAR.opacity[scheme] });
   }, [camera, viewport, radarImages, scheme]);
 
-  // Flight preview (item 11): button-triggered by the screen, never automatic.
-  const fitRoute = useCallback(
-    (routeId: string) => {
-      const vp = viewport;
-      const from = cameraRef.current;
-      if (!vp || !from) return;
-      // Reuse the selection fit; the camera does not chase the plane.
-      const to = cameraForTarget(routeFrameTarget(routes, routeId), vp, from);
-      stopFlight(true);
-      const cur = cameraRef.current ?? from;
-      if (sameCamera(cur, to)) return;
-      flyTo(to, FLY_MS);
-    },
-    [viewport, routes, stopFlight, flyTo],
-  );
-  // Preview plane: Skia reads these shared values on the UI thread, so a
-  // frame only updates a transform; GlobeMap does not re-render per frame.
-  const planeXform = useSharedValue<PlaneTransform>([{ translateX: 0 }, { translateY: 0 }, { rotate: 0 }]);
-  const planeOpacity = useSharedValue(0);
-  const viewportRef = useRef(viewport);
-  useEffect(() => {
-    viewportRef.current = viewport;
-  }, [viewport]);
-  const onPreviewFrame = useCallback(
-    (sample: PreviewSample | null) => {
-      const cam = cameraRef.current;
-      const vp = viewportRef.current;
-      const pose = sample && cam && vp ? planePose(sample, makeLiftedProjector(cam, vp)) : null;
-      if (pose) planeXform.value = planeTransform(pose);
-      planeOpacity.value = pose ? 1 : 0;
-    },
-    [planeXform, planeOpacity],
-  );
-  const flight = useFlightPreview({
-    preview,
-    routes,
-    selectedId,
-    reduceMotion,
-    onPreviewState,
-    onStart: fitRoute,
-    onFrame: onPreviewFrame,
-  });
-  const previewing = flight.active;
-  const legTimes = useMemo(() => legTimeSpecs(selectedRoute, previewing), [selectedRoute, previewing]);
+  const legTimes = useMemo(() => legTimeSpecs(selectedRoute), [selectedRoute]);
   const marksPicture = useMemo(() => {
     if (!viewport || !camera || (marks.length === 0 && statuses.length === 0 && legTimes.length === 0)) return null;
     return recordMarksLayer({
@@ -436,10 +384,10 @@ export function GlobeMap({
     legendShown,
     legendBox,
   ]);
-  const radarSpoken = previewing ? null : radarSummary(radarImages.length);
+  const radarSpoken = radarSummary(radarImages.length);
 
   // Day/night (item 11): real time, ticking at most once a minute (and on
-  // return to the foreground); during a preview, the simulated time.
+  // return to the foreground).
   const [clockMs, setClockMs] = useState(() => Date.now());
   useEffect(() => {
     const id = setInterval(() => setClockMs(Date.now()), SKY_IDLE_TICK_MS);
@@ -453,23 +401,16 @@ export function GlobeMap({
   }, []);
   // Keyed on the sun rounded to 0.1 deg, so a clock tick that does not move
   // the sun that far re-records nothing.
-  const skyKey = sunKey(sunPosition(flight.skyUtc ?? clockMs));
+  const skyKey = sunKey(sunPosition(clockMs));
   const nightPicture = useMemo(() => {
     if (!viewport || !camera) return null;
     return recordNightLayer({ camera, viewport, sun: sunFromKey(skyKey), theme: NIGHT_THEME[scheme] });
   }, [camera, viewport, skyKey, scheme]);
 
-  // Plane glyph: recorded once per accent color, only mounted while playing.
-  const planeGlyph = useMemo(() => recordPlaneGlyph(palette.accent), [palette.accent]);
-
-  // Any touch on the map stops the spin-in (snapping to its end) and the
-  // preview. A tap that only stopped a preview does nothing else.
-  const cancelPreview = flight.cancel;
-  const swallowTap = useRef(false);
+  // Any touch on the map stops the spin-in (snapping to its end).
   const onTouchDown = useCallback(() => {
     if (flightTargetRef.current?.spin) stopFlight(true);
-    if (cancelPreview()) swallowTap.current = true;
-  }, [stopFlight, cancelPreview]);
+  }, [stopFlight]);
   const touchRef = useRef(onTouchDown);
   useEffect(() => {
     touchRef.current = onTouchDown;
@@ -551,12 +492,8 @@ export function GlobeMap({
       .maxDuration(TAP_MAX_MS)
       .onBegin(() => touchRef.current())
       .onEnd((e, success) => {
-        if (!success || active.current > 0 || swallowTap.current) return;
+        if (!success || active.current > 0) return;
         tapRef.current(e.x, e.y);
-      })
-      // Reset after every touch sequence (also when a pan won).
-      .onFinalize(() => {
-        swallowTap.current = false;
       });
     return Gesture.Race(Gesture.Simultaneous(pan, pinch), tap);
   }, [commit, interactive, width, stopFlight]);
@@ -622,8 +559,6 @@ export function GlobeMap({
                 radar: radarPicture != null,
                 routes: routeLayer != null,
                 marks: marksPicture != null,
-                plane: previewing && planeGlyph != null,
-                previewing,
               }).map((name: CanvasLayerName) => {
                 const picture = {
                   base: layers.base,
@@ -632,15 +567,7 @@ export function GlobeMap({
                   routes: routeLayer?.picture,
                   rim: layers.rim,
                   marks: marksPicture,
-                  plane: null,
                 }[name];
-                if (name === 'plane') {
-                  return planeGlyph ? (
-                    <Group key={name} transform={planeXform} opacity={planeOpacity}>
-                      <Picture picture={planeGlyph} />
-                    </Group>
-                  ) : null;
-                }
                 return picture ? <Picture key={name} picture={picture} /> : null;
               })}
             </Canvas>

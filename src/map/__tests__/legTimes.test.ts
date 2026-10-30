@@ -103,9 +103,8 @@ describe('which labels show', () => {
     expect(legTimeSpecs(undefined)).toEqual([]);
   });
 
-  it('none while a flight preview plays; back when it stops', () => {
-    expect(legTimeSpecs(route, true)).toEqual([]);
-    expect(legTimeSpecs(route, false)).toHaveLength(2);
+  it('shows every timed leg of the selected route', () => {
+    expect(legTimeSpecs(route)).toHaveLength(2);
   });
 
   it('skips a leg without times, keeps the others', () => {
