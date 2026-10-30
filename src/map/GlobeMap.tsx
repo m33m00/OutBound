@@ -22,7 +22,7 @@
  * flick-to-spin and the slow drift back home (momentum.ts).
  *
  * Gestures run on the JS thread (d3 projection and picture recording live
- * there): pan rotates (and coasts when let go with speed), pinch zooms, a
+ * there): pan rotates (and, let go, flows back home), pinch zooms, a
  * tap (no movement) selects a route or clears the selection. Camera targets
  * fly (flyTo.ts) unless Reduce Motion is on, then they jump.
  */
@@ -48,7 +48,15 @@ import {
   type Viewport,
 } from './camera';
 import { easeCubicInOut, interpolateCamera, planRetarget, sameCamera, type RunningFlight } from './flyTo';
-import { DRIFT_HOME, momentumStep, releaseVelocity, shouldDriftHome, type Velocity } from './momentum';
+import {
+  DRIFT_HOME,
+  momentumStep,
+  planSettle,
+  releaseVelocity,
+  settleAt,
+  shouldDriftHome,
+  type Velocity,
+} from './momentum';
 import { routeFrameTarget } from './framing';
 import { globeColors } from './globeColors';
 import { hitTestRoutes } from './hitTest';
@@ -155,7 +163,8 @@ export function GlobeMap({
     }
     setFlying(false);
   }, []);
-  // Coasting after a flick, and the timer that sends the globe home (momentum.ts).
+  // Coasting or settling home after a drag, and the timer that sends the
+  // globe home after a pinch (momentum.ts).
   const coastRef = useRef<number | null>(null);
   const driftTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const stopCoast = useCallback(() => {
@@ -268,9 +277,9 @@ export function GlobeMap({
     }
   }, [targetKey, viewport, reduceKnown, flyTo, stopFlight, stopCoast, cancelDrift]);
 
-  // After a spin or zoom, once the globe has been still for a while, glide it
-  // slowly back home; never with a route open (momentum.ts). Reduce Motion:
-  // a plain jump.
+  // After a pinch (or any release under Reduce Motion), once the globe has
+  // been still for a while, glide it slowly back home; never with a route
+  // open (momentum.ts). Reduce Motion: a plain jump.
   const scheduleDrift = useCallback(() => {
     cancelDrift();
     driftTimer.current = setTimeout(() => {
@@ -289,11 +298,36 @@ export function GlobeMap({
     }, DRIFT_HOME.delayMs);
   }, [cancelDrift, flyTo]);
 
-  // Let go with speed: keep turning and slow down smoothly, then start the
-  // drift timer. Too slow, or Reduce Motion: stop where it is.
+  // Let go of a drag with no route open: keep the finger's speed, slow down
+  // and land on home in one motion (John: no stop, then reset). With a route
+  // open: coast to a stop and stay. A pinch, a tap or Reduce Motion: no
+  // coasting, just the drift timer.
   const coast = useCallback(
-    (vx: number, vy: number) => {
+    (vx: number, vy: number, settle = false) => {
       stopCoast();
+      const { targetKey: key, viewport: vp, routeOpen } = restRef.current;
+      const start = cameraRef.current;
+      if (settle && !routeOpen && !reduceRef.current && vp && start) {
+        cancelDrift();
+        const plan = planSettle(start, cameraForTarget(JSON.parse(key) as CameraTarget, vp, start), { x: vx, y: vy });
+        if (!plan) return;
+        setMoving(true);
+        let t0: number | null = null;
+        const settleStep = (now: number) => {
+          if (t0 == null) t0 = now;
+          const res = settleAt(plan, now - t0);
+          cameraRef.current = res.camera;
+          setCamera(res.camera);
+          if (res.done) {
+            coastRef.current = null;
+            setMoving(false);
+          } else {
+            coastRef.current = requestAnimationFrame(settleStep);
+          }
+        };
+        coastRef.current = requestAnimationFrame(settleStep);
+        return;
+      }
       let velocity: Velocity | null = releaseVelocity(vx, vy, reduceRef.current);
       if (!velocity || !cameraRef.current) {
         scheduleDrift();
@@ -319,7 +353,7 @@ export function GlobeMap({
       };
       coastRef.current = requestAnimationFrame(step);
     },
-    [stopCoast, scheduleDrift],
+    [stopCoast, scheduleDrift, cancelDrift],
   );
 
   // Reduce Motion switched on mid-flight (or the spin-in): jump to the end.
@@ -543,9 +577,9 @@ export function GlobeMap({
       active.current = Math.max(0, active.current - 1);
       if (active.current === 0) setMoving(false);
     };
-    // Last finger up: coast with the drag's speed (a pinch has none).
-    const release = (vx: number, vy: number) => {
-      if (active.current === 0) coastRef2.current(vx, vy);
+    // Last finger up: a drag flows home with its speed; a pinch waits to drift.
+    const release = (vx: number, vy: number, settle: boolean) => {
+      if (active.current === 0) coastRef2.current(vx, vy, settle);
     };
     const pan = Gesture.Pan()
       .runOnJS(true)
@@ -569,7 +603,7 @@ export function GlobeMap({
         panStart.current = null;
         if (!started) return;
         end();
-        release(e.velocityX, e.velocityY);
+        release(e.velocityX, e.velocityY, true);
       });
     const pinch = Gesture.Pinch()
       .runOnJS(true)
@@ -589,7 +623,7 @@ export function GlobeMap({
         pinchStart.current = 0;
         if (!started) return;
         end();
-        release(0, 0);
+        release(0, 0, false);
       });
     // A tap only fires if the finger stayed within TAP_SLOP and no drag/pinch
     // won the race, so a pan never ends in a tap.
@@ -605,7 +639,7 @@ export function GlobeMap({
       })
       // A touch cancelled the drift; a tap that left the globe off home re-arms it.
       .onFinalize(() => {
-        if (active.current === 0) coastRef2.current(0, 0);
+        if (active.current === 0 && coastRef.current == null) coastRef2.current(0, 0);
       });
     return Gesture.Race(Gesture.Simultaneous(pan, pinch), tap);
   }, [commit, interactive, width, stopFlight]);

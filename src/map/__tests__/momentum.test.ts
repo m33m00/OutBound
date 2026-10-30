@@ -1,5 +1,15 @@
-import { LAT_LIMIT, panCamera, type GlobeCamera } from '../camera';
-import { DRIFT_HOME, MOMENTUM, momentumStep, releaseVelocity, shouldDriftHome, type Velocity } from '../momentum';
+import { dragDegreesPerPt, LAT_LIMIT, panCamera, type GlobeCamera } from '../camera';
+import {
+  DRIFT_HOME,
+  MOMENTUM,
+  momentumStep,
+  planSettle,
+  releaseVelocity,
+  SETTLE,
+  settleAt,
+  shouldDriftHome,
+  type Velocity,
+} from '../momentum';
 
 const cam: GlobeCamera = { center: [-97, 38], radius: 180 };
 
@@ -87,5 +97,85 @@ describe('drift home', () => {
     expect(shouldDriftHome({ routeOpen: false, atHome: false })).toBe(true);
     expect(shouldDriftHome({ routeOpen: true, atHome: false })).toBe(false);
     expect(shouldDriftHome({ routeOpen: false, atHome: true })).toBe(false);
+  });
+});
+
+describe('flick flows home in one motion (John: no stop, then reset)', () => {
+  const home: GlobeCamera = { center: [-97, 33], radius: 180 };
+  const away: GlobeCamera = { center: [-60, 40], radius: 180 };
+
+  /** Unwrapped longitude path at 60 fps. */
+  function path(plan: NonNullable<ReturnType<typeof planSettle>>) {
+    const lons: number[] = [];
+    let prev = plan.from.center[0];
+    let acc = prev;
+    for (let t = 0; t <= plan.durationMs + 20; t += 1000 / 60) {
+      const lon = settleAt(plan, t).camera.center[0];
+      let d = lon - prev;
+      if (d > 180) d -= 360;
+      if (d < -180) d += 360;
+      acc += d;
+      prev = lon;
+      lons.push(acc);
+    }
+    return lons;
+  }
+
+  it('starts at the finger speed, so letting go has no jolt', () => {
+    const plan = planSettle(away, home, { x: 2000, y: 0 })!;
+    const dt = 1;
+    const moved = settleAt(plan, dt).camera.center[0] - away.center[0];
+    expect(moved / (dt / 1000)).toBeCloseTo(-2000 * dragDegreesPerPt(180), -1);
+  });
+
+  it('lands exactly on home', () => {
+    const plan = planSettle(away, home, { x: 2000, y: 300 })!;
+    const end = settleAt(plan, plan.durationMs);
+    expect(end.done).toBe(true);
+    expect(end.camera).toEqual(home);
+  });
+
+  it('a hard flick spins round the way it was thrown and comes to rest on home', () => {
+    const plan = planSettle(away, home, { x: 3500, y: 0 })!;
+    expect(plan.dLon).toBeLessThan(-360); // finger right turns longitude down, more than a full turn
+    expect(((plan.dLon - (home.center[0] - away.center[0])) % 360 + 360) % 360).toBeCloseTo(0, 6);
+  });
+
+  it('never stops part way: it keeps moving one way, slowing, until it is home', () => {
+    const plan = planSettle(away, home, { x: 3000, y: 0 })!;
+    const lons = path(plan);
+    const steps = lons.slice(1).map((l, i) => l - lons[i]);
+    const moving = steps.slice(0, Math.floor(steps.length * 0.9));
+    expect(moving.every((d) => d < -0.01)).toBe(true);
+    // Slows down as it goes.
+    expect(Math.abs(steps[2])).toBeGreaterThan(Math.abs(steps[Math.floor(steps.length * 0.7)]));
+  });
+
+  it('a gentle release eases straight back, over a sensible time', () => {
+    const plan = planSettle(away, home, null)!;
+    expect(plan.dLon).toBeCloseTo(-37, 6);
+    expect(plan.durationMs).toBeGreaterThanOrEqual(SETTLE.minMs);
+    expect(plan.durationMs).toBeLessThanOrEqual(SETTLE.maxMs);
+    const lons = path(plan);
+    expect(lons.every((l, i) => i === 0 || l <= lons[i - 1] + 1e-9)).toBe(true);
+  });
+
+  it('a pinched-in zoom comes back with it', () => {
+    const plan = planSettle({ center: away.center, radius: 600 }, home, { x: 800, y: 0 })!;
+    expect(settleAt(plan, plan.durationMs / 2).camera.radius).toBeGreaterThan(180);
+    expect(settleAt(plan, plan.durationMs / 2).camera.radius).toBeLessThan(600);
+    expect(settleAt(plan, plan.durationMs).camera.radius).toBe(180);
+  });
+
+  it('a steep flick cannot swing far past the poles', () => {
+    const plan = planSettle(away, home, { x: 0, y: 4000 })!;
+    for (let t = 0; t <= plan.durationMs; t += 50) {
+      expect(Math.abs(settleAt(plan, t).camera.center[1])).toBeLessThanOrEqual(LAT_LIMIT);
+    }
+  });
+
+  it('nothing to do when already home and still', () => {
+    expect(planSettle(home, home, null)).toBeNull();
+    expect(planSettle(home, home, { x: 0.1, y: 0 })).toBeNull();
   });
 });
