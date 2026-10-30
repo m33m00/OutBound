@@ -4,13 +4,13 @@ import { FlatList, StyleSheet, Text, View, type LayoutChangeEvent } from 'react-
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AIRPORTS, localDate, toRouteLine, type Flight, type Itinerary } from '@/engine';
-import { sampleRouteImpacts, useFlightStatuses, useRouteImpacts } from '@/live';
+import { flightLookupKey, sampleRouteImpacts, useFlightStatuses, useRouteImpacts } from '@/live';
 import { GlobeMap, type MapAirport } from '@/map';
 import { nearestAirport } from '@/search/airports';
 import { searchRequest } from '@/search/areas';
 import { dateChips } from '@/search/dates';
 import { chooseOrigin, showLocationCard } from '@/search/origin';
-import { resultsBanner, rowStatus, statusLookups } from '@/search/statusTags';
+import { legLookup, resultsBanner, rowStatus, statusLookups } from '@/search/statusTags';
 import { SAMPLE_TZ, SCHEDULE_SOURCE, useRouteSearch } from '@/search/useRouteSearch';
 import { minTapTarget, spacing, textStyles, useColors } from '@/theme';
 import { AirportPicker } from '@/ui/AirportPicker';
@@ -376,7 +376,17 @@ export default function HomeScreen() {
         sample={sampleImpacts}
         onClose={() => setImpactFor(null)}
       />
-      <FlightStatusSheet flight={statusFlight} now={now} onClose={() => setStatusFlight(null)} />
+      <FlightStatusSheet
+        flight={statusFlight}
+        now={now}
+        onClose={() => setStatusFlight(null)}
+        // Sample rows open the same sample status their tag shows.
+        sample={
+          statusFlight && flightStatuses.sample
+            ? (flightStatuses.byKey[flightLookupKey(legLookup(statusFlight))] ?? null)
+            : null
+        }
+      />
       <FiltersModal
         visible={filtersOpen}
         filters={filters}

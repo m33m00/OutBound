@@ -12,6 +12,7 @@ import { fonts, radius, spacing, textStyles, useColors, type ColorToken } from '
 import { AirlinePill } from './AirlinePill';
 import { ImpactBadge } from './ImpactBadge';
 import { pressStyle } from './press';
+import { TONE_BG, TONE_FG, type Tone } from './statusTone';
 
 /** Tier text and fill tokens; color is never the only signal (word + number). */
 const TIER_FG: Record<SeatTier, ColorToken> = {
@@ -47,12 +48,7 @@ export interface ResultRowProps {
   status?: RowStatus;
 }
 
-/**
- * Status tag colors (Q-050). Delayed = violet Caution fill; Departed /
- * Arrived = gray; Canceled / Diverted = canceled red (provisional, pending
- * John). Amber is never used here ("you" only). Words always carry the state.
- */
-type Tone = 'delayed' | 'gone' | 'canceled';
+/** Row tag kind to tone (Q-050). */
 const TONE: Record<LegTagKind, Tone> = {
   delayed: 'delayed',
   departed: 'gone',
@@ -60,8 +56,6 @@ const TONE: Record<LegTagKind, Tone> = {
   canceled: 'canceled',
   diverted: 'canceled',
 };
-const TONE_FG: Record<Tone, ColorToken> = { delayed: 'caution', gone: 'muted', canceled: 'canceledFg' };
-const TONE_BG: Record<Tone, ColorToken> = { delayed: 'cautionBg', gone: 'surface2', canceled: 'canceledBg' };
 
 function StatusTag({ label, tone }: { label: string; tone: Tone }) {
   const c = useColors();

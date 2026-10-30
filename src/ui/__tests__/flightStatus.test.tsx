@@ -3,11 +3,12 @@ import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 
 import { createMemoryProvider, searchItineraries, zonedToUtc } from '@/engine';
 import { clearFlightStatusMemo, type FlightStatusResponse } from '@/live';
+import type { FlightStatusEntry } from '@/live/flightStatus';
 import { parseFlightStatus } from '../../../supabase/functions/_shared/flightStatus';
 import { ADB_DELAYED } from '@/live/fixtures/flight-status-samples';
 
 import { FlightStatusSheet } from '../FlightStatusSheet';
-import { ageText, delayText, movementTimes, placeText } from '../flightStatusText';
+import { ageText, delayText, movementTimes, placeText, sampleResponse } from '../flightStatusText';
 import { ResultRow } from '../ResultRow';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -100,5 +101,57 @@ describe('leg tap and sheet', () => {
       r = create(<FlightStatusSheet flight={null} now={NOW} onClose={jest.fn()} liveOptions={{ fetcher, config: { baseUrl: 'https://x', anonKey: 'a' } }} />);
     });
     expect(fetcher).not.toHaveBeenCalled();
+  });
+});
+
+describe('sample status in the sheet (design round 4)', () => {
+  let r: ReactTestRenderer | undefined;
+  afterEach(() => {
+    act(() => r?.unmount());
+    clearFlightStatusMemo();
+  });
+
+  const delayedEntry = (departUtc: number, arriveGuess: number): FlightStatusEntry => ({
+    flightNumber: 'DL2210',
+    state: 'delayed',
+    departure: { airport: 'BNA', scheduledUtc: new Date(departUtc).toISOString(), estimatedUtc: new Date(departUtc + 25 * 60_000).toISOString(), actualUtc: null, delayMin: 25, terminal: null, gate: null },
+    arrival: { airport: null, scheduledUtc: new Date(arriveGuess).toISOString(), estimatedUtc: new Date(arriveGuess + 25 * 60_000).toISOString(), actualUtc: null, delayMin: 25, terminal: null, gate: null },
+    providerUpdatedAt: null,
+    asOf: new Date(NOW - 2 * 60_000).toISOString(),
+    stale: false,
+    delayMin: 25,
+  });
+
+  it('sampleResponse moves the arrival to the real schedule, keeping the delay', async () => {
+    const f = (await itinerary()).legs[0].flight;
+    const res = sampleResponse(delayedEntry(f.departUtc, f.departUtc + 150 * 60_000), f, '2026-10-22');
+    expect(res.state).toBe('ok');
+    expect(res.fetchedAt).toBe(new Date(NOW - 2 * 60_000).toISOString());
+    expect(Date.parse(res.status!.arrival.scheduledUtc!)).toBe(f.arriveUtc);
+    expect(Date.parse(res.status!.arrival.estimatedUtc!)).toBe(f.arriveUtc + 25 * 60_000);
+    expect(res.status!.arrival.airport).toBe('LAX');
+  });
+
+  it('shows the sample, labeled, asks no server and offers no Refresh', async () => {
+    const f = (await itinerary()).legs[0].flight;
+    const fetcher = jest.fn();
+    await act(async () => {
+      r = create(
+        <FlightStatusSheet
+          flight={f}
+          now={NOW}
+          onClose={jest.fn()}
+          sample={delayedEntry(f.departUtc, f.departUtc + 150 * 60_000)}
+          liveOptions={{ fetcher, config: { baseUrl: 'https://x', anonKey: 'a' } }}
+        />,
+      );
+    });
+    expect(fetcher).not.toHaveBeenCalled();
+    const texts = r!.root.findAll((n) => typeof n.props.children === 'string').map((n) => n.props.children);
+    expect(texts).toContain('Sample status');
+    expect(texts).toContain('Delayed');
+    expect(texts).toContain('DL 2210');
+    expect(texts).toContain('Updated 2m ago');
+    expect(r!.root.findAll((n) => n.props.accessibilityLabel === 'Refresh flight status')).toHaveLength(0);
   });
 });

@@ -1,4 +1,5 @@
 import type { FlightState, FlightStatusResponse, Movement } from '@/live';
+import type { FlightStatusEntry } from '@/live/flightStatus';
 import { formatAge, formatTime } from '@/search/format';
 
 export const STATE_WORD: Record<FlightState, string> = {
@@ -45,4 +46,39 @@ export function ageText(r: FlightStatusResponse, now: number): string {
   const age = r.fetchedAt ? `Updated ${formatAge(Date.parse(r.fetchedAt), now)}` : 'Not updated yet';
   if (r.stale) return `${age} · may be out of date`;
   return age;
+}
+
+/**
+ * A row's sample status as a sheet response (design round 4), so the sheet
+ * says the same thing as the row's tag. The sample arrival assumes a fixed
+ * block time; it's moved to the flight's real scheduled arrival, keeping the
+ * same delay, so the sheet's times match the row.
+ */
+export function sampleResponse(
+  entry: FlightStatusEntry,
+  flight: { to: string; arriveUtc: number },
+  date: string,
+): FlightStatusResponse {
+  const { asOf, stale, delayMin: _delay, ...status } = entry;
+  const a = status.arrival;
+  const shift = a.scheduledUtc ? flight.arriveUtc - Date.parse(a.scheduledUtc) : 0;
+  const move = (iso: string | null) => (iso ? new Date(Date.parse(iso) + shift).toISOString() : null);
+  return {
+    flightNumber: entry.flightNumber,
+    date,
+    state: 'ok',
+    stale,
+    paused: false,
+    fetchedAt: asOf,
+    status: {
+      ...status,
+      arrival: {
+        ...a,
+        airport: a.airport ?? flight.to,
+        scheduledUtc: new Date(flight.arriveUtc).toISOString(),
+        estimatedUtc: move(a.estimatedUtc),
+        actualUtc: move(a.actualUtc),
+      },
+    },
+  };
 }
