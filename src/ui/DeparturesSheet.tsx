@@ -10,7 +10,7 @@ import { minTapTarget, spacing, textStyles, useColors } from '@/theme';
 import { Icon } from './Icon';
 import { pressStyle } from './press';
 import { ReportForm } from './ReportSheet';
-import { SheetHeader } from './SheetHeader';
+import { SheetHeader, TITLE_MAX_SCALE } from './SheetHeader';
 import { TIER_FG } from './tierColors';
 import { useAnnounceLater } from './useAnnounceLater';
 
@@ -67,9 +67,13 @@ export function DeparturesSheet({ code, visible, flights, now, reportFor, onRepo
         accessibilityLabel={forSpeech(`${left ? 'Departed' : 'Departs'} ${time} · ${f.airline} ${f.flightNumber} to ${f.to} · ${yours || !left ? detail : place}`)}
         accessibilityHint={yours ? 'Opens Report Load again' : 'Opens Report Load'}
         testID="departure-row"
-        style={pressStyle([styles.row, { borderBottomColor: c.line }])}>
-        <Text style={[textStyles.number, !big && styles.time, { color: left ? c.muted : c.text }]}>{time}</Text>
-        <View style={styles.text}>
+        style={pressStyle([styles.row, big && styles.rowStacked, { borderBottomColor: c.line }])}>
+        <Text
+          style={[textStyles.number, !big && styles.time, { color: left ? c.muted : c.text }]}
+          maxFontSizeMultiplier={TITLE_MAX_SCALE}>
+          {time}
+        </Text>
+        <View style={[styles.text, big && styles.textStacked]}>
           <Text style={[textStyles.heading, { color: c.text }]}>{`${f.airline} ${f.flightNumber} to ${f.to}`}</Text>
           {yours && tier ? (
             <Text style={[textStyles.small, { color: c.text }]}>
@@ -78,12 +82,14 @@ export function DeparturesSheet({ code, visible, flights, now, reportFor, onRepo
               {` · ${yours.open} open · ${yours.listed} listed · ${formatAge(yours.at, now)}`}
             </Text>
           ) : (
-            <Text style={[textStyles.small, { color: c.muted }]} numberOfLines={2}>
+            <Text style={[textStyles.small, { color: c.muted }]} numberOfLines={big ? undefined : 2}>
               {detail}
             </Text>
           )}
         </View>
-        <Icon name="chevron.right" size={14} tintColor={c.muted} fallback={null} />
+        <View style={big && styles.chevronStacked}>
+          <Icon name="chevron.right" size={14} tintColor={c.muted} fallback={null} />
+        </View>
       </Pressable>
     );
   };
@@ -130,7 +136,7 @@ export function DeparturesSheet({ code, visible, flights, now, reportFor, onRepo
   );
 }
 
-/** From this text size the time stops holding a fixed column, so the flight keeps room. */
+/** From this text size the time goes above the flight instead of in a column beside it. */
 const BIG_TEXT_SCALE = 1.3;
 
 const styles = StyleSheet.create({
@@ -146,6 +152,10 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.rowY,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
+  // Big text: time on top, flight under it, chevron pinned at the right.
+  rowStacked: { flexDirection: 'column', alignItems: 'flex-start', gap: 2, paddingRight: 24 },
   time: { minWidth: 76 },
   text: { flex: 1, gap: 2 },
+  textStacked: { flex: 0, alignSelf: 'stretch' },
+  chevronStacked: { position: 'absolute', right: 0, top: 0, bottom: 0, justifyContent: 'center' },
 });

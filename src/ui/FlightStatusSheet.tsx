@@ -17,7 +17,7 @@ import { useFocusOnMount } from './focusOnMount';
 import { pressStyle } from './press';
 import { ReportForm } from './ReportSheet';
 import { STATE_TONE, TONE_BG, TONE_FG } from './statusTone';
-import { SheetHeader } from './SheetHeader';
+import { SheetHeader, TITLE_MAX_SCALE } from './SheetHeader';
 import { TIER_FG } from './tierColors';
 import { useAnnounceLater } from './useAnnounceLater';
 
@@ -159,7 +159,9 @@ export function FlightStatusSheet({ flight, visible, now, onClose, liveOptions, 
                     {tone === 'canceled' ? (
                       <Icon name="xmark.circle" size={20} tintColor={c[TONE_FG[tone]]} fallback={null} />
                     ) : null}
-                    <Text style={[textStyles.title, { color: tone ? c[TONE_FG[tone]] : c.text }]}>
+                    <Text
+                      style={[textStyles.title, { color: tone ? c[TONE_FG[tone]] : c.text }]}
+                      maxFontSizeMultiplier={TITLE_MAX_SCALE}>
                       {STATE_WORD[status.state]}
                     </Text>
                   </View>
@@ -219,6 +221,9 @@ function LoadCard({
   const closed = reportClosedNote(reportWindow);
   const tier = yourReport ? answerTier(yourReport) : null;
   const asked = askState === 'asked';
+  // After Cancel Request the link goes away: VoiceOver moves to the note above Ask for Load.
+  const [canceled, setCanceled] = useState(false);
+  const noteRef = useFocusOnMount(canceled && askState === 'ready');
   return (
     <View style={[styles.load, { backgroundColor: c.surface, borderColor: c.line }]} testID="load-card">
       <Text ref={headerRef} style={[textStyles.heading, { color: c.text }]} accessibilityRole="header">
@@ -252,19 +257,28 @@ function LoadCard({
         </Text>
       ) : (
         <>
-          <Text style={[textStyles.body, { color: c.muted }]}>{note}</Text>
+          <Text ref={noteRef} style={[textStyles.body, { color: c.muted }]}>
+            {note}
+          </Text>
           <Button
             label={asked ? 'Asked' : 'Ask for Load'}
             kind="secondary"
             icon={asked ? 'checkmark' : undefined}
-            onPress={onAsk}
+            onPress={() => {
+              setCanceled(false);
+              onAsk();
+            }}
             disabled={askState !== 'ready'}
+            accessibilityHint={asked ? 'Waiting for an answer' : undefined}
             // Asked is a confirmation, not an unavailable button: keep it full strength.
             style={asked ? styles.undimmed : undefined}
           />
           {asked && onCancelAsk ? (
             <Pressable
-              onPress={onCancelAsk}
+              onPress={() => {
+                setCanceled(true);
+                onCancelAsk();
+              }}
               accessibilityRole="button"
               accessibilityLabel="Cancel Request"
               accessibilityHint="Frees one of your 5 requests"

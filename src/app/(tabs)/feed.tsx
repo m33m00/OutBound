@@ -1,6 +1,6 @@
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
-import { AccessibilityInfo, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { spacing } from '@/theme';
 import { answerText, requestTitle, sampleFeed, type LoadAnswer } from '@/requests/requests';
@@ -12,6 +12,7 @@ import { ListGroup, SectionFooter } from '@/ui/ListGroup';
 import { ReportSheet } from '@/ui/ReportSheet';
 import { RequestRow } from '@/ui/RequestRow';
 import { TabScreen } from '@/ui/TabScreen';
+import { useAnnounceLater } from '@/ui/useAnnounceLater';
 import { useSheetContent } from '@/ui/useSheetContent';
 
 /**
@@ -29,6 +30,8 @@ export default function FeedScreen() {
   const [answers, setAnswers] = useState<Record<string, LoadAnswer>>({});
   const [reporting, setReporting] = useState<string | null>(null);
   const sheet = useSheetContent(reporting);
+  // Said once the sheet has closed, or VoiceOver drops it.
+  const announce = useAnnounceLater();
   const sheetFlight = asks.find((r) => r.id === sheet.shown)?.flight ?? null;
 
   const withAnswers = asks.map((r) => (answers[r.id] ? { ...r, answer: answers[r.id] } : r));
@@ -43,9 +46,7 @@ export default function FeedScreen() {
     // Your answer is your report on that flight, so Search shows it too.
     report(req.flight, o, l);
     setReporting(null);
-    AccessibilityInfo.announceForAccessibility(
-      forSpeech(`Answered ${requestTitle(req)}: ${answerText(answer)}`),
-    );
+    announce(forSpeech(`Answered ${requestTitle(req)}: ${answerText(answer)}`));
   };
 
   return (

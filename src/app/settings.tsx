@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useRef, useState, type ComponentRef } from 'react';
-import { ScrollView, StyleSheet, Switch, Text, View, type LayoutChangeEvent } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Switch, Text, View, type LayoutChangeEvent } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useSettings } from '@/settings/SettingsProvider';
@@ -98,15 +98,12 @@ export default function SettingsScreen() {
         <View style={styles.section} onLayout={sectionLayout('location')}>
           <SectionHeader title="Location" />
           <View style={[styles.group, { backgroundColor: c.surface, borderColor: c.line }]}>
-            <View style={styles.row}>
-              <Text style={[textStyles.body, styles.label, { color: c.text }]}>Use your location</Text>
-              <Switch
-                value={settings.useLocation}
-                onValueChange={setUseLocation}
-                accessibilityLabel="Use your location for the nearest airport and drive estimate"
-                trackColor={{ true: c.accent, false: c.faint }}
-              />
-            </View>
+            <SwitchRow
+              label="Use your location"
+              hint="For the nearest airport and your drive estimate"
+              value={settings.useLocation}
+              onChange={setUseLocation}
+            />
           </View>
           <SectionFooter>
             {status === 'denied'
@@ -119,42 +116,19 @@ export default function SettingsScreen() {
         <View style={styles.section} onLayout={sectionLayout('notify')}>
           <SectionHeader title="Notifications" />
           <View style={[styles.group, { backgroundColor: c.surface, borderColor: c.line }]}>
-            <View style={styles.row}>
-              <View style={styles.label}>
-                <Text style={[textStyles.body, { color: c.text }]}>Answers to your requests</Text>
-                <Text
-                  style={[textStyles.small, { color: c.muted }]}
-                  accessibilityElementsHidden
-                  importantForAccessibility="no">
-                  As soon as someone replies
-                </Text>
-              </View>
-              <Switch
-                value={settings.notify.answers}
-                onValueChange={(on) => update({ notify: { ...settings.notify, answers: on } })}
-                accessibilityLabel="Answers to your requests"
-                accessibilityHint="As soon as someone replies"
-                trackColor={{ true: c.accent, false: c.faint }}
-              />
-            </View>
-            <View style={[styles.row, styles.divided, { borderTopColor: c.line }]}>
-              <View style={styles.label}>
-                <Text style={[textStyles.body, { color: c.text }]}>Requests on your airline’s flights</Text>
-                <Text
-                  style={[textStyles.small, { color: c.muted }]}
-                  accessibilityElementsHidden
-                  importantForAccessibility="no">
-                  At most 5 a day
-                </Text>
-              </View>
-              <Switch
-                value={settings.notify.airlineAsks}
-                onValueChange={(on) => update({ notify: { ...settings.notify, airlineAsks: on } })}
-                accessibilityLabel="Requests on your airline’s flights"
-                accessibilityHint="At most 5 a day"
-                trackColor={{ true: c.accent, false: c.faint }}
-              />
-            </View>
+            <SwitchRow
+              label="Answers to your requests"
+              caption="As soon as someone replies"
+              value={settings.notify.answers}
+              onChange={(on) => update({ notify: { ...settings.notify, answers: on } })}
+            />
+            <SwitchRow
+              label="Requests on your airline’s flights"
+              caption="At most 5 a day"
+              value={settings.notify.airlineAsks}
+              onChange={(on) => update({ notify: { ...settings.notify, airlineAsks: on } })}
+              divided
+            />
           </View>
           <SectionFooter>
             Other employees can ask about your airline’s flights, at most 5 requests a day. Nobody sees who asked or who
@@ -205,6 +179,46 @@ export default function SettingsScreen() {
         onClose={() => setPicking(null)}
       />
     </SafeAreaView>
+  );
+}
+
+/**
+ * A setting with a switch: the whole row toggles it and VoiceOver reads it
+ * as one switch (label, caption as the hint, on or off).
+ */
+function SwitchRow({
+  label,
+  caption,
+  hint,
+  value,
+  onChange,
+  divided,
+}: {
+  label: string;
+  caption?: string;
+  hint?: string;
+  value: boolean;
+  onChange: (on: boolean) => void;
+  divided?: boolean;
+}) {
+  const c = useColors();
+  return (
+    <Pressable
+      onPress={() => onChange(!value)}
+      accessibilityRole="switch"
+      accessibilityState={{ checked: value }}
+      accessibilityLabel={label}
+      accessibilityHint={hint ?? caption}
+      style={[styles.row, divided && [styles.divided, { borderTopColor: c.line }]]}>
+      <View style={styles.label}>
+        <Text style={[textStyles.body, { color: c.text }]}>{label}</Text>
+        {caption ? <Text style={[textStyles.small, { color: c.muted }]}>{caption}</Text> : null}
+      </View>
+      {/* The row takes the tap and speaks for it. */}
+      <View pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+        <Switch value={value} trackColor={{ true: c.accent, false: c.faint }} />
+      </View>
+    </Pressable>
   );
 }
 

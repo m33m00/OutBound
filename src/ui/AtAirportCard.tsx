@@ -32,8 +32,12 @@ export function AtAirportCard({ code, upcoming, onBoard, onReport }: AtAirportCa
           fallback={<Text style={[textStyles.bodyStrong, { color: c.accent }]}>✈</Text>}
         />
       </View>
-      <View style={styles.text} accessible accessibilityLabel={`At ${code}? Report a load. ${note}`}>
-        <Text style={[textStyles.heading, { color: c.text }]} accessibilityRole="header">
+      <View
+        style={styles.text}
+        accessible
+        accessibilityRole="header"
+        accessibilityLabel={`At ${code}? Report a load. ${note}`}>
+        <Text style={[textStyles.heading, { color: c.text }]}>
           {`At ${code}? Report a load`}
         </Text>
         <Text style={[textStyles.small, { color: c.muted }]}>{note}</Text>

@@ -115,5 +115,9 @@ describe('RequestRow', () => {
     expect(texts).toEqual(expect.arrayContaining(['Answered', 'Waiting']));
     expect(texts.some((t) => / open · \d+ listed · answered /.test(t))).toBe(true);
     expect(r!.root.findAll((n) => n.props.testID === 'answer-request')).toHaveLength(0);
+    // VoiceOver hears "answered" once (in the detail), and Waiting at the end.
+    const labels = r!.root.findAll((n) => n.props.accessible && typeof n.props.accessibilityLabel === 'string').map((n) => String(n.props.accessibilityLabel));
+    expect(labels.some((l) => /answered .*\. Answered$/.test(l))).toBe(false);
+    expect(labels.some((l) => l.endsWith('. Waiting'))).toBe(true);
   });
 });

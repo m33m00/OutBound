@@ -36,7 +36,9 @@ export function RequestRow({ request, now, mine, onAnswer, onOpen }: RequestRowP
   const answered = request.answer != null;
   const tier = request.answer ? answerTier(request.answer) : null;
   const status = mine ? (answered ? 'Answered' : 'Waiting') : null;
-  const label = forSpeech([title, detail, status].filter(Boolean).join('. '));
+  // The detail already says "answered 2m ago", so VoiceOver only adds Waiting.
+  const spokenStatus = status === 'Waiting' ? status : null;
+  const label = forSpeech([title, detail, spokenStatus].filter(Boolean).join('. '));
   const body = (
     <>
       <View

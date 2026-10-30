@@ -140,7 +140,8 @@ export function ReportForm({ flight, now, onCancel, onSubmit, focusTitle }: Repo
         <View
           style={[styles.tier, { backgroundColor: c.surface, borderColor: c.line }]}
           accessible
-          accessibilityLiveRegion="polite"
+          // Android reads a live region; iOS gets the announcement above (both would speak twice).
+          accessibilityLiveRegion={Platform.OS === 'android' ? 'polite' : undefined}
           accessibilityLabel={forSpeech(tierLine)}
           testID="report-tier">
           {touched ? (
@@ -159,6 +160,7 @@ export function ReportForm({ flight, now, onCancel, onSubmit, focusTitle }: Repo
         <Button
           label="Submit Report"
           disabled={!touched}
+          accessibilityHint={touched ? undefined : 'Set open seats or nonrevs listed first'}
           onPress={() => {
             Keyboard.dismiss();
             onSubmit(open, listed);
@@ -238,7 +240,6 @@ function NumberField({
         disabled={disabled}
         accessibilityRole="button"
         accessibilityLabel={`${d > 0 ? 'Increase' : 'Decrease'}: ${label}`}
-        accessibilityValue={{ text: String(value) }}
         accessibilityState={{ disabled }}
         style={pressStyle([styles.stepBtn, { backgroundColor: c.surface2, opacity: disabled ? 0.4 : 1 }])}>
         <Text style={[styles.stepText, { color: c.text }]} maxFontSizeMultiplier={BIG_TEXT_MAX_SCALE}>
@@ -250,7 +251,8 @@ function NumberField({
 
   return (
     <View style={[styles.field, { backgroundColor: c.surface, borderColor: c.line }]}>
-      <View style={styles.fieldLabel}>
+      {/* The number box says the label and caption, so VoiceOver skips them here. */}
+      <View style={styles.fieldLabel} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
         <Text style={[textStyles.heading, { color: c.text }]}>{label}</Text>
         <Text style={[textStyles.small, { color: c.muted }]}>{caption}</Text>
       </View>
@@ -271,7 +273,7 @@ function NumberField({
           maxLength={3}
           maxFontSizeMultiplier={BIG_TEXT_MAX_SCALE}
           accessibilityLabel={forSpeech(`${label}, ${caption}`)}
-          accessibilityHint="Type a number"
+          accessibilityHint={`Type a number from 0 to ${max}`}
           style={[styles.bignum, { color: c.text, borderColor: c.line }]}
         />
         {btn(1)}
@@ -326,5 +328,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.page,
     borderTopWidth: StyleSheet.hairlineWidth,
   },
-  keyboardDone: { minHeight: minTapTarget, justifyContent: 'center' },
+  keyboardDone: {
+    minHeight: minTapTarget,
+    minWidth: minTapTarget,
+    paddingHorizontal: spacing.group,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });
