@@ -1,8 +1,9 @@
-import { SymbolView } from 'expo-symbols';
 import { Children, Fragment, type ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { minTapTarget, radius, spacing, textStyles, useColors } from '@/theme';
+
+import { Icon } from './Icon';
 
 /** Small uppercase heading above a grouped card (iOS Settings style). */
 export function SectionHeader({ title }: { title: string }) {
@@ -67,7 +68,7 @@ export function ListRow({ label, value, detail, onPress, accessibilityHint }: Li
         </Text>
       ) : null}
       {onPress ? (
-        <SymbolView
+        <Icon
           name="chevron.right"
           size={13}
           weight="semibold"

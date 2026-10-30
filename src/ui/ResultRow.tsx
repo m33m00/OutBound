@@ -1,4 +1,3 @@
-import { SymbolView } from 'expo-symbols';
 import { memo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -10,6 +9,7 @@ import type { LegStatusView, LegTagKind, RowStatus } from '@/search/statusTags';
 import { fonts, radius, spacing, textStyles, useColors, type ColorToken } from '@/theme';
 
 import { AirlinePill } from './AirlinePill';
+import { Icon } from './Icon';
 import { ImpactBadge } from './ImpactBadge';
 import { pressStyle } from './press';
 import { TONE_BG, TONE_FG, type Tone } from './statusTone';
@@ -65,7 +65,7 @@ function StatusTag({ label, tone }: { label: string; tone: Tone }) {
       style={[styles.statusTag, { backgroundColor: c[TONE_BG[tone]], borderColor: tone === 'gone' ? c.line2 : c[TONE_BG[tone]] }]}>
       {/* Icon keeps Canceled / Diverted from reading as a Full-tier red edge; the word stays. */}
       {tone === 'canceled' ? (
-        <SymbolView name="xmark.circle" size={12} tintColor={c[TONE_FG[tone]]} fallback={null} />
+        <Icon name="xmark.circle" size={12} tintColor={c[TONE_FG[tone]]} fallback={null} />
       ) : null}
       <Text style={[textStyles.small, styles.tagWord, { color: c[TONE_FG[tone]] }]}>{label}</Text>
     </View>

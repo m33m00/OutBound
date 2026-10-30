@@ -1,9 +1,9 @@
-import { SymbolView } from 'expo-symbols';
 import { Pressable, StyleSheet, Text } from 'react-native';
 
 import type { RouteImpact } from '@/live';
 import { impactAge, IMPACT_WORD } from '@/search/impactText';
 import { fonts, radius, textStyles, useColors } from '@/theme';
+import { Icon } from './Icon';
 import { pressStyle } from './press';
 
 /**
@@ -28,7 +28,7 @@ export function ImpactBadge({ impact, now, onPress }: { impact: RouteImpact; now
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
       style={pressStyle([styles.pill, { backgroundColor: bg }])}>
-      <SymbolView
+      <Icon
         name={IMPACT_ICON[impact.level]}
         size={12}
         tintColor={fg}

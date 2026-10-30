@@ -1,8 +1,8 @@
-import { SymbolView } from 'expo-symbols';
 import { Pressable, StyleSheet, Text } from 'react-native';
 
 import { minTapTarget, spacing, textStyles, useColors } from '@/theme';
 
+import { Icon } from './Icon';
 import { pressStyle } from './press';
 
 /** iOS-style back link: chevron + word, 44pt tall (design round 5). */
@@ -15,7 +15,7 @@ export function BackButton({ label, onPress, accessibilityLabel }: { label: stri
       accessibilityLabel={accessibilityLabel ?? label}
       hitSlop={{ left: spacing.page }}
       style={pressStyle(styles.back, 'link')}>
-      <SymbolView
+      <Icon
         name="chevron.left"
         size={17}
         weight="semibold"

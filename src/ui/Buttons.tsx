@@ -1,7 +1,8 @@
-import { SymbolView, type SFSymbol } from 'expo-symbols';
+import type { SFSymbol } from 'expo-symbols';
 import { Pressable, StyleSheet, Text, type StyleProp, type ViewStyle } from 'react-native';
 
 import { minTapTarget, radius, spacing, textStyles, useColors } from '@/theme';
+import { Icon } from './Icon';
 import { pressStyle } from './press';
 
 interface ButtonProps {
@@ -32,7 +33,7 @@ export function Button({ label, onPress, kind = 'primary', disabled, accessibili
         { backgroundColor: primary ? c.accent : c.surface2, opacity: disabled ? 0.5 : 1 },
         style,
       ])}>
-      {icon ? <SymbolView name={icon} size={18} tintColor={fg} fallback={null} /> : null}
+      {icon ? <Icon name={icon} size={18} tintColor={fg} fallback={null} /> : null}
       <Text style={[textStyles.button, { color: fg }]}>{label}</Text>
     </Pressable>
   );

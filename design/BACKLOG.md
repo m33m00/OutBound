@@ -21,7 +21,7 @@ Each item names its owner. One item per work session. spec-keeper runs a pre-fli
 | 14 | Radar overlay on the globe (Skia mesh/shader from lat/lon image), on/off toggle, age shown, hidden past 30 min; no time slider or color key | globe-porter | P1 | Done |
 | 15 | Leg flight-time labels on the selected route (H:MM, subtle, on the line) | globe-porter | P1 | Done |
 | 16 | Bottom tab bar: Search · Feed · My Trips · Profile (replaces top-bar Requests pill); Feed/My Trips screens as placeholders until requests backend exists | main | P1 | Done |
-| 17 | Android tab bar icons: tab icons are SF Symbols (iOS only), so Android shows labels with no icons; add an Android icon set (e.g. Material symbols) | main | P2 | Open |
+| 17 | Android tab bar icons: tab icons are SF Symbols (iOS only), so Android shows labels with no icons; add an Android icon set (e.g. Material symbols) | main | P2 | Done (design round 14) |
 | 18 | Combined route legend: one list of tier + source rows ("Good (Estimate)"), swatch in the row's line style (Q-044); RouteLegend in `src/map/` | globe-porter | P1 | Done |
 | 19 | Date row: 4 chips (Today, Tomorrow, next two days) + calendar button for later dates, 0-7 days (Q-045); `src/search/dates.ts`, `src/ui/SearchPanel.tsx` | main | P1 | Done |
 | 20 | Filters button SF Symbol icon (Q-046) | main | P1 | Done |
@@ -43,3 +43,8 @@ Each item names its owner. One item per work session. spec-keeper runs a pre-fli
 | 36 | Design round 11, selected route: leave-by card and Preview Flight move under the picked row inside the list, so the half-height panel still shows the route you tapped; picked row scrolls to the top; VoiceOver hears the leave-by line and can open each leg's flight status from the row's actions; stops line drops the repeated connection airports | main | P1 | Done |
 | 37 | Design round 12, larger text on Search: date chips wrap two to a row from 1.2x text size; From/To label and area pill capped at 1.3x so they don't collide; area pill grows instead of clipping; flight status sheet uses curly apostrophes like the rest of the app | main | P1 | Done |
 | 38 | Design round 13, area in results header: a line under the date says when a side searched its whole area ("Landing at any Dallas airport (DAL, DFW)"), so Get Home's title no longer looks like it searched only one airport | main | P1 | Done |
+| 39 | Design round 14, Android icons (backlog 17): shared `Icon` draws SF Symbols on iPhone and the closest Material icon on Android and web (tab bar, buttons, chevrons, sheets, badges); adds `@expo/vector-icons` | main | P2 | Done |
+| 40 | Area pill to gray "+ Area" outline when off (Q-056) | main | P1 | Open |
+| 41 | Seat summary on the result row's top line (Q-059) | main | P1 | Open |
+| 42 | Change date and filters from the results (Q-057) | main | P1 | Open |
+| 43 | Sort control on results: earliest arrival (default), most seats (Q-058) | main | P1 | Open |

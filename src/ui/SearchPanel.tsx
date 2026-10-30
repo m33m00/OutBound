@@ -1,4 +1,3 @@
-import { SymbolView } from 'expo-symbols';
 import { useState, type ReactNode } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
@@ -8,6 +7,7 @@ import { minTapTarget, radius, spacing, textStyles, useColors } from '@/theme';
 
 import { Button } from './Buttons';
 import { DatePickerModal } from './DatePickerModal';
+import { Icon } from './Icon';
 import { SampleLabel } from './ResultsPanel';
 import { pressStyle } from './press';
 import { withTick } from './haptics';
@@ -78,7 +78,7 @@ export function AirportCard({ label, code, onPress, areaOn, onToggleArea }: Airp
             accessibilityHint={`Searches ${listText(area.airports)}`}
             hitSlop={PILL_HIT_SLOP}
             style={pressStyle([styles.areaPill, { borderColor: c.accent }, areaOn ? { backgroundColor: c.accent } : null])}>
-            <SymbolView
+            <Icon
               name={areaOn ? 'checkmark' : 'plus'}
               size={11}
               weight="bold"
@@ -198,7 +198,7 @@ export function SearchPanel(p: SearchPanelProps) {
             wrapChips && styles.dateChipWrap,
             { backgroundColor: later ? c.accent : c.surface2 },
           ])}>
-          <SymbolView
+          <Icon
             name="calendar"
             size={18}
             tintColor={later ? c.onAccent : c.text}
@@ -237,7 +237,7 @@ export function SearchPanel(p: SearchPanelProps) {
           accessibilityRole="button"
           accessibilityLabel="Swap from and to"
           style={pressStyle([styles.swap, { backgroundColor: c.surface, borderColor: c.line }])}>
-          <SymbolView
+          <Icon
             name="arrow.left.arrow.right"
             size={18}
             tintColor={c.accent}

@@ -1,4 +1,3 @@
-import { SymbolView } from 'expo-symbols';
 import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -10,6 +9,7 @@ import { radius, spacing, textStyles, useColors } from '@/theme';
 
 import { Button } from './Buttons';
 import { ageText, delayText, movementTimes, placeText, sampleResponse, STATE_WORD } from './flightStatusText';
+import { Icon } from './Icon';
 import { pressStyle } from './press';
 import { SampleLabel } from './ResultsPanel';
 import { STATE_TONE, TONE_BG, TONE_FG } from './statusTone';
@@ -112,7 +112,7 @@ export function FlightStatusSheet({ flight, now, onClose, liveOptions, sample }:
                   },
                 ]}>
                 {tone === 'canceled' ? (
-                  <SymbolView name="xmark.circle" size={20} tintColor={c[TONE_FG[tone]]} fallback={null} />
+                  <Icon name="xmark.circle" size={20} tintColor={c[TONE_FG[tone]]} fallback={null} />
                 ) : null}
                 <Text style={[textStyles.title, { color: tone ? c[TONE_FG[tone]] : c.text }]}>
                   {STATE_WORD[status.state]}

@@ -1,4 +1,3 @@
-import { SymbolView } from 'expo-symbols';
 import { forwardRef, type ReactNode } from 'react';
 import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
 
@@ -11,6 +10,7 @@ import { radius, spacing, textStyles, useColors } from '@/theme';
 
 import { BackButton } from './BackButton';
 import { Button } from './Buttons';
+import { Icon } from './Icon';
 import { ResultRow } from './ResultRow';
 
 export interface ResultsPanelProps {
@@ -104,7 +104,7 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
           <View style={styles.state}>
             <View style={styles.errorTop} accessible>
               {/* Sample flights load on the phone, so only live data talks about the connection. */}
-              <SymbolView
+              <Icon
                 name={p.sampleFlights !== false ? 'exclamationmark.triangle' : 'wifi.exclamationmark'}
                 size={22}
                 tintColor={c.muted}

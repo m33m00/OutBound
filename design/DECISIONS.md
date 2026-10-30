@@ -163,6 +163,12 @@ Condensed from the project docs: MVP decisions (through v8.8), design direction 
 - Provisional (design round 11, 2026-10-30; not John-decided): the leave-by card and Preview Flight sit directly under the selected route's row and scroll with it (they used to sit above the list and could push the picked row out of the half-height panel); picking a route scrolls its row to the top and VoiceOver says the leave-by line once. Each leg's flight status is a VoiceOver action on the row. The row's stops line reads "1 stop · 5h 10m" because the route line above it already names the connections (VoiceOver still says "1 stop via DEN").
 - Provisional (design round 12, 2026-10-30; not John-decided): at text sizes of 1.2x and up, the date chips go two to a row (calendar on its own row) instead of shrinking and cutting off "Tomorrow". The From/To label and the area pill share the card's top row, so they stop growing at 1.3x; the airport code, name and area list keep growing.
 - Provisional (design round 13, 2026-10-30; not John-decided): when a search covered a whole area (Q-048, including Get Home), the results header adds a line under the date, e.g. "Landing at any Dallas airport (DAL, DFW)", because the title shows only the picked airports.
+- Design review follow-ups (Q-056 to Q-059, 2026-10-30, John: "Go with your lean"):
+  - Area pill matches Q-048: outline gray "+ Area" when off, solid accent-blue "All Dallas" when on.
+  - Results let you change the date and the filters in place, without going back to search.
+  - Results get a sort control; still the top 10 routes of the current sort; default stays earliest arrival.
+  - Seat availability gets more visual weight on each result row (a route-level seat summary on the top line).
+- Provisional (design round 14, 2026-10-30; not John-decided): Android and web show the closest Material icon wherever iPhone shows an SF Symbol (tab bar, buttons, chevrons, sheets), via `src/ui/Icon.tsx`; a symbol with no match keeps its text fallback.
 - App icon (Q-055, 2026-10-30, John: A, "You design it"): Ice Mix ink blue (#1D3D84) background, white route arc from an amber origin dot (amber = you), white plane leaving up-right. Same mark on Android adaptive icon and favicon. Source `design/assets/make-icon.py`.
   - Provisional (design round 6, not John-decided): splash = OutBound wordmark (Big Shoulders 700, ink #1D3D84 / dark #9BB8EF) on the theme background (#f6f8fb / #0b1119).
 

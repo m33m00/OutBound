@@ -1,9 +1,9 @@
-import { SymbolView } from 'expo-symbols';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { radius, spacing, textStyles, useColors } from '@/theme';
 
 import { Button } from './Buttons';
+import { Icon } from './Icon';
 
 export type PreviewPhase = 'idle' | 'playing' | 'done' | 'cancelled' | 'reduceMotion';
 
@@ -29,7 +29,7 @@ export function PreviewControl({ phase, simUtc, progress, onPlay, onStop }: Prev
     const time = simUtc != null ? ` · ${zoned.format(new Date(simUtc))}` : '';
     return (
       <View style={[styles.hud, { backgroundColor: c.surface2 }]}>
-        <SymbolView name="airplane" size={14} tintColor={c.accent} />
+        <Icon name="airplane" size={14} tintColor={c.accent} />
         {/* No live region: the label changes several times a second. */}
         <View style={styles.hudText} accessible accessibilityLabel={`Flight preview${time}, ${Math.round(progress * 100)} percent`}>
           <Text style={[textStyles.bodyStrong, { color: c.text }]}>Preview{time}</Text>

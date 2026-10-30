@@ -320,37 +320,37 @@ C) Leave it until TestFlight
 Recommendation: A, because it's quick to try on device and easy to replace.
 Answer: John (2026-10-30), A ("You design it"). Built in design round 8: ink blue background, white arc from an amber origin dot, white plane. Source: `design/assets/make-icon.py`.
 
-### Q-056 Area pill look  (Open)
+### Q-056 Area pill look  (Answered 2026-10-30)
 Context: DECISIONS (Q-048) says the area toggle is an outline gray pill "+ Area" when off. As built it's an accent-blue outline reading "+ All Dallas" (solid blue "✓ All Dallas" when on), so off and on use the same words. The blue reads as tappable; gray reads as quieter.
 A) Keep as built: blue outline "+ All Dallas" off, solid blue on
 B) Match the decision: gray outline "+ Area" off, solid blue "All Dallas" on
 C) Gray outline but keep the city name: "+ All Dallas" off
 Recommendation: C, because gray keeps the card calm and the city name says what it does.
-Answer:
+Answer: John (2026-10-30), "Go with your lean" = B: match the decision, gray outline "+ Area" off, solid blue "All Dallas" on.
 
-### Q-057 Change date or filters from results  (Open)
+### Q-057 Change date or filters from results  (Answered 2026-10-30)
 Context: To try the next day or loosen a filter you go Back to search, change it and search again. Checking the day after is common when flying standby.
 A) Leave as is
 B) Previous / next day arrows beside the date in the results header (searches again right away)
 C) B plus a Filters button in the results header
 Recommendation: B, because it covers the most common retry in one tap without crowding the header.
-Answer:
+Answer: John (2026-10-30), "Go with your lean" = C: change the date and the filters right from the results.
 
-### Q-058 Sort control  (Open)
+### Q-058 Sort control  (Answered 2026-10-30)
 Context: DECISIONS says earliest arrival is the default sort, "Best bet is an optional sort", and mentions a "Most seats" sort, but results have no sort control yet (they are capped at the top 10 of the default sort).
 A) Leave until there's real seat data
 B) A small sort menu in the results header: Earliest arrival (default), Most seats, Best bet
 C) Only Earliest arrival and Most seats for now
 Recommendation: A, because Most seats and Best bet mean little on sample loads; revisit with the schedule DB and reports.
-Answer:
+Answer: John (2026-10-30), "Go with your lean" = add a sort control (results stay capped at the top 10 of the current sort).
 
-### Q-059 Seats on the row's top line  (Open)
+### Q-059 Seats on the row's top line  (Answered 2026-10-30)
 Context: Q-001 says seats and live data are equal. Today the delay/weather badge has the row's top-right slot, and seat words appear only in small chips on each leg line. The route color (left edge) already shows the weakest leg.
 A) Leave as is
 B) Add a route-level seat summary to the top line, e.g. "Tight · 3 open" for the weakest leg, with the badge after it
 C) Move the badge down to its own line and put the seat summary top-right
 Recommendation: B, because it puts both headline facts on the first line without moving anything you already use.
-Answer:
+Answer: John (2026-10-30), "Go with your lean" = give seat availability more visual weight on the row (B: route-level seat summary on the top line).
 
 Provisional defaults for backlog 3 (not John-decided; John may override any time):
 - FAA cache TTL 5 min server-side; serve stale on FAA error.
