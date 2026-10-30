@@ -1,7 +1,7 @@
-import { SymbolView } from 'expo-symbols';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { minTapTarget, radius, spacing, textStyles, useColors } from '@/theme';
+import { Icon } from './Icon';
 import { pressStyle } from './press';
 import { withTick } from './haptics';
 
@@ -20,7 +20,7 @@ export function RadarButton({ on, caption, onToggle }: { on: boolean; caption: s
           styles.button,
           { backgroundColor: on ? c.accent : c.surface, borderColor: on ? c.accent : c.line2, shadowColor: c.text },
         ])}>
-        <SymbolView
+        <Icon
           name="cloud.rain"
           size={20}
           tintColor={on ? c.onAccent : c.text}

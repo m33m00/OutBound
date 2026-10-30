@@ -1,7 +1,8 @@
-import { SymbolView } from 'expo-symbols';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { radius, textStyles, useColors } from '@/theme';
+
+import { Icon } from './Icon';
 
 /**
  * Airline badge: pill + plane glyph + IATA code (DECISIONS.md: no logos).
@@ -11,7 +12,7 @@ export function AirlinePill({ airline, flightNumber }: { airline: string; flight
   const c = useColors();
   return (
     <View style={[styles.pill, { backgroundColor: c.accentSoft }]}>
-      <SymbolView
+      <Icon
         name="airplane"
         size={11}
         tintColor={c.accent}

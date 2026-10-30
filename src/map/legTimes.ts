@@ -10,7 +10,6 @@
  * - IATA labels and marks win: a time label is nudged up or down off the
  *   line, and hidden when every spot overlaps a label, mark, badge, the
  *   legend, another time label or the edge of the visible area.
- * - Hidden while a flight preview plays (restored after).
  * - Not interactive: drawn in the marks picture, never hit tested.
  */
 import type { Palette } from '@/theme';
@@ -82,10 +81,10 @@ export interface LegTimeSpec {
 
 /**
  * Labels to draw: one per leg of the selected route that has both times.
- * None without a selection or while a flight preview plays.
+ * None without a selection.
  */
-export function legTimeSpecs(selected: RouteLine | null | undefined, previewing = false): LegTimeSpec[] {
-  if (!selected || previewing) return [];
+export function legTimeSpecs(selected: RouteLine | null | undefined): LegTimeSpec[] {
+  if (!selected) return [];
   const out: LegTimeSpec[] = [];
   selected.legs.forEach((leg, legIndex) => {
     const min = legMinutes(leg.departUtc, leg.arriveUtc);
@@ -101,8 +100,7 @@ export function legTimeSpecs(selected: RouteLine | null | undefined, previewing 
 }
 
 /**
- * Accessibility sentences for the selected route's legs (independent of the
- * preview, so the description never flickers). Empty string when none.
+ * Accessibility sentences for the selected route's legs. Empty string when none.
  */
 export function legTimesSummary(selected: RouteLine | null | undefined): string {
   return legTimeSpecs(selected)

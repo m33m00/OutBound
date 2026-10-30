@@ -1,4 +1,3 @@
-import { SymbolView } from 'expo-symbols';
 import { useEffect, useRef } from 'react';
 import { AccessibilityInfo, Linking, StyleSheet, Text, View } from 'react-native';
 
@@ -7,6 +6,7 @@ import { computeLeaveBy, leaveByText, LOCATION_FRESH_MS, type PhoneLocation } fr
 import { radius, spacing, textStyles, useColors } from '@/theme';
 
 import { Button } from './Buttons';
+import { Icon } from './Icon';
 import type { LocationStatus } from './useCurrentLocation';
 
 export interface LeaveByCardProps {
@@ -44,7 +44,7 @@ export function LeaveByCard(p: LeaveByCardProps) {
     <View style={[styles.card, { backgroundColor: atAirport ? c.goodBg : c.accentSoft }]}>
       <View style={styles.top}>
         <View style={[styles.icon, { backgroundColor: c.surface }]}>
-          <SymbolView
+          <Icon
             name={atAirport ? 'airplane.departure' : 'car.fill'}
             size={18}
             tintColor={atAirport ? c.goodFg : c.accent}

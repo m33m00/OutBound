@@ -1,4 +1,3 @@
-import { SymbolView } from 'expo-symbols';
 import { useState } from 'react';
 import { Modal, Pressable, SectionList, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -7,6 +6,7 @@ import { pickerSections, type PickerItem } from '@/search/airports';
 import { minTapTarget, radius, spacing, textStyles, useColors } from '@/theme';
 
 import { Button } from './Buttons';
+import { Icon } from './Icon';
 import { pressStyle } from './press';
 
 export interface AirportPickerProps {
@@ -56,7 +56,7 @@ export function AirportPicker({ visible, title, onPick, onClose, current, neares
           </View>
         ) : null}
         {on ? (
-          <SymbolView
+          <Icon
             name="checkmark"
             size={16}
             weight="semibold"
@@ -78,7 +78,7 @@ export function AirportPicker({ visible, title, onPick, onClose, current, neares
           <Button label="Cancel" kind="secondary" onPress={close} />
         </View>
         <View style={[styles.input, { backgroundColor: c.surface, borderColor: c.line }]}>
-          <SymbolView name="magnifyingglass" size={16} tintColor={c.faint} fallback={null} />
+          <Icon name="magnifyingglass" size={16} tintColor={c.faint} fallback={null} />
           <TextInput
             value={query}
             onChangeText={setQuery}

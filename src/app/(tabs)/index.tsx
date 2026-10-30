@@ -10,7 +10,7 @@ import { nearestAirport } from '@/search/airports';
 import { searchRequest } from '@/search/areas';
 import { dateChips } from '@/search/dates';
 import { chooseOrigin, showLocationCard } from '@/search/origin';
-import { legLookup, resultsBanner, rowStatus, statusLookups } from '@/search/statusTags';
+import { departedFirst, legLookup, resultsBanner, rowStatus, statusLookups } from '@/search/statusTags';
 import { SAMPLE_TZ, SCHEDULE_SOURCE, useRouteSearch } from '@/search/useRouteSearch';
 import { minTapTarget, spacing, textStyles, useColors } from '@/theme';
 import { AirportPicker } from '@/ui/AirportPicker';
@@ -20,8 +20,6 @@ import { FiltersModal } from '@/ui/FiltersModal';
 import { FlightStatusSheet } from '@/ui/FlightStatusSheet';
 import { ImpactSheet } from '@/ui/ImpactSheet';
 import { LeaveByCard } from '@/ui/LeaveByCard';
-import { PreviewControl, type PreviewPhase } from '@/ui/PreviewControl';
-import { useReducedMotion } from '@/ui/useReducedMotion';
 import { useSharedLocation } from '@/ui/LocationProvider';
 import { LocationOptInCard } from '@/ui/LocationOptInCard';
 import { ResultsBanner } from '@/ui/ResultsBanner';
@@ -120,6 +118,11 @@ export default function HomeScreen() {
   const [showHidden, setShowHidden] = useState(false);
   useEffect(() => setShowHidden(false), [state]);
   const showResults = state.status !== 'idle' && (!emptyBanner || showHidden);
+  // An empty search shows its banner under Find Routes, so the panel goes back to half.
+  const emptyNow = emptyBanner != null && !showHidden;
+  useEffect(() => {
+    if (emptyNow) setSheetIndex(SHEET.half);
+  }, [emptyNow]);
   const results = useMemo(
     () => (state.status !== 'done' ? [] : showHidden ? state.hiddenResults : state.results),
     [state, showHidden],
@@ -145,20 +148,6 @@ export default function HomeScreen() {
   const [impactFor, setImpactFor] = useState<string | null>(null);
   const [statusFlight, setStatusFlight] = useState<Flight | null>(null);
 
-  // Flight preview (item 11; button only, Q-035): plane + moving night (Q-034).
-  const reduceMotion = useReducedMotion();
-  const [preview, setPreview] = useState<{ routeId: string; nonce: number } | null>(null);
-  const [previewInfo, setPreviewInfo] = useState<{ phase: PreviewPhase; simUtc: number | null; progress: number }>({
-    phase: 'idle',
-    simUtc: null,
-    progress: 0,
-  });
-  useEffect(() => {
-    // A different (or no) route resets the preview.
-    setPreview(null);
-    setPreviewInfo({ phase: 'idle', simUtc: null, progress: 0 });
-  }, [selectedId]);
-
   // Radar overlay (items 13-14): on by default, remembered (Q-032).
   const radar = useRadarLayers(settings.radarOn, now);
   const statusMarks = useMemo(
@@ -174,7 +163,8 @@ export default function HomeScreen() {
     (d = date, to = destination, toArea?: boolean) => {
       if (!origin || !to) return;
       setSelectedId(null);
-      setSheetIndex(SHEET.half);
+      // Results take over (Q-062): the list opens near full height.
+      setSheetIndex(SHEET.full);
       // Remembered as the fallback From when location is off (Q-051).
       if (origin !== settings.lastOrigin) updateSettings({ lastOrigin: origin });
       search(searchRequest(origin, to, d, areaOn, toArea), filters);
@@ -211,12 +201,14 @@ export default function HomeScreen() {
     (id: string | null) => {
       setSelectedId(id);
       if (!id) return;
-      const index = results.findIndex((r) => r.id === id);
+      // Picking a route drops the panel to half so the globe shows it, with the route card on top.
+      setSheetIndex(SHEET.half);
+      // Same order as the list: routes that already left sit on top.
+      const index = departedFirst(results, rowStatuses).findIndex((r) => r.id === id);
       // Top of the list, so the leave-by card under the row stays in view.
       if (index >= 0) listRef.current?.scrollToIndex({ index, viewPosition: 0 });
-      setSheetIndex((i) => (i === SHEET.full ? SHEET.half : i));
     },
-    [results],
+    [results, rowStatuses],
   );
 
   const onBodyLayout = (e: LayoutChangeEvent) => setBodyHeight(e.nativeEvent.layout.height);
@@ -242,10 +234,6 @@ export default function HomeScreen() {
           destinations={markDestinations}
           airportStatus={statusMarks}
           radar={radar.layers}
-          preview={preview}
-          onPreviewState={(s) =>
-            setPreviewInfo({ phase: s.phase, simUtc: s.simUtc, progress: s.progress })
-          }
           selectedRouteId={selectedId}
           onSelectRoute={select}
           insets={{ bottom: snaps[sheetIndex] }}
@@ -293,7 +281,14 @@ export default function HomeScreen() {
                 }
                 banner={
                   banner ? (
-                    <ResultsBanner banner={banner} onShow={() => setShowHidden(true)} onDismiss={reset} />
+                    <ResultsBanner
+                      banner={banner}
+                      onShow={() => {
+                        setShowHidden(true);
+                        setSheetIndex(SHEET.full);
+                      }}
+                      onDismiss={reset}
+                    />
                   ) : null
                 }
               />
@@ -303,9 +298,15 @@ export default function HomeScreen() {
                 state={state}
                 selectedId={selectedId}
                 now={now}
-                onSelect={(id) => select(id === selectedId ? null : id)}
+                onSelect={(id) => {
+                  if (id !== selectedId) return select(id);
+                  // Closing the route card goes back to the tall list.
+                  select(null);
+                  setSheetIndex(SHEET.full);
+                }}
                 onBack={() => {
                   setSelectedId(null);
+                  setSheetIndex(SHEET.half);
                   reset();
                 }}
                 onRetry={() => rerun(state.request.date)}
@@ -318,38 +319,26 @@ export default function HomeScreen() {
                 sampleStatus={flightStatuses.sample && results.length > 0}
                 sampleFlights={!LIVE_FLIGHTS}
                 showingHidden={showHidden}
+                days={chips}
+                onDay={(d) => {
+                  setDate(d);
+                  rerun(d);
+                }}
+                onFilters={() => setFiltersOpen(true)}
+                filtersChanged={filtersChanged}
                 selectedCard={
                   firstLeg ? (
-                    <View style={styles.selectedCard}>
-                      <LeaveByCard
-                        airport={AIRPORTS[firstLeg.from]}
-                        departUtc={firstLeg.departUtc}
-                        bufferMin={settings.bufferMin}
-                        now={now}
-                        location={location}
-                        locationStatus={locationStatus}
-                        onUseLocation={async () => {
-                          if (await requestLocation()) updateSettings({ useLocation: true });
-                        }}
-                      />
-                      <PreviewControl
-                        phase={previewInfo.phase}
-                        simUtc={previewInfo.simUtc}
-                        progress={previewInfo.progress}
-                        onPlay={() => {
-                          if (reduceMotion) {
-                            setPreviewInfo({ phase: 'reduceMotion', simUtc: null, progress: 0 });
-                            return;
-                          }
-                          setPreview({ routeId: selectedId!, nonce: Date.now() });
-                          setPreviewInfo({ phase: 'playing', simUtc: null, progress: 0 });
-                        }}
-                        onStop={() => {
-                          setPreview(null);
-                          setPreviewInfo({ phase: 'idle', simUtc: null, progress: 0 });
-                        }}
-                      />
-                    </View>
+                    <LeaveByCard
+                      airport={AIRPORTS[firstLeg.from]}
+                      departUtc={firstLeg.departUtc}
+                      bufferMin={settings.bufferMin}
+                      now={now}
+                      location={location}
+                      locationStatus={locationStatus}
+                      onUseLocation={async () => {
+                        if (await requestLocation()) updateSettings({ useLocation: true });
+                      }}
+                    />
                   ) : null
                 }
               />
@@ -420,8 +409,5 @@ const styles = StyleSheet.create({
   },
   body: {
     flex: 1,
-  },
-  selectedCard: {
-    gap: spacing.group,
   },
 });

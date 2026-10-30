@@ -22,7 +22,7 @@ export function toRouteLine(
       toCode: flight.to,
       tier: seats.tier,
       source: seats.source,
-      // Scheduled times, for the flight preview's moving day/night (item 11).
+      // Scheduled times, for the selected route's leg durations (item 15).
       departUtc: flight.departUtc,
       arriveUtc: flight.arriveUtc,
     })),

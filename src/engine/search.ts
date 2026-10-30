@@ -26,24 +26,44 @@ export const DEFAULT_SEARCH_OPTIONS: Omit<SearchOptions, 'now'> = {
 export const MAX_DAYS_OUT = 7;
 
 /**
- * Default sort: earliest arrival; tie-break fewer stops, then best
- * availability (route tier, Q-013). Then earlier departure and id so the
- * order is stable. Full routes are not demoted: they stay in time order.
+ * Default sort (John, 2026-10-30): departure time, earliest first. Ties go to
+ * the earlier arrival, then fewer stops, then best availability (route tier,
+ * Q-013), then id so the order is stable. Full routes are not demoted.
  */
 export function compareItineraries(a: Itinerary, b: Itinerary): number {
   return (
+    a.departUtc - b.departUtc ||
     a.arriveUtc - b.arriveUtc ||
     a.stops - b.stops ||
     tierRank(a.tier) - tierRank(b.tier) ||
-    a.departUtc - b.departUtc ||
     (a.id < b.id ? -1 : a.id > b.id ? 1 : 0)
   );
+}
+
+/** At most this many routes that already left (by schedule) make the list once it's over the limit. */
+export const KEEP_LEFT = 3;
+
+/**
+ * The `limit` routes to show, still in departure order. In departure order a
+ * plain cut would fill the list with the day's early flights that have already
+ * left, so once there are more than `limit`, keep only the KEEP_LEFT routes
+ * that left most recently and fill the rest with routes still to leave (more
+ * that left fill in if fewer are still to leave). Provisional, not John-decided.
+ */
+export function pickResults(sorted: Itinerary[], now: number, limit: number): Itinerary[] {
+  if (sorted.length <= limit) return sorted;
+  const left = sorted.filter((it) => it.departUtc < now);
+  const ahead = sorted.filter((it) => it.departUtc >= now);
+  const aheadCount = Math.min(ahead.length, Math.max(limit - KEEP_LEFT, limit - left.length));
+  const leftCount = Math.min(left.length, limit - aheadCount);
+  return [...left.slice(left.length - leftCount), ...ahead.slice(0, aheadCount)];
 }
 
 /**
  * Find itineraries from `origin` to `destination` with 0-3 stops, departing
  * on the request's local date. Reads only from the provider. Flights that
- * already left are kept, mixed in by time (Q-047); live status marks them.
+ * already left are kept, at the top in time order (Q-047, 2026-10-30); live
+ * status grays them.
  */
 export async function searchItineraries(
   provider: FlightDataProvider,
@@ -51,7 +71,7 @@ export async function searchItineraries(
   options: Partial<SearchOptions> = {},
 ): Promise<Itinerary[]> {
   const all = await findAll(provider, request, options);
-  return all.slice(0, options.limit ?? DEFAULT_SEARCH_OPTIONS.limit);
+  return pickResults(all, options.now ?? Date.now(), options.limit ?? DEFAULT_SEARCH_OPTIONS.limit);
 }
 
 /**
@@ -67,10 +87,11 @@ export async function searchRoutes(
   looseOptions: Partial<SearchOptions> = {},
 ): Promise<SearchOutcome> {
   const limit = options.limit ?? DEFAULT_SEARCH_OPTIONS.limit;
-  const results = (await findAll(provider, request, options)).slice(0, limit);
+  const now = options.now ?? Date.now();
+  const results = pickResults(await findAll(provider, request, options), now, limit);
   if (results.length) return { results, hiddenCount: 0, hiddenResults: [] };
   const loose = await findAll(provider, request, { ...options, ...looseOptions });
-  return { results, hiddenCount: loose.length, hiddenResults: loose.slice(0, limit) };
+  return { results, hiddenCount: loose.length, hiddenResults: pickResults(loose, now, limit) };
 }
 
 /** Every matching itinerary, sorted, before the result limit. */

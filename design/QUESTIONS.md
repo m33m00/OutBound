@@ -320,37 +320,61 @@ C) Leave it until TestFlight
 Recommendation: A, because it's quick to try on device and easy to replace.
 Answer: John (2026-10-30), A ("You design it"). Built in design round 8: ink blue background, white arc from an amber origin dot, white plane. Source: `design/assets/make-icon.py`.
 
-### Q-056 Area pill look  (Open)
+### Q-056 Area pill look  (Answered 2026-10-30)
 Context: DECISIONS (Q-048) says the area toggle is an outline gray pill "+ Area" when off. As built it's an accent-blue outline reading "+ All Dallas" (solid blue "✓ All Dallas" when on), so off and on use the same words. The blue reads as tappable; gray reads as quieter.
 A) Keep as built: blue outline "+ All Dallas" off, solid blue on
 B) Match the decision: gray outline "+ Area" off, solid blue "All Dallas" on
 C) Gray outline but keep the city name: "+ All Dallas" off
 Recommendation: C, because gray keeps the card calm and the city name says what it does.
-Answer:
+Answer: John (2026-10-30), "Go with your lean" = B: match the decision, gray outline "+ Area" off, solid blue "All Dallas" on.
 
-### Q-057 Change date or filters from results  (Open)
+### Q-057 Change date or filters from results  (Answered 2026-10-30)
 Context: To try the next day or loosen a filter you go Back to search, change it and search again. Checking the day after is common when flying standby.
 A) Leave as is
 B) Previous / next day arrows beside the date in the results header (searches again right away)
 C) B plus a Filters button in the results header
 Recommendation: B, because it covers the most common retry in one tap without crowding the header.
-Answer:
+Answer: John (2026-10-30), "Go with your lean" = C: change the date and the filters right from the results.
 
-### Q-058 Sort control  (Open)
+### Q-058 Sort control  (Answered 2026-10-30)
 Context: DECISIONS says earliest arrival is the default sort, "Best bet is an optional sort", and mentions a "Most seats" sort, but results have no sort control yet (they are capped at the top 10 of the default sort).
 A) Leave until there's real seat data
 B) A small sort menu in the results header: Earliest arrival (default), Most seats, Best bet
 C) Only Earliest arrival and Most seats for now
 Recommendation: A, because Most seats and Best bet mean little on sample loads; revisit with the schedule DB and reports.
-Answer:
+Answer: John (2026-10-30), "Go with your lean" = add a sort control (results stay capped at the top 10 of the current sort).
 
-### Q-059 Seats on the row's top line  (Open)
+### Q-059 Seats on the row's top line  (Answered 2026-10-30)
 Context: Q-001 says seats and live data are equal. Today the delay/weather badge has the row's top-right slot, and seat words appear only in small chips on each leg line. The route color (left edge) already shows the weakest leg.
 A) Leave as is
 B) Add a route-level seat summary to the top line, e.g. "Tight · 3 open" for the weakest leg, with the badge after it
 C) Move the badge down to its own line and put the seat summary top-right
 Recommendation: B, because it puts both headline facts on the first line without moving anything you already use.
-Answer:
+Answer: John (2026-10-30), "Go with your lean" = give seat availability more visual weight on the row (B: route-level seat summary on the top line).
+
+### Q-060 Sort control after the switch to departure order  (Open 2026-10-30)
+Context: You asked for results in departure time order. Q-058 had approved a sort control with Earliest arrival as the default.
+A) No sort control; departure order only
+B) A small control with Departure time (default) and Most seats
+C) Departure time (default), Earliest arrival and Most seats
+Recommendation: A for now, because Most seats means little on sample loads; add B with the schedule DB and reports.
+Default while open: no sort control (backlog 43 on hold).
+
+### Q-061 What counts as "already departed"  (Open 2026-10-30)
+Context: You said flights that already departed go at the top, grayed. Q-050 said never guess Departed from the schedule, so today a row grays only when live status says Departed or Arrived. Also, with departure order a busy day could fill the 10-route list with flights that already left.
+A) Gray and float only on live Departed/Arrived; keep at most 3 already-left routes when more than 10 match
+B) Also gray when the scheduled time has passed and there's no live status yet
+C) Hide routes that left more than an hour ago
+Recommendation: A, because a delayed flight past its scheduled time may still be at the gate, and you'd want to see it.
+Default while open: A.
+
+### Q-062 Results feel small and the flow feels like something is missing  (Answered 2026-10-30)
+Context: John: the results list "feels so small and constricted" and the flow "doesn't feel right… like something is missing". Measured on a 6.1" iPhone: results open in the half-height sheet (~320pt). The header (Back, title, day stepper, count) takes ~170pt, so about one route row shows before scrolling; full height shows about four. Tapping a row only highlights it on the globe and opens the leave-by card inline; flight details hide behind small per-leg taps, so there's no clear "this is my flight" step. In departure order there's also no marker for "now".
+A) Results take over: after Find Routes the sheet opens near full height with a one-line header (route, ‹ day ›, Filters), compact two-line rows, and a "Now" divider between flights that left and flights still to go. Tapping a row drops the sheet to half so the globe shows the route, with a route card (legs, seats per leg, connection, leave-by, live status).
+B) List first: results open as their own full screen; a Map button shows the globe; tapping a row opens a route detail page.
+C) Tighten in place: keep the half sheet but open results taller (~70%), make the header one line and the rows more compact, and add the "Now" divider.
+Recommendation: A, because it gives the list room (about 6 routes on screen) and adds the missing step (a route card) while keeping the globe as the place you see where a flight goes.
+Answer: John (2026-10-30), "Results take over" = A.
 
 Provisional defaults for backlog 3 (not John-decided; John may override any time):
 - FAA cache TTL 5 min server-side; serve stale on FAA error.

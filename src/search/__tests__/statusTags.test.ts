@@ -3,6 +3,7 @@ import { DATE, NOW, flight } from '@/engine/testHelpers';
 import { flightLookupKey, type FlightState, type FlightStatus, type Movement } from '@/live';
 
 import {
+  departedFirst,
   legLookup,
   legStatus,
   resultsBanner,
@@ -211,5 +212,21 @@ describe('resultsBanner (Q-047)', () => {
       count: 3,
     });
     expect(resultsBanner({ results: [], hiddenCount: 1 })?.text).toBe('1 route hidden by your filters');
+  });
+});
+
+describe('departedFirst (John, 2026-10-30)', () => {
+  const row = (dimmed: boolean) => ({ legs: [], risks: [], dimmed, canceled: false, spoken: [] });
+  const list = [{ id: 'a' }, { id: 'b' }, { id: 'c' }, { id: 'd' }];
+
+  it('moves routes that already left to the top, keeping departure order in each group', () => {
+    const statuses = { a: row(false), b: row(true), c: row(false), d: row(true) };
+    expect(departedFirst(list, statuses).map((r) => r.id)).toEqual(['b', 'd', 'a', 'c']);
+  });
+
+  it('keeps the list as is when nothing left, everything left, or there is no status yet', () => {
+    expect(departedFirst(list, { a: row(false) })).toBe(list);
+    expect(departedFirst(list, { a: row(true), b: row(true), c: row(true), d: row(true) })).toBe(list);
+    expect(departedFirst(list)).toBe(list);
   });
 });

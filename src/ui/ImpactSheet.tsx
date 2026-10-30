@@ -1,4 +1,3 @@
-import { SymbolView } from 'expo-symbols';
 import { Modal, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -8,6 +7,7 @@ import { IMPACT_WORD } from '@/search/impactText';
 import { radius, spacing, textStyles, useColors } from '@/theme';
 
 import { Button } from './Buttons';
+import { Icon } from './Icon';
 import { IMPACT_ICON } from './ImpactBadge';
 import { SampleLabel } from './ResultsPanel';
 
@@ -61,7 +61,7 @@ export function ImpactSheet({ visible, title, subtitle, impact, now, sample, onC
                   <View style={styles.spacer} />
                   {badge ? (
                     <View style={[styles.pill, { backgroundColor: likely ? c.likelyDelaysBg : c.cautionBg }]}>
-                      <SymbolView
+                      <Icon
                         name={IMPACT_ICON[s.level as 'caution' | 'likelyDelays']}
                         size={13}
                         tintColor={likely ? c.likelyDelays : c.caution}

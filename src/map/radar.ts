@@ -209,27 +209,22 @@ export class RadarImageCache<I> {
 
 /**
  * Canvas layers, back to front: base, night (item 11), radar, routes, rim,
- * marks, plane (item 11). Night sits under radar so radar colors are never
- * tinted (Q-033). Radar is left out while a flight preview plays: it is a
- * "now" picture and would not match the simulated sky.
+ * marks. Night sits under radar so radar colors are never tinted (Q-033).
  */
-export type CanvasLayerName = 'base' | 'night' | 'radar' | 'routes' | 'rim' | 'marks' | 'plane';
+export type CanvasLayerName = 'base' | 'night' | 'radar' | 'routes' | 'rim' | 'marks';
 
 export function canvasLayerOrder(present: {
   night?: boolean;
   radar: boolean;
   routes: boolean;
   marks: boolean;
-  plane?: boolean;
-  previewing?: boolean;
 }): CanvasLayerName[] {
   const order: CanvasLayerName[] = ['base'];
   if (present.night) order.push('night');
-  if (present.radar && !present.previewing) order.push('radar');
+  if (present.radar) order.push('radar');
   if (present.routes) order.push('routes');
   order.push('rim');
   if (present.marks) order.push('marks');
-  if (present.plane) order.push('plane');
   return order;
 }
 

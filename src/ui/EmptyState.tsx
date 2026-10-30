@@ -1,8 +1,10 @@
-import { SymbolView, type SFSymbol } from 'expo-symbols';
+import type { SFSymbol } from 'expo-symbols';
 import type { ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { radius, spacing, textStyles, useColors } from '@/theme';
+
+import { Icon } from './Icon';
 
 export interface EmptyStateProps {
   /** Decorative SF Symbol (iOS; Android shows none). */
@@ -27,7 +29,7 @@ export function EmptyState({ icon, title, body, points, action }: EmptyStateProp
     <View style={[styles.card, { backgroundColor: c.surface, borderColor: c.line }]}>
       <View accessible accessibilityLabel={label} style={styles.text}>
         <View style={[styles.icon, { backgroundColor: c.accentSoft }]}>
-          <SymbolView name={icon} size={26} tintColor={c.accent} fallback={null} />
+          <Icon name={icon} size={26} tintColor={c.accent} fallback={null} />
         </View>
         <Text style={[textStyles.heading, styles.center, { color: c.text }]}>{title}</Text>
         <Text style={[textStyles.body, styles.center, { color: c.muted }]}>{body}</Text>

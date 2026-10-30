@@ -3,9 +3,7 @@ import {
   combinedAlpha,
   NIGHT,
   NIGHT_THEME,
-  nextSkyTime,
   nightAlpha,
-  SKY_PREVIEW_MS,
   sunDot,
   sunFromKey,
   sunKey,
@@ -133,20 +131,5 @@ describe('recompute keying and throttle', () => {
     expect(keys.size).toBeLessThanOrEqual(4);
     // Same key within a few seconds.
     expect(sunKey(sunPosition(t))).toBe(sunKey(sunPosition(t + 500)));
-  });
-
-  it('follows real time immediately when idle', () => {
-    const prev = { utc: 1000, at: 0 };
-    expect(nextSkyTime(prev, { nowMs: 2000, wallMs: 1, simUtc: null })).toEqual({ utc: 2000, at: 1 });
-    expect(nextSkyTime(prev, { nowMs: 1000, wallMs: 1, simUtc: null })).toBe(prev);
-  });
-
-  it('throttles simulated time to about 9 Hz during a preview', () => {
-    const prev = { utc: 1000, at: 500 };
-    expect(nextSkyTime(prev, { nowMs: 0, wallMs: 500 + SKY_PREVIEW_MS - 1, simUtc: 5000 })).toBe(prev);
-    expect(nextSkyTime(prev, { nowMs: 0, wallMs: 500 + SKY_PREVIEW_MS, simUtc: 5000 })).toEqual({
-      utc: 5000,
-      at: 500 + SKY_PREVIEW_MS,
-    });
   });
 });

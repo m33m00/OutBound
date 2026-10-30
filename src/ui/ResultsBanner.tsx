@@ -1,9 +1,9 @@
-import { SymbolView } from 'expo-symbols';
 import { useEffect } from 'react';
 import { AccessibilityInfo, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { ResultsBanner as Banner } from '@/search/statusTags';
 import { minTapTarget, radius, spacing, textStyles, useColors } from '@/theme';
+import { Icon } from './Icon';
 import { pressStyle } from './press';
 
 /**
@@ -45,7 +45,7 @@ export function ResultsBanner({
         ) : null}
       </View>
       <Pressable onPress={onDismiss} accessibilityRole="button" accessibilityLabel="Dismiss notice" style={pressStyle(styles.close, 'link')}>
-        <SymbolView
+        <Icon
           name="xmark"
           size={14}
           weight="semibold"

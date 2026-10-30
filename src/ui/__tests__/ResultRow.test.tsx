@@ -4,6 +4,7 @@ import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import { createMemoryProvider, searchItineraries, zonedToUtc } from '@/engine';
 import { flightLookupKey, type FlightStatus } from '@/live';
 import { legLookup, rowStatus } from '@/search/statusTags';
+import { colors } from '@/theme';
 
 import { ResultRow } from '../ResultRow';
 
@@ -37,9 +38,26 @@ describe('ResultRow', () => {
     expect(button.props.accessibilityState).toEqual({ selected: false });
     expect(root.findAll((n) => n.props.testID === 'badge-slot').length).toBeGreaterThan(0);
     const texts = root.findAll((n) => typeof n.props.children === 'string').map((n) => n.props.children);
-    expect(texts).toContain('Full · no open seats · reported just now');
+    // Seats lead the top line (Q-059); the slim row has no per-leg seat chips (Q-062).
+    expect(texts).toContain('Full · no open seats');
+    expect(texts).not.toContain('Reported just now');
+    expect(root.findAll((n) => n.props.testID === 'flights-line' && typeof n.type === 'string').length).toBe(1);
+    expect(root.findAll((n) => n.props.testID === 'seat-summary').length).toBeGreaterThan(0);
     act(() => button.props.onPress());
     expect(onPress).toHaveBeenCalledWith(it.id);
+  });
+
+  it('opens into a route card when selected: a nonstop keeps only the seat source and age on its leg', async () => {
+    const it = await fullItinerary();
+    await act(async () => {
+      r = create(<ResultRow itinerary={it} selected now={NOW} onPress={jest.fn()} />);
+    });
+    const texts = r!.root.findAll((n) => typeof n.props.children === 'string').map((n) => n.props.children);
+    expect(texts).toContain('Reported just now');
+    expect(texts).not.toContain('Full · no open seats · reported just now');
+    expect(r!.root.findAll((n) => n.props.testID === 'flights-line').length).toBe(0);
+    const button = r!.root.findAll((n) => n.props.accessibilityRole === 'button')[0];
+    expect(button.props.accessibilityHint).toBe('Closes the route card');
   });
 
   it('shows the delay badge and exposes details as a VoiceOver action', async () => {
@@ -88,6 +106,45 @@ describe('ResultRow', () => {
     expect(onLeg).toHaveBeenCalledWith(it.legs[0].flight);
     const texts = r!.root.findAll((n) => n.props.children != null).flatMap((n) => [n.props.children].flat());
     expect(texts).toContain('Nonstop');
+  });
+
+  it('connections: top line shows the weakest leg; each leg keeps its own seat chip', async () => {
+    const at = (hhmm: string) => zonedToUtc('2026-10-20', hhmm, 'America/Chicago');
+    const provider = createMemoryProvider(
+      [
+        { id: 'A', airline: 'WN', flightNumber: '10', from: 'BNA', to: 'DEN', departUtc: at('08:00'), arriveUtc: at('10:00') },
+        { id: 'B', airline: 'WN', flightNumber: '20', from: 'DEN', to: 'LAX', departUtc: at('11:30'), arriveUtc: at('13:30') },
+      ],
+      {
+        A: [{ source: 'reported', openSeats: 30, listed: 5, asOf: NOW }],
+        B: [{ source: 'reported', openSeats: 6, listed: 4, asOf: NOW }],
+      },
+    );
+    const [it] = await searchItineraries(provider, { origin: 'BNA', destination: 'LAX', date: '2026-10-20' }, { now: NOW });
+    await act(async () => {
+      r = create(<ResultRow itinerary={it} selected now={NOW} onPress={jest.fn()} />);
+    });
+    const summary = r!.root.findAll((n) => n.props.testID === 'seat-summary' && typeof n.type === 'string')[0];
+    const words = summary.findAll((n) => typeof n.props.children === 'string').map((n) => n.props.children);
+    expect(words[0]).toMatch(/^Tight · 2 open$/);
+    const texts = r!.root.findAll((n) => typeof n.props.children === 'string').map((n) => n.props.children as string);
+    expect(texts.some((t) => t.endsWith('· reported just now'))).toBe(true);
+    // The route card names the connection between the legs.
+    const all = r!.root.findAll((n) => typeof n.type === 'string' && n.props.children != null).map((n) => [n.props.children].flat().join(''));
+    expect(all).toContain('Connect at DEN · 1h 30m');
+  });
+
+  it('grays the seat summary on a route that already left, keeping its words', async () => {
+    const it = await fullItinerary();
+    const status = { legs: [], risks: [], dimmed: true, canceled: false, spoken: ['Departed'] };
+    await act(async () => {
+      r = create(<ResultRow itinerary={it} selected={false} now={NOW} onPress={jest.fn()} status={status} />);
+    });
+    const summary = r!.root.findAll((n) => n.props.testID === 'seat-summary' && typeof n.type === 'string')[0];
+    const text = summary.findAll((n) => typeof n.props.children === 'string')[0];
+    const flat = (style: unknown) => Object.assign({}, ...([style] as unknown[]).flat(3).filter(Boolean));
+    expect(flat(text.props.style).color).toBe(colors.light.muted);
+    expect(text.props.children).toBe('Full · no open seats');
   });
 
   it('shows Checking… while live data loads', async () => {

@@ -1,5 +1,7 @@
 import React from 'react';
-import { Text } from 'react-native';
+import { StyleSheet, Text } from 'react-native';
+
+import { colors } from '@/theme/colors';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 
 import { AirportCard } from '../SearchPanel';
@@ -11,7 +13,7 @@ const texts = (r: ReactTestRenderer) =>
 const textOf = (r: ReactTestRenderer) =>
   r.root.findAllByType(Text).map((n) => [n.props.children].flat().join(''));
 
-describe('AirportCard area pill (Q-048)', () => {
+describe('AirportCard area pill (Q-048, Q-056)', () => {
   let r: ReactTestRenderer | undefined;
   afterEach(() => act(() => r?.unmount()));
 
@@ -23,7 +25,7 @@ describe('AirportCard area pill (Q-048)', () => {
   }
   const pill = (t: ReactTestRenderer) => t.root.findAll((n) => n.props.accessibilityRole === 'switch')[0];
 
-  it('shows the same "All Dallas" words off and on, as a switch with a hint', () => {
+  it('reads "+ Area" in gray when off and "All Dallas" in blue when on, as a switch with a hint', () => {
     const toggle = jest.fn();
     const off = render('DFW', false, toggle);
     const p = pill(off);
@@ -31,7 +33,9 @@ describe('AirportCard area pill (Q-048)', () => {
     expect(p.props.accessibilityLabel).toBe('Include all Dallas airports');
     expect(p.props.accessibilityHint).toBe('Searches DAL and DFW');
     expect(p.props.hitSlop).toEqual({ top: 8, bottom: 8, left: 8, right: 8 });
-    expect(textOf(off)).toContain('All Dallas');
+    expect(textOf(off)).toContain('Area');
+    expect(textOf(off)).not.toContain('All Dallas');
+    expect(StyleSheet.flatten(p.props.style({ pressed: false })).borderColor).toBe(colors.light.line2);
     expect(texts(off)).not.toContain('DAL · DFW');
     act(() => p.props.onPress());
     expect(toggle).toHaveBeenCalled();
@@ -39,6 +43,7 @@ describe('AirportCard area pill (Q-048)', () => {
 
     const on = render('DFW', true);
     expect(pill(on).props.accessibilityState).toEqual({ checked: true });
+    expect(StyleSheet.flatten(pill(on).props.style({ pressed: false })).backgroundColor).toBe(colors.light.accent);
     expect(textOf(on)).toContain('All Dallas');
     expect(texts(on)).toContain('DAL · DFW');
     expect(texts(on)).toContain('Dallas/Fort Worth');

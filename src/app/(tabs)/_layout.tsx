@@ -1,15 +1,16 @@
 import { Tabs } from 'expo-router';
-import { SymbolView, type SFSymbol } from 'expo-symbols';
+import type { SFSymbol } from 'expo-symbols';
 import type { ColorValue } from 'react-native';
 
 import { fonts, minTapTarget, useColors } from '@/theme';
+import { Icon } from '@/ui/Icon';
 
 /** Bottom tab bar (backlog 16; Q-042): Search · Feed · My Trips · Profile. */
 export default function TabsLayout() {
   const c = useColors();
   const icon =
     (name: SFSymbol) =>
-    ({ color }: { color: ColorValue }) => <SymbolView name={name} size={22} tintColor={color} fallback={null} />;
+    ({ color }: { color: ColorValue }) => <Icon name={name} size={22} tintColor={color} fallback={null} />;
 
   return (
     <Tabs

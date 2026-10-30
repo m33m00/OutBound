@@ -81,6 +81,7 @@ export function Sheet({ snaps, index, onIndexChange, children }: SheetProps) {
             onIndexChange(Math.max(0, Math.min(snaps.length - 1, index + step)));
           }}
           onPress={() => onIndexChange((index + 1) % snaps.length)}
+          hitSlop={{ top: 8, bottom: 8 }}
           style={styles.handleArea}>
           <View style={[styles.handle, { backgroundColor: c.line2 }]} />
         </Pressable>
@@ -106,8 +107,9 @@ const styles = StyleSheet.create({
     elevation: 8,
     overflow: 'hidden',
   },
+  // 28pt tall plus hit slop: still a 44pt target, 16pt more room for results (Q-062).
   handleArea: {
-    height: minTapTarget,
+    height: minTapTarget - 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
