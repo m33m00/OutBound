@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet } from 'react-native';
+import { AccessibilityInfo, Pressable, StyleSheet } from 'react-native';
 
 import { minTapTarget, useColors } from '@/theme';
 
@@ -15,7 +15,11 @@ export function SaveRouteButton({ saved, onPress }: { saved: boolean; onPress: (
   const c = useColors();
   return (
     <Pressable
-      onPress={withTick(onPress)}
+      onPress={withTick(() => {
+        onPress();
+        // The icon is the only change on screen, so VoiceOver says what happened.
+        AccessibilityInfo.announceForAccessibility(saved ? 'Removed from My Trips' : 'Saved to My Trips');
+      })}
       accessibilityRole="button"
       accessibilityLabel={saved ? 'Saved to My Trips' : 'Save Route'}
       accessibilityHint={saved ? 'Removes it from My Trips' : 'Keeps it in My Trips'}

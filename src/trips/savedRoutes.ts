@@ -4,7 +4,7 @@
  * again, so seats and times are current, then opens the same flights if
  * they're still in the results.
  */
-import { AIRPORTS, localDate, type Itinerary, type SearchRequest } from '@/engine';
+import { addDays, AIRPORTS, localDate, type Itinerary, type SearchRequest } from '@/engine';
 import { shortDate } from '@/search/dates';
 import { formatTime } from '@/search/format';
 
@@ -127,13 +127,21 @@ export function findSaved(results: readonly Itinerary[], route: SavedRoute): Iti
 export const savedRouteTitle = (route: SavedRoute) =>
   [route.legs[0].from, ...route.legs.map((l) => l.to)].join(' → ');
 
-/** "Thu, Oct 30 · 7:05 AM – 1:20 PM", times local at each end. */
-export function savedRouteWhen(route: SavedRoute): string {
+/** "Today", "Tomorrow" or "Thu, Oct 30", counted at the origin. */
+export function savedRouteDay(route: SavedRoute, now: number): string {
+  const today = localDate(now, AIRPORTS[route.request.origin].tz);
+  if (route.request.date === today) return 'Today';
+  if (route.request.date === addDays(today, 1)) return 'Tomorrow';
+  return shortDate(route.request.date);
+}
+
+/** "Today · 7:05 AM – 1:20 PM", times local at each end. */
+export function savedRouteWhen(route: SavedRoute, now: number): string {
   const first = route.legs[0];
   const last = route.legs[route.legs.length - 1];
   const dep = formatTime(first.departUtc, AIRPORTS[first.from].tz);
   const arr = formatTime(last.arriveUtc, AIRPORTS[last.to].tz);
-  return `${shortDate(route.request.date)} · ${dep} – ${arr}`;
+  return `${savedRouteDay(route, now)} · ${dep} – ${arr}`;
 }
 
 /** "AA 1234, AA 88". Airline codes only, never names or logos. */

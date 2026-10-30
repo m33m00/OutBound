@@ -314,6 +314,7 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
               onImpactPress={p.onImpactPress}
               onLegPress={p.onLegPress}
               status={p.statuses?.[item.id]}
+              saved={p.isSaved?.(item)}
             />
           );
           const block = row;

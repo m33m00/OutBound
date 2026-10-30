@@ -49,6 +49,7 @@ export default function TripsScreen() {
             key={route.key}
             route={route}
             past={isPast(route, now)}
+            now={now}
             onOpen={() => {
               open(route);
               router.navigate('/');

@@ -1,5 +1,5 @@
 import React from 'react';
-import { FlatList, Text } from 'react-native';
+import { AccessibilityInfo, FlatList, Text } from 'react-native';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 
 import { createMemoryProvider, searchItineraries, zonedToUtc } from '@/engine';
@@ -297,8 +297,11 @@ describe('results bar at big text sizes', () => {
     const header = r!.root.findAll((n) => n.props.testID === 'route-view' && typeof n.type === 'string')[0].children[0];
     expect(typeof header !== 'string' && header.findAll((n) => n.props.testID === 'save-route').length).toBeGreaterThan(0);
     expect(button().props.accessibilityHint).toBe('Keeps it in My Trips');
+    const announce = jest.spyOn(AccessibilityInfo, 'announceForAccessibility').mockImplementation(() => {});
     act(() => button().props.onPress());
     expect(onToggleSave).toHaveBeenCalledWith(list[0]);
+    expect(announce).toHaveBeenCalledWith('Saved to My Trips');
+    announce.mockRestore();
     await act(async () => r!.update(panel(true)));
     expect(button().props.accessibilityLabel).toBe('Saved to My Trips');
     expect(button().props.accessibilityHint).toBe('Removes it from My Trips');
@@ -323,5 +326,29 @@ describe('results bar at big text sizes', () => {
     expect(r!.root.findAll((n) => n.props.testID === 'save-route').length).toBe(0);
     const note = r!.root.findAll((n) => n.props.testID === 'results-note' && typeof n.type === 'string');
     expect(note[0].props.children).toBe('Your saved flights aren’t in this search anymore.');
+  });
+
+  it('marks saved routes in the list with a bookmark and says so to VoiceOver (Q-043)', async () => {
+    const { request, list } = await results();
+    const state = { status: 'done' as const, request, results: list, hiddenCount: 0, hiddenResults: [], searchedAt: NOW };
+    await act(async () => {
+      r = create(
+        <ResultsPanel
+          state={state}
+          selectedId={null}
+          now={NOW}
+          onSelect={jest.fn()}
+          onBack={jest.fn()}
+          onRetry={jest.fn()}
+          isSaved={(it) => it.id === list[1].id}
+          onToggleSave={jest.fn()}
+        />,
+      );
+    });
+    const marks = r!.root.findAll((n) => n.props.testID === 'row-saved' && typeof n.type === 'string');
+    expect(marks.length).toBe(1);
+    const rows = r!.root.findAll((n) => n.props.accessibilityRole === 'button' && typeof n.type === 'string' && n.props.accessibilityHint?.startsWith('Opens the route card'));
+    const saidSaved = rows.map((n) => (n.props.accessibilityLabel as string).endsWith('Saved to My Trips'));
+    expect(saidSaved).toEqual([false, true]);
   });
 });

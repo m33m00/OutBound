@@ -62,6 +62,8 @@ export interface ResultRowProps {
   status?: RowStatus;
   /** Route view (John, 2026-10-30): leg lines in body-size text. */
   large?: boolean;
+  /** In My Trips (Q-043): a small bookmark before the route line in the list. */
+  saved?: boolean;
 }
 
 /** Row tag kind to tone (Q-050). */
@@ -116,6 +118,7 @@ export const ResultRow = memo(function ResultRow({
   onLegPress,
   status,
   large,
+  saved,
 }: ResultRowProps) {
   const c = useColors();
   const { fontScale } = useWindowDimensions();
@@ -124,7 +127,12 @@ export const ResultRow = memo(function ResultRow({
   const t = { ...rt, depart: keep(rt.depart), arrive: keep(rt.arrive) };
   const hasImpact = impact != null && impact.level !== 'none';
   const label = forSpeech(
-    [rowAccessibilityLabel(it, now), ...(status?.spoken ?? []), hasImpact ? impactSummary(impact, now) : '']
+    [
+      rowAccessibilityLabel(it, now),
+      ...(status?.spoken ?? []),
+      hasImpact ? impactSummary(impact, now) : '',
+      saved && !large ? 'Saved to My Trips' : '',
+    ]
       .filter(Boolean)
       .join('. '),
   );
@@ -234,9 +242,17 @@ export const ResultRow = memo(function ResultRow({
           </View>
         </View>
         <View style={styles.line}>
-          <Text style={[textStyles.bodyStrong, { color: c.text }]}>
-            {[it.origin, ...it.legs.map((l) => l.flight.to)].join(' → ')}
-          </Text>
+          <View style={styles.path}>
+            {/* The route view's header bookmark already says it; the list shows a small one. */}
+            {saved && !large ? (
+              <View testID="row-saved">
+                <Icon name="bookmark.fill" size={13} tintColor={c.accent} fallback={null} />
+              </View>
+            ) : null}
+            <Text style={[textStyles.bodyStrong, styles.shrink, { color: c.text }]}>
+              {[it.origin, ...it.legs.map((l) => l.flight.to)].join(' → ')}
+            </Text>
+          </View>
           <Text style={[textStyles.body, { color: c.muted }]}>
             {/* The route line already names the connections; the slim row adds short layovers. */}
             {selected ? stopCount(it) : slimStops(it)} · {formatDuration(it.totalMin)}
@@ -370,6 +386,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.rowX,
     gap: spacing.group,
   },
+  path: { flexDirection: 'row', alignItems: 'center', gap: 4, flexShrink: 1 },
   line: {
     flexDirection: 'row',
     alignItems: 'center',

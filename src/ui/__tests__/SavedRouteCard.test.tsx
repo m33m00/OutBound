@@ -9,6 +9,8 @@ import { SavedRouteCard } from '../SavedRouteCard';
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 const at = (hhmm: string) => zonedToUtc('2026-10-20', hhmm, 'America/Chicago');
+/** Days before the route, so the card shows its date rather than Today or Tomorrow. */
+const EARLIER = Date.UTC(2026, 9, 15, 12);
 const route: SavedRoute = {
   key: '2026-10-20|AA1234:DFW-ORD+AA88:ORD-LAX',
   request: { origin: 'DFW', destination: 'LAX', date: '2026-10-20', originArea: false, destinationArea: false },
@@ -29,7 +31,7 @@ describe('SavedRouteCard', () => {
     const onOpen = jest.fn();
     const onRemove = jest.fn();
     await act(async () => {
-      r = create(<SavedRouteCard route={route} past={false} onOpen={onOpen} onRemove={onRemove} />);
+      r = create(<SavedRouteCard route={route} past={false} now={EARLIER} onOpen={onOpen} onRemove={onRemove} />);
     });
     const texts = r!.root
       .findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string')
@@ -47,7 +49,7 @@ describe('SavedRouteCard', () => {
 
   it('says when its day has passed', async () => {
     await act(async () => {
-      r = create(<SavedRouteCard route={route} past onOpen={jest.fn()} onRemove={jest.fn()} />);
+      r = create(<SavedRouteCard route={route} past now={EARLIER} onOpen={jest.fn()} onRemove={jest.fn()} />);
     });
     const [open] = buttons();
     expect(open.props.accessibilityLabel).toContain('This day has passed. Opens today’s search.');

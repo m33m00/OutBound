@@ -98,7 +98,9 @@ describe('saved routes (Q-043)', () => {
   it('reads as path, day and local times, and flight numbers', async () => {
     const a = savedRouteFrom(twoLeg(await routes()), request, NOW);
     expect(savedRouteTitle(a)).toBe('DFW → ORD → LAX');
-    expect(savedRouteWhen(a)).toBe('Tue, Oct 20 · 7:05 AM – 1:20 PM');
+    expect(savedRouteWhen(a, NOW)).toBe('Tomorrow · 7:05 AM – 1:20 PM');
+    expect(savedRouteWhen(a, at('06:00'))).toBe('Today · 7:05 AM – 1:20 PM');
+    expect(savedRouteWhen(a, Date.UTC(2026, 9, 15, 12))).toBe('Tue, Oct 20 · 7:05 AM – 1:20 PM');
     expect(savedRouteFlights(a)).toBe('AA 1234, AA 88');
   });
 

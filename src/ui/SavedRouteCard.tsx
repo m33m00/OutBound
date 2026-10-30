@@ -11,6 +11,8 @@ export interface SavedRouteCardProps {
   route: SavedRoute;
   /** Its day has passed; opening searches today instead. */
   past: boolean;
+  /** Clock for "Today" and "Tomorrow". */
+  now: number;
   onOpen: () => void;
   onRemove: () => void;
 }
@@ -20,10 +22,10 @@ export interface SavedRouteCardProps {
  * Tapping searches that day again; the trash button sits apart so VoiceOver
  * reaches it on its own, and asks before removing.
  */
-export function SavedRouteCard({ route, past, onOpen, onRemove }: SavedRouteCardProps) {
+export function SavedRouteCard({ route, past, now, onOpen, onRemove }: SavedRouteCardProps) {
   const c = useColors();
   const title = savedRouteTitle(route);
-  const when = savedRouteWhen(route);
+  const when = savedRouteWhen(route, now);
   const flights = savedRouteFlights(route);
   const shortWhen = when.split(' · ')[0];
   const pastNote = 'This day has passed. Opens today’s search.';
