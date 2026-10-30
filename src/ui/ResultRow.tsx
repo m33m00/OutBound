@@ -64,7 +64,7 @@ const DOT = 10;
 /** Space above and below each leg's text on the timeline. */
 const LEG_PAD = 4;
 
-/** A leg's departure on the timeline: the new time first and the old one small and struck when it moved (John, 2026-10-30). */
+/** A leg's departure on the timeline: when it moved, the old time small and struck, then the new one (John, 2026-10-30). */
 function LegClock({ leg, view, text, dimmed }: { leg: Flight; view?: LegStatusView; text: TextStyle; dimmed: boolean }) {
   const c = useColors();
   const strong = { fontFamily: fonts.bodySemiBold, color: dimmed ? c.muted : c.text };
@@ -73,8 +73,8 @@ function LegClock({ leg, view, text, dimmed }: { leg: Flight; view?: LegStatusVi
   }
   return (
     <Text style={[text, strong]}>
-      {view.newText ? `${keep(view.newText)}\u00a0` : null}
       <Text style={[textStyles.small, styles.struck, { color: c.muted }]}>{keep(view.scheduledText)}</Text>
+      {view.newText ? `\u00a0${keep(view.newText)}` : null}
     </Text>
   );
 }
@@ -249,6 +249,7 @@ export const ResultRow = memo(function ResultRow({
   // A nonstop's summary already says its tier and number; its leg line keeps only the source and age.
   const legDetailOnly = summary != null && it.legs.length === 1;
   const first = status?.legs[0];
+  const tagged = !!status?.legs.some((l) => l.tag) || !!status?.risks.length;
   // Departed rows are dimmed with a gray fill and edge; text keeps 4.5:1.
   const dimmed = !!status?.dimmed;
   const timeColor = dimmed ? c.muted : c.text;
@@ -295,19 +296,19 @@ export const ResultRow = memo(function ResultRow({
               </Text>
             ) : (
               <>
-                {/* What matters now leads: the new time at full size, the old one small and struck after it (John, 2026-10-30). */}
+                {/* The new time is full size; the old one sits small and struck before it (John, 2026-10-30). */}
                 {first?.struck && first.newText ? (
                   <>
-                    {keep(first.newText)}{'\u00a0'}<Text style={[styles.was, styles.struck, { color: c.muted }]}>{keep(t.depart)}</Text>
+                    <Text style={[styles.was, styles.struck, { color: c.muted }]}>{keep(t.depart)}</Text>{'\u00a0'}{keep(first.newText)}
                   </>
                 ) : (
                   t.depart
                 )}
                 {' – '}
-                {/* A late arrival shows like a late departure: old time struck, new time after it. */}
+                {/* A late arrival shows like a late departure: old time small and struck, then the new time. */}
                 {status?.arrival ? (
                   <>
-                    {keep(status.arrival.newText)}{'\u00a0'}<Text style={[styles.was, styles.struck, { color: c.muted }]}>{keep(t.arrive)}</Text>
+                    <Text style={[styles.was, styles.struck, { color: c.muted }]}>{keep(t.arrive)}</Text>{'\u00a0'}{keep(status.arrival.newText)}
                   </>
                 ) : (
                   t.arrive
@@ -369,18 +370,22 @@ export const ResultRow = memo(function ResultRow({
           />
         ) : (
           // Slim row: who flies it and anything live; seats per leg live in the route card.
-          <View style={styles.legLine} testID="flights-line">
+          // Any live tag (delayed, canceled, departed…) stacks the flights one per line, each
+          // with its own tag beside it, so it's clear which leg it means (John, 2026-10-30).
+          <View style={tagged ? styles.flightsStacked : styles.legLine} testID="flights-line">
             {it.legs.map((leg, i) => {
               const tag = status?.legs[i]?.tag;
               return (
-                <View key={leg.flight.id} style={styles.flight}>
+                <View key={leg.flight.id} style={styles.flight} testID="flight-item">
                   <AirlinePill airline={leg.flight.airline} flightNumber={leg.flight.flightNumber} />
                   {tag ? <StatusTag label={tag.label} tone={TAG_TONE[tag.kind]} /> : null}
                 </View>
               );
             })}
             {status?.risks.map((r) => (
-              <StatusTag key={r.index} label={`Connection at risk · ${r.airport}`} tone="delayed" />
+              <View key={r.index} style={styles.flight}>
+                <StatusTag label={`Connection at risk · ${r.airport}`} tone="delayed" />
+              </View>
             ))}
             {summaryAge ? (
               <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]} testID="seat-age">
@@ -463,8 +468,10 @@ const styles = StyleSheet.create({
   flight: {
     flexDirection: 'row',
     alignItems: 'center',
+    flexWrap: 'wrap',
     gap: 4,
   },
+  flightsStacked: { gap: 4, alignItems: 'flex-start' },
   // Timeline (design round 56): rows touch so the line runs unbroken from leg to leg.
   leg: { flexDirection: 'row', gap: spacing.section },
   legTap: { minHeight: 44 },

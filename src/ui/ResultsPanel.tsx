@@ -1,5 +1,17 @@
 import { forwardRef, useCallback, useEffect, useRef, useState, type ComponentRef, type ReactNode } from 'react';
-import { AccessibilityInfo, ActivityIndicator, FlatList, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import {
+  AccessibilityInfo,
+  ActivityIndicator,
+  FlatList,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 
 import { AIRPORTS, areaFor, type Flight, type Itinerary, type SearchRequest } from '@/engine';
 import type { RouteImpact } from '@/live';
@@ -54,6 +66,8 @@ export interface ResultsPanelProps {
   note?: string;
   /** Height the open route needs (title bar plus everything under it), so the panel can fit it without scrolling (round 56). */
   onRouteHeight?: (height: number) => void;
+  /** A hard pull down on the route or list while it's at its top: the panel steps down a size (round 58). */
+  onPullDown?: () => void;
 }
 
 export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(function ResultsPanel(p, ref) {
@@ -256,6 +270,13 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
 
   // A picked route gets its own view (John, 2026-10-30): leave-by on top, then the route
   // card in larger type. The list stays mounted underneath so it keeps its scroll spot.
+  // Pulling hard past the top of the route or list moves the panel itself, so you
+  // don't have to reach for the handle (John, 2026-10-30).
+  const pullDown = p.onPullDown
+    ? (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+        if (isHardPullDown(e.nativeEvent)) p.onPullDown?.();
+      }
+    : undefined;
   const step = (to: number) => {
     const target = results[to];
     return target ? withTick(() => p.onSelect(target.id)) : undefined;
@@ -308,6 +329,7 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
               <ScrollView
                 key={focused.id}
                 contentContainerStyle={styles.focus}
+                onScrollEndDrag={pullDown}
                 onContentSizeChange={(_, h) => setContentH(h)}>
                 {/* Keyed by route so paging re-announces the new Leave By time. */}
                 {p.selectedCard ? (
@@ -341,6 +363,7 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
           onScrollBeginDrag={() => {
             userScrolled.current = true;
           }}
+          onScrollEndDrag={pullDown}
           keyExtractor={(it) => it.id}
           contentContainerStyle={styles.list}
           ListHeaderComponent={header}
@@ -385,6 +408,20 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
     </View>
   );
 });
+
+/** Overscroll (pt) past the top that counts as pulling the panel down. */
+export const PULL_DOWN_OVERSCROLL = 50;
+/** Downward flick speed (pt/ms) at the top that counts as pulling the panel down. */
+export const PULL_DOWN_VELOCITY = 1;
+
+/**
+ * A hard pull down at the top of a list: dragged well past the top (iOS bounce), or
+ * flicked down fast while already at the top. A pull further down the list just scrolls.
+ */
+export function isHardPullDown(e: Pick<NativeScrollEvent, 'contentOffset'> & { velocity?: { x: number; y: number } }): boolean {
+  const y = e.contentOffset.y;
+  return y <= -PULL_DOWN_OVERSCROLL || (y <= 0 && (e.velocity?.y ?? 0) <= -PULL_DOWN_VELOCITY);
+}
 
 /** Text size at which the results bar shows Back and Filters as icons only. */
 export const COMPACT_BAR_SCALE = 1.3;

@@ -116,15 +116,17 @@ export function FlightStatusSheet({ flight, visible, now, onClose, liveOptions, 
           <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>{label}</Text>
           {delay ? <Text lineBreakStrategyIOS="push-out" style={[textStyles.bodyStrong, styles.trailing, { color: c.text }]}>{delay}</Text> : null}
         </View>
-        {/* The time that matters now leads at full size; the scheduled one it replaced is small and struck after it. */}
+        {/* The time that matters now is full size; the scheduled one it replaced sits small and struck before it (John, 2026-10-30). */}
         {lead ? (
           <Text style={[textStyles.number, { color: c.text }]}>
+            {lead.was ? (
+              <Text style={[styles.leadMeta, { color: c.muted }]}>
+                <Text style={styles.struck}>{lead.was.replace(/ /g, '\u00a0')}</Text>
+                {'\u00a0'}
+              </Text>
+            ) : null}
             {lead.time.replace(/ /g, '\u00a0')}
-            <Text style={[styles.leadMeta, { color: c.muted }]}>
-              {`  ${lead.label}`}
-              {lead.was ? '\u00a0· ' : ''}
-              {lead.was ? <Text style={styles.struck}>{lead.was.replace(/ /g, '\u00a0')}</Text> : null}
-            </Text>
+            <Text style={[styles.leadMeta, { color: c.muted }]}>{`  ${lead.label}`}</Text>
           </Text>
         ) : null}
         <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, { color: c.muted }]}>{placeText(m)}</Text>

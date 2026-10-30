@@ -533,6 +533,7 @@ export default function HomeScreen() {
                     rerun(d);
                   }}
                   onRouteHeight={onRouteHeight}
+                  onPullDown={() => setSheetIndex((i) => Math.max(SHEET.peek, i - 1))}
                   onFilters={openFilters}
                   filtersChanged={filtersChanged}
                   note={missingNote}

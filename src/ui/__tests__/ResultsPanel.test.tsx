@@ -5,7 +5,7 @@ import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import { createMemoryProvider, searchItineraries, zonedToUtc } from '@/engine';
 import { dateChips } from '@/search/dates';
 
-import { areaLines, nowLineIndex, ResultsPanel } from '../ResultsPanel';
+import { areaLines, isHardPullDown, nowLineIndex, ResultsPanel } from '../ResultsPanel';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -419,3 +419,12 @@ describe('results bar at big text sizes', () => {
   });
 });
 
+describe('hard pull down (round 58)', () => {
+  it('counts a pull well past the top or a fast flick down at the top, not a scroll further down', () => {
+    expect(isHardPullDown({ contentOffset: { x: 0, y: -60 } })).toBe(true);
+    expect(isHardPullDown({ contentOffset: { x: 0, y: -20 } })).toBe(false);
+    expect(isHardPullDown({ contentOffset: { x: 0, y: 0 }, velocity: { x: 0, y: -1.5 } })).toBe(true);
+    expect(isHardPullDown({ contentOffset: { x: 0, y: 120 }, velocity: { x: 0, y: -3 } })).toBe(false);
+    expect(isHardPullDown({ contentOffset: { x: 0, y: 0 }, velocity: { x: 0, y: 2 } })).toBe(false);
+  });
+});

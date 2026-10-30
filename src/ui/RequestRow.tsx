@@ -42,7 +42,7 @@ export function RequestRow({ request, now, mine, onAnswer, onOpen, leg }: Reques
   const status = mine ? (answered ? 'Answered' : 'Waiting') : null;
   // The detail already says "answered 2m ago", so VoiceOver only adds Waiting.
   const spokenStatus = status === 'Waiting' ? status : null;
-  // Waiting: the time that matters now leads (new time first, the old one struck after it).
+  // Waiting: the old time struck, then the new time that matters now.
   const tag = leg?.tag ?? null;
   const live = liveRequestDetail(request, now, tag && leg ? { kind: tag.kind, scheduledText: leg.scheduledText, newUtc: leg.newUtc } : null);
   // Answered rows show the tier line, so the new time rides on the tag instead.
@@ -63,9 +63,10 @@ export function RequestRow({ request, now, mine, onAnswer, onOpen, leg }: Reques
             {live ? (
               <>
                 {live.prefix}
-                {live.time ? <Text style={{ color: c.text, fontFamily: fonts.bodySemiBold }}>{live.time}</Text> : null}
-                {live.time && live.struck ? '\u00a0' : null}
+                {/* The old time sits struck before the new one (John, 2026-10-30). */}
                 {live.struck ? <Text style={styles.struck}>{live.struck}</Text> : null}
+                {live.time && live.struck ? '\u00a0' : null}
+                {live.time ? <Text style={{ color: c.text, fontFamily: fonts.bodySemiBold }}>{live.time}</Text> : null}
                 {live.tail}
               </>
             ) : (
