@@ -25,6 +25,12 @@ jest.mock('expo-camera', () => ({
 const mockPick = jest.fn();
 jest.mock('expo-image-picker', () => ({ launchImageLibraryAsync: (...args: unknown[]) => mockPick(...args) }));
 
+let mockFontScale = 1;
+jest.mock('react-native/Libraries/Utilities/useWindowDimensions', () => ({
+  __esModule: true,
+  default: () => ({ width: 393, height: 852, scale: 3, fontScale: mockFontScale }),
+}));
+
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 const PASS = `M1${'YAGER/JOHN'.padEnd(20)}EABC123 DFWLAXAA 1234 303Y012C0025 100`;
@@ -39,6 +45,7 @@ describe('Logbook tab', () => {
   });
   afterEach(() => {
     act(() => r?.unmount());
+    mockFontScale = 1;
     jest.useRealTimers();
   });
 
@@ -78,6 +85,42 @@ describe('Logbook tab', () => {
     ]);
     expect(r!.root.findByProps({ testID: 'logbook-totals' }).props.accessibilityLabel).toMatch(/^1 flight, 1,2\d\d miles, 2 airports$/);
     expect(texts()).toEqual(expect.arrayContaining(['DFW → LAX', 'Today · Seat 12A', 'OCTOBER 2026']));
+  });
+
+  it('moves through the boxes from the keyboard and adds from the last one', async () => {
+    await mount();
+    await act(async () => button('Add Flight').props.onPress());
+    expect(['Airline', 'Flight', 'From', 'To'].map((l) => field(l).props.returnKeyType)).toEqual(['next', 'next', 'next', 'next']);
+    const toFocus = jest.fn();
+    const to = field('To');
+    // A full From code moves on to To by itself.
+    const inst = r!.root.findAll((n) => n.props.accessibilityLabel === 'To' && n.instance?.focus);
+    inst.forEach((n) => (n.instance.focus = toFocus));
+    act(() => field('From').props.onChangeText('dfw'));
+    expect(toFocus).toHaveBeenCalled();
+    expect(to.props.placeholder).toBe('LAX');
+    act(() => field('Airline').props.onChangeText('AA'));
+    act(() => field('Flight').props.onChangeText('1234'));
+    act(() => field('To').props.onChangeText('LAX'));
+    expect(field('Seat (optional)').props.returnKeyType).toBe('go');
+    await act(async () => field('Seat (optional)').props.onSubmitEditing());
+    expect(await stored()).toHaveLength(1);
+  });
+
+  it('puts the boxes one per line at big text', async () => {
+    const rowOf = (label: string) => {
+      let n = field(label).parent;
+      while (n && !(n.props.style && [n.props.style].flat(3).some((x: { flexDirection?: string }) => x?.flexDirection === 'row'))) n = n.parent;
+      return [n!.props.style].flat(3).reduce((a: object, x: object) => ({ ...a, ...x }), {}) as { flexDirection?: string };
+    };
+    await mount();
+    await act(async () => button('Add Flight').props.onPress());
+    expect(rowOf('Airline').flexDirection).toBe('row');
+    act(() => r!.unmount());
+    mockFontScale = 1.5;
+    await mount();
+    await act(async () => button('Add Flight').props.onPress());
+    expect(rowOf('Airline').flexDirection).toBe('column');
   });
 
   it('won’t log the same flight twice, and asks before removing one', async () => {

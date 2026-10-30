@@ -1,8 +1,20 @@
 import { scanFromURLAsync } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import type { SFSymbol } from 'expo-symbols';
-import { useEffect, useState } from 'react';
-import { Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, type TextInputProps } from 'react-native';
+import { useEffect, useRef, useState, type Ref } from 'react';
+import {
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  useWindowDimensions,
+  View,
+  type TextInputInstance,
+  type TextInputProps,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { localDate } from '@/engine';
@@ -28,6 +40,9 @@ export interface AddFlightSheetProps {
 }
 
 type Note = { tone: 'ok' | 'warn'; text: string } | null;
+
+/** From this text size the boxes go one per line. */
+const STACK_SCALE = 1.3;
 
 /** Earliest day the calendar offers. */
 const FIRST_DAY = '2000-01-01';
@@ -59,6 +74,13 @@ export function AddFlightSheet({ visible, now, has, onAdd, onClose }: AddFlightS
   const [scanning, setScanning] = useState(false);
   const [picking, setPicking] = useState(false);
   const [datePicker, setDatePicker] = useState(false);
+  const stacked = useWindowDimensions().fontScale >= STACK_SCALE;
+  const pair = [styles.pair, stacked && styles.stacked];
+  // Return moves to the next box; a full airport code moves on by itself.
+  const flightBox = useRef<TextInputInstance>(null);
+  const fromBox = useRef<TextInputInstance>(null);
+  const toBox = useRef<TextInputInstance>(null);
+  const seatBox = useRef<TextInputInstance>(null);
 
   // Each time it opens: a clean form on today.
   useEffect(() => {
@@ -121,7 +143,7 @@ export function AddFlightSheet({ visible, now, has, onAdd, onClose }: AddFlightS
       <SafeAreaView style={[styles.screen, { backgroundColor: c.bg }]} edges={['top', 'bottom']}>
         <SheetHeader title="Add Flight" action="Cancel" onAction={onClose} />
         <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive">
-          <View style={styles.ways}>
+          <View style={pair}>
             <WayButton icon="barcode.viewfinder" label="Scan Boarding Pass" onPress={() => setScanning(true)} />
             <WayButton
               icon="photo.on.rectangle"
@@ -142,23 +164,60 @@ export function AddFlightSheet({ visible, now, has, onAdd, onClose }: AddFlightS
           ) : null}
 
           <View style={[styles.card, { backgroundColor: c.surface, borderColor: c.line }]}>
-            <View style={styles.pair}>
-              <Field label="Airline" value={airline} onChangeText={(t) => setAirline(clean(t, 3))} placeholder="AA" maxLength={3} />
+            <View style={pair}>
               <Field
+                label="Airline"
+                value={airline}
+                onChangeText={(t) => setAirline(clean(t, 3))}
+                placeholder="AA"
+                maxLength={3}
+                returnKeyType="next"
+                submitBehavior="submit"
+                onSubmitEditing={() => flightBox.current?.focus()}
+              />
+              <Field
+                ref={flightBox}
                 label="Flight"
                 value={flightNumber}
                 onChangeText={(t) => setFlightNumber(clean(t, 5))}
                 placeholder="1234"
                 maxLength={5}
                 keyboardType={Platform.OS === 'ios' ? 'numbers-and-punctuation' : 'default'}
+                returnKeyType="next"
+                submitBehavior="submit"
+                onSubmitEditing={() => fromBox.current?.focus()}
               />
             </View>
-            <View style={styles.pair}>
-              <Field label="From" value={from} onChangeText={(t) => setFrom(letters(t))} placeholder="DFW" maxLength={3} />
-              <Field label="To" value={to} onChangeText={(t) => setTo(letters(t))} placeholder="LAX" maxLength={3} />
+            <View style={pair}>
+              <Field
+                ref={fromBox}
+                label="From"
+                value={from}
+                onChangeText={(t) => {
+                  const code = letters(t);
+                  setFrom(code);
+                  if (code.length === 3 && code !== from && !to) toBox.current?.focus();
+                }}
+                placeholder="DFW"
+                maxLength={3}
+                returnKeyType="next"
+                submitBehavior="submit"
+                onSubmitEditing={() => toBox.current?.focus()}
+              />
+              <Field
+                ref={toBox}
+                label="To"
+                value={to}
+                onChangeText={(t) => setTo(letters(t))}
+                placeholder="LAX"
+                maxLength={3}
+                returnKeyType="next"
+                submitBehavior="submit"
+                onSubmitEditing={() => seatBox.current?.focus()}
+              />
             </View>
-            <View style={styles.pair}>
-              <View style={styles.field}>
+            <View style={pair}>
+              <View style={[styles.field, stacked && styles.fieldStacked]}>
                 <Text style={[textStyles.small, { color: c.muted }]}>Date</Text>
                 <Pressable
                   onPress={() => setDatePicker(true)}
@@ -171,7 +230,16 @@ export function AddFlightSheet({ visible, now, has, onAdd, onClose }: AddFlightS
                   <Icon name="calendar" size={15} tintColor={c.muted} fallback={null} />
                 </Pressable>
               </View>
-              <Field label="Seat (optional)" value={seat} onChangeText={(t) => setSeat(clean(t, 4))} placeholder="12A" maxLength={4} />
+              <Field
+                ref={seatBox}
+                label="Seat (optional)"
+                value={seat}
+                onChangeText={(t) => setSeat(clean(t, 4))}
+                placeholder="12A"
+                maxLength={4}
+                returnKeyType={problem ? 'done' : 'go'}
+                onSubmitEditing={add}
+              />
             </View>
           </View>
 
@@ -224,16 +292,18 @@ export function AddFlightSheet({ visible, now, has, onAdd, onClose }: AddFlightS
 const clean = (t: string, max: number) => t.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, max);
 const letters = (t: string) => t.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3);
 
-function Field({ label, ...input }: { label: string } & TextInputProps) {
+function Field({ label, ref, ...input }: { label: string; ref?: Ref<TextInputInstance> } & TextInputProps) {
   const c = useColors();
   const scheme = useColorSchemeName();
+  const stacked = useWindowDimensions().fontScale >= STACK_SCALE;
   return (
-    <View style={styles.field}>
+    <View style={[styles.field, stacked && styles.fieldStacked]}>
       <Text style={[textStyles.small, { color: c.muted }]} importantForAccessibility="no" accessibilityElementsHidden>
         {label}
       </Text>
       <TextInput
         {...input}
+        ref={ref}
         autoCapitalize="characters"
         autoCorrect={false}
         spellCheck={false}
@@ -278,7 +348,6 @@ function WayButton({
 const styles = StyleSheet.create({
   screen: { flex: 1, paddingHorizontal: spacing.page },
   body: { gap: spacing.section, paddingBottom: spacing.page * 2 },
-  ways: { flexDirection: 'row', gap: spacing.section },
   way: {
     flex: 1,
     alignItems: 'center',
@@ -297,7 +366,9 @@ const styles = StyleSheet.create({
     gap: spacing.section,
   },
   pair: { flexDirection: 'row', gap: spacing.section },
+  stacked: { flexDirection: 'column' },
   field: { flex: 1, gap: 4 },
+  fieldStacked: { flex: 0 },
   input: {
     minHeight: minTapTarget,
     borderRadius: radius.sm,
