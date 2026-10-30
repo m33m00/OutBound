@@ -1,4 +1,5 @@
 import React from 'react';
+import { StyleSheet } from 'react-native';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 
 import { resultsBanner } from '@/search/statusTags';
@@ -23,7 +24,7 @@ describe('ResultsBanner (Q-047)', () => {
     const [show, dismiss] = buttons();
     expect(show.props.accessibilityLabel).toBe('Show Them');
     expect(dismiss.props.accessibilityLabel).toBe('Dismiss notice');
-    expect(dismiss.props.style).toMatchObject({ width: minTapTarget, height: minTapTarget });
+    expect(StyleSheet.flatten(dismiss.props.style({ pressed: false }))).toMatchObject({ width: minTapTarget, height: minTapTarget });
     act(() => show.props.onPress());
     act(() => dismiss.props.onPress());
     expect(onShow).toHaveBeenCalled();

@@ -1,28 +1,71 @@
+import { SymbolView } from 'expo-symbols';
 import { useState } from 'react';
-import { FlatList, Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Modal, Pressable, SectionList, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import type { Airport } from '@/engine';
-import { matchAirports } from '@/search/airports';
+import { pickerSections, type PickerItem } from '@/search/airports';
 import { minTapTarget, radius, spacing, textStyles, useColors } from '@/theme';
 
 import { Button } from './Buttons';
+import { pressStyle } from './press';
 
 export interface AirportPickerProps {
   visible: boolean;
   title: string;
   onPick: (code: string) => void;
   onClose: () => void;
+  /** Airport shown with a check (the one being changed). */
+  current?: string | null;
+  /** Quick picks above the full list (design round 3). */
+  nearest?: string | null;
+  homes?: readonly { code: string; main: boolean }[];
 }
 
-export function AirportPicker({ visible, title, onPick, onClose }: AirportPickerProps) {
+export function AirportPicker({ visible, title, onPick, onClose, current, nearest, homes }: AirportPickerProps) {
   const c = useColors();
   const [query, setQuery] = useState('');
-  const results = matchAirports(query);
+  const sections = pickerSections(query, { nearest, homes });
+  const empty = sections.every((s) => s.data.length === 0);
 
   const close = () => {
     setQuery('');
     onClose();
+  };
+
+  const renderItem = ({ item }: { item: PickerItem }) => {
+    const { airport, tag } = item;
+    const on = airport.code === current;
+    return (
+      <Pressable
+        onPress={() => {
+          setQuery('');
+          onPick(airport.code);
+        }}
+        accessibilityRole="button"
+        accessibilityState={{ selected: on }}
+        accessibilityLabel={[airport.code, airport.name, tag].filter(Boolean).join(', ')}
+        style={pressStyle([styles.item, { borderColor: c.line }])}>
+        <Text style={[textStyles.number, styles.code, { color: c.text }]}>{airport.code}</Text>
+        <Text style={[textStyles.body, styles.name, { color: c.muted }]} numberOfLines={1}>
+          {airport.name}
+        </Text>
+        {tag ? (
+          // Amber = "you" (DECISIONS.md): your homes and where you are.
+          <View style={[styles.tag, { backgroundColor: c.youBg }]}>
+            <Text style={[textStyles.small, { color: c.youText }]}>{tag}</Text>
+          </View>
+        ) : null}
+        {on ? (
+          <SymbolView
+            name="checkmark"
+            size={16}
+            weight="semibold"
+            tintColor={c.accent}
+            fallback={<Text style={[textStyles.bodyStrong, { color: c.accent }]}>✓</Text>}
+          />
+        ) : null}
+      </Pressable>
+    );
   };
 
   return (
@@ -34,38 +77,45 @@ export function AirportPicker({ visible, title, onPick, onClose }: AirportPicker
           </Text>
           <Button label="Cancel" kind="secondary" onPress={close} />
         </View>
-        <TextInput
-          value={query}
-          onChangeText={setQuery}
-          placeholder="Airport code or city"
-          placeholderTextColor={c.faint}
-          autoFocus
-          autoCapitalize="characters"
-          autoCorrect={false}
-          accessibilityLabel="Search airports"
-          style={[styles.input, textStyles.body, { color: c.text, backgroundColor: c.surface, borderColor: c.line }]}
-        />
-        <FlatList
-          data={results}
-          keyExtractor={(a) => a.code}
+        <View style={[styles.input, { backgroundColor: c.surface, borderColor: c.line }]}>
+          <SymbolView name="magnifyingglass" size={16} tintColor={c.faint} fallback={null} />
+          <TextInput
+            value={query}
+            onChangeText={setQuery}
+            placeholder="Airport code or city"
+            placeholderTextColor={c.faint}
+            autoFocus
+            autoCapitalize="characters"
+            autoCorrect={false}
+            clearButtonMode="while-editing"
+            returnKeyType="done"
+            accessibilityLabel="Search airports"
+            style={[textStyles.body, styles.field, { color: c.text }]}
+          />
+        </View>
+        <SectionList
+          sections={sections}
+          keyExtractor={(item, i) => `${item.tag ? 'quick' : 'all'}-${item.airport.code}-${i}`}
           keyboardShouldPersistTaps="handled"
-          renderItem={({ item }: { item: Airport }) => (
-            <Pressable
-              onPress={() => {
-                setQuery('');
-                onPick(item.code);
-              }}
-              accessibilityRole="button"
-              accessibilityLabel={`${item.code}, ${item.name}`}
-              style={[styles.item, { borderColor: c.line }]}>
-              <Text style={[textStyles.number, styles.code, { color: c.text }]}>{item.code}</Text>
-              <Text style={[textStyles.body, { color: c.muted }]}>{item.name}</Text>
-            </Pressable>
-          )}
-          ListEmptyComponent={
-            <Text style={[textStyles.body, styles.empty, { color: c.muted }]}>
-              No airports match “{query.trim()}”.
-            </Text>
+          keyboardDismissMode="on-drag"
+          stickySectionHeadersEnabled={false}
+          renderItem={renderItem}
+          renderSectionHeader={({ section }) =>
+            section.title ? (
+              <Text
+                style={[textStyles.small, styles.sectionTitle, { color: c.muted }]}
+                accessibilityRole="header">
+                {section.title.toUpperCase()}
+              </Text>
+            ) : null
+          }
+          // A typed query with no match still has one (empty) section, so this is a footer.
+          ListFooterComponent={
+            empty ? (
+              <Text style={[textStyles.body, styles.empty, { color: c.muted }]}>
+                No airports match “{query.trim()}”.
+              </Text>
+            ) : undefined
           }
         />
       </SafeAreaView>
@@ -86,8 +136,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: radius.sm,
     paddingHorizontal: spacing.rowX,
-    marginBottom: spacing.section,
+    marginBottom: spacing.group,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.group,
   },
+  field: { flex: 1, minHeight: minTapTarget },
+  sectionTitle: { letterSpacing: 0.6, paddingTop: spacing.page, paddingBottom: 4 },
   item: {
     minHeight: minTapTarget,
     flexDirection: 'row',
@@ -97,5 +152,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.rowY,
   },
   code: { width: 52 },
+  name: { flex: 1 },
+  tag: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: radius.sm },
   empty: { paddingVertical: spacing.page },
 });

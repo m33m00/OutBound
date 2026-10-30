@@ -11,6 +11,8 @@ import { fonts, radius, spacing, textStyles, useColors, type ColorToken } from '
 
 import { AirlinePill } from './AirlinePill';
 import { ImpactBadge } from './ImpactBadge';
+import { pressStyle } from './press';
+import { TONE_BG, TONE_FG, type Tone } from './statusTone';
 
 /** Tier text and fill tokens; color is never the only signal (word + number). */
 const TIER_FG: Record<SeatTier, ColorToken> = {
@@ -46,12 +48,7 @@ export interface ResultRowProps {
   status?: RowStatus;
 }
 
-/**
- * Status tag colors (Q-050). Delayed = violet Caution fill; Departed /
- * Arrived = gray; Canceled / Diverted = canceled red (provisional, pending
- * John). Amber is never used here ("you" only). Words always carry the state.
- */
-type Tone = 'delayed' | 'gone' | 'canceled';
+/** Row tag kind to tone (Q-050). */
 const TONE: Record<LegTagKind, Tone> = {
   delayed: 'delayed',
   departed: 'gone',
@@ -59,8 +56,6 @@ const TONE: Record<LegTagKind, Tone> = {
   canceled: 'canceled',
   diverted: 'canceled',
 };
-const TONE_FG: Record<Tone, ColorToken> = { delayed: 'caution', gone: 'muted', canceled: 'canceledFg' };
-const TONE_BG: Record<Tone, ColorToken> = { delayed: 'cautionBg', gone: 'surface2', canceled: 'canceledBg' };
 
 function StatusTag({ label, tone }: { label: string; tone: Tone }) {
   const c = useColors();
@@ -124,7 +119,7 @@ export const ResultRow = memo(function ResultRow({
         if (e.nativeEvent.actionName === 'impact') onImpactPress?.(it.id);
       }}
       accessibilityHint={selected ? 'Tap to clear the route from the globe' : 'Shows this route on the globe'}
-      style={[
+      style={pressStyle([
         styles.row,
         {
           // Full routes stay in time order, grayed with a red edge; text keeps full contrast.
@@ -132,7 +127,7 @@ export const ResultRow = memo(function ResultRow({
           borderColor: selected ? c.accent : it.isFull ? c.full : c.line,
         },
         (selected || it.isFull) && styles.strongBorder,
-      ]}>
+      ])}>
       {/* Route color = weakest leg. */}
       <View style={[styles.edge, { backgroundColor: dimmed ? c.unknown : c[it.tier] }]} />
       <View style={styles.content}>
@@ -203,7 +198,7 @@ export const ResultRow = memo(function ResultRow({
               ]
                 .filter(Boolean)
                 .join(', ')}
-              style={[styles.legLine, styles.legTap]}>
+              style={pressStyle([styles.legLine, styles.legTap], 'link')}>
               {body}
             </Pressable>
           ) : (

@@ -2,6 +2,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { formatDuration } from '@/search/format';
 import { minTapTarget, radius, spacing, textStyles, useColors } from '@/theme';
+import { pressStyle } from './press';
 
 /** Minus / value / plus row with 44pt buttons. Values in minutes by default. */
 export function Stepper({
@@ -33,7 +34,7 @@ export function Stepper({
         accessibilityLabel={`${sign > 0 ? 'Increase' : 'Decrease'}: ${label}`}
         accessibilityValue={{ text: format(value) }}
         accessibilityState={{ disabled }}
-        style={[styles.stepBtn, { backgroundColor: c.surface2, opacity: disabled ? 0.4 : 1 }]}>
+        style={pressStyle([styles.stepBtn, { backgroundColor: c.surface2, opacity: disabled ? 0.4 : 1 }])}>
         <Text style={[textStyles.heading, { color: c.text }]}>{sign > 0 ? '+' : '−'}</Text>
       </Pressable>
     );

@@ -1,13 +1,15 @@
+import { SymbolView } from 'expo-symbols';
 import { forwardRef, type ReactNode } from 'react';
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
 
 import type { Flight, Itinerary } from '@/engine';
 import type { RouteImpact } from '@/live';
 import { shortDate } from '@/search/dates';
 import type { RowStatus } from '@/search/statusTags';
 import type { SearchState } from '@/search/useRouteSearch';
-import { minTapTarget, radius, spacing, textStyles, useColors } from '@/theme';
+import { radius, spacing, textStyles, useColors } from '@/theme';
 
+import { BackButton } from './BackButton';
 import { Button } from './Buttons';
 import { ResultRow } from './ResultRow';
 
@@ -48,13 +50,7 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
   const sampleText = sampleLabel(p.sampleFlights !== false, !!p.sampleImpacts);
   const topRow = (
     <View style={[styles.titleRow, styles.pad]}>
-      <Pressable
-        onPress={p.onBack}
-        accessibilityRole="button"
-        accessibilityLabel="Back to search"
-        style={styles.back}>
-        <Text style={[textStyles.heading, { color: c.accent }]}>‹ Search</Text>
-      </Pressable>
+      <BackButton label="Search" onPress={p.onBack} accessibilityLabel="Back to search" />
       <View style={styles.labels}>
         {sampleText ? <SampleLabel text={sampleText} /> : null}
         {p.sampleStatus ? <SampleLabel text="Sample status" /> : null}
@@ -85,7 +81,10 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
         {topRow}
         <View style={styles.pad}>
           {header}
-          <ActivityIndicator accessibilityLabel="Finding routes" color={c.accent} style={styles.state} />
+          <View style={[styles.state, styles.loading]} accessible accessibilityLabel="Finding routes">
+            <ActivityIndicator color={c.accent} />
+            <Text style={[textStyles.body, { color: c.muted }]}>Finding routes…</Text>
+          </View>
         </View>
       </View>
     );
@@ -98,7 +97,18 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
         <View style={styles.pad}>
           {header}
           <View style={styles.state}>
-            <Text style={[textStyles.body, { color: c.text }]}>Couldn’t load flights.</Text>
+            <View style={styles.errorTop} accessible>
+              <SymbolView
+                name="wifi.exclamationmark"
+                size={22}
+                tintColor={c.muted}
+                fallback={null}
+              />
+              <View style={styles.errorText}>
+                <Text style={[textStyles.heading, { color: c.text }]}>Couldn’t load flights</Text>
+                <Text style={[textStyles.body, { color: c.muted }]}>Check your connection, then try again.</Text>
+              </View>
+            </View>
             <Button label="Try Again" onPress={p.onRetry} />
           </View>
         </View>
@@ -166,9 +176,11 @@ const styles = StyleSheet.create({
   list: { paddingHorizontal: spacing.page, paddingBottom: spacing.page * 2 },
   header: { gap: 2, paddingBottom: spacing.section },
   titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  back: { minHeight: minTapTarget, justifyContent: 'center', paddingRight: spacing.page },
   sep: { height: spacing.group },
   state: { paddingVertical: spacing.page, gap: spacing.section, alignItems: 'flex-start' },
+  loading: { flexDirection: 'row', alignItems: 'center', gap: spacing.group },
+  errorTop: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.section },
+  errorText: { flex: 1, gap: 2 },
   labels: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-end', gap: 4, flexShrink: 1 },
   footer: { paddingTop: spacing.section },
 });

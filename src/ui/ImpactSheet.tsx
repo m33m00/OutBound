@@ -9,10 +9,13 @@ import { radius, spacing, textStyles, useColors } from '@/theme';
 
 import { Button } from './Buttons';
 import { IMPACT_ICON } from './ImpactBadge';
+import { SampleLabel } from './ResultsPanel';
 
 export interface ImpactSheetProps {
   visible: boolean;
   title: string;
+  /** Route under the title, e.g. "DAL → PHX → LAX". */
+  subtitle?: string | null;
   impact: RouteImpact | null;
   now: number;
   /** True while showing dev sample data (no live service yet). */
@@ -21,20 +24,26 @@ export interface ImpactSheetProps {
 }
 
 /** Why a route has a delay/weather badge: each station, reasons, source and age. */
-export function ImpactSheet({ visible, title, impact, now, sample, onClose }: ImpactSheetProps) {
+export function ImpactSheet({ visible, title, subtitle, impact, now, sample, onClose }: ImpactSheetProps) {
   const c = useColors();
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <SafeAreaView style={[styles.screen, { backgroundColor: c.bg }]} edges={['top', 'bottom']}>
         <View style={styles.header}>
-          <Text style={[textStyles.title, styles.title, { color: c.text }]} accessibilityRole="header">
-            {title}
-          </Text>
+          <View style={styles.title}>
+            <Text style={[textStyles.title, { color: c.text }]} accessibilityRole="header">
+              {title}
+            </Text>
+            {subtitle ? <Text style={[textStyles.bodyStrong, { color: c.muted }]}>{subtitle}</Text> : null}
+          </View>
           <Button label="Done" onPress={onClose} />
         </View>
         <ScrollView contentContainerStyle={styles.body}>
           {sample ? (
-            <Text style={[textStyles.small, { color: c.muted }]}>Sample delays and weather (live data not connected yet).</Text>
+            <View style={styles.sampleRow} accessible accessibilityLabel="Sample delays and weather. Live data is not connected yet.">
+              <SampleLabel text="Sample delays" />
+              <Text style={[textStyles.small, styles.sampleNote, { color: c.muted }]}>Live data isn’t connected yet.</Text>
+            </View>
           ) : null}
           {impact?.stations.map((s) => {
             const likely = s.level === 'likelyDelays';
@@ -100,7 +109,9 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.section,
     gap: spacing.group,
   },
-  title: { flex: 1 },
+  title: { flex: 1, gap: 2 },
+  sampleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.group, flexWrap: 'wrap' },
+  sampleNote: { flexShrink: 1 },
   body: { gap: spacing.section, paddingBottom: spacing.page },
   station: { borderRadius: radius.md, borderWidth: StyleSheet.hairlineWidth, padding: spacing.rowX, gap: 4 },
   stationTop: { flexDirection: 'row', alignItems: 'center', gap: spacing.group },

@@ -4,13 +4,13 @@ import { FlatList, StyleSheet, Text, View, type LayoutChangeEvent } from 'react-
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AIRPORTS, localDate, toRouteLine, type Flight, type Itinerary } from '@/engine';
-import { sampleRouteImpacts, useFlightStatuses, useRouteImpacts } from '@/live';
+import { flightLookupKey, sampleRouteImpacts, useFlightStatuses, useRouteImpacts } from '@/live';
 import { GlobeMap, type MapAirport } from '@/map';
 import { nearestAirport } from '@/search/airports';
 import { searchRequest } from '@/search/areas';
 import { dateChips } from '@/search/dates';
 import { chooseOrigin, showLocationCard } from '@/search/origin';
-import { resultsBanner, rowStatus, statusLookups } from '@/search/statusTags';
+import { legLookup, resultsBanner, rowStatus, statusLookups } from '@/search/statusTags';
 import { SAMPLE_TZ, SCHEDULE_SOURCE, useRouteSearch } from '@/search/useRouteSearch';
 import { minTapTarget, spacing, textStyles, useColors } from '@/theme';
 import { AirportPicker } from '@/ui/AirportPicker';
@@ -222,6 +222,8 @@ export default function HomeScreen() {
   const filtersChanged = changedFilters(filters, settings.search);
   const selected = results.find((r) => r.id === selectedId);
   const firstLeg = selected?.legs[0].flight;
+  const impactIt = impactFor ? results.find((r) => r.id === impactFor) : undefined;
+  const impactRoute = impactIt ? [impactIt.origin, ...impactIt.legs.map((l) => l.flight.to)].join(' → ') : null;
 
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: c.bg }]} edges={['top']}>
@@ -358,6 +360,9 @@ export default function HomeScreen() {
       <AirportPicker
         visible={picking !== null}
         title={picking === 'origin' ? 'From' : 'To'}
+        current={picking === 'origin' ? origin : destination}
+        nearest={nearest}
+        homes={homes}
         onPick={(code) => {
           if (picking === 'origin') setPickedOrigin(code);
           else setDestination(code);
@@ -368,12 +373,23 @@ export default function HomeScreen() {
       <ImpactSheet
         visible={impactFor !== null}
         title="Delays and weather"
+        subtitle={impactRoute}
         impact={impactFor ? (impacts.byId[impactFor] ?? null) : null}
         now={now}
         sample={sampleImpacts}
         onClose={() => setImpactFor(null)}
       />
-      <FlightStatusSheet flight={statusFlight} now={now} onClose={() => setStatusFlight(null)} />
+      <FlightStatusSheet
+        flight={statusFlight}
+        now={now}
+        onClose={() => setStatusFlight(null)}
+        // Sample rows open the same sample status their tag shows.
+        sample={
+          statusFlight && flightStatuses.sample
+            ? (flightStatuses.byKey[flightLookupKey(legLookup(statusFlight))] ?? null)
+            : null
+        }
+      />
       <FiltersModal
         visible={filtersOpen}
         filters={filters}
