@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { FlatList, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Modal, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AIRPORTS, type Flight } from '@/engine';
@@ -33,8 +33,19 @@ export interface DeparturesSheetProps {
 export function DeparturesSheet({ code, visible, flights, now, reportFor, onReport, onClose }: DeparturesSheetProps) {
   const c = useColors();
   const [picked, setPicked] = useState<Flight | null>(null);
+  // Back from Report Load: VoiceOver lands on the list title again.
+  const [back, setBack] = useState(false);
   const announce = useAnnounceLater();
-  useEffect(() => setPicked(null), [code]);
+  const { fontScale } = useWindowDimensions();
+  const big = fontScale >= BIG_TEXT_SCALE;
+  useEffect(() => {
+    setPicked(null);
+    setBack(false);
+  }, [code]);
+  const leaveReport = () => {
+    setPicked(null);
+    setBack(true);
+  };
 
   const row = ({ item: f }: { item: Flight }) => {
     const tz = AIRPORTS[f.from]?.tz ?? 'UTC';
@@ -42,24 +53,28 @@ export function DeparturesSheet({ code, visible, flights, now, reportFor, onRepo
     const yours = reportFor(f);
     const tier = yours ? answerTier(yours) : null;
     const left = f.departUtc <= now;
+    const place = AIRPORTS[f.to]?.name ?? f.to;
+    // Left flights say so in words, not only in the muted time.
     const detail = yours
       ? `You reported ${answerText(yours)} · ${formatAge(yours.at, now)}`
-      : (AIRPORTS[f.to]?.name ?? f.to);
+      : left
+        ? `Left · ${place}`
+        : place;
     return (
       <Pressable
         onPress={() => setPicked(f)}
         accessibilityRole="button"
         accessibilityLabel={forSpeech(`${left ? 'Left' : 'Departs'} ${time} · ${f.airline} ${f.flightNumber} to ${f.to} · ${detail}`)}
-        accessibilityHint="Opens Report Load"
+        accessibilityHint={yours ? 'Opens Report Load again' : 'Opens Report Load'}
         testID="departure-row"
         style={pressStyle([styles.row, { borderBottomColor: c.line }])}>
-        <Text style={[textStyles.number, styles.time, { color: left ? c.muted : c.text }]}>{time}</Text>
+        <Text style={[textStyles.number, !big && styles.time, { color: left ? c.muted : c.text }]}>{time}</Text>
         <View style={styles.text}>
           <Text style={[textStyles.heading, { color: c.text }]}>{`${f.airline} ${f.flightNumber} to ${f.to}`}</Text>
           {yours && tier ? (
             <Text style={[textStyles.small, { color: c.text }]}>
               <Text style={{ color: c.youText }}>You reported </Text>
-              <Text style={{ color: c[TIER_FG[tier]] }}>{TIER_WORD[tier]}</Text>
+              <Text style={{ color: c[TIER_FG[tier]], fontFamily: textStyles.bodyStrong.fontFamily }}>{TIER_WORD[tier]}</Text>
               {` · ${yours.open} open · ${yours.listed} listed · ${formatAge(yours.at, now)}`}
             </Text>
           ) : (
@@ -81,42 +96,47 @@ export function DeparturesSheet({ code, visible, flights, now, reportFor, onRepo
             flight={picked}
             now={now}
             focusTitle
-            onCancel={() => setPicked(null)}
+            onCancel={leaveReport}
             onSubmit={(open, listed) => {
               onReport(picked, open, listed);
-              setPicked(null);
-              const said = forSpeech(`Reported ${picked.airline} ${picked.flightNumber}: ${answerText({ open, listed, at: now })}`);
-              announce(said);
+              leaveReport();
+              announce(forSpeech(`Reported ${picked.airline} ${picked.flightNumber}: ${answerText({ open, listed, at: now })}`));
             }}
           />
-        ) : (
-          <>
-            <SheetHeader
-              title={code ? `Departures from ${code}` : 'Departures'}
-              subtitle="Pick the flight on the board"
-              action="Done"
-              onAction={onClose}
-            />
-            <FlatList
-              data={flights}
-              keyExtractor={flightKey}
-              renderItem={row}
-              ListEmptyComponent={
-                <Text style={[textStyles.body, { color: c.muted }]}>
-                  {`No more departures from ${code ?? 'here'} in the next 5 hours.`}
-                </Text>
-              }
-              contentContainerStyle={styles.list}
-            />
-          </>
-        )}
+        ) : null}
+        {/* The list stays mounted under Report Load, so you keep your place on a long board. */}
+        <View style={[styles.page, picked && styles.hidden]}>
+          <SheetHeader
+            title={code ? `Departures from ${code}` : 'Departures'}
+            subtitle="Pick the flight on the board"
+            action="Done"
+            onAction={onClose}
+            focusTitle={back && !picked}
+          />
+          <FlatList
+            data={flights}
+            keyExtractor={flightKey}
+            renderItem={row}
+            ListEmptyComponent={
+              <Text style={[textStyles.body, { color: c.muted }]}>
+                {`No more departures from ${code ?? 'here'} in the next 5 hours.`}
+              </Text>
+            }
+            contentContainerStyle={styles.list}
+          />
+        </View>
       </SafeAreaView>
     </Modal>
   );
 }
 
+/** From this text size the time stops holding a fixed column, so the flight keeps room. */
+const BIG_TEXT_SCALE = 1.3;
+
 const styles = StyleSheet.create({
   screen: { flex: 1, paddingHorizontal: spacing.page },
+  page: { flex: 1 },
+  hidden: { display: 'none' },
   list: { paddingBottom: spacing.page * 2 },
   row: {
     flexDirection: 'row',

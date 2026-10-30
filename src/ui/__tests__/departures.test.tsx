@@ -29,12 +29,14 @@ describe('at-airport card and departures (round 33)', () => {
   it('card asks if you are at the airport and opens the board; no button with no departures', async () => {
     const onReport = jest.fn();
     await act(async () => {
-      r = create(<AtAirportCard code="DAL" count={3} onReport={onReport} />);
+      r = create(<AtAirportCard code="DAL" upcoming={3} onBoard={4} onReport={onReport} />);
     });
     expect(texts()).toContain('At DAL? Report a load');
+    // The count is flights still to leave, not ones that already went.
+    expect(texts()).toContain('3 departures in the next 5 hours. Pick yours from the board.');
     act(() => r!.root.find((n) => n.props.accessibilityLabel === 'Report a load at DAL' && n.props.onPress).props.onPress());
     expect(onReport).toHaveBeenCalled();
-    act(() => r!.update(<AtAirportCard code="DAL" count={0} onReport={onReport} />));
+    act(() => r!.update(<AtAirportCard code="DAL" upcoming={0} onBoard={0} onReport={onReport} />));
     expect(r!.root.findAll((n) => n.props.accessibilityLabel === 'Report a load at DAL')).toHaveLength(0);
   });
 
@@ -58,6 +60,8 @@ describe('at-airport card and departures (round 33)', () => {
     const rows = r!.root.findAll((n) => n.props.testID === 'departure-row' && n.props.onPress);
     expect(rows).toHaveLength(2);
     expect(rows[1].props.accessibilityLabel).toMatch(/^Left /);
+    // Left shows in words too, not only as a muted time.
+    expect(texts().some((t) => t.startsWith('Left · '))).toBe(true);
     act(() => rows[0].props.onPress());
     expect(texts()).toContain('Report Load');
     const box = r!.root.find((n) => n.props.accessibilityLabel === 'Open seats, On the board' && n.props.onChangeText);
@@ -67,6 +71,7 @@ describe('at-airport card and departures (round 33)', () => {
     act(() => r!.update(<DeparturesSheet {...props} />));
     const row = r!.root.findAll((n) => n.props.testID === 'departure-row' && n.props.onPress)[0];
     expect(row.props.accessibilityLabel).toContain('You reported');
+    expect(row.props.accessibilityHint).toBe('Opens Report Load again');
   });
 
   it('an empty board says so', async () => {

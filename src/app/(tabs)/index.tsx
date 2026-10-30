@@ -446,7 +446,8 @@ export default function HomeScreen() {
                     atAirport && !LIVE_FLIGHTS ? (
                       <AtAirportCard
                         code={atAirport}
-                        count={departures.length}
+                        upcoming={departures.filter((f) => f.departUtc > now).length}
+                        onBoard={departures.length}
                         onReport={() => setDeparturesFor(atAirport)}
                       />
                     ) : null
