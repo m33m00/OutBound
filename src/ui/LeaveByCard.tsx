@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { AccessibilityInfo, Linking, StyleSheet, Text, View } from 'react-native';
+import { AccessibilityInfo, Linking, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
 import type { Airport } from '@/engine';
 import { computeLeaveBy, leaveByText, LOCATION_FRESH_MS, type PhoneLocation } from '@/search/leaveBy';
@@ -20,9 +20,15 @@ export interface LeaveByCardProps {
   onUseLocation: () => void;
 }
 
+/** From this text size the location button gets its own row. */
+export const INLINE_BUTTON_MAX_SCALE = 1.3;
+
 /** When to leave for the selected route (backlog 12; Q-003, Q-023). */
 export function LeaveByCard(p: LeaveByCardProps) {
   const c = useColors();
+  const { fontScale } = useWindowDimensions();
+  // At normal text sizes the button sits at the end of the top row to save a row of height.
+  const inline = fontScale < INLINE_BUTTON_MAX_SCALE;
   const result = computeLeaveBy(p);
   const text = leaveByText(result, p.airport.tz);
   const atAirport = result.kind === 'atAirport';
@@ -40,9 +46,18 @@ export function LeaveByCard(p: LeaveByCardProps) {
         ? 'Finding your location…'
         : null;
 
+  // Outlined so it stands out on the tinted card (it used to be gray on light blue).
+  const outline = [styles.action, styles.outline, inline && styles.inline, { backgroundColor: c.surface, borderColor: c.accent }];
+  const action =
+    p.locationStatus === 'denied' ? (
+      <Button label="Open Settings" kind="secondary" onPress={() => Linking.openSettings()} style={outline} />
+    ) : offerLocation ? (
+      <Button label="Use Location" kind="secondary" onPress={p.onUseLocation} style={outline} />
+    ) : null;
+
   return (
     <View style={[styles.card, { backgroundColor: atAirport ? c.goodBg : c.accentSoft }]}>
-      <View style={styles.top}>
+      <View style={styles.top} testID="leave-by-top">
         <View style={[styles.icon, { backgroundColor: c.surface }]}>
           <Icon
             name={atAirport ? 'airplane.departure' : 'car.fill'}
@@ -57,13 +72,10 @@ export function LeaveByCard(p: LeaveByCardProps) {
           <Text style={[textStyles.small, { color: c.muted }]}>{text.sub}</Text>
           {note ? <Text style={[textStyles.small, { color: c.muted }]}>{note}</Text> : null}
         </View>
+        {action && inline ? action : null}
       </View>
-      {/* Own row so large text never squeezes the time. */}
-      {p.locationStatus === 'denied' ? (
-        <Button label="Open Settings" kind="secondary" onPress={() => Linking.openSettings()} style={styles.action} />
-      ) : offerLocation ? (
-        <Button label="Use Location" kind="secondary" onPress={p.onUseLocation} style={styles.action} />
-      ) : null}
+      {/* Own row at large text sizes so the time is never squeezed. */}
+      {action && !inline ? action : null}
     </View>
   );
 }
@@ -75,7 +87,9 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
   },
   top: { flexDirection: 'row', alignItems: 'center', gap: spacing.section },
-  action: { alignSelf: 'flex-start' },
+  action: { alignSelf: 'flex-start', paddingHorizontal: spacing.section },
+  outline: { borderWidth: 1 },
+  inline: { alignSelf: 'center' },
   icon: {
     width: 34,
     height: 34,

@@ -8,7 +8,6 @@ import { minTapTarget, radius, spacing, textStyles, useColors } from '@/theme';
 import { Button } from './Buttons';
 import { DatePickerModal } from './DatePickerModal';
 import { Icon } from './Icon';
-import { SampleLabel } from './ResultsPanel';
 import { pressStyle } from './press';
 import { withTick } from './haptics';
 
@@ -36,8 +35,6 @@ export interface SearchPanelProps {
   locationCard?: ReactNode;
   /** Empty-results notice (Q-047), shown under Find Routes. */
   banner?: ReactNode;
-  /** "Sample flights" label while search runs on sample data (default true). */
-  sampleFlights?: boolean;
 }
 
 interface AirportCardProps {
@@ -152,11 +149,6 @@ export function SearchPanel(p: SearchPanelProps) {
   const later = p.chips.slice(QUICK_DATE_CHIPS).find((chip) => chip.date === p.date);
   return (
     <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
-      {p.sampleFlights !== false ? (
-        <View style={styles.sampleRow}>
-          <SampleLabel />
-        </View>
-      ) : null}
       {p.locationCard}
       {/* One row, no sideways scroll: date chips share the width, calendar stays 44pt until it holds a date.
           At large text sizes they go two to a row so "Tomorrow" never gets cut off. */}
@@ -253,15 +245,7 @@ export function SearchPanel(p: SearchPanelProps) {
         />
       </View>
 
-      {p.onGetHome ? (
-        <Button label="Get Home" kind="secondary" onPress={p.onGetHome} accessibilityLabel="Get Home: search to your main home" />
-      ) : null}
-      {p.onSetHome ? (
-        <Pressable onPress={p.onSetHome} accessibilityRole="button" style={pressStyle(styles.hint, 'link')}>
-          <Text style={[textStyles.small, { color: c.accent }]}>Set your home airport in Profile ›</Text>
-        </Pressable>
-      ) : null}
-
+      {/* The main action sits right under From/To so it's in view at half height. */}
       <View style={styles.actions}>
         <Button
           label={p.filtersChanged ? `Filters (${p.filtersChanged})` : 'Filters'}
@@ -276,6 +260,15 @@ export function SearchPanel(p: SearchPanelProps) {
           style={styles.find}
         />
       </View>
+      {p.onGetHome ? (
+        <Button label="Get Home" kind="secondary" onPress={p.onGetHome} accessibilityLabel="Get Home: search to your main home" />
+      ) : null}
+      {p.onSetHome ? (
+        <Pressable onPress={p.onSetHome} accessibilityRole="button" style={pressStyle(styles.hint, 'link')}>
+          <Text style={[textStyles.small, { color: c.accent }]}>Set your home airport in Profile ›</Text>
+        </Pressable>
+      ) : null}
+
       {p.banner}
     </ScrollView>
   );
@@ -283,7 +276,6 @@ export function SearchPanel(p: SearchPanelProps) {
 
 const styles = StyleSheet.create({
   body: { paddingHorizontal: spacing.page, paddingBottom: spacing.page, gap: spacing.section },
-  sampleRow: { flexDirection: 'row', justifyContent: 'flex-end' },
   chips: { flexDirection: 'row', gap: spacing.group },
   chip: {
     minHeight: minTapTarget,

@@ -23,7 +23,7 @@ import { LeaveByCard } from '@/ui/LeaveByCard';
 import { useSharedLocation } from '@/ui/LocationProvider';
 import { LocationOptInCard } from '@/ui/LocationOptInCard';
 import { ResultsBanner } from '@/ui/ResultsBanner';
-import { ResultsPanel } from '@/ui/ResultsPanel';
+import { ResultsPanel, SampleLabel } from '@/ui/ResultsPanel';
 import { SearchPanel } from '@/ui/SearchPanel';
 import { RadarButton } from '@/ui/RadarButton';
 import { Sheet } from '@/ui/Sheet';
@@ -125,6 +125,18 @@ export default function HomeScreen() {
   const [showHidden, setShowHidden] = useState(false);
   useEffect(() => setShowHidden(false), [state]);
   const showResults = state.status !== 'idle' && (!emptyBanner || showHidden);
+  // First launch: the location card plus the search fields don't fit at half height, so
+  // the panel opens full while the card shows and drops to half once it's answered.
+  const [locationCardSeen, setLocationCardSeen] = useState(false);
+  useEffect(() => {
+    if (locationCard && !showResults) {
+      setLocationCardSeen(true);
+      setSheetIndex(SHEET.full);
+    } else if (locationCardSeen && !locationCard && !showResults) {
+      setLocationCardSeen(false);
+      setSheetIndex(SHEET.half);
+    }
+  }, [locationCard, locationCardSeen, showResults]);
   // An empty search shows its banner under Find Routes, so the panel goes back to half.
   const emptyNow = emptyBanner != null && !showHidden;
   useEffect(() => {
@@ -226,6 +238,8 @@ export default function HomeScreen() {
         <Text style={[textStyles.wordmark, { color: c.text }]} accessibilityRole="header">
           OutBound
         </Text>
+        {/* In the top bar so it doesn't push Find Routes down; results carry their own label. */}
+        {!LIVE_FLIGHTS && !showResults ? <SampleLabel /> : null}
       </View>
 
       <View style={styles.body} onLayout={onBodyLayout}>
@@ -267,7 +281,6 @@ export default function HomeScreen() {
                 onFilters={() => setFiltersOpen(true)}
                 filtersChanged={filtersChanged}
                 onFind={() => runSearch()}
-                sampleFlights={!LIVE_FLIGHTS}
                 onGetHome={awayFromHome ? getHome : undefined}
                 onSetHome={mainHome ? undefined : () => router.push('/settings')}
                 locationCard={

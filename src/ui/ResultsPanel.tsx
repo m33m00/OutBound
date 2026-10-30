@@ -109,20 +109,16 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
         ) : null}
       </View>
       {stepsDays && p.days && p.onDay ? (
-        <View style={styles.controls}>
-          <DayStepper days={p.days} date={request.date} label={shortDate(request.date)} onDay={p.onDay} />
-          <View style={styles.meta}>
-            {summary ? (
-              <Text style={[textStyles.body, { color: c.muted }]} testID="results-summary">
-                {summary}
-              </Text>
-            ) : null}
-            {labels}
-          </View>
-        </View>
-      ) : labels ? (
-        <View style={styles.controls}>{labels}</View>
+        // Full width: arrows at the panel edges, the day and route count centered (John, 2026-10-30).
+        <DayStepper
+          days={p.days}
+          date={request.date}
+          label={shortDate(request.date)}
+          onDay={p.onDay}
+          detail={summary || undefined}
+        />
       ) : null}
+      {labels ? <View style={styles.labelRow}>{labels}</View> : null}
     </View>
   );
 
@@ -226,8 +222,14 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
               <StepArrow dir="next" onPress={step(focusIndex + 1)} />
             </View>
           </View>
+          {labels ? <View style={[styles.labelRow, styles.pad, styles.labelPad]}>{labels}</View> : null}
           <ScrollView contentContainerStyle={styles.focus}>
-            {p.selectedCard ? <View testID="selected-card">{p.selectedCard}</View> : null}
+            {/* Keyed by route so paging re-announces the new Leave By time. */}
+            {p.selectedCard ? (
+              <View testID="selected-card" key={focused.id}>
+                {p.selectedCard}
+              </View>
+            ) : null}
             <ResultRow
               itinerary={focused}
               selected
@@ -299,6 +301,7 @@ function StepArrow({ dir, onPress }: { dir: 'prev' | 'next'; onPress?: () => voi
     <Pressable
       testID={`route-${dir}`}
       onPress={onPress}
+      hitSlop={{ left: 4, right: 4 }}
       disabled={!onPress}
       accessibilityRole="button"
       accessibilityLabel={dir === 'prev' ? 'Previous route' : 'Next route'}
@@ -387,8 +390,8 @@ const styles = StyleSheet.create({
   headerGap: { height: spacing.group },
   bar: { gap: 4, paddingBottom: spacing.group, borderBottomWidth: StyleSheet.hairlineWidth },
   title: { flex: 1, textAlign: 'center' },
-  controls: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: spacing.group },
-  meta: { flexShrink: 1, alignItems: 'flex-end', gap: 2 },
+  labelRow: { flexDirection: 'row', justifyContent: 'center' },
+  labelPad: { paddingTop: spacing.group },
   filters: { paddingHorizontal: spacing.section },
   titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.group },
   sep: { height: spacing.group },
@@ -396,7 +399,7 @@ const styles = StyleSheet.create({
   loading: { flexDirection: 'row', alignItems: 'center', gap: spacing.group },
   errorTop: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.section },
   errorText: { flex: 1, gap: 2 },
-  labels: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-end', gap: 4, flexShrink: 1 },
+  labels: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 4, flexShrink: 1 },
   footer: { paddingTop: spacing.section },
   nowLine: { flexDirection: 'row', alignItems: 'center', gap: spacing.group, paddingTop: 2 },
   rule: { flex: 1, height: StyleSheet.hairlineWidth * 2 },

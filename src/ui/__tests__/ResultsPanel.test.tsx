@@ -59,10 +59,14 @@ describe('ResultsPanel', () => {
     expect(view.length).toBe(1);
     // Leave-by comes before the route card.
     const order = view[0]
-      .findAll((n) => typeof n.type === 'string' && (n.props.testID === 'selected-card' || n.props.accessibilityState?.selected === true))
+      .findAll((n) => typeof n.type === 'string' && (n.props.testID === 'selected-card' || n.props.testID === 'route-card'))
       .map((n) => (n.props.testID === 'selected-card' ? 'leave-by' : 'route'));
     expect(order[0]).toBe('leave-by');
     expect(order).toContain('route');
+    // The route card in this view doesn't close on a stray tap; only "‹ Routes" does.
+    const card = view[0].findAll((n) => n.props.testID === 'route-card' && typeof n.type !== 'string')[0];
+    expect(card.props.onPress).toBeUndefined();
+    expect(card.props.accessibilityRole).toBeUndefined();
     // Only one card on screen; the list is hidden but kept.
     expect(r!.root.findAll((n) => n.props.testID === 'card' && typeof n.type === 'string').length).toBe(1);
     // "2 of 2": next is off at the end, previous picks the first route.
@@ -143,9 +147,9 @@ describe('ResultsPanel day and filters (Q-057)', () => {
         />,
       );
     });
-    // The date lives in the stepper, so the summary keeps only the count.
-    const summary = r!.root.findAll((n) => n.props.testID === 'results-summary' && typeof n.type === 'string')[0];
-    expect(summary.props.children).toBe('2 routes');
+    // The count sits under the day in the full-width stepper (John, 2026-10-30).
+    const detail = r!.root.findAll((n) => n.props.testID === 'day-detail' && typeof n.type === 'string')[0];
+    expect(detail.props.children).toBe('2 routes');
     expect(texts()).toContain('Tue, Oct 20');
     const next = r!.root.findAll((n) => n.props.testID === 'day-next' && n.props.accessibilityRole === 'button')[0];
     act(() => next.props.onPress());

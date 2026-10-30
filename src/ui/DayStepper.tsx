@@ -16,19 +16,23 @@ export function neighborDays(days: DateChip[], date: string): { prev: DateChip |
 
 /**
  * "‹ Wed, Oct 30 ›" on the results header (Q-057): step a day without going
- * back to search. Arrows dim at the ends of the 0-7 day window.
+ * back to search. Arrows dim at the ends of the 0-7 day window. Spans the
+ * panel's full width, arrows at the edges and the day centered (John, 2026-10-30).
  */
 export function DayStepper({
   days,
   date,
   label,
   onDay,
+  detail,
 }: {
   days: DateChip[];
   date: string;
   /** What the middle shows, e.g. "Wed, Oct 30". */
   label: string;
   onDay: (date: string) => void;
+  /** Small line under the day, e.g. "8 routes, 1 full". */
+  detail?: string;
 }) {
   const c = useColors();
   const { prev, next } = neighborDays(days, date);
@@ -54,19 +58,27 @@ export function DayStepper({
   return (
     <View style={[styles.box, { backgroundColor: c.surface2 }]}>
       {arrow(prev, 'prev')}
-      <Text
-        style={[textStyles.bodyStrong, styles.label, { color: c.text }]}
-        accessibilityLabel={current?.long ?? label}
-        numberOfLines={1}>
-        {label}
-      </Text>
+      <View
+        style={styles.middle}
+        accessible
+        accessibilityLabel={[current?.long ?? label, detail].filter(Boolean).join(', ')}>
+        <Text style={[textStyles.heading, styles.label, { color: c.text }]} numberOfLines={1}>
+          {label}
+        </Text>
+        {detail ? (
+          <Text style={[textStyles.small, styles.label, { color: c.muted }]} numberOfLines={1} testID="day-detail">
+            {detail}
+          </Text>
+        ) : null}
+      </View>
       {arrow(next, 'next')}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  box: { flexDirection: 'row', alignItems: 'center', borderRadius: radius.sm, flexShrink: 1 },
-  arrow: { width: minTapTarget, height: minTapTarget, alignItems: 'center', justifyContent: 'center' },
-  label: { flexShrink: 1, textAlign: 'center' },
+  box: { flexDirection: 'row', alignItems: 'center', borderRadius: radius.sm, alignSelf: 'stretch' },
+  arrow: { width: minTapTarget, minHeight: minTapTarget, alignSelf: 'stretch', alignItems: 'center', justifyContent: 'center' },
+  middle: { flex: 1, alignItems: 'center', paddingVertical: 4 },
+  label: { textAlign: 'center' },
 });

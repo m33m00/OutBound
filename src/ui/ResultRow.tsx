@@ -139,13 +139,16 @@ export const ResultRow = memo(function ResultRow({
   const timeColor = dimmed ? c.muted : c.text;
   const neutralSeats = (source: string) => dimmed || source === 'typical';
   const legText = large ? textStyles.body : textStyles.small;
+  const highlight = selected && !large;
   // Every value shows its age: the summary's comes from the leg that sets it.
   const summaryAge = summary ? routeSeatAge(it, now) : null;
   return (
     <Pressable
-      onPress={withTick(() => onPress(it.id))}
-      accessibilityRole="button"
-      accessibilityState={{ selected }}
+      // In the route view the card doesn't close on a stray tap; "‹ Routes" does that.
+      onPress={large ? undefined : withTick(() => onPress(it.id))}
+      accessibilityRole={large ? undefined : 'button'}
+      accessibilityState={large ? undefined : { selected }}
+      testID={large ? 'route-card' : undefined}
       accessibilityLabel={label}
       accessibilityActions={actions.length ? actions : undefined}
       onAccessibilityAction={(e) => {
@@ -155,15 +158,18 @@ export const ResultRow = memo(function ResultRow({
         const leg = name.startsWith('leg-') ? it.legs[Number(name.slice(4))] : undefined;
         if (leg) onLegPress?.(leg.flight);
       }}
-      accessibilityHint={selected ? 'Closes the route card' : 'Opens the route card and shows the route on the globe'}
+      accessibilityHint={
+        large ? undefined : selected ? 'Closes the route card' : 'Opens the route card and shows the route on the globe'
+      }
       style={pressStyle([
         styles.row,
         {
           // Full routes stay in time order, grayed with a red edge; text keeps full contrast.
-          backgroundColor: selected ? c.accentSoft : it.isFull || dimmed ? c.surface2 : c.surface,
-          borderColor: selected ? c.accent : it.isFull ? c.full : c.line,
+          // The route view's card drops the selected tint so the Leave By card above it leads.
+          backgroundColor: highlight ? c.accentSoft : it.isFull || dimmed ? c.surface2 : c.surface,
+          borderColor: highlight ? c.accent : it.isFull ? c.full : c.line,
         },
-        (selected || it.isFull) && styles.strongBorder,
+        (highlight || it.isFull) && styles.strongBorder,
       ])}>
       {/* Route color = weakest leg. */}
       <View style={[styles.edge, { backgroundColor: dimmed ? c.unknown : c[it.tier] }]} />
