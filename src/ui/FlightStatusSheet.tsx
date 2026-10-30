@@ -87,14 +87,14 @@ export function FlightStatusSheet({ flight, now, onClose, liveOptions, sample }:
             <Text style={[textStyles.body, { color: c.muted }]}>Flight status is not connected yet.</Text>
           ) : null}
           {error === 'fetch_failed' && !response ? (
-            <Text style={[textStyles.body, { color: c.text }]}>Couldn't get flight status. Try again in a moment.</Text>
+            <Text style={[textStyles.body, { color: c.text }]}>Couldn’t get flight status. Try again in a moment.</Text>
           ) : null}
           {loading && !response ? <ActivityIndicator accessibilityLabel="Loading flight status" /> : null}
           {response && !status ? (
             <Text style={[textStyles.body, { color: c.text }]}>
               {response.state === 'unavailable'
-                ? "Couldn't get flight status. Try again in a moment."
-                : "The airline data source doesn't list this flight yet."}
+                ? "Couldn’t get flight status. Try again in a moment."
+                : "The airline data source doesn’t list this flight yet."}
             </Text>
           ) : null}
           {status && flight ? (
@@ -124,7 +124,7 @@ export function FlightStatusSheet({ flight, now, onClose, liveOptions, sample }:
           ) : null}
           {response ? <Text style={[textStyles.small, { color: c.muted }]}>{ageText(response, now)}</Text> : null}
           {error === 'fetch_failed' && response ? (
-            <Text style={[textStyles.small, { color: c.muted }]}>Couldn't refresh just now; showing the last status.</Text>
+            <Text style={[textStyles.small, { color: c.muted }]}>Couldn’t refresh just now; showing the last status.</Text>
           ) : null}
           {error !== 'not_configured' && !isSample ? (
             <Pressable

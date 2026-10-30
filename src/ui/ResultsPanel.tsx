@@ -2,7 +2,7 @@ import { SymbolView } from 'expo-symbols';
 import { forwardRef, type ReactNode } from 'react';
 import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
 
-import type { Flight, Itinerary } from '@/engine';
+import { areaFor, type Flight, type Itinerary, type SearchRequest } from '@/engine';
 import type { RouteImpact } from '@/live';
 import { shortDate } from '@/search/dates';
 import type { RowStatus } from '@/search/statusTags';
@@ -20,7 +20,7 @@ export interface ResultsPanelProps {
   onSelect: (id: string) => void;
   onBack: () => void;
   onRetry: () => void;
-  /** Leave-by card for the selected route (fixed above the list). */
+  /** Leave-by card for the selected route, shown right under its row. */
   selectedCard?: ReactNode;
   /** Delay/weather impact per itinerary id (item 7). */
   impacts?: Record<string, RouteImpact>;
@@ -69,6 +69,11 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
           ? ` · ${results.length} ${results.length === 1 ? 'route' : 'routes'}${full ? `, ${full} full` : ''}`
           : ''}
       </Text>
+      {areaLines(request).map((line) => (
+        <Text key={line} style={[textStyles.small, { color: c.muted }]}>
+          {line}
+        </Text>
+      ))}
       {p.showingHidden ? (
         <Text style={[textStyles.small, { color: c.muted }]}>Showing routes your filters hid, for this search only.</Text>
       ) : null}
@@ -122,7 +127,6 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
   return (
     <View style={styles.fill}>
       {topRow}
-      {p.selectedCard ? <View style={[styles.pad, styles.card]}>{p.selectedCard}</View> : null}
       <FlatList
         ref={ref}
         data={results}
@@ -130,19 +134,32 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
         contentContainerStyle={styles.list}
         ListHeaderComponent={header}
         ItemSeparatorComponent={() => <View style={styles.sep} />}
-        renderItem={({ item }) => (
-          <ResultRow
-            itinerary={item}
-            selected={item.id === p.selectedId}
-            now={p.now}
-            onPress={p.onSelect}
-            impact={p.impacts?.[item.id]}
-            impactLoading={p.impactsLoading}
-            onImpactPress={p.onImpactPress}
-            onLegPress={p.onLegPress}
-            status={p.statuses?.[item.id]}
-          />
-        )}
+        renderItem={({ item }) => {
+          const selected = item.id === p.selectedId;
+          const row = (
+            <ResultRow
+              itinerary={item}
+              selected={selected}
+              now={p.now}
+              onPress={p.onSelect}
+              impact={p.impacts?.[item.id]}
+              impactLoading={p.impactsLoading}
+              onImpactPress={p.onImpactPress}
+              onLegPress={p.onLegPress}
+              status={p.statuses?.[item.id]}
+            />
+          );
+          // The card sits under its own row and scrolls with it, so the half-height sheet
+          // still shows the route you picked (it used to sit above the list and push it away).
+          return selected && p.selectedCard ? (
+            <View style={styles.selectedBlock} testID="selected-block">
+              {row}
+              {p.selectedCard}
+            </View>
+          ) : (
+            row
+          );
+        }}
         onScrollToIndexFailed={() => {}}
         ListFooterComponent={
           <Text style={[textStyles.small, styles.footer, { color: c.muted }]}>
@@ -153,6 +170,21 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
     </View>
   );
 });
+
+/**
+ * Says when a side searched its whole area (Q-048), since the title shows only
+ * the picked airports: "Leaving from any Dallas airport (DAL, DFW)".
+ */
+export function areaLines(request: SearchRequest): string[] {
+  const line = (code: string, on: boolean | undefined, lead: string) => {
+    const area = on ? areaFor(code) : null;
+    return area ? `${lead} any ${area.city} airport (${area.airports.join(', ')})` : null;
+  };
+  return [
+    line(request.origin, request.originArea, 'Leaving from'),
+    line(request.destination, request.destinationArea, 'Landing at'),
+  ].filter((l): l is string => l != null);
+}
 
 /** Results label text for what is sample data; null when nothing is. */
 export function sampleLabel(flights: boolean, impacts: boolean): string | null {
@@ -173,7 +205,7 @@ export function SampleLabel({ text = 'Sample flights' }: { text?: string }) {
 
 const styles = StyleSheet.create({
   fill: { flex: 1 },
-  card: { paddingBottom: spacing.group },
+  selectedBlock: { gap: spacing.group },
   pad: { paddingHorizontal: spacing.page },
   sample: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: radius.sm },
   list: { paddingHorizontal: spacing.page, paddingBottom: spacing.page * 2 },

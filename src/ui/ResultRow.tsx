@@ -4,7 +4,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { Flight, Itinerary, SeatTier } from '@/engine';
 import type { RouteImpact } from '@/live';
-import { formatDuration, nearbyNotes, rowAccessibilityLabel, rowTimes, seatText, stopsText } from '@/search/format';
+import { formatDuration, nearbyNotes, rowAccessibilityLabel, rowTimes, seatText, stopCount } from '@/search/format';
 import { impactSummary } from '@/search/impactText';
 import type { LegStatusView, LegTagKind, RowStatus } from '@/search/statusTags';
 import { fonts, radius, spacing, textStyles, useColors, type ColorToken } from '@/theme';
@@ -105,6 +105,15 @@ export const ResultRow = memo(function ResultRow({
   ]
     .filter(Boolean)
     .join('. ');
+  const actions = [
+    ...(hasImpact ? [{ name: 'impact', label: 'Delay and weather details' }] : []),
+    ...(onLegPress
+      ? it.legs.map((l, i) => ({
+          name: `leg-${i}`,
+          label: `Flight status, ${l.flight.airline} ${l.flight.flightNumber}`,
+        }))
+      : []),
+  ];
   const first = status?.legs[0];
   // Departed rows are dimmed with a gray fill and edge; text keeps 4.5:1.
   const dimmed = !!status?.dimmed;
@@ -115,9 +124,13 @@ export const ResultRow = memo(function ResultRow({
       accessibilityRole="button"
       accessibilityState={{ selected }}
       accessibilityLabel={label}
-      accessibilityActions={hasImpact ? [{ name: 'impact', label: 'Delay and weather details' }] : undefined}
+      accessibilityActions={actions.length ? actions : undefined}
       onAccessibilityAction={(e) => {
-        if (e.nativeEvent.actionName === 'impact') onImpactPress?.(it.id);
+        const name = e.nativeEvent.actionName;
+        if (name === 'impact') onImpactPress?.(it.id);
+        // The row is one VoiceOver element, so its leg buttons are reached as actions.
+        const leg = name.startsWith('leg-') ? it.legs[Number(name.slice(4))] : undefined;
+        if (leg) onLegPress?.(leg.flight);
       }}
       accessibilityHint={selected ? 'Tap to clear the route from the globe' : 'Shows this route on the globe'}
       style={pressStyle([
@@ -153,7 +166,7 @@ export const ResultRow = memo(function ResultRow({
             {hasImpact ? (
               <ImpactBadge impact={impact} now={now} onPress={() => onImpactPress?.(it.id)} />
             ) : impactLoading ? (
-              <Text style={[textStyles.small, { color: c.faint }]}>Checking…</Text>
+              <Text style={[textStyles.small, { color: c.muted }]}>Checking…</Text>
             ) : null}
           </View>
         </View>
@@ -162,7 +175,8 @@ export const ResultRow = memo(function ResultRow({
             {[it.origin, ...it.legs.map((l) => l.flight.to)].join(' → ')}
           </Text>
           <Text style={[textStyles.body, { color: c.muted }]}>
-            {stopsText(it)} · {formatDuration(it.totalMin)}
+            {/* The route line already names the connections. */}
+            {stopCount(it)} · {formatDuration(it.totalMin)}
           </Text>
         </View>
         {it.legs.map((leg, i) => {

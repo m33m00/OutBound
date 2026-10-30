@@ -1,6 +1,6 @@
 import { SymbolView } from 'expo-symbols';
 import { useState, type ReactNode } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
 import { AIRPORTS, areaFor } from '@/engine';
 import { QUICK_DATE_CHIPS, type DateChip } from '@/search/dates';
@@ -90,6 +90,7 @@ export function AirportCard({ label, code, onPress, areaOn, onToggleArea }: Airp
               ellipsizeMode="tail"
               adjustsFontSizeToFit
               minimumFontScale={0.85}
+              maxFontSizeMultiplier={LABEL_MAX_SCALE}
               style={[textStyles.small, styles.pillText, { color: ink }]}>
               All {area.city}
             </Text>
@@ -105,7 +106,9 @@ export function AirportCard({ label, code, onPress, areaOn, onToggleArea }: Airp
             : `${label}: choose an airport`
         }
         style={pressStyle(styles.cardButton, 'link')}>
-        <Text style={[textStyles.small, styles.cardLabel, { color: c.muted }]}>{label}</Text>
+        <Text style={[textStyles.small, styles.cardLabel, { color: c.muted }]} maxFontSizeMultiplier={LABEL_MAX_SCALE}>
+          {label}
+        </Text>
         <Text style={[textStyles.title, { color: code ? c.text : c.faint }]}>{code ?? '—'}</Text>
         {whole ? (
           <Text style={[textStyles.small, { color: c.text }]}>{area.airports.join(' · ')}</Text>
@@ -131,9 +134,18 @@ const PILL_LEFT = 56;
 /** Label centered on the pill; the code starts below the pill's tap target. */
 const LABEL_TOP = PILL_TOP + (PILL_HEIGHT - textStyles.small.lineHeight) / 2;
 const LABEL_GAP = minTapTarget - LABEL_TOP - textStyles.small.lineHeight;
+/**
+ * The From/To label and the area pill share the card's top row, so they stop
+ * growing at 1.3x; the airport code, name and area list below keep growing.
+ */
+const LABEL_MAX_SCALE = 1.3;
+/** From this text size the four date chips go two to a row instead of shrinking. */
+export const WRAP_CHIPS_SCALE = 1.2;
 
 export function SearchPanel(p: SearchPanelProps) {
   const c = useColors();
+  const { fontScale } = useWindowDimensions();
+  const wrapChips = fontScale >= WRAP_CHIPS_SCALE;
   const [calendarOpen, setCalendarOpen] = useState(false);
   const quick = p.chips.slice(0, QUICK_DATE_CHIPS);
   // A day past the chips shows on the calendar button itself.
@@ -146,8 +158,9 @@ export function SearchPanel(p: SearchPanelProps) {
         </View>
       ) : null}
       {p.locationCard}
-      {/* One row, no sideways scroll: date chips share the width, calendar stays 44pt until it holds a date. */}
-      <View style={styles.chips}>
+      {/* One row, no sideways scroll: date chips share the width, calendar stays 44pt until it holds a date.
+          At large text sizes they go two to a row so "Tomorrow" never gets cut off. */}
+      <View style={[styles.chips, wrapChips && styles.chipsWrap]} testID="date-chips">
         {quick.map((chip) => {
           const on = chip.date === p.date;
           return (
@@ -157,7 +170,12 @@ export function SearchPanel(p: SearchPanelProps) {
               accessibilityRole="button"
               accessibilityLabel={chip.long}
               accessibilityState={{ selected: on }}
-              style={pressStyle([styles.chip, styles.dateChip, { backgroundColor: on ? c.accent : c.surface2 }])}>
+              style={pressStyle([
+                styles.chip,
+                styles.dateChip,
+                wrapChips && styles.dateChipWrap,
+                { backgroundColor: on ? c.accent : c.surface2 },
+              ])}>
               <Text
                 numberOfLines={1}
                 adjustsFontSizeToFit
@@ -177,6 +195,7 @@ export function SearchPanel(p: SearchPanelProps) {
             styles.chip,
             styles.calendar,
             later ? styles.dateChip : null,
+            wrapChips && styles.dateChipWrap,
             { backgroundColor: later ? c.accent : c.surface2 },
           ])}>
           <SymbolView
@@ -273,6 +292,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   dateChip: { flex: 1, paddingHorizontal: 6, alignItems: 'center' },
+  chipsWrap: { flexWrap: 'wrap' },
+  // Two per row; the calendar button takes the last row on its own.
+  dateChipWrap: { flexGrow: 1, flexBasis: '40%' },
   calendar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, minWidth: minTapTarget },
   cards: { flexDirection: 'row', alignItems: 'center', gap: spacing.group },
   card: { flex: 1, alignSelf: 'stretch', borderRadius: radius.md },
@@ -288,7 +310,7 @@ const styles = StyleSheet.create({
   },
   areaPill: {
     maxWidth: '100%',
-    height: PILL_HEIGHT,
+    minHeight: PILL_HEIGHT,
     paddingHorizontal: 10,
     borderRadius: PILL_HEIGHT / 2,
     borderWidth: 1,
