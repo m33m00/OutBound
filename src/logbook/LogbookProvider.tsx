@@ -66,6 +66,11 @@ export function LogbookProvider({ children }: { children: ReactNode }) {
   return <LogbookContext.Provider value={value}>{children}</LogbookContext.Provider>;
 }
 
+/** The logbook, or null outside LogbookProvider (screens that can show it but don't need it). */
+export function useLogbookIfThere(): LogbookContextValue | null {
+  return useContext(LogbookContext);
+}
+
 export function useLogbook(): LogbookContextValue {
   const ctx = useContext(LogbookContext);
   if (!ctx) throw new Error('useLogbook must be used inside LogbookProvider');

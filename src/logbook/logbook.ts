@@ -48,6 +48,18 @@ export function loggedFrom(leg: PassLeg, source: LogSource, now: number): Logged
   return f;
 }
 
+/** The flight sheet offers Add to Logbook from this long before departure (round 63). */
+export const LOG_FROM_MS = 2 * 60 * 60 * 1000;
+
+/** A searched flight as a logbook entry, on its day at the departure airport. */
+export function loggedFromFlight(
+  f: { airline: string; flightNumber: string; from: string; to: string; departUtc: number },
+  tz: string,
+  now: number,
+): LoggedFlight {
+  return loggedFrom({ airline: f.airline, flightNumber: f.flightNumber, from: f.from, to: f.to, date: localDate(f.departUtc, tz) }, 'manual', now);
+}
+
 /** Logbook with these flights added; one already there stays as it was. */
 export function addLogged(list: readonly LoggedFlight[], flights: readonly LoggedFlight[]): LoggedFlight[] {
   const next = [...list];
