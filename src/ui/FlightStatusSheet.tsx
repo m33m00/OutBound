@@ -2,12 +2,12 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { AIRPORTS, localDate, type Flight } from '@/engine';
+import { AIRPORTS, localDate, type Flight, type LegSeats } from '@/engine';
 import { useFlightStatus, type FlightLookup, type UseFlightStatusOptions, type Movement } from '@/live';
 import type { FlightStatusEntry } from '@/live/flightStatus';
 import { answerText, answerTier, askNote, reportClosedNote, type AskState, type LoadAnswer, type ReportWindow } from '@/requests/requests';
 import { shortDate } from '@/search/dates';
-import { formatAge, forSpeech, TIER_WORD } from '@/search/format';
+import { formatAge, forSpeech, seatCounts, seatSourceText, seatText, TIER_WORD } from '@/search/format';
 import { radius, spacing, textStyles, useColors } from '@/theme';
 
 import { Button } from './Buttons';
@@ -38,6 +38,8 @@ export interface FlightStatusSheetProps {
   sample?: FlightStatusEntry | null;
   /** Seats card (design round 32): report what the board shows, or ask someone at the airline. */
   load?: FlightLoadActions;
+  /** The flight's seats from search: the open and listed numbers live here, not on the card (John, 2026-10-31). */
+  seats?: LegSeats | null;
 }
 
 export interface FlightLoadActions {
@@ -64,7 +66,7 @@ export function lookupForFlight(f: Flight): FlightLookup {
 const FETCH_FAILED_TEXT = 'Couldn’t get flight status. Try again in a moment.';
 
 /** Status for one opened flight: state, times with delay, gates and terminals, and how old it is. Text only. */
-export function FlightStatusSheet({ flight, visible, now, onClose, liveOptions, sample, load }: FlightStatusSheetProps) {
+export function FlightStatusSheet({ flight, visible, now, onClose, liveOptions, sample, load, seats }: FlightStatusSheetProps) {
   const c = useColors();
   // Report Load opens as a page inside this sheet (a second sheet on top can't open while one is up).
   const [reporting, setReporting] = useState(false);
@@ -231,7 +233,7 @@ export function FlightStatusSheet({ flight, visible, now, onClose, liveOptions, 
                 </View>
               ) : null}
               {load && flight ? (
-                <LoadCard load={load} now={now} focus={backFromReport} onReport={() => setReporting(true)} />
+                <LoadCard load={load} seats={seats} now={now} focus={backFromReport} onReport={() => setReporting(true)} />
               ) : null}
               {flight ? <LogFlightLink flight={flight} now={now} /> : null}
               {/* The source line names a real feed, so it shows only for live status (round 30: no sample labels). */}
@@ -244,14 +246,43 @@ export function FlightStatusSheet({ flight, visible, now, onClose, liveOptions, 
   );
 }
 
-/** Seats: your report if you made one, then Report Load and Ask for Load. */
+/**
+ * What search knows about this flight's seats: the chance word with both numbers, and how
+ * old they are ("Likely · 20 open · 7 listed", "Reported 5m ago"). Typical loads stay neutral.
+ */
+function SearchSeats({ seats, now }: { seats: LegSeats; now: number }) {
+  const c = useColors();
+  if (seats.source === 'unknown' || seats.netSeats == null) return null;
+  if (seats.source === 'typical') {
+    return (
+      <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, { color: c.muted }]} testID="search-seats">
+        {seatText(seats, now)}
+      </Text>
+    );
+  }
+  const counts = seatCounts(seats);
+  const age = seatSourceText(seats, now);
+  return (
+    <View accessible accessibilityLabel={forSpeech([`${TIER_WORD[seats.tier]} · ${counts}`, age].filter(Boolean).join('. '))} testID="search-seats">
+      <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, { color: c.text }]}>
+        <Text style={[textStyles.bodyStrong, { color: c[TIER_FG[seats.tier]] }]}>{TIER_WORD[seats.tier]}</Text>
+        {` · ${counts}`}
+      </Text>
+      {age ? <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>{age}</Text> : null}
+    </View>
+  );
+}
+
+/** Seats: what search knows, your report if you made one, then Report Load and Ask for Load. */
 function LoadCard({
   load,
+  seats,
   now,
   focus,
   onReport,
 }: {
   load: FlightLoadActions;
+  seats?: LegSeats | null;
   now: number;
   focus: boolean;
   onReport: () => void;
@@ -279,6 +310,7 @@ function LoadCard({
       <Text ref={headerRef} style={[textStyles.heading, { color: c.text }]} accessibilityRole="header">
         Seats
       </Text>
+      {seats ? <SearchSeats seats={seats} now={now} /> : null}
       {yourReport && tier ? (
         <Text
           style={[textStyles.body, { color: c.text }]}

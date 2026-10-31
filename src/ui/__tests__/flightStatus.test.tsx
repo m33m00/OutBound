@@ -187,6 +187,20 @@ describe('seats card in the flight sheet (design round 32)', () => {
     return full;
   };
 
+  it('shows the flight\'s chance word with both numbers and their age, which the route card no longer does (round 66)', async () => {
+    const f = (await itinerary()).legs[0].flight;
+    const load: FlightLoadActions = { reportWindow: 'open', askState: 'ready', yourReport: null, onAsk: jest.fn(), onReport: jest.fn() };
+    const seats = { source: 'reported' as const, tier: 'good' as const, netSeats: 13, openSeats: 20, listed: 7, asOf: NOW - 5 * 60_000 };
+    await act(async () => {
+      r = create(
+        <FlightStatusSheet flight={f} now={NOW} onClose={jest.fn()} sample={null} liveOptions={{ fetcher: jest.fn(), config: null }} load={load} seats={seats} />,
+      );
+    });
+    const box = r!.root.findAll((n) => n.props.testID === 'search-seats' && typeof n.type === 'string')[0];
+    expect(box.props.accessibilityLabel).toBe('Likely, 20 open, 7 listed. Reported 5 minutes ago');
+    expect(texts()).toContain('Reported 5m ago');
+  });
+
   it('Report Load opens the report page in the same sheet; Submit hands back both numbers and returns', async () => {
     const load = await render({});
     act(() => btn('Report Load').props.onPress());

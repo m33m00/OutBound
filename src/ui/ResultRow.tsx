@@ -12,11 +12,11 @@ import {
   routeSeatSummary,
   rowAccessibilityLabel,
   rowTimes,
-  seatSourceText,
   seatText,
   slimStops,
   stopCount,
 } from '@/search/format';
+import { statusHeadline, type StatusHeadline } from '@/search/headline';
 import { impactSummary } from '@/search/impactText';
 import type { LegStatusView, RowStatus } from '@/search/statusTags';
 import { fonts, radius, spacing, textStyles, useBoldText, useColors } from '@/theme';
@@ -26,6 +26,7 @@ import { Icon } from './Icon';
 import { ImpactBadge } from './ImpactBadge';
 import { pressStyle } from './press';
 import { StatusTag, TAG_TONE } from './StatusTag';
+import { TONE_BG, TONE_FG } from './statusTone';
 import { withTick } from './haptics';
 import { TIER_BG, TIER_FG } from './tierColors';
 
@@ -81,11 +82,10 @@ export function legClockText(leg: Flight, view?: LegStatusView): string | null {
 }
 
 /**
- * The route card's legs (design round 56, John asked for stops to read at a glance):
+ * The route card's legs (design round 56; slimmed in round 66, John picked A on 2026-10-31):
  * a thin line down the left with a dot per leg in that leg's seat color. Each leg is one
- * tap target: departure time, airports and flight on the first line, its seats under them.
- * Each connection is a short line between legs. The route's overall seats stay in the
- * chip at the top, so legs carry plain colored text, not a second chip.
+ * line and one tap target: departure time, airports, at most one live tag, and the flight.
+ * Its seats open with the flight's sheet. Each connection is a short line between legs.
  */
 function LegTimeline({
   itinerary: it,
@@ -93,7 +93,6 @@ function LegTimeline({
   now,
   large,
   dimmed,
-  sourceOnly,
   onLegPress,
 }: {
   itinerary: Itinerary;
@@ -101,8 +100,6 @@ function LegTimeline({
   now: number;
   large: boolean;
   dimmed: boolean;
-  /** A nonstop: the top chip already says the seats, so its leg keeps only the source and age. */
-  sourceOnly: boolean;
   onLegPress?: (flight: Flight) => void;
 }) {
   const c = useColors();
@@ -121,10 +118,8 @@ function LegTimeline({
         const connection = it.connections[i];
         const last = i === it.legs.length - 1;
         const typical = leg.seats.source === 'typical' || leg.seats.source === 'unknown';
-        // The dot carries the tier color (tier colors only as fills or large numbers); the words stay plain.
-        const seatColor = dimmed || typical ? c.muted : c.text;
+        // The dot carries the leg's tier color; the route's chance word is in the headline.
         const dotColor = dimmed || typical ? c.unknown : c[leg.seats.tier];
-        const seats = sourceOnly ? seatSourceText(leg.seats, now) : seatText(leg.seats, now);
         const body = (
           <>
             <View style={styles.railCol}>
@@ -137,21 +132,12 @@ function LegTimeline({
                   <LegClock leg={leg.flight} view={view} text={text} dimmed={dimmed} />
                   {`${legClockText(leg.flight, view) ? '  ' : ''}${leg.flight.from}\u00a0→\u00a0${leg.flight.to}`}
                 </Text>
+                {view?.tag ? <StatusTag label={view.tag.label} tone={TAG_TONE[view.tag.kind]} /> : null}
                 <View style={styles.legFlight}>
                   <AirlinePill airline={leg.flight.airline} flightNumber={leg.flight.flightNumber} />
                   {onLegPress ? <Icon name="chevron.right" size={12} tintColor={c.muted} fallback={null} /> : null}
                 </View>
               </View>
-              {view?.tag || seats ? (
-                <View style={styles.legSeats}>
-                  {view?.tag ? <StatusTag label={view.tag.label} tone={TAG_TONE[view.tag.kind]} /> : null}
-                  {seats ? (
-                    <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, styles.shrink, { color: seatColor }]}>
-                      {seats}
-                    </Text>
-                  ) : null}
-                </View>
-              ) : null}
             </View>
           </>
         );
@@ -184,20 +170,42 @@ function LegTimeline({
                   <View style={[styles.railLine, rail]} />
                 </View>
                 <View style={[styles.legText, styles.connection]}>
-                  {risk ? (
-                    <StatusTag label={`Connection at risk · ${risk.airport}`} tone="delayed" />
-                  ) : connection ? (
-                    <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>
-                      Connect at {connection.airport} · {formatDuration(connection.layoverMin)}
+                  {connection ? (
+                    <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, styles.shrink, { color: c.muted }]}>
+                      {formatDuration(connection.layoverMin)} at {connection.airport}
                       {connection.sameAirline ? '' : ' · change airlines'}
                     </Text>
                   ) : null}
+                  {/* The headline names the airport; here the tag just marks which connection. */}
+                  {risk ? <StatusTag label="At risk" tone="delayed" /> : null}
                 </View>
               </View>
             )}
           </View>
         );
       })}
+    </View>
+  );
+}
+
+/** The route card's live-problem headline: big, in the tag's colors (canceled, delayed or gone). */
+function Headline({ headline }: { headline: StatusHeadline }) {
+  const c = useColors();
+  return (
+    <View
+      style={[
+        styles.summary,
+        styles.summaryLead,
+        styles.headline,
+        { backgroundColor: c[TONE_BG[headline.tone]], borderColor: headline.tone === 'gone' ? c.line2 : c[TONE_BG[headline.tone]] },
+      ]}
+      testID="headline">
+      {headline.tone === 'canceled' ? (
+        <Icon name="xmark.circle" size={18} tintColor={c[TONE_FG[headline.tone]]} fallback={null} />
+      ) : null}
+      <Text lineBreakStrategyIOS="push-out" style={[textStyles.heading, styles.shrink, { color: c[TONE_FG[headline.tone]] }]}>
+        {headline.label}
+      </Text>
     </View>
   );
 }
@@ -242,10 +250,8 @@ export const ResultRow = memo(function ResultRow({
         }))
       : []),
   ];
-  // Seats lead the top line (Q-059); the delay badge sits after them.
+  // Seats lead the slim row's top line (Q-059); the delay badge sits after them.
   const summary = routeSeatSummary(it);
-  // A nonstop's summary already says its tier and number; its leg line keeps only the source and age.
-  const legDetailOnly = summary != null && it.legs.length === 1;
   const first = status?.legs[0];
   const tagged = !!status?.legs.some((l) => l.tag) || !!status?.risks.length;
   // Departed rows are dimmed with a gray fill and edge; text keeps 4.5:1.
@@ -254,6 +260,67 @@ export const ResultRow = memo(function ResultRow({
   const highlight = selected && !large;
   // Every value shows its age: the summary's comes from the leg that sets it.
   const summaryAge = summary ? routeSeatAge(it, now) : null;
+  // Route card: a live problem leads; then the seats line at the bottom says the chance word too.
+  const headline = selected ? statusHeadline(it, status) : null;
+  const ageWords = summaryAge ? summaryAge[0].toLowerCase() + summaryAge.slice(1) : null;
+  const cardAge = !ageWords ? null : headline ? `Seats: ${summary} · ${ageWords}` : `Seats ${ageWords}`;
+  const times = (
+    <Text style={[textStyles.number, { color: timeColor }]} testID="row-times">
+      {status?.canceled ? (
+        <Text style={styles.struck}>
+          {t.depart} – {t.arrive}
+        </Text>
+      ) : (
+        <>
+          {/* The new time is full size; the old one sits small and struck before it (John, 2026-10-30). */}
+          {first?.struck && first.newText ? (
+            <>
+              <Text style={[styles.was, styles.struck, { color: c.muted }]}>{keep(t.depart)}</Text>{'\u00a0'}{keep(first.newText)}
+            </>
+          ) : (
+            t.depart
+          )}
+          {' – '}
+          {/* A late arrival shows like a late departure: old time small and struck, then the new time. */}
+          {status?.arrival ? (
+            <>
+              <Text style={[styles.was, styles.struck, { color: c.muted }]}>{keep(t.arrive)}</Text>{'\u00a0'}{keep(status.arrival.newText)}
+            </>
+          ) : (
+            t.arrive
+          )}
+        </>
+      )}
+      {t.plusDays ? <Text style={[textStyles.small, { color: c.muted }]}> {t.plusDays}</Text> : null}
+    </Text>
+  );
+  // The chance word in its tier color; on the route card it's the headline, so it's bigger.
+  const seatSummary = (lead: boolean) =>
+    summary ? (
+      <View
+        style={[styles.summary, lead && styles.summaryLead, { backgroundColor: dimmed ? c.surface : c[TIER_BG[it.tier]] }]}
+        testID="seat-summary">
+        <Text
+          lineBreakStrategyIOS="push-out"
+          style={[lead ? textStyles.heading : textStyles.bodyStrong, { color: dimmed ? c.muted : c[TIER_FG[it.tier]] }]}>
+          {summary}
+        </Text>
+      </View>
+    ) : (
+      // Typical loads stay neutral (no tier word or color) but still say what's known.
+      <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]} testID="seat-neutral">
+        {neutralSeatText(it, now)}
+      </Text>
+    );
+  const badge = (
+    <View style={styles.badgeSlot} testID="badge-slot">
+      {hasImpact ? (
+        <ImpactBadge impact={impact} onPress={() => onImpactPress?.(it.id)} />
+      ) : impactLoading ? (
+        <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>Checking…</Text>
+      ) : null}
+    </View>
+  );
   return (
     <Pressable
       // In the route view the card doesn't close on a stray tap; "‹ Routes" does that.
@@ -286,111 +353,77 @@ export const ResultRow = memo(function ResultRow({
       {/* Route color = weakest leg. */}
       <View style={[styles.edge, { backgroundColor: dimmed ? c.unknown : c[it.tier] }]} />
       <View style={styles.content}>
-        <View style={styles.line}>
-          <Text style={[textStyles.number, { color: timeColor }]} testID="row-times">
-            {status?.canceled ? (
-              <Text style={styles.struck}>
-                {t.depart} – {t.arrive}
+        {selected ? (
+          // Route card A (John, 2026-10-31): one headline up top, the times, then one line per flight.
+          <>
+            <View style={styles.line} testID="headline-row">
+              {headline ? <Headline headline={headline} /> : seatSummary(true)}
+              {badge}
+            </View>
+            <View style={styles.line}>
+              {times}
+              <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, { color: c.muted }]}>
+                {stopCount(it)} · {formatDuration(it.totalMin)}
               </Text>
-            ) : (
-              <>
-                {/* The new time is full size; the old one sits small and struck before it (John, 2026-10-30). */}
-                {first?.struck && first.newText ? (
-                  <>
-                    <Text style={[styles.was, styles.struck, { color: c.muted }]}>{keep(t.depart)}</Text>{'\u00a0'}{keep(first.newText)}
-                  </>
-                ) : (
-                  t.depart
-                )}
-                {' – '}
-                {/* A late arrival shows like a late departure: old time small and struck, then the new time. */}
-                {status?.arrival ? (
-                  <>
-                    <Text style={[styles.was, styles.struck, { color: c.muted }]}>{keep(t.arrive)}</Text>{'\u00a0'}{keep(status.arrival.newText)}
-                  </>
-                ) : (
-                  t.arrive
-                )}
-              </>
-            )}
-            {t.plusDays ? <Text style={[textStyles.small, { color: c.muted }]}> {t.plusDays}</Text> : null}
-          </Text>
-          {/* At big text the times take the line; seats and the delay badge go under them. */}
-          <View style={[styles.topRight, stacked && styles.topRightStacked]} testID="top-right">
-            {summary ? (
-              <View
-                style={[styles.summary, { backgroundColor: dimmed ? c.surface : c[TIER_BG[it.tier]] }]}
-                testID="seat-summary">
-                <Text lineBreakStrategyIOS="push-out" style={[textStyles.bodyStrong, { color: dimmed ? c.muted : c[TIER_FG[it.tier]] }]}>{summary}</Text>
+            </View>
+            <LegTimeline itinerary={it} status={status} now={now} large={!!large} dimmed={dimmed} onLegPress={onLegPress} />
+            {cardAge ? (
+              <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]} testID="seat-age">
+                {cardAge}
+              </Text>
+            ) : null}
+          </>
+        ) : (
+          <>
+            <View style={styles.line}>
+              {times}
+              {/* At big text the times take the line; seats and the delay badge go under them. */}
+              <View style={[styles.topRight, stacked && styles.topRightStacked]} testID="top-right">
+                {seatSummary(false)}
+                {badge}
               </View>
-            ) : (
-              // Typical loads stay neutral (no tier word or color) but still say what's known.
-              <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]} testID="seat-neutral">
-                {neutralSeatText(it, now)}
+            </View>
+            <View style={styles.line}>
+              <View style={styles.path}>
+                {saved ? (
+                  <View testID="row-saved">
+                    <Icon name="bookmark.fill" size={13} tintColor={c.accent} fallback={null} />
+                  </View>
+                ) : null}
+                <Text lineBreakStrategyIOS="push-out" style={[textStyles.bodyStrong, styles.shrink, { color: c.text }]}>
+                  {[it.origin, ...it.legs.map((l) => l.flight.to)].join(' → ')}
+                </Text>
+              </View>
+              <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, { color: c.muted }]}>
+                {/* The route line already names the connections; the slim row adds short layovers. */}
+                {slimStops(it)} · {formatDuration(it.totalMin)}
               </Text>
-            )}
-            <View style={styles.badgeSlot} testID="badge-slot">
-              {hasImpact ? (
-                <ImpactBadge impact={impact} onPress={() => onImpactPress?.(it.id)} />
-              ) : impactLoading ? (
-                <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>Checking…</Text>
+            </View>
+            // Slim row: who flies it and anything live; seats per leg live in the route card.
+            // Any live tag (delayed, canceled, departed…) stacks the flights one per line, each
+            // with its own tag beside it, so it's clear which leg it means (John, 2026-10-30).
+            <View style={tagged ? styles.flightsStacked : styles.legLine} testID="flights-line">
+              {it.legs.map((leg, i) => {
+                const tag = status?.legs[i]?.tag;
+                return (
+                  <View key={leg.flight.id} style={styles.flight} testID="flight-item">
+                    <AirlinePill airline={leg.flight.airline} flightNumber={leg.flight.flightNumber} />
+                    {tag ? <StatusTag label={tag.label} tone={TAG_TONE[tag.kind]} /> : null}
+                  </View>
+                );
+              })}
+              {status?.risks.map((r) => (
+                <View key={r.index} style={styles.flight}>
+                  <StatusTag label={`Connection at risk · ${r.airport}`} tone="delayed" />
+                </View>
+              ))}
+              {summaryAge ? (
+                <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]} testID="seat-age">
+                  {summaryAge}
+                </Text>
               ) : null}
             </View>
-          </View>
-        </View>
-        <View style={styles.line}>
-          <View style={styles.path}>
-            {/* The route view's header bookmark already says it; the list shows a small one. */}
-            {saved && !large ? (
-              <View testID="row-saved">
-                <Icon name="bookmark.fill" size={13} tintColor={c.accent} fallback={null} />
-              </View>
-            ) : null}
-            <Text lineBreakStrategyIOS="push-out" style={[textStyles.bodyStrong, styles.shrink, { color: c.text }]}>
-              {[it.origin, ...it.legs.map((l) => l.flight.to)].join(' → ')}
-            </Text>
-          </View>
-          <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, { color: c.muted }]}>
-            {/* The route line already names the connections; the slim row adds short layovers. */}
-            {selected ? stopCount(it) : slimStops(it)} · {formatDuration(it.totalMin)}
-          </Text>
-        </View>
-        {selected ? (
-          // Route card (Q-062): one leg per line on a thin timeline, connections between (design round 56).
-          <LegTimeline
-            itinerary={it}
-            status={status}
-            now={now}
-            large={!!large}
-            dimmed={dimmed}
-            sourceOnly={legDetailOnly}
-            onLegPress={onLegPress}
-          />
-        ) : (
-          // Slim row: who flies it and anything live; seats per leg live in the route card.
-          // Any live tag (delayed, canceled, departed…) stacks the flights one per line, each
-          // with its own tag beside it, so it's clear which leg it means (John, 2026-10-30).
-          <View style={tagged ? styles.flightsStacked : styles.legLine} testID="flights-line">
-            {it.legs.map((leg, i) => {
-              const tag = status?.legs[i]?.tag;
-              return (
-                <View key={leg.flight.id} style={styles.flight} testID="flight-item">
-                  <AirlinePill airline={leg.flight.airline} flightNumber={leg.flight.flightNumber} />
-                  {tag ? <StatusTag label={tag.label} tone={TAG_TONE[tag.kind]} /> : null}
-                </View>
-              );
-            })}
-            {status?.risks.map((r) => (
-              <View key={r.index} style={styles.flight}>
-                <StatusTag label={`Connection at risk · ${r.airport}`} tone="delayed" />
-              </View>
-            ))}
-            {summaryAge ? (
-              <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]} testID="seat-age">
-                {summaryAge}
-              </Text>
-            ) : null}
-          </View>
+          </>
         )}
       </View>
     </Pressable>
@@ -446,6 +479,9 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     borderRadius: radius.sm,
   },
+  // The route card's headline chip: bigger, so it reads first.
+  summaryLead: { paddingHorizontal: 10, paddingVertical: 4 },
+  headline: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1 },
   badgeSlot: {
     flexShrink: 1,
     flexDirection: 'row',
@@ -475,8 +511,7 @@ const styles = StyleSheet.create({
   legTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', columnGap: spacing.group, rowGap: 2 },
   // Pinned right, even when it wraps under the time at big text.
   legFlight: { flexDirection: 'row', alignItems: 'center', gap: 4, marginLeft: 'auto' },
-  legSeats: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: spacing.group },
-  connection: { paddingVertical: 6 },
+  connection: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: spacing.group, paddingVertical: 6 },
   struck: { textDecorationLine: 'line-through' },
   // The replaced time inside the big time line: small, so the new time carries the weight.
   was: { fontFamily: textStyles.small.fontFamily, fontSize: textStyles.small.fontSize },

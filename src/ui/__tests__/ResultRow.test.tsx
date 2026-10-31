@@ -39,8 +39,9 @@ describe('ResultRow', () => {
     expect(root.findAll((n) => n.props.testID === 'badge-slot').length).toBeGreaterThan(0);
     const texts = root.findAll((n) => typeof n.props.children === 'string').map((n) => n.props.children);
     // Seats lead the top line (Q-059) with their age; the slim row has no per-leg seat chips (Q-062).
-    // Both numbers show, so a Full route says why (Q-065, John 2026-10-30).
-    expect(texts).toContain('Full · 4 open · 9 listed');
+    // Just the chance word on the row; the numbers are in the flight's sheet (John, 2026-10-31).
+    expect(texts).toContain('Full');
+    expect(texts.some((t) => / open · \d+ listed/.test(String(t)))).toBe(false);
     expect(root.findAll((n) => n.props.testID === 'seat-age' && typeof n.type === 'string')[0].props.children).toBe('Reported just now');
     expect(root.findAll((n) => n.props.testID === 'flights-line' && typeof n.type === 'string').length).toBe(1);
     expect(root.findAll((n) => n.props.testID === 'seat-summary').length).toBeGreaterThan(0);
@@ -48,14 +49,16 @@ describe('ResultRow', () => {
     expect(onPress).toHaveBeenCalledWith(it.id);
   });
 
-  it('opens into a route card when selected: a nonstop keeps only the seat source and age on its leg', async () => {
+  it('opens into route card A when selected: chance word up top, one seat age at the bottom (round 66)', async () => {
     const it = await fullItinerary();
     await act(async () => {
       r = create(<ResultRow itinerary={it} selected now={NOW} onPress={jest.fn()} />);
     });
     const texts = r!.root.findAll((n) => typeof n.props.children === 'string').map((n) => n.props.children);
-    expect(texts).toContain('Reported just now');
-    expect(texts).not.toContain('Full · no open seats · reported just now');
+    expect(texts).toContain('Seats reported just now');
+    expect(texts.filter((t) => /reported/i.test(String(t))).length).toBe(2); // the host and the native text: one line
+    const headlineRow = r!.root.findAll((n) => n.props.testID === 'headline-row' && typeof n.type === 'string')[0];
+    expect(headlineRow.findAll((n) => n.props.testID === 'seat-summary').length).toBeGreaterThan(0);
     expect(r!.root.findAll((n) => n.props.testID === 'flights-line').length).toBe(0);
     const button = r!.root.findAll((n) => n.props.accessibilityRole === 'button')[0];
     expect(button.props.accessibilityHint).toBe('Closes the route card');
@@ -69,8 +72,11 @@ describe('ResultRow', () => {
       });
       const texts = r!.root.findAll((n) => typeof n.props.children === 'string').map((n) => String(n.props.children));
       expect(texts.some((t) => t.includes('min from') || t.startsWith('Leaves from'))).toBe(false);
-      // The route line still names the airport it leaves from.
-      expect(texts.some((t) => t.startsWith('BNA →'))).toBe(true);
+      // The route still names the airport it leaves from: the route line, or each flight's line on the card.
+      const all = r!.root
+        .findAll((n) => typeof n.type === 'string' && n.props.children != null)
+        .map((n) => [n.props.children].flat().filter((x: unknown) => typeof x === 'string').join(''));
+      expect(all.some((t) => t.startsWith('BNA →') || t.includes('BNA\u00a0→'))).toBe(true);
     }
   });
 
@@ -124,7 +130,7 @@ describe('ResultRow', () => {
     expect(texts).toContain('Nonstop');
   });
 
-  it('connections: top line shows the weakest leg; each leg keeps its own seat chip', async () => {
+  it('connections: the headline is the weakest leg\'s chance word; legs are one line each (round 66)', async () => {
     const at = (hhmm: string) => zonedToUtc('2026-10-20', hhmm, 'America/Chicago');
     const provider = createMemoryProvider(
       [
@@ -142,12 +148,13 @@ describe('ResultRow', () => {
     });
     const summary = r!.root.findAll((n) => n.props.testID === 'seat-summary' && typeof n.type === 'string')[0];
     const words = summary.findAll((n) => typeof n.props.children === 'string').map((n) => n.props.children);
-    expect(words[0]).toMatch(/^Long\u00a0shot · 6 open · 4 listed$/);
+    expect(words[0]).toBe('Long\u00a0shot');
     const texts = r!.root.findAll((n) => typeof n.props.children === 'string').map((n) => n.props.children as string);
-    expect(texts.some((t) => t.endsWith('· reported just now'))).toBe(true);
+    // One age for the card, none per leg.
+    expect(texts.filter((t) => t.includes('reported just now'))).toEqual(['Seats reported just now', 'Seats reported just now']);
     // The route card names the connection between the legs.
     const all = r!.root.findAll((n) => typeof n.type === 'string' && n.props.children != null).map((n) => [n.props.children].flat().join(''));
-    expect(all).toContain('Connect at DEN · 1h 30m');
+    expect(all).toContain('1h 30m at DEN');
     // Stops read as a timeline (round 56): one dot per leg in its seat color, no second seat chip.
     const timeline = r!.root.findAll((n) => n.props.testID === 'leg-timeline' && typeof n.type === 'string');
     expect(timeline.length).toBe(1);
@@ -169,7 +176,7 @@ describe('ResultRow', () => {
     const text = summary.findAll((n) => typeof n.props.children === 'string')[0];
     const flat = (style: unknown) => Object.assign({}, ...([style] as unknown[]).flat(3).filter(Boolean));
     expect(flat(text.props.style).color).toBe(colors.light.muted);
-    expect(text.props.children).toBe('Full · 4 open · 9 listed');
+    expect(text.props.children).toBe('Full');
   });
 
   it('shows Checking… while live data loads', async () => {
@@ -289,6 +296,41 @@ describe('ResultRow', () => {
     const words = items.map((n) => n.findAll((x) => typeof x.props.children === 'string').map((x) => x.props.children as string));
     expect(words[0]).not.toContain('Canceled');
     expect(words[1]).toContain('Canceled');
+  });
+
+  it('route card A: a canceled leg is the headline; the seats step down to the bottom line (round 66)', async () => {
+    const at = (hhmm: string) => zonedToUtc('2026-10-20', hhmm, 'America/Chicago');
+    const provider = createMemoryProvider(
+      [
+        { id: 'A', airline: 'WN', flightNumber: '10', from: 'BNA', to: 'DEN', departUtc: at('08:00'), arriveUtc: at('10:00') },
+        { id: 'B', airline: 'WN', flightNumber: '20', from: 'DEN', to: 'LAX', departUtc: at('11:30'), arriveUtc: at('13:30') },
+      ],
+      { A: [{ source: 'reported', openSeats: 30, listed: 5, asOf: NOW }], B: [{ source: 'reported', openSeats: 20, listed: 4, asOf: NOW }] },
+    );
+    const [it] = await searchItineraries(provider, { origin: 'BNA', destination: 'LAX', date: '2026-10-20' }, { now: NOW });
+    const second = it.legs[1].flight;
+    const canceled: FlightStatus = {
+      flightNumber: 'WN20',
+      state: 'canceled',
+      departure: { airport: 'DEN', scheduledUtc: new Date(second.departUtc).toISOString(), estimatedUtc: null, actualUtc: null, delayMin: null, terminal: null, gate: null },
+      arrival: { airport: 'LAX', scheduledUtc: null, estimatedUtc: null, actualUtc: null, delayMin: null, terminal: null, gate: null },
+      providerUpdatedAt: null,
+    };
+    const status = rowStatus(it, { [flightLookupKey(legLookup(second))]: canceled }, { minConnectSameAirlineMin: 60, minConnectSwitchMin: 90 });
+    await act(async () => {
+      r = create(<ResultRow itinerary={it} selected large now={NOW} onPress={jest.fn()} status={status} />);
+    });
+    const row = r!.root.findAll((n) => n.props.testID === 'headline-row' && typeof n.type === 'string')[0];
+    const head = row.findAll((n) => typeof n.props.children === 'string').map((n) => n.props.children);
+    expect(head).toContain('DEN → LAX canceled');
+    expect(row.findAll((n) => n.props.testID === 'seat-summary').length).toBe(0);
+    const age = r!.root.findAll((n) => n.props.testID === 'seat-age' && typeof n.type === 'string')[0];
+    expect(age.props.children).toBe(`Seats: ${it.tier === 'wide' ? 'Easy' : 'Likely'} · reported just now`);
+    // The canceled leg keeps its one tag on its own line; no seat text per leg.
+    const timeline = r!.root.findAll((n) => n.props.testID === 'leg-timeline' && typeof n.type === 'string')[0];
+    const words = timeline.findAll((n) => typeof n.props.children === 'string').map((n) => n.props.children as string);
+    expect(words).toContain('Canceled');
+    expect(words.some((w) => /open|listed|reported/.test(w))).toBe(false);
   });
 });
 
