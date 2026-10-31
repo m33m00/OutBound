@@ -1,7 +1,8 @@
 # Keeps the Free-plan Supabase project from pausing after 7 quiet days by making one small database
 # request on Mondays and Thursdays. Needs the repository secrets SUPABASE_URL and SUPABASE_ANON_KEY
 # (the same two values as EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY in .env) and the
-# migration supabase/migrations/20261030120000_keepalive.sql. Remove once the project is on Pro.
+# migration supabase/migrations/20261030120000_keepalive.sql. Without the secrets the job skips, like
+# eas-update.yml. Remove once the project is on Pro.
 name: Supabase keep-alive
 
 on:
@@ -22,8 +23,8 @@ jobs:
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
           if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_ANON_KEY" ]; then
-            echo "::error::Add the SUPABASE_URL and SUPABASE_ANON_KEY repository secrets first."
-            exit 1
+            echo "::warning::Skipped: add the SUPABASE_URL and SUPABASE_ANON_KEY repository secrets to turn this on."
+            exit 0
           fi
           curl -fsS --retry 3 --retry-delay 10 --max-time 30 \
             -X POST "${SUPABASE_URL%/}/rest/v1/rpc/keepalive" \
