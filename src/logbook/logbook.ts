@@ -87,6 +87,33 @@ export function logbookTotals(list: readonly LoggedFlight[]): LogbookTotals {
   return { flights: list.length, miles, airports: airports.size };
 }
 
+export interface LogbookHighlights {
+  /** The airport in the most logged flights, from or to, with that count. */
+  topAirport: { code: string; flights: number } | null;
+  /** The longest logged flight by straight-line miles. */
+  longest: { from: string; to: string; miles: number } | null;
+}
+
+/**
+ * One airport and one flight worth calling out (round 62). Ties go to the
+ * airport or flight logged first. Shown once there are two flights or more.
+ */
+export function logbookHighlights(list: readonly LoggedFlight[]): LogbookHighlights {
+  if (list.length < 2) return { topAirport: null, longest: null };
+  const counts = new Map<string, number>();
+  let longest: LogbookHighlights['longest'] = null;
+  for (const f of list) {
+    for (const code of [f.from, f.to]) counts.set(code, (counts.get(code) ?? 0) + 1);
+    const miles = flightMiles(f.from, f.to);
+    if (miles != null && (!longest || miles > longest.miles)) longest = { from: f.from, to: f.to, miles };
+  }
+  let topAirport: LogbookHighlights['topAirport'] = null;
+  for (const [code, n] of counts) if (!topAirport || n > topAirport.flights) topAirport = { code, flights: n };
+  // An airport in every flight but one each is no highlight.
+  if (topAirport && topAirport.flights < 2) topAirport = null;
+  return { topAirport, longest };
+}
+
 const LONG_MONTHS = [
   'January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December',

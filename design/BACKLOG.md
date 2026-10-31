@@ -94,3 +94,4 @@ Each item names its owner. One item per work session. spec-keeper runs a pre-fli
 | 87 | Logbook tab: totals (flights, miles, airports), flights by month; add by scanning a boarding pass, a screenshot, or typing it in (John: A) | main | P1 | Built (branch claude/project-thread-fzqwou) |
 | 88 | Design round 60: Add Flight moves box to box from the keyboard; boxes stack at big text | main | P3 | Built (design round 60, branch claude/project-thread-fzqwou) |
 | 89 | Design round 61: tap a logged flight to fix its details | main | P2 | Built (design round 61, branch claude/project-thread-fzqwou) |
+| 90 | Design round 62: Logbook totals call out your most flown airport and longest flight | main | P3 | Built (design round 62, branch claude/project-thread-fzqwou) |

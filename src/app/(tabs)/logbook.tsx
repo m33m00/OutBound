@@ -2,7 +2,7 @@ import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Alert, AccessibilityInfo, StyleSheet, View } from 'react-native';
 
-import { logbookMonths, logbookTotals, type LoggedFlight } from '@/logbook/logbook';
+import { logbookHighlights, logbookMonths, logbookTotals, type LoggedFlight } from '@/logbook/logbook';
 import { useLogbook } from '@/logbook/LogbookProvider';
 import { spacing } from '@/theme';
 import { AddFlightSheet } from '@/ui/AddFlightSheet';
@@ -80,7 +80,7 @@ export default function LogbookScreen() {
 
   return (
     <TabScreen title="Logbook">
-      <LogbookTotalsCard totals={logbookTotals(flights)} />
+      <LogbookTotalsCard totals={logbookTotals(flights)} highlights={logbookHighlights(flights)} />
       {addButton('primary')}
       {months.map((m) => (
         <View key={m.title} style={styles.section}>

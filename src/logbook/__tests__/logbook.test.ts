@@ -4,6 +4,7 @@ import {
   groupDigits,
   loggedDay,
   loggedFrom,
+  logbookHighlights,
   logbookMonths,
   logbookTotals,
   parseLogbook,
@@ -46,6 +47,15 @@ describe('logbook', () => {
     expect(totals.flights).toBe(3);
     expect(totals.airports).toBe(3);
     expect(totals.miles).toBe(2 * (flightMiles('DFW', 'LAX') ?? 0) + (flightMiles('DFW', 'ORD') ?? 0));
+  });
+
+  it('calls out the most flown airport and the longest flight', () => {
+    expect(logbookHighlights([f('DFW', 'LAX', '2026-10-01')])).toEqual({ topAirport: null, longest: null });
+    const h = logbookHighlights([f('DFW', 'LAX', '2026-10-01'), f('LAX', 'DFW', '2026-10-02'), f('DFW', 'ORD', '2026-10-03')]);
+    expect(h.topAirport).toEqual({ code: 'DFW', flights: 3 });
+    expect(h.longest).toEqual({ from: 'DFW', to: 'LAX', miles: flightMiles('DFW', 'LAX') });
+    // Two flights with no airport in common: no airport to call out.
+    expect(logbookHighlights([f('DFW', 'LAX', '2026-10-01'), f('ORD', 'JFK', '2026-10-02')]).topAirport).toBeNull();
   });
 
   it('groups by month, newest first', () => {

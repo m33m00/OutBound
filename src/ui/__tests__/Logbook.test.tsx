@@ -165,6 +165,9 @@ describe('Logbook tab', () => {
     const rows = r!.root.findAllByProps({ testID: 'edit-logged-flight' }).filter((n) => typeof n.type !== 'string' && n.props.onPress);
     expect(rows[1].props.accessibilityHint).toBe('Opens it to fix the details');
     await act(async () => rows[1].props.onPress());
+    expect(r!.root.findByProps({ testID: 'logbook-totals' }).props.accessibilityLabel).toMatch(
+      /^2 flights, 2,4\d\d miles, 2 airports\. Most flown: DFW, 2 flights\. Longest: DFW to LAX, 1,2\d\d miles$/,
+    );
     expect(texts()).toContain('Edit Flight');
     expect(texts()).not.toContain('Scan Boarding Pass');
     expect(field('From').props.value).toBe('DFW');
