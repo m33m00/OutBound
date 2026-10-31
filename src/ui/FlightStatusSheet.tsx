@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AIRPORTS, localDate, type Flight, type LegSeats } from '@/engine';
@@ -101,6 +101,7 @@ export function FlightStatusSheet({ flight, visible, now, onClose, liveOptions, 
   const title = flight ? `${flight.airline} ${flight.flightNumber}` : 'Flight status';
   const subtitle = flight && lookup ? `${flight.from} → ${flight.to} · ${shortDate(lookup.date)}` : null;
   const tone = status ? STATE_TONE[status.state] : null;
+  const canRefresh = error !== 'not_configured' && !isSample;
 
   const side = (label: string, code: string, m: Movement) => {
     const tz = AIRPORTS[code]?.tz ?? 'UTC';
@@ -196,41 +197,44 @@ export function FlightStatusSheet({ flight, visible, now, onClose, liveOptions, 
                 </>
               ) : null}
               {/* How old the status is sits right under it: an old "Delayed" must say so before anything else. */}
-              {response ? (
-                <View style={styles.ageLine} accessible>
-                  {response.stale ? (
-                    <View style={styles.ageIcon} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-                      <Icon name="clock" size={14} tintColor={c.text} fallback={null} />
+              {/* The age and Refresh share one line (design audit, round 67). */}
+              {response || canRefresh ? (
+                <View style={styles.refreshRow}>
+                  {response ? (
+                    <View style={styles.ageLine} accessible>
+                      {response.stale ? (
+                        <View style={styles.ageIcon} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+                          <Icon name="clock" size={14} tintColor={c.text} fallback={null} />
+                        </View>
+                      ) : null}
+                      <Text style={[response.stale ? textStyles.bodyStrong : textStyles.small, styles.ageText, { color: response.stale ? c.text : c.muted }]}>
+                        {ageText(response, now)}
+                      </Text>
                     </View>
                   ) : null}
-                  <Text style={[response.stale ? textStyles.bodyStrong : textStyles.small, styles.ageText, { color: response.stale ? c.text : c.muted }]}>
-                    {ageText(response, now)}
-                  </Text>
+                  {canRefresh ? (
+                    <Pressable
+                      onPress={() => {
+                        // Inside the 2-minute wait a tap can't fetch: say so instead of doing nothing.
+                        // "Just updated" only when the last answer really is fresh.
+                        if (loading || refresh() !== false) return;
+                        const note =
+                          error || response?.stale ? 'Try again in a couple of minutes.' : 'Just updated. You can refresh again in a couple of minutes.';
+                        setRefreshNote(note);
+                        announce(note);
+                      }}
+                      accessibilityRole="button"
+                      accessibilityLabel={loading ? 'Refreshing flight status' : 'Refresh flight status'}
+                      accessibilityState={{ busy: loading }}
+                      style={pressStyle(styles.refresh, 'link')}>
+                      <Text lineBreakStrategyIOS="push-out" style={[textStyles.bodyStrong, { color: c.accent }]}>{loading ? 'Refreshing…' : 'Refresh'}</Text>
+                    </Pressable>
+                  ) : null}
                 </View>
               ) : null}
+              {refreshNote ? <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>{refreshNote}</Text> : null}
               {error === 'fetch_failed' && response ? (
                 <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.text }]}>Couldn’t refresh just now; showing the last status.</Text>
-              ) : null}
-              {error !== 'not_configured' && !isSample ? (
-                <View style={styles.refreshRow}>
-                  <Pressable
-                    onPress={() => {
-                      // Inside the 2-minute wait a tap can't fetch: say so instead of doing nothing.
-                      // "Just updated" only when the last answer really is fresh.
-                      if (loading || refresh() !== false) return;
-                      const note =
-                        error || response?.stale ? 'Try again in a couple of minutes.' : 'Just updated. You can refresh again in a couple of minutes.';
-                      setRefreshNote(note);
-                      announce(note);
-                    }}
-                    accessibilityRole="button"
-                    accessibilityLabel={loading ? 'Refreshing flight status' : 'Refresh flight status'}
-                    accessibilityState={{ busy: loading }}
-                    style={pressStyle(styles.refresh, 'link')}>
-                    <Text lineBreakStrategyIOS="push-out" style={[textStyles.bodyStrong, { color: c.accent }]}>{loading ? 'Refreshing…' : 'Refresh'}</Text>
-                  </Pressable>
-                  {refreshNote ? <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, styles.ageText, { color: c.muted }]}>{refreshNote}</Text> : null}
-                </View>
               ) : null}
               {load && flight ? (
                 <LoadCard load={load} seats={seats} now={now} focus={backFromReport} onReport={() => setReporting(true)} />
@@ -296,6 +300,8 @@ function LoadCard({
   const closed = reportClosedNote(reportWindow);
   const tier = yourReport ? answerTier(yourReport) : null;
   const asked = askState === 'asked';
+  // Two buttons fit side by side until big text.
+  const stack = useWindowDimensions().fontScale >= 1.3;
   // After Cancel Request the link goes away: VoiceOver moves to the note above Ask for Load.
   const [canceled, setCanceled] = useState(false);
   const noteRef = useFocusOnMount(canceled && askState === 'ready');
@@ -321,13 +327,6 @@ function LoadCard({
           {` · ${yourReport.open} open · ${yourReport.listed} listed · ${formatAge(yourReport.at, now)}`}
         </Text>
       ) : null}
-      {closed || !yourReport ? (
-        <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, { color: c.muted }]}>
-          {closed ?? 'Seen the board? Report the open seats and the standby list.'}
-        </Text>
-      ) : null}
-      <Button label={yourReport ? 'Report Again' : 'Report Load'} onPress={onReport} disabled={!canReport} />
-      <View style={[styles.loadRule, { backgroundColor: c.line }]} />
       {askAnswer && answerTierWord ? (
         // Answered: the numbers take the place of the ask button.
         <Text
@@ -337,11 +336,16 @@ function LoadCard({
           <Text lineBreakStrategyIOS="push-out" style={[textStyles.bodyStrong, { color: c[TIER_FG[answerTierWord]] }]}>{TIER_WORD[answerTierWord]}</Text>
           {` · ${askAnswer.open} open · ${askAnswer.listed} listed · ${formatAge(askAnswer.at, now)}`}
         </Text>
-      ) : (
-        <>
-          <Text ref={noteRef} style={[textStyles.body, { color: c.muted }]}>
-            {note}
-          </Text>
+      ) : null}
+      {/* Report and Ask side by side (design audit, round 67); stacked at big text. */}
+      <View style={[styles.loadButtons, stack && styles.loadButtonsStacked]}>
+        <Button
+          label={yourReport ? 'Report Again' : 'Report Load'}
+          onPress={onReport}
+          disabled={!canReport}
+          style={stack ? undefined : styles.loadButton}
+        />
+        {askAnswer ? null : (
           <Button
             label={asked ? 'Asked' : 'Ask for Load'}
             kind="secondary"
@@ -353,24 +357,35 @@ function LoadCard({
             disabled={askState !== 'ready'}
             accessibilityHint={asked ? 'Waiting for an answer' : undefined}
             // Asked is a confirmation, not an unavailable button: keep it full strength.
-            style={asked ? styles.undimmed : undefined}
+            style={[stack ? undefined : styles.loadButton, asked ? styles.undimmed : undefined]}
           />
-          {asked && onCancelAsk ? (
-            <Pressable
-              onPress={() => {
-                setCanceled(true);
-                onCancelAsk();
-              }}
-              accessibilityRole="button"
-              accessibilityLabel="Cancel Request"
-              accessibilityHint="Frees one of your 5 requests"
-              style={pressStyle(styles.cancelAsk, 'link')}>
-              {/* Regular weight: quieter than the buttons above it. */}
-              <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, { color: c.accent }]}>Cancel Request</Text>
-            </Pressable>
-          ) : null}
-        </>
+        )}
+      </View>
+      {/* Only notes that say why a button is off or what happens next. */}
+      {closed ? (
+        <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>
+          {closed}
+        </Text>
+      ) : null}
+      {askAnswer ? null : (
+        <Text ref={noteRef} style={[textStyles.small, { color: c.muted }]}>
+          {note}
+        </Text>
       )}
+      {!askAnswer && asked && onCancelAsk ? (
+        <Pressable
+          onPress={() => {
+            setCanceled(true);
+            onCancelAsk();
+          }}
+          accessibilityRole="button"
+          accessibilityLabel="Cancel Request"
+          accessibilityHint="Frees one of your 5 requests"
+          style={pressStyle(styles.cancelAsk, 'link')}>
+          {/* Regular weight: quieter than the buttons above it. */}
+          <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, { color: c.accent }]}>Cancel Request</Text>
+        </Pressable>
+      ) : null}
     </View>
   );
 }
@@ -394,13 +409,15 @@ const styles = StyleSheet.create({
   trailing: { marginLeft: 'auto', flexShrink: 1 },
   leadMeta: { fontFamily: textStyles.small.fontFamily, fontSize: textStyles.small.fontSize },
   struck: { textDecorationLine: 'line-through' },
-  refresh: { minHeight: 44, justifyContent: 'center', alignSelf: 'flex-start' },
+  refresh: { minHeight: 44, justifyContent: 'center', marginLeft: 'auto' },
   refreshRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: spacing.section },
-  ageLine: { flexDirection: 'row', alignItems: 'flex-start', gap: 6 },
+  ageLine: { flexDirection: 'row', alignItems: 'flex-start', gap: 6, flexShrink: 1 },
   ageIcon: { marginTop: 3 },
   ageText: { flexShrink: 1 },
   load: { borderRadius: radius.md, borderWidth: StyleSheet.hairlineWidth, padding: spacing.rowX, gap: spacing.group },
-  loadRule: { height: StyleSheet.hairlineWidth, marginVertical: 4 },
+  loadButtons: { flexDirection: 'row', gap: spacing.group },
+  loadButtonsStacked: { flexDirection: 'column' },
+  loadButton: { flex: 1 },
   undimmed: { opacity: 1 },
   cancelAsk: { minHeight: 44, justifyContent: 'center', alignSelf: 'center' },
 });
