@@ -48,6 +48,11 @@ describe('LeaveByCard location button', () => {
     mockFontScale = 1;
     render();
     expect(placement()).toBe('inline');
+    // No icon tile (round 69); the chevron still says the card opens directions, button or not.
+    const top = r!.root.findAll((n) => n.props.testID === 'leave-by-top' && typeof n.type === 'string')[0];
+    const icons = top.findAll((n) => typeof n.props.name === 'string').map((n) => n.props.name);
+    expect(icons).toContain('chevron.right');
+    expect(icons).not.toContain('arrow.triangle.turn.up.right.diamond.fill');
   });
 
   it('gets its own row at large text sizes so the time is never squeezed', () => {
