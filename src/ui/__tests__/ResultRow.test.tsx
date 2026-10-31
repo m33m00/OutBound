@@ -221,9 +221,10 @@ describe('ResultRow', () => {
     // Each time keeps its number and AM/PM together (non-breaking space, design round 26).
     // The old time small and struck on the left, then the new time (John, 2026-10-30, round 58).
     expect(flat(times.props.children)).toBe('9:00\u00a0AM\u00a09:25\u00a0AM – 11:20\u00a0AM\u00a011:45\u00a0AM');
-    // A live tag stacks the flights, one per line with its tag (round 58).
+    // The flights stay on one line with one tag after them (John, 2026-10-31).
     const line = root.findAll((n) => n.props.testID === 'flights-line' && typeof n.type === 'string')[0];
-    expect(line.props.style).toMatchObject({ alignItems: 'flex-start' });
+    expect(line.props.style).toMatchObject({ flexDirection: 'row' });
+    expect(line.findAll((n) => n.props.testID === 'row-tag' && typeof n.type === 'string')).toHaveLength(1);
     const row = root.findAll((n) => n.props.accessibilityRole === 'button')[0];
     expect(row.props.accessibilityLabel).toContain('Delayed 25 minutes, was 9:00 AM, now 9:25 AM');
     // The weather/FAA badge slot stays separate from status tags.
@@ -268,7 +269,7 @@ describe('ResultRow', () => {
     expect(words).toContain('BNA\u00a0→\u00a0LAX');
   });
 
-  it('a canceled second leg: flights stacked, Canceled beside that leg only (round 58)', async () => {
+  it('a canceled second leg: flights on one line, one tag that names that flight (round 68, John)', async () => {
     const at = (hhmm: string) => zonedToUtc('2026-10-20', hhmm, 'America/Chicago');
     const provider = createMemoryProvider(
       [
@@ -291,11 +292,14 @@ describe('ResultRow', () => {
       r = create(<ResultRow itinerary={it} selected={false} now={NOW} onPress={jest.fn()} status={status} />);
     });
     const line = r!.root.findAll((n) => n.props.testID === 'flights-line' && typeof n.type === 'string')[0];
-    expect(line.props.style).toMatchObject({ alignItems: 'flex-start' });
+    expect(line.props.style).toMatchObject({ flexDirection: 'row' });
+    // The flight pills carry no tags; the one tag names the canceled flight.
     const items = line.findAll((n) => n.props.testID === 'flight-item' && typeof n.type === 'string');
     const words = items.map((n) => n.findAll((x) => typeof x.props.children === 'string').map((x) => x.props.children as string));
-    expect(words[0]).not.toContain('Canceled');
-    expect(words[1]).toContain('Canceled');
+    expect(words.flat().some((w) => /cancel/i.test(w))).toBe(false);
+    const tags = line.findAll((n) => n.props.testID === 'row-tag' && typeof n.type === 'string');
+    expect(tags).toHaveLength(1);
+    expect(tags[0].findAll((x) => typeof x.props.children === 'string').map((x) => x.props.children)).toContain('DEN → LAX canceled');
   });
 
   it('route card A: a canceled leg is the headline; the seats step down to the bottom line (round 66)', async () => {

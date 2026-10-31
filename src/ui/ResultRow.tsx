@@ -253,7 +253,6 @@ export const ResultRow = memo(function ResultRow({
   // Seats lead the slim row's top line (Q-059); the delay badge sits after them.
   const summary = routeSeatSummary(it);
   const first = status?.legs[0];
-  const tagged = !!status?.legs.some((l) => l.tag) || !!status?.risks.length;
   // Departed rows are dimmed with a gray fill and edge; text keeps 4.5:1.
   const dimmed = !!status?.dimmed;
   const timeColor = dimmed ? c.muted : c.text;
@@ -261,7 +260,8 @@ export const ResultRow = memo(function ResultRow({
   // Every value shows its age: the summary's comes from the leg that sets it.
   const summaryAge = summary ? routeSeatAge(it, now) : null;
   // Route card: a live problem leads; then the seats line at the bottom says the chance word too.
-  const headline = selected ? statusHeadline(it, status) : null;
+  // The worst live thing on the route: the card's headline, and the slim row's one tag.
+  const headline = statusHeadline(it, status);
   const ageWords = summaryAge ? summaryAge[0].toLowerCase() + summaryAge.slice(1) : null;
   const cardAge = !ageWords ? null : headline ? `Seats: ${summary} · ${ageWords}` : `Seats ${ageWords}`;
   const times = (
@@ -400,23 +400,19 @@ export const ResultRow = memo(function ResultRow({
               </Text>
             </View>
             // Slim row: who flies it and anything live; seats per leg live in the route card.
-            // Any live tag (delayed, canceled, departed…) stacks the flights one per line, each
-            // with its own tag beside it, so it's clear which leg it means (John, 2026-10-30).
-            <View style={tagged ? styles.flightsStacked : styles.legLine} testID="flights-line">
-              {it.legs.map((leg, i) => {
-                const tag = status?.legs[i]?.tag;
-                return (
-                  <View key={leg.flight.id} style={styles.flight} testID="flight-item">
-                    <AirlinePill airline={leg.flight.airline} flightNumber={leg.flight.flightNumber} />
-                    {tag ? <StatusTag label={tag.label} tone={TAG_TONE[tag.kind]} /> : null}
-                  </View>
-                );
-              })}
-              {status?.risks.map((r) => (
-                <View key={r.index} style={styles.flight}>
-                  <StatusTag label={`Connection at risk · ${r.airport}`} tone="delayed" />
+            // One line of flights and at most one tag, which names the flight it means
+            // ("PHX → LAX delayed 40m"), so the row never stacks (John, 2026-10-31).
+            <View style={styles.legLine} testID="flights-line">
+              {it.legs.map((leg) => (
+                <View key={leg.flight.id} style={styles.flight} testID="flight-item">
+                  <AirlinePill airline={leg.flight.airline} flightNumber={leg.flight.flightNumber} />
                 </View>
               ))}
+              {headline ? (
+                <View style={styles.flight} testID="row-tag">
+                  <StatusTag label={headline.label} tone={headline.tone} />
+                </View>
+              ) : null}
               {summaryAge ? (
                 <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]} testID="seat-age">
                   {summaryAge}
@@ -500,7 +496,6 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 4,
   },
-  flightsStacked: { gap: 4, alignItems: 'flex-start' },
   // Timeline (design round 56): rows touch so the line runs unbroken from leg to leg.
   leg: { flexDirection: 'row', gap: spacing.section },
   legTap: { minHeight: 44 },
