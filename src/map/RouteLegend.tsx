@@ -1,7 +1,7 @@
 /**
  * Line legend, shown only while a route is selected (DECISIONS.md "Map").
  * One combined list (Q-044): each row is a tier color drawn in that row's
- * line style, e.g. "Good (Estimate)" with a dashed green swatch. Only the
+ * line style, e.g. "Likely (Estimate)" with a dashed green swatch. Only the
  * tier/source combinations on the selected route are listed. Swatches are
  * line fills (allowed); all text is in the `text` token, never tier-colored.
  * Each row is one accessible element; the swatch is decorative. No weather

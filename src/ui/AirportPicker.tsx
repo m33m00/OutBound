@@ -52,7 +52,7 @@ export function AirportPicker({ visible, title, onPick, onClose, current, neares
         accessibilityLabel={[airport.code, airport.name, tag].filter(Boolean).join(', ')}
         style={pressStyle([styles.item, { borderColor: c.line }])}>
         <Text style={[textStyles.number, styles.code, { color: c.text }]}>{airport.code}</Text>
-        <Text style={[textStyles.body, styles.name, { color: c.muted }]} numberOfLines={2}>
+        <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, styles.name, { color: c.muted }]} numberOfLines={2}>
           {airport.name}
         </Text>
         {tag ? (
@@ -114,7 +114,7 @@ export function AirportPicker({ visible, title, onPick, onClose, current, neares
           // A typed query with no match still has one (empty) section, so this is a footer.
           ListFooterComponent={
             empty ? (
-              <Text style={[textStyles.body, styles.empty, { color: c.muted }]}>
+              <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, styles.empty, { color: c.muted }]}>
                 No airports match “{query.trim()}”.
               </Text>
             ) : undefined

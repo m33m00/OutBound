@@ -39,4 +39,39 @@ describe('ResultsBanner (Q-047)', () => {
     const texts = r!.root.findAll((n) => (n.type as unknown) === 'Text').map((n) => [n.props.children].flat().join(''));
     expect(texts).toContain('No Flights Found on Selected Date');
   });
+
+  it('no flights with a next day: Try Tomorrow searches it (Q-073)', () => {
+    const onPress = jest.fn();
+    act(() => {
+      r = create(
+        <ResultsBanner
+          banner={resultsBanner({ results: [], hiddenCount: 0 })!}
+          onShow={jest.fn()}
+          onDismiss={jest.fn()}
+          next={{ label: 'Try Tomorrow', hint: 'Searches Friday, October 31', onPress }}
+        />,
+      );
+    });
+    const [tryNext, dismiss] = buttons();
+    expect(tryNext.props.accessibilityLabel).toBe('Try Tomorrow');
+    expect(tryNext.props.accessibilityHint).toBe('Searches Friday, October 31');
+    expect(StyleSheet.flatten(tryNext.props.style({ pressed: false }))).toMatchObject({ minHeight: minTapTarget });
+    expect(dismiss.props.accessibilityLabel).toBe('Dismiss notice');
+    act(() => tryNext.props.onPress());
+    expect(onPress).toHaveBeenCalled();
+  });
+
+  it('hidden routes never show the next-day button', () => {
+    act(() => {
+      r = create(
+        <ResultsBanner
+          banner={resultsBanner({ results: [], hiddenCount: 2 })!}
+          onShow={jest.fn()}
+          onDismiss={jest.fn()}
+          next={{ label: 'Try Tomorrow', hint: 'Searches Friday, October 31', onPress: jest.fn() }}
+        />,
+      );
+    });
+    expect(buttons().map((b) => b.props.accessibilityLabel)).toEqual(['Show Them', 'Dismiss notice']);
+  });
 });

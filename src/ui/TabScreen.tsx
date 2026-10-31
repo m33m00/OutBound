@@ -12,7 +12,7 @@ export function TabScreen({ title, children }: { title: string; children: ReactN
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: c.bg }]} edges={['top']}>
       <ScrollView contentContainerStyle={styles.body}>
-        <Text style={[textStyles.title, { color: c.text }]} accessibilityRole="header" maxFontSizeMultiplier={TITLE_MAX_SCALE}>
+        <Text lineBreakStrategyIOS="push-out" style={[textStyles.title, { color: c.text }]} accessibilityRole="header" maxFontSizeMultiplier={TITLE_MAX_SCALE}>
           {title}
         </Text>
         {children}

@@ -32,13 +32,13 @@ export function EmptyState({ icon, title, body, points, action }: EmptyStateProp
           <Icon name={icon} size={26} tintColor={c.accent} fallback={null} />
         </View>
         <Text lineBreakStrategyIOS="push-out" style={[textStyles.heading, styles.center, { color: c.text }]}>{title}</Text>
-        <Text style={[textStyles.body, styles.center, { color: c.muted }]}>{body}</Text>
+        <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, styles.center, { color: c.muted }]}>{body}</Text>
         {points?.length ? (
           <View style={styles.points}>
             {points.map((point) => (
               <View key={point} style={styles.point}>
                 <View style={[styles.dot, { backgroundColor: c.accent }]} />
-                <Text style={[textStyles.body, styles.pointText, { color: c.text }]}>{point}</Text>
+                <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, styles.pointText, { color: c.text }]}>{point}</Text>
               </View>
             ))}
           </View>

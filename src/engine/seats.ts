@@ -6,7 +6,7 @@ const SOURCE_RANK: Record<SeatSource, number> = { reported: 0, estimate: 1, typi
 /** Worst first. Used for route color (weakest leg) and the availability tie-break. */
 const TIER_ORDER: readonly SeatTier[] = ['full', 'tight', 'okay', 'good', 'wide'];
 
-/** Tier on net seats (open - listed): Wide >=50, Good 15-49, Okay 6-14, Tight 1-5, Full <=0. */
+/** Tier on net seats (open - listed): Wide >=50, Good 15-49, Okay 6-14, Tight 1-5, Full <=0 (shown as Easy, Likely, Maybe, Long shot, Full: Q-074). */
 export function tierForNetSeats(net: number): SeatTier {
   if (net >= 50) return 'wide';
   if (net >= 15) return 'good';

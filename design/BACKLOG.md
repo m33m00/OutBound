@@ -83,3 +83,15 @@ Each item names its owner. One item per work session. spec-keeper runs a pre-fli
 | 76 | Design round 49: Profile Directions row; VoiceOver reads the current flight time first; new and original times stay together | main | P3 | Built (design round 49, branch claude/project-thread-fzqwou) |
 | 77 | Design round 50: My Trips requests show live status (new time first, tag under it) | main | P2 | Built (design round 50, branch claude/project-thread-fzqwou) |
 | 78 | Design round 51: Feed requests show live status like My Trips | main | P3 | Built (design round 51, branch claude/project-thread-fzqwou) |
+| 79 | Design round 52: no lone wrapped words on buttons, body text and banners; capped Settings title; My Trips points to the bookmark with a Find Routes button; Q-073 asked | main | P2 | Built (design round 52, branch claude/project-thread-fzqwou) |
+| 80 | Design round 53: empty From or To says Choose airport in blue; denied location says what to do | main | P2 | Built (design round 53, branch claude/project-thread-fzqwou) |
+| 81 | Design round 54: row-shaped placeholders while routes load; couldn't-load says the search is still set | main | P3 | Built (design round 54, branch claude/project-thread-fzqwou) |
+| 82 | Design round 55: Try Tomorrow on No Flights Found searches the next day (Q-073, John: B) | main | P2 | Built (design round 55, branch claude/project-thread-fzqwou) |
+| 83 | Design round 56: picked route fits on screen; stops read as a compact leg timeline; Q-074 seat labels asked | main | P1 | Built (design round 56, branch claude/project-thread-fzqwou) |
+| 84 | Design round 57: seat labels say your chances (Easy, Likely, Maybe, Long shot, Full; typical "Usually ~N open") (Q-074, John: B) | main | P1 | Built (design round 57, branch claude/project-thread-fzqwou) |
+| 85 | Design round 58: old times on the left of new ones; tagged flights stack with each tag on its leg; hard pull down moves the panel | main | P1 | Built (design round 58, branch claude/project-thread-fzqwou) |
+| 86 | Design round 59: struck original time only in the route card header; legs show the new time or the Canceled tag | main | P1 | Built (design round 59, branch claude/project-thread-fzqwou) |
+| 87 | Logbook tab: totals (flights, miles, airports), flights by month; add by scanning a boarding pass, a screenshot, or typing it in (John: A) | main | P1 | Built (branch claude/project-thread-fzqwou) |
+| 88 | Design round 60: Add Flight moves box to box from the keyboard; boxes stack at big text | main | P3 | Built (design round 60, branch claude/project-thread-fzqwou) |
+| 89 | Design round 61: tap a logged flight to fix its details | main | P2 | Built (design round 61, branch claude/project-thread-fzqwou) |
+| 90 | Design round 62: Logbook totals call out your most flown airport and longest flight | main | P3 | Built (design round 62, branch claude/project-thread-fzqwou) |

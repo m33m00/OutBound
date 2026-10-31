@@ -212,10 +212,10 @@ export function drawLegs(drawn: readonly RouteLine[], selectedId: string | null)
 export const TIER_ORDER: readonly SeatTier[] = ['wide', 'good', 'okay', 'tight', 'full', 'unknown'];
 
 export const TIER_LABEL: Record<SeatTier, string> = {
-  wide: 'Wide open',
-  good: 'Good',
-  okay: 'Okay',
-  tight: 'Tight',
+  wide: 'Easy',
+  good: 'Likely',
+  okay: 'Maybe',
+  tight: 'Long\u00a0shot',
   full: 'Full',
   unknown: 'Unknown',
 };
@@ -239,9 +239,9 @@ export interface LegendEntry {
   source: LineSource;
   /** Swatch line style: solid = reported, dashed otherwise. */
   dashed: boolean;
-  /** Visible row text, e.g. "Good (Estimate)". Typical loads carry no tier word. */
+  /** Visible row text, e.g. "Likely (Estimate)". Typical loads carry no tier word. */
   label: string;
-  /** Full spoken label, e.g. "Good, estimate, dashed line". */
+  /** Full spoken label, e.g. "Likely, estimate, dashed line". */
   accessibilityLabel: string;
 }
 

@@ -74,14 +74,14 @@ describe('time and duration', () => {
 
 describe('seatText', () => {
   it('always pairs the tier word with the number and age', () => {
-    expect(seatText(seats({ asOf: NOW - 12 * 60_000 }), NOW)).toBe('Good · 22 open · reported 12m ago');
-    expect(seatText(seats({ source: 'estimate', tier: 'wide', netSeats: 60 }), NOW)).toBe('Wide open · 60 open · est. just now');
+    expect(seatText(seats({ asOf: NOW - 12 * 60_000 }), NOW)).toBe('Likely · 22 open · reported 12m ago');
+    expect(seatText(seats({ source: 'estimate', tier: 'wide', netSeats: 60 }), NOW)).toBe('Easy · 60 open · est. just now');
   });
   it('says Full with no open seats', () => {
     expect(seatText(seats({ tier: 'full', netSeats: -3 }), NOW)).toBe('Full · no open seats · reported just now');
   });
   it('keeps typical loads neutral (no tier word)', () => {
-    expect(seatText(seats({ source: 'typical', tier: 'unknown', netSeats: 30 }), NOW)).toBe('Typically ~30 open · Oct data');
+    expect(seatText(seats({ source: 'typical', tier: 'unknown', netSeats: 30 }), NOW)).toBe('Usually ~30 open · Oct avg');
   });
   it('handles no data', () => {
     expect(seatText({ source: 'unknown', tier: 'unknown', netSeats: null, asOf: null }, NOW)).toBe('No data yet');
@@ -95,7 +95,7 @@ describe('seat summary (Q-059)', () => {
     ({ tier, legs: legs.map((s) => ({ seats: s })) }) as unknown as Parameters<typeof routeSeatSummary>[0];
 
   it('names the weakest counted leg', () => {
-    expect(routeSeatSummary(route([seats({ tier: 'good', netSeats: 9 }), seats({ tier: 'tight', netSeats: 2 })], 'tight'))).toBe('Tight · 2 open');
+    expect(routeSeatSummary(route([seats({ tier: 'good', netSeats: 9 }), seats({ tier: 'tight', netSeats: 2 })], 'tight'))).toBe('Long\u00a0shot · 2 open');
     expect(routeSeatSummary(route([seats({ tier: 'full', netSeats: -3 })], 'full'))).toBe('Full · no open seats');
   });
 
@@ -129,7 +129,7 @@ describe('slim row seat and stop text (design round 22)', () => {
       [seats({ source: 'typical', tier: 'unknown', netSeats: 40, asOf: Date.UTC(2026, 6, 1) }), seats({ source: 'typical', tier: 'unknown', netSeats: 12, asOf: Date.UTC(2026, 6, 1) })],
       'unknown',
     );
-    expect(neutralSeatText(r, NOW)).toBe('Typically ~12 open · Jul data');
+    expect(neutralSeatText(r, NOW)).toBe('Usually ~12 open · Jul avg');
     expect(neutralSeatText(route([seats({ source: 'unknown', tier: 'unknown', netSeats: null, asOf: null })], 'unknown'), NOW)).toBe('No data yet');
   });
 
@@ -168,7 +168,7 @@ describe('row text', () => {
     });
     expect(rowAccessibilityLabel(it, NOW)).toBe(
       // Spelled out so VoiceOver doesn't read "20m" as meters (design round 26).
-      'Departs 9:00 AM from BNA, arrives 11:20 AM at LAX, Nonstop, 4 hours 20 minutes, Route Good, AA 1: Good, 30 open, 8 listed, reported 5 minutes ago',
+      'Departs 9:00 AM from BNA, arrives 11:20 AM at LAX, Nonstop, 4 hours 20 minutes, Chances: Likely, AA 1: Likely, 30 open, 8 listed, reported 5 minutes ago',
     );
   });
 });
@@ -186,8 +186,8 @@ describe('seatCounts (Q-065)', () => {
 
 describe('forSpeech (design round 26)', () => {
   it('turns visible shorthand into words', () => {
-    expect(forSpeech('Typically ~12 open · Jul data')).toBe('Typically about 12 open, Jul data');
-    expect(forSpeech('Tight · 3 open · est. 1m ago')).toBe('Tight, 3 open, estimated 1 minute ago');
+    expect(forSpeech('Usually ~12 open · Jul avg')).toBe('Usually about 12 open, Jul avg');
+    expect(forSpeech('Long\u00a0shot · 3 open · est. 1m ago')).toBe('Long\u00a0shot, 3 open, estimated 1 minute ago');
     expect(forSpeech('Est. 2h ago')).toBe('Estimated 2 hours ago');
     expect(forSpeech('DAL → PHX → LAX')).toBe('DAL to PHX to LAX');
     expect(forSpeech('Updated 3d ago')).toBe('Updated 3 days ago');

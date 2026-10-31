@@ -129,12 +129,21 @@ describe('ResultRow', () => {
     });
     const summary = r!.root.findAll((n) => n.props.testID === 'seat-summary' && typeof n.type === 'string')[0];
     const words = summary.findAll((n) => typeof n.props.children === 'string').map((n) => n.props.children);
-    expect(words[0]).toMatch(/^Tight · 6 open · 4 listed$/);
+    expect(words[0]).toMatch(/^Long\u00a0shot · 6 open · 4 listed$/);
     const texts = r!.root.findAll((n) => typeof n.props.children === 'string').map((n) => n.props.children as string);
     expect(texts.some((t) => t.endsWith('· reported just now'))).toBe(true);
     // The route card names the connection between the legs.
     const all = r!.root.findAll((n) => typeof n.type === 'string' && n.props.children != null).map((n) => [n.props.children].flat().join(''));
     expect(all).toContain('Connect at DEN · 1h 30m');
+    // Stops read as a timeline (round 56): one dot per leg in its seat color, no second seat chip.
+    const timeline = r!.root.findAll((n) => n.props.testID === 'leg-timeline' && typeof n.type === 'string');
+    expect(timeline.length).toBe(1);
+    expect(timeline[0].findAll((n) => n.props.testID === 'leg-dot' && typeof n.type === 'string').length).toBe(2);
+    const chips = r!.root.findAll((n) => n.props.testID === 'seat-summary' && typeof n.type === 'string');
+    expect(chips.length).toBe(1);
+    // Each leg line leads with its own departure time.
+    expect(all).toContain('8:00\u00a0AM');
+    expect(all.some((t) => t.endsWith('  BNA\u00a0→\u00a0DEN'))).toBe(true);
   });
 
   it('grays the seat summary on a route that already left, keeping its words', async () => {
@@ -190,8 +199,11 @@ describe('ResultRow', () => {
     const flat = (n: unknown): string =>
       typeof n === 'string' ? n : Array.isArray(n) ? n.map(flat).join('') : n && typeof n === 'object' && 'props' in n ? flat((n as { props: { children?: unknown } }).props.children) : '';
     // Each time keeps its number and AM/PM together (non-breaking space, design round 26).
-    // New time first; the old one follows small and struck (John, 2026-10-30).
-    expect(flat(times.props.children)).toBe('9:25\u00a0AM\u00a09:00\u00a0AM – 11:45\u00a0AM\u00a011:20\u00a0AM');
+    // The old time small and struck on the left, then the new time (John, 2026-10-30, round 58).
+    expect(flat(times.props.children)).toBe('9:00\u00a0AM\u00a09:25\u00a0AM – 11:20\u00a0AM\u00a011:45\u00a0AM');
+    // A live tag stacks the flights, one per line with its tag (round 58).
+    const line = root.findAll((n) => n.props.testID === 'flights-line' && typeof n.type === 'string')[0];
+    expect(line.props.style).toMatchObject({ alignItems: 'flex-start' });
     const row = root.findAll((n) => n.props.accessibilityRole === 'button')[0];
     expect(row.props.accessibilityLabel).toContain('Delayed 25 minutes, was 9:00 AM, now 9:25 AM');
     // The weather/FAA badge slot stays separate from status tags.
@@ -209,6 +221,61 @@ describe('ResultRow', () => {
       r!.update(<ResultRow itinerary={it} selected={false} now={NOW} onPress={jest.fn()} status={statusFor(it, live(it, 'departed'))} />);
     });
     expect(strings(r!.root)).toContain('Departed');
+  });
+
+  it('route card: the struck original shows only in the top line; legs show the new time or nothing (round 59)', async () => {
+    const it = await fullItinerary();
+    const struckTexts = () =>
+      r!.root.findAll((n) => (n.type as unknown) === 'Text' && [n.props.style].flat(3).some((st: { textDecorationLine?: string } | undefined) => st?.textDecorationLine === 'line-through'));
+    await act(async () => {
+      r = create(<ResultRow itinerary={it} selected large now={NOW} onPress={jest.fn()} status={statusFor(it, live(it, 'delayed', 25))} />);
+    });
+    // Old departure and old arrival in the top line, none on the leg.
+    expect(struckTexts()).toHaveLength(2);
+    const timeline = r!.root.findAll((n) => n.props.testID === 'leg-timeline' && typeof n.type === 'string')[0];
+    const legWords = timeline.findAll((n) => typeof n.props.children === 'string').map((n) => n.props.children as string);
+    expect(legWords).toContain('9:25\u00a0AM');
+    expect(legWords).not.toContain('9:00\u00a0AM');
+    await act(async () => {
+      r!.update(<ResultRow itinerary={it} selected large now={NOW} onPress={jest.fn()} status={statusFor(it, live(it, 'canceled'))} />);
+    });
+    // Only the top line is struck; the leg says Canceled with no time.
+    expect(struckTexts()).toHaveLength(1);
+    const after = r!.root.findAll((n) => n.props.testID === 'leg-timeline' && typeof n.type === 'string')[0];
+    const words = after.findAll((n) => typeof n.type === 'string').flatMap((n) => [n.props.children].flat().filter((x): x is string => typeof x === 'string'));
+    expect(words).toContain('Canceled');
+    // No time before the airports (no leading gap either).
+    expect(words).toContain('BNA\u00a0→\u00a0LAX');
+  });
+
+  it('a canceled second leg: flights stacked, Canceled beside that leg only (round 58)', async () => {
+    const at = (hhmm: string) => zonedToUtc('2026-10-20', hhmm, 'America/Chicago');
+    const provider = createMemoryProvider(
+      [
+        { id: 'A', airline: 'WN', flightNumber: '10', from: 'BNA', to: 'DEN', departUtc: at('08:00'), arriveUtc: at('10:00') },
+        { id: 'B', airline: 'WN', flightNumber: '20', from: 'DEN', to: 'LAX', departUtc: at('11:30'), arriveUtc: at('13:30') },
+      ],
+      {},
+    );
+    const [it] = await searchItineraries(provider, { origin: 'BNA', destination: 'LAX', date: '2026-10-20' }, { now: NOW });
+    const second = it.legs[1].flight;
+    const canceled: FlightStatus = {
+      flightNumber: 'WN20',
+      state: 'canceled',
+      departure: { airport: 'DEN', scheduledUtc: new Date(second.departUtc).toISOString(), estimatedUtc: null, actualUtc: null, delayMin: null, terminal: null, gate: null },
+      arrival: { airport: 'LAX', scheduledUtc: null, estimatedUtc: null, actualUtc: null, delayMin: null, terminal: null, gate: null },
+      providerUpdatedAt: null,
+    };
+    const status = rowStatus(it, { [flightLookupKey(legLookup(second))]: canceled }, { minConnectSameAirlineMin: 60, minConnectSwitchMin: 90 });
+    await act(async () => {
+      r = create(<ResultRow itinerary={it} selected={false} now={NOW} onPress={jest.fn()} status={status} />);
+    });
+    const line = r!.root.findAll((n) => n.props.testID === 'flights-line' && typeof n.type === 'string')[0];
+    expect(line.props.style).toMatchObject({ alignItems: 'flex-start' });
+    const items = line.findAll((n) => n.props.testID === 'flight-item' && typeof n.type === 'string');
+    const words = items.map((n) => n.findAll((x) => typeof x.props.children === 'string').map((x) => x.props.children as string));
+    expect(words[0]).not.toContain('Canceled');
+    expect(words[1]).toContain('Canceled');
   });
 });
 

@@ -1,5 +1,17 @@
-import { forwardRef, useCallback, useEffect, useRef, type ComponentRef, type ReactNode } from 'react';
-import { AccessibilityInfo, ActivityIndicator, FlatList, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { forwardRef, useCallback, useEffect, useRef, useState, type ComponentRef, type ReactNode } from 'react';
+import {
+  AccessibilityInfo,
+  ActivityIndicator,
+  FlatList,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 
 import { AIRPORTS, areaFor, type Flight, type Itinerary, type SearchRequest } from '@/engine';
 import type { RouteImpact } from '@/live';
@@ -52,6 +64,10 @@ export interface ResultsPanelProps {
   onToggleSave?: (it: Itinerary) => void;
   /** One more line under the count, e.g. a saved route that's no longer in the results. */
   note?: string;
+  /** Height the open route needs (title bar plus everything under it), so the panel can fit it without scrolling (round 56). */
+  onRouteHeight?: (height: number) => void;
+  /** A hard pull down on the route or list while it's at its top: the panel steps down a size (round 58). */
+  onPullDown?: () => void;
 }
 
 export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(function ResultsPanel(p, ref) {
@@ -183,15 +199,38 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
     <View style={styles.headerGap} />
   );
 
+  // A picked route gets its own view (John, 2026-10-30); found here, above the loading and
+  // error returns, so the hooks below run on every render.
+  const focusIndex = p.selectedId ? results.findIndex((r) => r.id === p.selectedId) : -1;
+  const focused = focusIndex >= 0 ? results[focusIndex] : undefined;
+  const focusedId = focused?.id;
+  // The open route's bar and content heights, reported together once both are known (round 56).
+  // Content starts over when the route view closes, so a reopened route reports its own height.
+  const [barH, setBarH] = useState(0);
+  const [contentH, setContentH] = useState(0);
+  const { onRouteHeight } = p;
+  useEffect(() => {
+    if (!focusedId) setContentH(0);
+  }, [focusedId]);
+  useEffect(() => {
+    if (focusedId && barH > 0 && contentH > 0) onRouteHeight?.(Math.ceil(barH + contentH));
+  }, [focusedId, barH, contentH, onRouteHeight]);
+
   if (p.state.status === 'loading') {
     return (
       <View style={styles.fill}>
         {topRow}
         <View style={styles.pad}>
           {header}
-          <View style={[styles.state, styles.loading]} accessible accessibilityLabel="Finding routes">
-            <ActivityIndicator color={c.accent} />
-            <Text style={[textStyles.body, { color: c.muted }]}>Finding routes…</Text>
+          <View style={styles.loadingBlock} accessible accessibilityLabel="Finding routes">
+            <View style={styles.loading}>
+              <ActivityIndicator color={c.accent} />
+              <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, { color: c.muted }]}>Finding routes…</Text>
+            </View>
+            {/* Row-shaped placeholders so the panel isn't empty while it loads; static, so Reduce Motion needs nothing (round 54). */}
+            {[0, 1, 2, 3].map((i) => (
+              <PlaceholderRow key={i} />
+            ))}
           </View>
         </View>
       </View>
@@ -215,8 +254,10 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
               />
               <View style={styles.errorText}>
                 <Text lineBreakStrategyIOS="push-out" style={[textStyles.heading, { color: c.text }]}>Couldn’t load flights</Text>
-                <Text style={[textStyles.body, { color: c.muted }]}>
-                  {p.sampleFlights !== false ? 'Something went wrong. Try again.' : 'Check your connection, then try again.'}
+                <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, { color: c.muted }]}>
+                  {p.sampleFlights !== false
+                    ? 'Your search is still set. Try again in a moment.'
+                    : 'Check your connection, then try again. Your search is still set.'}
                 </Text>
               </View>
             </View>
@@ -229,8 +270,13 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
 
   // A picked route gets its own view (John, 2026-10-30): leave-by on top, then the route
   // card in larger type. The list stays mounted underneath so it keeps its scroll spot.
-  const focusIndex = p.selectedId ? results.findIndex((r) => r.id === p.selectedId) : -1;
-  const focused = focusIndex >= 0 ? results[focusIndex] : undefined;
+  // Pulling hard past the top of the route or list moves the panel itself, so you
+  // don't have to reach for the handle (John, 2026-10-30).
+  const pullDown = p.onPullDown
+    ? (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+        if (isHardPullDown(e.nativeEvent)) p.onPullDown?.();
+      }
+    : undefined;
   const step = (to: number) => {
     const target = results[to];
     return target ? withTick(() => p.onSelect(target.id)) : undefined;
@@ -242,7 +288,9 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
         // A picked route slides in a little from the right, like a push (design round 29).
         <Appear kind="push">
           <View style={styles.fill} testID="route-view">
-            <View style={[styles.bar, styles.pad, styles.titleRow, { borderBottomColor: c.line }]}>
+            <View
+              style={[styles.bar, styles.pad, styles.titleRow, { borderBottomColor: c.line }]}
+              onLayout={(e) => setBarH(e.nativeEvent.layout.height)}>
               <BackButton
                 label={tight ? '' : 'Routes'}
                 onPress={() => p.onSelect(focused.id)}
@@ -278,7 +326,11 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
             {/* Flipping to another route fades the card in so the change registers. */}
             <Appear trigger={focused.id}>
               {/* Keyed by route so each one opens at its top. */}
-              <ScrollView key={focused.id} contentContainerStyle={styles.focus}>
+              <ScrollView
+                key={focused.id}
+                contentContainerStyle={styles.focus}
+                onScrollEndDrag={pullDown}
+                onContentSizeChange={(_, h) => setContentH(h)}>
                 {/* Keyed by route so paging re-announces the new Leave By time. */}
                 {p.selectedCard ? (
                   <View testID="selected-card" key={focused.id}>
@@ -311,6 +363,7 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
           onScrollBeginDrag={() => {
             userScrolled.current = true;
           }}
+          onScrollEndDrag={pullDown}
           keyExtractor={(it) => it.id}
           contentContainerStyle={styles.list}
           ListHeaderComponent={header}
@@ -355,6 +408,20 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
     </View>
   );
 });
+
+/** Overscroll (pt) past the top that counts as pulling the panel down. */
+export const PULL_DOWN_OVERSCROLL = 50;
+/** Downward flick speed (pt/ms) at the top that counts as pulling the panel down. */
+export const PULL_DOWN_VELOCITY = 1;
+
+/**
+ * A hard pull down at the top of a list: dragged well past the top (iOS bounce), or
+ * flicked down fast while already at the top. A pull further down the list just scrolls.
+ */
+export function isHardPullDown(e: Pick<NativeScrollEvent, 'contentOffset'> & { velocity?: { x: number; y: number } }): boolean {
+  const y = e.contentOffset.y;
+  return y <= -PULL_DOWN_OVERSCROLL || (y <= 0 && (e.velocity?.y ?? 0) <= -PULL_DOWN_VELOCITY);
+}
 
 /** Text size at which the results bar shows Back and Filters as icons only. */
 export const COMPACT_BAR_SCALE = 1.3;
@@ -442,9 +509,38 @@ const styles = StyleSheet.create({
   sep: { height: spacing.group },
   state: { paddingVertical: spacing.page, gap: spacing.section, alignItems: 'flex-start' },
   loading: { flexDirection: 'row', alignItems: 'center', gap: spacing.group },
+  loadingBlock: { paddingVertical: spacing.section, gap: spacing.group },
+  placeholder: {
+    borderRadius: radius.md,
+    borderWidth: 1,
+    paddingVertical: spacing.rowY,
+    paddingHorizontal: spacing.rowX,
+    gap: spacing.group,
+  },
+  placeholderLine: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.group },
+  placeholderBar: { borderRadius: 4 },
   errorTop: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.section },
   errorText: { flex: 1, gap: 2 },
   footer: { paddingTop: spacing.section },
   nowLine: { flexDirection: 'row', alignItems: 'center', gap: spacing.group, paddingTop: 2 },
   rule: { flex: 1, height: StyleSheet.hairlineWidth * 2 },
 });
+
+/** A slim result row's shape (times, seat chip; route; airline pills) in gray, while routes load. */
+function PlaceholderRow() {
+  const c = useColors();
+  // line2, not surface2: surface2 barely shows on a card in dark mode.
+  const fill = { backgroundColor: c.line2 };
+  return (
+    <View style={[styles.placeholder, { backgroundColor: c.surface, borderColor: c.line }]} testID="placeholder-row">
+      <View style={styles.placeholderLine}>
+        <View style={[styles.placeholderBar, fill, { width: '46%', height: 16 }]} />
+        <View style={[styles.placeholderBar, fill, { width: 64, height: 18 }]} />
+      </View>
+      <View style={[styles.placeholderBar, fill, { width: '38%', height: 12 }]} />
+      <View style={styles.placeholderLine}>
+        <View style={[styles.placeholderBar, fill, { width: 40, height: 16 }]} />
+      </View>
+    </View>
+  );
+}

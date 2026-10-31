@@ -46,7 +46,7 @@ export function Button({
         style,
       ])}>
       {icon ? <Icon name={icon} size={18} tintColor={fg} fallback={null} /> : null}
-      {label ? <Text style={[textStyles.button, { color: fg }]}>{label}</Text> : null}
+      {label ? <Text lineBreakStrategyIOS="push-out" style={[textStyles.button, { color: fg }]}>{label}</Text> : null}
     </Pressable>
   );
 }

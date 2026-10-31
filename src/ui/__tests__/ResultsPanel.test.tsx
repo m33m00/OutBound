@@ -5,7 +5,7 @@ import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import { createMemoryProvider, searchItineraries, zonedToUtc } from '@/engine';
 import { dateChips } from '@/search/dates';
 
-import { areaLines, nowLineIndex, ResultsPanel } from '../ResultsPanel';
+import { areaLines, isHardPullDown, nowLineIndex, ResultsPanel } from '../ResultsPanel';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -36,6 +36,48 @@ async function results() {
 describe('ResultsPanel', () => {
   let r: ReactTestRenderer | undefined;
   afterEach(() => act(() => r?.unmount()));
+
+  it('goes from loading to results without changing its hooks (round 56 review)', async () => {
+    const { request, list } = await results();
+    const props = { selectedId: list[0].id, now: NOW, onSelect: jest.fn(), onBack: jest.fn(), onRetry: jest.fn() };
+    // No real frames: opening the route schedules a VoiceOver focus that would land in a later test.
+    const raf = jest.spyOn(globalThis, 'requestAnimationFrame').mockImplementation(() => 0);
+    await act(async () => {
+      r = create(<ResultsPanel state={{ status: 'loading', request }} {...props} />);
+    });
+    const done = { status: 'done' as const, request, results: list, hiddenCount: 0, hiddenResults: [], searchedAt: NOW };
+    await act(async () => {
+      r!.update(<ResultsPanel state={done} {...props} />);
+    });
+    expect(r!.root.findAll((n) => n.props.testID === 'route-view' && typeof n.type === 'string').length).toBe(1);
+    raf.mockRestore();
+  });
+
+  it('reports the open route height (title bar plus content) so the panel fits it without scrolling (round 56)', async () => {
+    const { request, list } = await results();
+    const state = { status: 'done' as const, request, results: list, hiddenCount: 0, hiddenResults: [], searchedAt: NOW };
+    const onRouteHeight = jest.fn();
+    await act(async () => {
+      r = create(
+        <ResultsPanel
+          state={state}
+          selectedId={list[0].id}
+          now={NOW}
+          onSelect={jest.fn()}
+          onBack={jest.fn()}
+          onRetry={jest.fn()}
+          onRouteHeight={onRouteHeight}
+        />,
+      );
+    });
+    const view = r!.root.findAll((n) => n.props.testID === 'route-view' && typeof n.type === 'string')[0];
+    const bar = view.findAll((n) => typeof n.props.onLayout === 'function')[0];
+    const scroll = view.findAll((n) => typeof n.props.onContentSizeChange === 'function')[0];
+    act(() => bar.props.onLayout({ nativeEvent: { layout: { x: 0, y: 0, width: 393, height: 60.4 } } }));
+    expect(onRouteHeight).not.toHaveBeenCalled();
+    act(() => scroll.props.onContentSizeChange(393, 300));
+    expect(onRouteHeight).toHaveBeenLastCalledWith(361);
+  });
 
   it('opens a picked route in its own view: leave-by on top, then the route card (John, 2026-10-30)', async () => {
     const { request, list } = await results();
@@ -377,3 +419,12 @@ describe('results bar at big text sizes', () => {
   });
 });
 
+describe('hard pull down (round 58)', () => {
+  it('counts a pull well past the top or a fast flick down at the top, not a scroll further down', () => {
+    expect(isHardPullDown({ contentOffset: { x: 0, y: -60 } })).toBe(true);
+    expect(isHardPullDown({ contentOffset: { x: 0, y: -20 } })).toBe(false);
+    expect(isHardPullDown({ contentOffset: { x: 0, y: 0 }, velocity: { x: 0, y: -1.5 } })).toBe(true);
+    expect(isHardPullDown({ contentOffset: { x: 0, y: 120 }, velocity: { x: 0, y: -3 } })).toBe(false);
+    expect(isHardPullDown({ contentOffset: { x: 0, y: 0 }, velocity: { x: 0, y: 2 } })).toBe(false);
+  });
+});

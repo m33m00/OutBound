@@ -46,7 +46,22 @@
           "locationWhenInUsePermission": "OutBound uses your location to start searches from the nearest airport and to estimate when to leave for it."
         }
       ],
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "OutBound uses the camera to read the barcode on your boarding pass so you can log the flight.",
+          "recordAudioAndroid": false
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "OutBound reads the barcode in a screenshot of your boarding pass so you can log the flight.",
+          "cameraPermission": false,
+          "microphonePermission": false
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

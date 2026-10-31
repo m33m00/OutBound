@@ -66,8 +66,8 @@ export default function TripsScreen() {
           <EmptyState
             icon="suitcase"
             title="No trips yet"
-            body="Pick a route in Search and tap the bookmark to keep it here."
-            points={['Replies when you tap Ask for Load on a flight', 'Routes you save from Search']}
+            body="Two things show up here."
+            points={['Routes you save (tap the bookmark beside a route’s name in Search)', 'Replies when you tap Ask for Load on a flight']}
             action={<Button label="Find Routes" icon="magnifyingglass" onPress={() => router.navigate('/')} />}
           />
         ) : null}
@@ -99,8 +99,12 @@ export default function TripsScreen() {
       ) : null}
       <View style={styles.section}>
         <SectionHeader title="Saved routes" />
+        {/* No saved routes yet: say where the bookmark is and give a way there (round 52). */}
         {list.length ? null : (
-          <SectionFooter>Pick a route in Search and tap the bookmark to keep it here.</SectionFooter>
+          <>
+            <SectionFooter>Open a route in Search, then tap the bookmark beside its name to keep it here.</SectionFooter>
+            <Button label="Find Routes" kind="secondary" icon="magnifyingglass" onPress={() => router.navigate('/')} style={styles.find} />
+          </>
         )}
         {list.map((route) => (
           <SavedRouteCard
@@ -128,4 +132,5 @@ const SAMPLE_STATUS_OPTIONS = { config: null } as const;
 
 const styles = StyleSheet.create({
   section: { gap: spacing.group },
+  find: { alignSelf: 'flex-start' },
 });

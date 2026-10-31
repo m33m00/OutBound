@@ -116,7 +116,7 @@ export function ReportForm({ flight, now, onCancel, onSubmit, focusTitle }: Repo
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="interactive"
         automaticallyAdjustKeyboardInsets>
-        {flight ? <Text style={[textStyles.body, { color: c.muted }]}>{departsText(flight, now)}</Text> : null}
+        {flight ? <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, { color: c.muted }]}>{departsText(flight, now)}</Text> : null}
         <NumberField
           label="Open seats"
           caption="On the departure board"
@@ -148,10 +148,10 @@ export function ReportForm({ flight, now, onCancel, onSubmit, focusTitle }: Repo
             <>
               <View style={[styles.dot, { backgroundColor: c[TIER_MARK[tier]] }]} />
               <Text lineBreakStrategyIOS="push-out" style={[textStyles.heading, { color: c[TIER_FG[tier]] }]}>{TIER_WORD[tier]}</Text>
-              <Text style={[textStyles.body, styles.after, { color: c.muted }]}>{afterListText(open, listed)}</Text>
+              <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, styles.after, { color: c.muted }]}>{afterListText(open, listed)}</Text>
             </>
           ) : (
-            <Text style={[textStyles.body, styles.after, { color: c.muted }]}>{tierLine}</Text>
+            <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, styles.after, { color: c.muted }]}>{tierLine}</Text>
           )}
         </View>
         <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>

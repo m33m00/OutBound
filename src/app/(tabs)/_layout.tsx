@@ -5,7 +5,7 @@ import type { ColorValue } from 'react-native';
 import { fonts, minTapTarget, useBoldText, useColors } from '@/theme';
 import { Icon } from '@/ui/Icon';
 
-/** Bottom tab bar (backlog 16; Q-042): Search · Feed · My Trips · Profile. */
+/** Bottom tab bar (backlog 16; Q-042): Search · Feed · My Trips · Logbook · Profile. */
 export default function TabsLayout() {
   const c = useColors();
   // Redraws the labels when Bold Text changes.
@@ -27,6 +27,7 @@ export default function TabsLayout() {
       <Tabs.Screen name="index" options={{ title: 'Search', tabBarIcon: icon('magnifyingglass') }} />
       <Tabs.Screen name="feed" options={{ title: 'Feed', tabBarIcon: icon('text.bubble') }} />
       <Tabs.Screen name="trips" options={{ title: 'My Trips', tabBarIcon: icon('suitcase') }} />
+      <Tabs.Screen name="logbook" options={{ title: 'Logbook', tabBarIcon: icon('book.closed') }} />
       <Tabs.Screen name="profile" options={{ title: 'Profile', tabBarIcon: icon('person.crop.circle') }} />
     </Tabs>
   );

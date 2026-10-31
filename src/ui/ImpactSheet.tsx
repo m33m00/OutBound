@@ -30,7 +30,7 @@ export function ImpactSheet({ visible, title, subtitle, impact, now, onClose }: 
         <SheetHeader title={title} subtitle={subtitle || undefined} action="Done" onAction={onClose} />
         <ScrollView contentContainerStyle={styles.body}>
           {!impact?.stations.length ? (
-            <Text style={[textStyles.body, { color: c.text }]}>No delay or weather data for this route yet.</Text>
+            <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, { color: c.text }]}>No delay or weather data for this route yet.</Text>
           ) : null}
           {/* Worst first, so the airport to worry about is on top; route order otherwise. */}
           {sorted.length > 1 && sorted.some((s, i) => s !== impact?.stations[i]) ? (
@@ -78,12 +78,12 @@ export function ImpactSheet({ visible, title, subtitle, impact, now, onClose }: 
                         size={13}
                         tintColor={likely ? c.likelyDelays : c.caution}
                       />
-                      <Text style={[textStyles.bodyStrong, { color: likely ? c.likelyDelays : c.caution }]}>
+                      <Text lineBreakStrategyIOS="push-out" style={[textStyles.bodyStrong, { color: likely ? c.likelyDelays : c.caution }]}>
                         {IMPACT_WORD[s.level as 'caution' | 'likelyDelays']}
                       </Text>
                     </View>
                   ) : (
-                    <Text style={[textStyles.body, styles.trailing, { color: c.muted }]}>{clearWord}</Text>
+                    <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, styles.trailing, { color: c.muted }]}>{clearWord}</Text>
                   )}
                 </View>
                 {s.reasons.map((r) => (

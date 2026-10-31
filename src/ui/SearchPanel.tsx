@@ -65,6 +65,9 @@ const listText = (codes: readonly string[]) =>
  * both, and comes first so it reads in visual order (top-right before code).
  */
 export function AirportCard({ label, code, emptyText = 'Choose airport', onPress, areaOn, onToggleArea }: AirportCardProps) {
+  // "Location is off. Choose airport" -> gray status, blue ask.
+  const ask = /(Choose airport)$/.exec(emptyText);
+  const action = !code && ask ? { status: emptyText.slice(0, ask.index).trim(), ask: ask[1] } : null;
   const c = useColors();
   const name = code ? AIRPORTS[code]?.name : undefined;
   const area = code ? areaFor(code) : null;
@@ -110,19 +113,31 @@ export function AirportCard({ label, code, emptyText = 'Choose airport', onPress
             ? `${label}: ${code}, ${name}${whole ? `, all ${area.city} airports` : ''}. Change`
             : emptyText === 'Choose airport'
               ? `${label}: choose an airport`
-              : `${label}: ${emptyText} Choose an airport`
+              : /choose/i.test(emptyText)
+                ? `${label}: ${emptyText}`
+                : `${label}: ${emptyText} Choose an airport`
         }
         style={pressStyle(styles.cardButton, 'link')}>
         <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, styles.cardLabel, { color: c.muted }]} maxFontSizeMultiplier={LABEL_MAX_SCALE}>
           {label}
         </Text>
-        <Text style={[textStyles.title, { color: code ? c.text : c.faint }]}>{code ?? '—'}</Text>
+        <Text lineBreakStrategyIOS="push-out" style={[textStyles.title, { color: code ? c.text : c.faint }]}>{code ?? '—'}</Text>
         {whole ? (
           <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.text }]}>{area.airports.join(' · ')}</Text>
         ) : null}
         {/* Two lines so long names ("Dallas/Fort Worth International") show at big text sizes. */}
+        {/* An empty side says what to do in blue, so a dimmed Find Routes never needs explaining (round 53);
+            a status before it ("Location is off.") stays gray. */}
         <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]} numberOfLines={2}>
-          {name ?? emptyText}
+          {name ??
+            (action ? (
+              <>
+                {action.status ? `${action.status} ` : null}
+                <Text style={{ color: c.accent, fontFamily: textStyles.bodyStrong.fontFamily }}>{action.ask}</Text>
+              </>
+            ) : (
+              emptyText
+            ))}
         </Text>
       </Pressable>
     </View>
@@ -217,7 +232,7 @@ export function SearchPanel(p: SearchPanelProps) {
             name="calendar"
             size={18}
             tintColor={later ? c.onAccent : c.text}
-            fallback={later ? null : <Text style={[textStyles.bodyStrong, { color: c.text }]}>Date</Text>}
+            fallback={later ? null : <Text lineBreakStrategyIOS="push-out" style={[textStyles.bodyStrong, { color: c.text }]}>Date</Text>}
           />
           {later ? (
             <Text
@@ -315,7 +330,7 @@ export function SearchPanel(p: SearchPanelProps) {
             tintColor={c.accent}
             fallback={<Text style={[textStyles.small, { color: c.accent }]}>⌂</Text>}
           />
-          <Text style={[textStyles.bodyStrong, styles.homeHintText, { color: c.accent }]}>Set your main home to use Get Home ›</Text>
+          <Text lineBreakStrategyIOS="push-out" style={[textStyles.bodyStrong, styles.homeHintText, { color: c.accent }]}>Set your main home to use Get Home ›</Text>
         </Pressable>
       ) : null}
       {p.airportCard}

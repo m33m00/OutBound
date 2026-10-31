@@ -31,6 +31,7 @@ import { LeaveByCard } from '@/ui/LeaveByCard';
 import { useSharedLocation } from '@/ui/LocationProvider';
 import { LocationOptInCard } from '@/ui/LocationOptInCard';
 import { ResultsBanner } from '@/ui/ResultsBanner';
+import { neighborDays } from '@/ui/DayStepper';
 import { ResultsPanel } from '@/ui/ResultsPanel';
 import { SearchPanel } from '@/ui/SearchPanel';
 import { RadarButton } from '@/ui/RadarButton';
@@ -42,8 +43,12 @@ import { selectionTick } from '@/ui/haptics';
 /** Peek height above the home indicator. */
 const PEEK = 132;
 const SHEET = { peek: 0, half: 1, full: 2 } as const;
-/** Share of the screen body the panel takes while a route is open. */
+/** Share of the screen body the panel takes while a route is open, until its content is measured. */
 const ROUTE_VIEW_SHARE = 0.56;
+/** The panel's drag handle (44pt) and top edge sit above the route view's own content. */
+const SHEET_CHROME = minTapTarget + 1;
+/** A route this close to full height (pt) opens full instead of a middle stop that would barely differ. */
+const TALL_ROUTE_SLACK = 24;
 
 const airport = (code: string) => AIRPORTS[code];
 const SAMPLE_STATUS_OPTIONS = { config: null } as const;
@@ -110,11 +115,28 @@ export default function HomeScreen() {
 
   // A picked route's view is a little taller than half (John, 2026-10-30) so its
   // leave-by and route card read in full while the globe keeps most of the screen.
+  // Since round 56 it opens exactly as tall as the route needs, so nothing sits under the
+  // fold (John: "I'd like for it to be all in view"), never past the full height.
+  // Paging between routes only ever grows it while the view is open, so the panel and the
+  // globe don't bounce on every flip; it starts over when the route closes.
   const routeOpen = selectedId != null;
+  const [routeHeight, setRouteHeight] = useState(0);
+  const onRouteHeight = useCallback((h: number) => setRouteHeight((was) => Math.max(was, h)), []);
+  useEffect(() => {
+    if (!routeOpen) setRouteHeight(0);
+  }, [routeOpen]);
+  const sheetFull = Math.max(bodyHeight, PEEK * 3) - spacing.group;
+  // A route that needs (nearly) the whole height opens full; the middle stop stays a real half
+  // so the handle still does something.
+  const tallRoute = routeOpen && routeHeight > 0 && routeHeight + SHEET_CHROME >= sheetFull - TALL_ROUTE_SLACK;
   const snaps = useMemo(() => {
-    const h = Math.max(bodyHeight, PEEK * 3);
-    return [PEEK, Math.round(h * (routeOpen ? ROUTE_VIEW_SHARE : 0.48)), h - spacing.group];
-  }, [bodyHeight, routeOpen]);
+    const h = sheetFull + spacing.group;
+    const route = routeHeight > 0 ? routeHeight + SHEET_CHROME : Math.round(h * ROUTE_VIEW_SHARE);
+    return [PEEK, routeOpen && !tallRoute ? Math.max(PEEK + 1, route) : Math.round(h * 0.48), sheetFull];
+  }, [sheetFull, routeOpen, routeHeight, tallRoute]);
+  useEffect(() => {
+    if (tallRoute) setSheetIndex(SHEET.full);
+  }, [tallRoute]);
 
   // Ages ("12m ago") keep counting while results are open.
   const [now, setNow] = useState(Date.now());
@@ -220,6 +242,19 @@ export default function HomeScreen() {
   // Re-run the shown search (retry, tomorrow, filters) with its own To and area choice.
   const rerun = (d: string) =>
     state.status === 'idle' ? runSearch(d) : runSearch(d, state.request.destination, !!state.request.destinationArea);
+
+  // No flights on the searched day (Q-073): one tap searches the next day, inside the 0-7 day window.
+  const nextDay = state.status === 'done' ? neighborDays(chips, state.request.date).next : null;
+  const tryNext = nextDay
+    ? {
+        label: nextDay.label === 'Tomorrow' ? 'Try Tomorrow' : `Try ${nextDay.long.split(',')[0]}`,
+        hint: `Searches ${nextDay.long}`,
+        onPress: () => {
+          setDate(nextDay.date);
+          rerun(nextDay.date);
+        },
+      }
+    : null;
 
   // Get Home: shown when away from every home (Q-026).
   const awayFromHome = mainHome != null && origin != null && !homes.some((h) => h.code === origin);
@@ -424,7 +459,7 @@ export default function HomeScreen() {
                       : locationStatus === 'locating'
                         ? 'Finding nearest airport…'
                         : locationStatus === 'denied'
-                          ? 'Location is off.'
+                          ? 'Location is off. Choose airport'
                           : undefined
                   }
                   onPickDestination={() => setPicking('destination')}
@@ -471,6 +506,7 @@ export default function HomeScreen() {
                           setSheetIndex(SHEET.full);
                         }}
                         onDismiss={reset}
+                        next={tryNext}
                       />
                     ) : null
                   }
@@ -496,6 +532,8 @@ export default function HomeScreen() {
                     setDate(d);
                     rerun(d);
                   }}
+                  onRouteHeight={onRouteHeight}
+                  onPullDown={() => setSheetIndex((i) => Math.max(SHEET.peek, i - 1))}
                   onFilters={openFilters}
                   filtersChanged={filtersChanged}
                   note={missingNote}

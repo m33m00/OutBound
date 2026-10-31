@@ -114,20 +114,22 @@ export function FlightStatusSheet({ flight, visible, now, onClose, liveOptions, 
         <View style={styles.top}>
           <Text style={[textStyles.number, { color: c.text }]}>{code}</Text>
           <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>{label}</Text>
-          {delay ? <Text style={[textStyles.bodyStrong, styles.trailing, { color: c.text }]}>{delay}</Text> : null}
+          {delay ? <Text lineBreakStrategyIOS="push-out" style={[textStyles.bodyStrong, styles.trailing, { color: c.text }]}>{delay}</Text> : null}
         </View>
-        {/* The time that matters now leads at full size; the scheduled one it replaced is small and struck after it. */}
+        {/* The time that matters now is full size; the scheduled one it replaced sits small and struck before it (John, 2026-10-30). */}
         {lead ? (
           <Text style={[textStyles.number, { color: c.text }]}>
+            {lead.was ? (
+              <Text style={[styles.leadMeta, { color: c.muted }]}>
+                <Text style={styles.struck}>{lead.was.replace(/ /g, '\u00a0')}</Text>
+                {'\u00a0'}
+              </Text>
+            ) : null}
             {lead.time.replace(/ /g, '\u00a0')}
-            <Text style={[styles.leadMeta, { color: c.muted }]}>
-              {`  ${lead.label}`}
-              {lead.was ? '\u00a0· ' : ''}
-              {lead.was ? <Text style={styles.struck}>{lead.was.replace(/ /g, '\u00a0')}</Text> : null}
-            </Text>
+            <Text style={[styles.leadMeta, { color: c.muted }]}>{`  ${lead.label}`}</Text>
           </Text>
         ) : null}
-        <Text style={[textStyles.body, { color: c.muted }]}>{placeText(m)}</Text>
+        <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, { color: c.muted }]}>{placeText(m)}</Text>
       </View>
     );
   };
@@ -152,14 +154,14 @@ export function FlightStatusSheet({ flight, visible, now, onClose, liveOptions, 
             <SheetHeader title={title} subtitle={subtitle || undefined} action="Done" onAction={onClose} />
             <ScrollView contentContainerStyle={styles.body}>
               {error === 'not_configured' ? (
-                <Text style={[textStyles.body, { color: c.muted }]}>Flight status isn’t available right now.</Text>
+                <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, { color: c.muted }]}>Flight status isn’t available right now.</Text>
               ) : null}
               {error === 'fetch_failed' && !response ? (
-                <Text style={[textStyles.body, { color: c.text }]}>{FETCH_FAILED_TEXT}</Text>
+                <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, { color: c.text }]}>{FETCH_FAILED_TEXT}</Text>
               ) : null}
               {loading && !response ? <ActivityIndicator accessibilityLabel="Loading flight status" /> : null}
               {response && !status ? (
-                <Text style={[textStyles.body, { color: c.text }]}>
+                <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, { color: c.text }]}>
                   {response.state === 'unavailable' ? FETCH_FAILED_TEXT : 'No status for this flight yet.'}
                 </Text>
               ) : null}
@@ -222,7 +224,7 @@ export function FlightStatusSheet({ flight, visible, now, onClose, liveOptions, 
                     accessibilityLabel={loading ? 'Refreshing flight status' : 'Refresh flight status'}
                     accessibilityState={{ busy: loading }}
                     style={pressStyle(styles.refresh, 'link')}>
-                    <Text style={[textStyles.bodyStrong, { color: c.accent }]}>{loading ? 'Refreshing…' : 'Refresh'}</Text>
+                    <Text lineBreakStrategyIOS="push-out" style={[textStyles.bodyStrong, { color: c.accent }]}>{loading ? 'Refreshing…' : 'Refresh'}</Text>
                   </Pressable>
                   {refreshNote ? <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, styles.ageText, { color: c.muted }]}>{refreshNote}</Text> : null}
                 </View>
@@ -283,12 +285,12 @@ function LoadCard({
           accessibilityLabel={forSpeech(`You reported ${answerText(yourReport)} · ${formatAge(yourReport.at, now)}`)}>
           {/* Amber means you; the tier word keeps its tier color. */}
           <Text style={{ color: c.youText }}>You reported </Text>
-          <Text style={[textStyles.bodyStrong, { color: c[TIER_FG[tier]] }]}>{TIER_WORD[tier]}</Text>
+          <Text lineBreakStrategyIOS="push-out" style={[textStyles.bodyStrong, { color: c[TIER_FG[tier]] }]}>{TIER_WORD[tier]}</Text>
           {` · ${yourReport.open} open · ${yourReport.listed} listed · ${formatAge(yourReport.at, now)}`}
         </Text>
       ) : null}
       {closed || !yourReport ? (
-        <Text style={[textStyles.body, { color: c.muted }]}>
+        <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, { color: c.muted }]}>
           {closed ?? 'Seen the board? Report the open seats and the standby list.'}
         </Text>
       ) : null}
@@ -300,7 +302,7 @@ function LoadCard({
           style={[textStyles.body, { color: c.text }]}
           accessibilityLabel={forSpeech(`Your request was answered: ${answerText(askAnswer)} · ${formatAge(askAnswer.at, now)}`)}>
           {'Answered: '}
-          <Text style={[textStyles.bodyStrong, { color: c[TIER_FG[answerTierWord]] }]}>{TIER_WORD[answerTierWord]}</Text>
+          <Text lineBreakStrategyIOS="push-out" style={[textStyles.bodyStrong, { color: c[TIER_FG[answerTierWord]] }]}>{TIER_WORD[answerTierWord]}</Text>
           {` · ${askAnswer.open} open · ${askAnswer.listed} listed · ${formatAge(askAnswer.at, now)}`}
         </Text>
       ) : (
@@ -332,7 +334,7 @@ function LoadCard({
               accessibilityHint="Frees one of your 5 requests"
               style={pressStyle(styles.cancelAsk, 'link')}>
               {/* Regular weight: quieter than the buttons above it. */}
-              <Text style={[textStyles.body, { color: c.accent }]}>Cancel Request</Text>
+              <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, { color: c.accent }]}>Cancel Request</Text>
             </Pressable>
           ) : null}
         </>

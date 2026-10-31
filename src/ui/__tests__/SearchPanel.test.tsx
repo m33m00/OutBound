@@ -159,3 +159,17 @@ describe('SearchPanel first run (design round 39)', () => {
     expect(onSetHome).toHaveBeenCalled();
   });
 });
+
+describe('SearchPanel empty sides (round 53)', () => {
+  let r: ReactTestRenderer | undefined;
+  afterEach(() => {
+    act(() => r?.unmount());
+  });
+
+  it('says what to do on an empty side, once, for VoiceOver too', () => {
+    r = render(1, { destination: null, originEmptyText: 'Location is off. Choose airport', origin: null });
+    const labels = r.root.findAll((n) => typeof n.props.accessibilityLabel === 'string' && n.props.onPress).map((n) => n.props.accessibilityLabel as string);
+    expect(labels).toContain('From: Location is off. Choose airport');
+    expect(labels).toContain('To: choose an airport');
+  });
+});
