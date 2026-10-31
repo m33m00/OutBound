@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 
-import { addLogged, LOGBOOK_KEY, parseLogbook, removeLogged, type LoggedFlight } from './logbook';
+import { addLogged, LOGBOOK_KEY, parseLogbook, removeLogged, replaceLogged, type LoggedFlight } from './logbook';
 
 interface LogbookContextValue {
   flights: LoggedFlight[];
@@ -9,6 +9,8 @@ interface LogbookContextValue {
   loaded: boolean;
   add: (flights: readonly LoggedFlight[]) => void;
   remove: (id: string) => void;
+  /** Swap a logged flight for its fixed version. */
+  replace: (id: string, flight: LoggedFlight) => void;
 }
 
 const LogbookContext = createContext<LogbookContextValue | null>(null);
@@ -56,6 +58,7 @@ export function LogbookProvider({ children }: { children: ReactNode }) {
       loaded,
       add: (added) => change((list) => addLogged(list, added)),
       remove: (id) => change((list) => removeLogged(list, id)),
+      replace: (id, flight) => change((list) => replaceLogged(list, id, flight)),
     }),
     [flights, loaded, change],
   );

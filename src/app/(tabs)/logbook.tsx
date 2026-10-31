@@ -20,8 +20,10 @@ import { TabScreen } from '@/ui/TabScreen';
  * A map of where you've been can follow later.
  */
 export default function LogbookScreen() {
-  const { flights, loaded, add, remove } = useLogbook();
+  const { flights, loaded, add, remove, replace } = useLogbook();
   const [adding, setAdding] = useState(false);
+  // A logged flight opened to fix its details (round 61).
+  const [editing, setEditing] = useState<LoggedFlight | null>(null);
   // Read the clock each time the tab shows, so "Today" turns into "Yesterday" overnight.
   const [now, setNow] = useState(Date.now());
   useFocusEffect(useCallback(() => setNow(Date.now()), []));
@@ -35,15 +37,23 @@ export default function LogbookScreen() {
 
   const sheet = (
     <AddFlightSheet
-      visible={adding}
+      visible={adding || editing != null}
       now={now}
+      editing={editing}
       has={(id) => flights.some((f) => f.id === id)}
-      onClose={() => setAdding(false)}
-      onAdd={(added) => {
-        add(added);
+      onClose={() => {
         setAdding(false);
+        setEditing(null);
+      }}
+      onAdd={(added) => {
+        if (editing) replace(editing.id, added[0]);
+        else add(added);
+        setAdding(false);
+        setEditing(null);
         selectionTick();
-        AccessibilityInfo.announceForAccessibility(added.length > 1 ? `Added ${added.length} flights` : 'Flight added');
+        AccessibilityInfo.announceForAccessibility(
+          editing ? 'Flight saved' : added.length > 1 ? `Added ${added.length} flights` : 'Flight added',
+        );
       }}
     />
   );
@@ -76,7 +86,7 @@ export default function LogbookScreen() {
         <View key={m.title} style={styles.section}>
           <ListGroup title={m.title}>
             {m.flights.map((f) => (
-              <LoggedFlightRow key={f.id} flight={f} now={now} onRemove={() => confirmRemove(f)} />
+              <LoggedFlightRow key={f.id} flight={f} now={now} onEdit={() => setEditing(f)} onRemove={() => confirmRemove(f)} />
             ))}
           </ListGroup>
         </View>

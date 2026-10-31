@@ -8,6 +8,7 @@ import {
   logbookTotals,
   parseLogbook,
   removeLogged,
+  replaceLogged,
   typedFlightProblem,
   type LoggedFlight,
 } from '../logbook';
@@ -25,6 +26,13 @@ describe('logbook', () => {
     expect(list.map((x) => x.id)).toEqual(['2026-10-30|AA1:DFW-LAX', '2026-10-31|AA1:LAX-DFW']);
     expect(list[0].addedAt).toBe(0);
     expect(removeLogged(list, a.id)).toHaveLength(1);
+  });
+
+  it('swaps a fixed flight in place', () => {
+    const list = [f('DFW', 'LAX', '2026-10-01'), f('LAX', 'DFW', '2026-10-02')];
+    const fixed = f('DFW', 'SAN', '2026-10-01');
+    expect(replaceLogged(list, list[0].id, fixed).map((x) => x.to)).toEqual(['SAN', 'DFW']);
+    expect(replaceLogged(list, list[0].id, list[0])).toEqual(list);
   });
 
   it('counts straight-line miles between airports', () => {

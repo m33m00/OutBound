@@ -149,6 +149,41 @@ describe('Logbook tab', () => {
     alert.mockRestore();
   });
 
+  it('opens a logged flight to fix it, in the same place', async () => {
+    const logged = (n: string, from: string, to: string, addedAt: number): LoggedFlight => ({
+      id: `2026-10-29|AA${n}:${from}-${to}`,
+      airline: 'AA',
+      flightNumber: n,
+      from,
+      to,
+      date: '2026-10-29',
+      source: 'scan',
+      addedAt,
+    });
+    await AsyncStorage.setItem(LOGBOOK_KEY, JSON.stringify([logged('1', 'DFW', 'LAX', 1), logged('2', 'LAX', 'DFW', 2)]));
+    await mount();
+    const rows = r!.root.findAllByProps({ testID: 'edit-logged-flight' }).filter((n) => typeof n.type !== 'string' && n.props.onPress);
+    expect(rows[1].props.accessibilityHint).toBe('Opens it to fix the details');
+    await act(async () => rows[1].props.onPress());
+    expect(texts()).toContain('Edit Flight');
+    expect(texts()).not.toContain('Scan Boarding Pass');
+    expect(field('From').props.value).toBe('DFW');
+    // Changing it into the other logged flight isn't allowed.
+    act(() => field('Flight').props.onChangeText('2'));
+    act(() => field('From').props.onChangeText('LAX'));
+    act(() => field('To').props.onChangeText('DFW'));
+    expect(button('Save Changes').props.disabled).toBe(true);
+    expect(texts()).toContain('This flight is already in your logbook.');
+    act(() => field('Flight').props.onChangeText('1'));
+    act(() => field('To').props.onChangeText('SAN'));
+    act(() => field('Seat (optional)').props.onChangeText('4F'));
+    await act(async () => button('Save Changes').props.onPress());
+    expect((await stored()).map((f) => `${f.id} ${f.seat ?? '-'} ${f.addedAt} ${f.source}`)).toEqual([
+      '2026-10-29|AA1:LAX-SAN 4F 1 scan',
+      '2026-10-29|AA2:LAX-DFW - 2 scan',
+    ]);
+  });
+
   it('fills the form from a screenshot of a pass, without the name', async () => {
     mockPick.mockResolvedValue({ canceled: false, assets: [{ uri: 'file://pass.png' }] });
     mockScan.mockResolvedValue([{ type: 'pdf417', data: PASS }]);

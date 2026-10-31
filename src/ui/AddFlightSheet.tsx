@@ -37,6 +37,8 @@ export interface AddFlightSheetProps {
   has: (id: string) => boolean;
   onAdd: (flights: LoggedFlight[]) => void;
   onClose: () => void;
+  /** A logged flight to fix: the form opens filled in and saves over it. */
+  editing?: LoggedFlight | null;
 }
 
 type Note = { tone: 'ok' | 'warn'; text: string } | null;
@@ -58,8 +60,9 @@ export const PHOTO_MISS =
 /**
  * Add a flight to the logbook: scan the boarding pass, pick a screenshot of
  * one, or type it in. A scan fills the form so it can be checked first.
+ * With `editing`, the same form fixes a flight already logged (round 61).
  */
-export function AddFlightSheet({ visible, now, has, onAdd, onClose }: AddFlightSheetProps) {
+export function AddFlightSheet({ visible, now, has, onAdd, onClose, editing }: AddFlightSheetProps) {
   const c = useColors();
   const today = localDate(now, phoneTz());
   const [airline, setAirline] = useState('');
@@ -82,19 +85,19 @@ export function AddFlightSheet({ visible, now, has, onAdd, onClose }: AddFlightS
   const toBox = useRef<TextInputInstance>(null);
   const seatBox = useRef<TextInputInstance>(null);
 
-  // Each time it opens: a clean form on today.
+  // Each time it opens: a clean form on today, or the flight being fixed.
   useEffect(() => {
     if (!visible) return;
-    setAirline('');
-    setFlightNumber('');
-    setFrom('');
-    setTo('');
-    setDate(localDate(Date.now(), phoneTz()));
-    setSeat('');
+    setAirline(editing?.airline ?? '');
+    setFlightNumber(editing?.flightNumber ?? '');
+    setFrom(editing?.from ?? '');
+    setTo(editing?.to ?? '');
+    setDate(editing?.date ?? localDate(Date.now(), phoneTz()));
+    setSeat(editing?.seat ?? '');
     setExtra([]);
-    setSource('manual');
+    setSource(editing?.source ?? 'manual');
     setNote(null);
-  }, [visible]);
+  }, [visible, editing]);
 
   const fill = (legs: PassLeg[], how: LogSource) => {
     const [first, ...rest] = legs;
@@ -128,31 +131,36 @@ export function AddFlightSheet({ visible, now, has, onAdd, onClose }: AddFlightS
 
   const typed = { airline, flightNumber, from, to };
   const id = loggedId({ ...typed, date });
-  const problem = typedFlightProblem(typed) ?? (has(id) ? 'This flight is already in your logbook.' : null);
+  const taken = has(id) && id !== editing?.id;
+  const problem = typedFlightProblem(typed) ?? (taken ? 'This flight is already in your logbook.' : null);
   const started = Boolean(airline || flightNumber || from || to);
   const count = 1 + extra.length;
 
   const add = () => {
     if (problem) return;
     const first: PassLeg = { ...typed, date, seat: seat || undefined };
-    onAdd([first, ...extra].map((leg) => loggedFrom(leg, source, Date.now())));
+    // A fixed flight keeps its place in the logbook.
+    const addedAt = editing?.addedAt ?? Date.now();
+    onAdd([first, ...extra].map((leg) => loggedFrom(leg, source, addedAt)));
   };
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <SafeAreaView style={[styles.screen, { backgroundColor: c.bg }]} edges={['top', 'bottom']}>
-        <SheetHeader title="Add Flight" action="Cancel" onAction={onClose} />
+        <SheetHeader title={editing ? 'Edit Flight' : 'Add Flight'} action="Cancel" onAction={onClose} />
         <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive">
-          <View style={pair}>
-            <WayButton icon="barcode.viewfinder" label="Scan Boarding Pass" onPress={() => setScanning(true)} />
-            <WayButton
-              icon="photo.on.rectangle"
-              label="Choose Screenshot"
-              onPress={pickScreenshot}
-              disabled={picking}
-              hint="Reads the barcode in a picture of your pass"
-            />
-          </View>
+          {editing ? null : (
+            <View style={pair}>
+              <WayButton icon="barcode.viewfinder" label="Scan Boarding Pass" onPress={() => setScanning(true)} />
+              <WayButton
+                icon="photo.on.rectangle"
+                label="Choose Screenshot"
+                onPress={pickScreenshot}
+                disabled={picking}
+                hint="Reads the barcode in a picture of your pass"
+              />
+            </View>
+          )}
           {note ? (
             <Text
               lineBreakStrategyIOS="push-out"
@@ -250,7 +258,7 @@ export function AddFlightSheet({ visible, now, has, onAdd, onClose }: AddFlightS
           ) : null}
 
           <Button
-            label={count > 1 ? `Add ${count} Flights` : 'Add to Logbook'}
+            label={editing ? 'Save Changes' : count > 1 ? `Add ${count} Flights` : 'Add to Logbook'}
             onPress={add}
             disabled={problem != null}
             accessibilityHint={problem ?? undefined}
@@ -260,9 +268,11 @@ export function AddFlightSheet({ visible, now, has, onAdd, onClose }: AddFlightS
               {problem}
             </Text>
           ) : null}
-          <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>
-            Your logbook stays on this phone. Only the flight is kept from a pass, never your name or booking code.
-          </Text>
+          {editing ? null : (
+            <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>
+              Your logbook stays on this phone. Only the flight is kept from a pass, never your name or booking code.
+            </Text>
+          )}
         </ScrollView>
         <PassScanner
           visible={scanning}

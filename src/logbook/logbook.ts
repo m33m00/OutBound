@@ -55,6 +55,10 @@ export function addLogged(list: readonly LoggedFlight[], flights: readonly Logge
   return next;
 }
 
+/** Logbook with one flight swapped for its fixed version, in the same place. */
+export const replaceLogged = (list: readonly LoggedFlight[], id: string, flight: LoggedFlight): LoggedFlight[] =>
+  list.filter((f) => f.id === id || f.id !== flight.id).map((f) => (f.id === id ? flight : f));
+
 export const removeLogged = (list: readonly LoggedFlight[], id: string): LoggedFlight[] =>
   list.filter((f) => f.id !== id);
 

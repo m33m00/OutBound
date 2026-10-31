@@ -13,13 +13,16 @@ export interface LoggedFlightRowProps {
   /** Clock for "Today" and "Yesterday". */
   now: number;
   onRemove: () => void;
+  /** Opens the flight to fix its details. */
+  onEdit?: () => void;
 }
 
 /**
- * One logged flight: route, airline code and number, day, seat, miles. The
- * trash button sits apart so VoiceOver reaches it on its own, and asks first.
+ * One logged flight: route, airline code and number, day, seat, miles.
+ * Tapping it opens the flight to fix (round 61). The trash button sits apart
+ * so VoiceOver reaches it on its own, and asks first.
  */
-export function LoggedFlightRow({ flight: f, now, onRemove }: LoggedFlightRowProps) {
+export function LoggedFlightRow({ flight: f, now, onRemove, onEdit }: LoggedFlightRowProps) {
   const c = useColors();
   const route = `${f.from} → ${f.to}`;
   const day = loggedDay(f.date, now);
@@ -30,7 +33,14 @@ export function LoggedFlightRow({ flight: f, now, onRemove }: LoggedFlightRowPro
     .join(', ');
   return (
     <View style={styles.row} testID="logged-flight">
-      <View accessible accessibilityLabel={forSpeech(label)} style={styles.main}>
+      <Pressable
+        onPress={onEdit}
+        disabled={!onEdit}
+        accessibilityRole={onEdit ? 'button' : undefined}
+        accessibilityLabel={forSpeech(label)}
+        accessibilityHint={onEdit ? 'Opens it to fix the details' : undefined}
+        testID="edit-logged-flight"
+        style={pressStyle(styles.main)}>
         <View style={styles.top}>
           <Text lineBreakStrategyIOS="push-out" style={[textStyles.heading, { color: c.text }]}>{route}</Text>
           {miles != null ? (
@@ -43,7 +53,7 @@ export function LoggedFlightRow({ flight: f, now, onRemove }: LoggedFlightRowPro
           <AirlinePill airline={f.airline} flightNumber={f.flightNumber} />
           <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, styles.detail, { color: c.muted }]}>{detail}</Text>
         </View>
-      </View>
+      </Pressable>
       <Pressable
         onPress={onRemove}
         accessibilityRole="button"
