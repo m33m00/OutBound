@@ -91,7 +91,7 @@ export default function LogbookScreen() {
           </ListGroup>
         </View>
       ))}
-      <SectionFooter>Your logbook stays on this phone. Miles are straight-line distance between airports.</SectionFooter>
+      <SectionFooter>Your logbook stays on this phone.</SectionFooter>
       {sheet}
     </TabScreen>
   );

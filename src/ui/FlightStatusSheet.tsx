@@ -234,8 +234,6 @@ export function FlightStatusSheet({ flight, visible, now, onClose, liveOptions, 
                 <LoadCard load={load} now={now} focus={backFromReport} onReport={() => setReporting(true)} />
               ) : null}
               {flight ? <LogFlightLink flight={flight} now={now} /> : null}
-              {/* The 2-minute wait is said when you tap Refresh too soon, so it isn't repeated here. */}
-              <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>Times are local to each airport.</Text>
               {/* The source line names a real feed, so it shows only for live status (round 30: no sample labels). */}
               {isSample ? null : <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>Data from AeroDataBox.</Text>}
             </ScrollView>

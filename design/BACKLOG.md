@@ -97,3 +97,4 @@ Each item names its owner. One item per work session. spec-keeper runs a pre-fli
 | 90 | Design round 62: Logbook totals call out your most flown airport and longest flight | main | P3 | Built (design round 62, branch claude/project-thread-fzqwou) |
 | 91 | Design round 63: Add to Logbook on a flight's status sheet from two hours before departure | main | P2 | Built (design round 63, branch claude/project-thread-fzqwou) |
 | 92 | Design round 64: drop the "Leaves from …, 35 min from …" line under routes (John) | main | P2 | Built (design round 64, branch claude/project-thread-fzqwou) |
+| 93 | Design round 65: cut explainer lines across tabs (design audit) | main | P3 | Built (design round 65, branch claude/project-thread-fzqwou) |
