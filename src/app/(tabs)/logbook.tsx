@@ -68,8 +68,7 @@ export default function LogbookScreen() {
           <EmptyState
             icon="book.closed"
             title="No flights logged yet"
-            body="Keep a record of where you’ve flown, with your totals up top."
-            points={['Scan the barcode on your boarding pass', 'Or pick a screenshot of one', 'Or type the flight in']}
+            body="Scan a boarding pass, pick a screenshot of one, or type a flight in."
             action={addButton('primary')}
           />
         ) : null}

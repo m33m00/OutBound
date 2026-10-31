@@ -102,3 +102,4 @@ Each item names its owner. One item per work session. spec-keeper runs a pre-fli
 | 95 | Design round 67: flight sheet tidied (age and Refresh on one line, Report and Ask side by side) | main | P2 | Built (design round 67, branch claude/project-thread-fzqwou) |
 | 96 | Design round 68: list rows keep flights on one line with one tag that names the flight (John) | main | P2 | Built (design round 68, branch claude/project-thread-fzqwou) |
 | 97 | Design round 69: Leave By card without the icon tile; chevron always shows | main | P3 | Built (design round 69, branch claude/project-thread-fzqwou) |
+| 98 | Design round 70: My Trips and Logbook empty states down to one line each | main | P3 | Built (design round 70, branch claude/project-thread-fzqwou) |
