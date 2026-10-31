@@ -11,6 +11,11 @@ import { FlightStatusSheet, type FlightLoadActions } from '../FlightStatusSheet'
 import { ageText, delayText, movementLead, movementSpoken, movementTimes, placeText, sampleResponse } from '../flightStatusText';
 import { ResultRow } from '../ResultRow';
 
+// The sheet's Add to Logbook link reads the logbook module (round 63).
+jest.mock('@react-native-async-storage/async-storage', () =>
+  require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
+);
+
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 const NOW = Date.UTC(2026, 9, 21, 12);
