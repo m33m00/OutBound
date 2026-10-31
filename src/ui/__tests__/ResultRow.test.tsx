@@ -61,6 +61,19 @@ describe('ResultRow', () => {
     expect(button.props.accessibilityHint).toBe('Closes the route card');
   });
 
+  it('no "Leaves from …, 35 min from …" line under a route from another airport in the area (round 64, John)', async () => {
+    const it = { ...(await fullItinerary()), requestedOrigin: 'DFW', originTransferMin: 35 };
+    for (const selected of [false, true]) {
+      await act(async () => {
+        r = create(<ResultRow itinerary={it} selected={selected} now={NOW} onPress={jest.fn()} />);
+      });
+      const texts = r!.root.findAll((n) => typeof n.props.children === 'string').map((n) => String(n.props.children));
+      expect(texts.some((t) => t.includes('min from') || t.startsWith('Leaves from'))).toBe(false);
+      // The route line still names the airport it leaves from.
+      expect(texts.some((t) => t.startsWith('BNA →'))).toBe(true);
+    }
+  });
+
   it('shows the delay badge and exposes details as a VoiceOver action', async () => {
     const it = await fullItinerary();
     const onImpact = jest.fn();

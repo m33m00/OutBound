@@ -32,6 +32,7 @@ Condensed from the project docs: MVP decisions (through v8.8), design direction 
   - Toggle default off, then remembered per airport (last choice). Picker list shows airports only, no area rows.
   - Get Home always searches all airports in the home's area.
   - Supersedes the "Nearby airports on" default and the Q-012 candidate-metro list. NEARBY_GROUPS was replaced by the area table in `src/engine/airports.ts` (backlog 22).
+  - Route rows and the route card no longer show the "Leaves from DFW, 35 min from DAL" line (John, 2026-10-31: "I don't need to know how far it is from the airport I'm searching from"). The route line already names the airport; VoiceOver still says it.
 - Default origin (Q-051, 2026-10-21, John), backlog 23:
   - Default origin = nearest airport to the user, however far. First launch shows the app's own card "Start searches from the airport nearest you?" with Allow / Not Now; the iOS location prompt appears only after Allow. Not Now = never asked at launch again; can be enabled in Profile.
   - Origin refreshes on app open if the saved location is older than 20 min; it never overwrites an airport the user picked while the app is open.

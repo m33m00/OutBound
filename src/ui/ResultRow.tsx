@@ -7,7 +7,6 @@ import {
   forSpeech,
   formatDuration,
   formatTime,
-  nearbyNotes,
   neutralSeatText,
   routeSeatAge,
   routeSeatSummary,
@@ -393,11 +392,6 @@ export const ResultRow = memo(function ResultRow({
             ) : null}
           </View>
         )}
-        {nearbyNotes(it).map((note) => (
-          <Text key={note} style={[textStyles.small, { color: c.muted }]}>
-            {note}
-          </Text>
-        ))}
       </View>
     </Pressable>
   );
