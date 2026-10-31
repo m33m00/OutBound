@@ -94,9 +94,9 @@ describe('seat summary (Q-059)', () => {
   const route = (legs: LegSeats[], tier: LegSeats['tier']) =>
     ({ tier, legs: legs.map((s) => ({ seats: s })) }) as unknown as Parameters<typeof routeSeatSummary>[0];
 
-  it('names the weakest counted leg', () => {
-    expect(routeSeatSummary(route([seats({ tier: 'good', netSeats: 9 }), seats({ tier: 'tight', netSeats: 2 })], 'tight'))).toBe('Long\u00a0shot · 2 open');
-    expect(routeSeatSummary(route([seats({ tier: 'full', netSeats: -3 })], 'full'))).toBe('Full · no open seats');
+  it('is just the route chance word; the numbers live in the flight sheet (John, 2026-10-31)', () => {
+    expect(routeSeatSummary(route([seats({ tier: 'good', netSeats: 9 }), seats({ tier: 'tight', netSeats: 2 })], 'tight'))).toBe('Long\u00a0shot');
+    expect(routeSeatSummary(route([seats({ tier: 'full', netSeats: -3 })], 'full'))).toBe('Full');
   });
 
   it('stays off when no leg has reported or estimated seats', () => {

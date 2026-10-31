@@ -261,5 +261,5 @@ export function askNote(state: AskState): string {
   if (state === 'asked') return 'Asked. The answer shows in My Trips.';
   if (state === 'left') return 'This flight has left, so there’s no one to ask.';
   if (state === 'full') return `You have ${MAX_OPEN_REQUESTS} requests waiting. Ask again once one is answered.`;
-  return 'Ask other employees who fly this airline. They won’t see who asked.';
+  return 'Ask employees at this airline. They won’t see who asked.';
 }

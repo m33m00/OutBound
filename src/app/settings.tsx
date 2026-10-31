@@ -113,8 +113,8 @@ export default function SettingsScreen() {
           <SectionFooter>
             {status === 'denied'
               ? 'Location is off for OutBound. Turn it on in iPhone Settings, then try again.'
-              : // Provisional copy (backlog 23): location now also picks From (Q-051).
-                'Starts searches from the nearest airport and estimates your drive. Only used while the app is open.'}
+              : // The switch's hint already says what it's for (round 65), so the footer keeps the privacy line.
+                'Only used while the app is open.'}
           </SectionFooter>
         </View>
 

@@ -93,7 +93,7 @@ export default function TripsScreen() {
             ))}
           </ListGroup>
           <SectionFooter>
-            {`${openCount} of ${MAX_OPEN_REQUESTS} requests open. Someone at that airline answers with what they see on the departure board.`}
+            {`${openCount} of ${MAX_OPEN_REQUESTS} requests open`}
           </SectionFooter>
         </View>
       ) : null}
@@ -119,9 +119,6 @@ export default function TripsScreen() {
             onRemove={() => confirmRemove(savedRouteTitle(route), () => remove(route.key))}
           />
         ))}
-        {list.length ? (
-          <SectionFooter>Opening a route searches its day again, so seats and times are up to date.</SectionFooter>
-        ) : null}
       </View>
       {sheet}
     </TabScreen>

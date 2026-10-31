@@ -98,14 +98,6 @@ export function LeaveByCard(p: LeaveByCardProps) {
       testID="leave-by-card"
       style={pressStyle([styles.card, { backgroundColor: atAirport ? c.youBg : departed ? c.surface2 : c.accentSoft }])}>
       <View style={styles.top} testID="leave-by-top">
-        <View style={[styles.icon, { backgroundColor: c.surface }]}>
-          <Icon
-            name={atAirport || departed ? 'airplane.departure' : 'arrow.triangle.turn.up.right.diamond.fill'}
-            size={18}
-            tintColor={atAirport ? c.youText : departed ? c.muted : c.accent}
-            fallback={<Text style={[textStyles.heading, { color: c.accent }]}>⏱</Text>}
-          />
-        </View>
         {/* One VoiceOver element for the text (the lines below are read with the title); buttons stay separately reachable. */}
         <View
           style={styles.text}
@@ -122,8 +114,8 @@ export function LeaveByCard(p: LeaveByCardProps) {
           </Text>
         </View>
         {action && inline ? action : null}
-        {/* Room for the chevron only when no button sits in the row; the directions icon says it either way. */}
-        {directions && !(action && inline) ? (
+        {/* The chevron is the card's only sign that it opens directions, so it always shows. */}
+        {directions ? (
           <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
             <Icon name="chevron.right" size={13} weight="semibold" tintColor={c.muted} fallback={<Text style={{ color: c.muted }}>›</Text>} />
           </View>
@@ -163,14 +155,8 @@ const styles = StyleSheet.create({
   action: { alignSelf: 'flex-start', paddingHorizontal: spacing.section },
   outline: { borderWidth: 1 },
   inline: { alignSelf: 'center' },
-  icon: {
-    width: 34,
-    height: 34,
-    borderRadius: radius.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   text: { flex: 1 },
-  // Lined up under the title and pulled up so it reads as the title's caption.
-  details: { gap: 2, marginTop: -6, paddingLeft: 34 + spacing.section },
+  // Pulled up under the title so it reads as the title's caption. No icon tile (design audit,
+  // round 69): the chevron says it opens directions, and the lines get the card's full width.
+  details: { gap: 2, marginTop: -6 },
 });

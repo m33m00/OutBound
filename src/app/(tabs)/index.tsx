@@ -211,6 +211,13 @@ export default function HomeScreen() {
   const [statusFlight, setStatusFlight] = useState<Flight | null>(null);
   // Sheets keep their content while they slide away (design round 29).
   const statusSheet = useSheetContent(statusFlight);
+  // The opened flight's seats from the results: the sheet shows the numbers the card no longer does.
+  const statusSeats = useMemo(() => {
+    const f = statusSheet.shown;
+    if (!f) return null;
+    for (const it of results) for (const l of it.legs) if (l.flight.id === f.id) return l.seats;
+    return null;
+  }, [statusSheet.shown, results]);
   const requests = useRequests();
   const statusLoad = useFlightLoad(statusSheet.shown, now);
   const impactSheet = useSheetContent(impactFor);
@@ -603,6 +610,7 @@ export default function HomeScreen() {
             : null
         }
         load={statusLoad}
+        seats={statusSeats}
       />
       <DeparturesSheet
         code={departuresSheet.shown}

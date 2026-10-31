@@ -11,6 +11,16 @@ import { FlightStatusSheet, type FlightLoadActions } from '../FlightStatusSheet'
 import { ageText, delayText, movementLead, movementSpoken, movementTimes, placeText, sampleResponse } from '../flightStatusText';
 import { ResultRow } from '../ResultRow';
 
+// The sheet's Add to Logbook link reads the logbook module (round 63).
+let mockFontScale = 1;
+jest.mock('react-native/Libraries/Utilities/useWindowDimensions', () => ({
+  __esModule: true,
+  default: () => ({ width: 393, height: 852, scale: 3, fontScale: mockFontScale }),
+}));
+jest.mock('@react-native-async-storage/async-storage', () =>
+  require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
+);
+
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 const NOW = Date.UTC(2026, 9, 21, 12);
@@ -181,6 +191,44 @@ describe('seats card in the flight sheet (design round 32)', () => {
     });
     return full;
   };
+
+  it('shows the flight\'s chance word with both numbers and their age, which the route card no longer does (round 66)', async () => {
+    const f = (await itinerary()).legs[0].flight;
+    const load: FlightLoadActions = { reportWindow: 'open', askState: 'ready', yourReport: null, onAsk: jest.fn(), onReport: jest.fn() };
+    const seats = { source: 'reported' as const, tier: 'good' as const, netSeats: 13, openSeats: 20, listed: 7, asOf: NOW - 5 * 60_000 };
+    await act(async () => {
+      r = create(
+        <FlightStatusSheet flight={f} now={NOW} onClose={jest.fn()} sample={null} liveOptions={{ fetcher: jest.fn(), config: null }} load={load} seats={seats} />,
+      );
+    });
+    const box = r!.root.findAll((n) => n.props.testID === 'search-seats' && typeof n.type === 'string')[0];
+    expect(box.props.accessibilityLabel).toBe('Likely, 20 open, 7 listed. Reported 5 minutes ago');
+    expect(texts()).toContain('Reported 5m ago');
+  });
+
+  it('Report Load and Ask for Load sit side by side, stacked at big text (round 67)', async () => {
+    const flat = (style: unknown) => Object.assign({}, ...([style] as unknown[]).flat(3).filter(Boolean));
+    const row = () => btn('Report Load').parent!;
+    const rowOf = () => {
+      let n = btn('Report Load').parent;
+      while (n && !(typeof n.type === 'string' && n.findAll((x) => x.props.accessibilityLabel === 'Ask for Load').length)) n = n.parent;
+      return n!;
+    };
+    await render({});
+    expect(row()).toBeTruthy();
+    expect(flat(rowOf().props.style).flexDirection).toBe('row');
+    // The prompt above the button is gone; the privacy line stays under the buttons.
+    expect(texts().some((t) => t.startsWith('Seen the board'))).toBe(false);
+    expect(texts()).toContain('Ask employees at this airline. They won’t see who asked.');
+    act(() => r?.unmount());
+    mockFontScale = 1.5;
+    try {
+      await render({});
+      expect(flat(rowOf().props.style).flexDirection).toBe('column');
+    } finally {
+      mockFontScale = 1;
+    }
+  });
 
   it('Report Load opens the report page in the same sheet; Submit hands back both numbers and returns', async () => {
     const load = await render({});

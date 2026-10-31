@@ -96,15 +96,13 @@ export function seatText(seats: LegSeats, now: number): string {
 }
 
 /**
- * Route seat summary for the row's top line (Q-059): the weakest counted leg,
- * e.g. "Long shot · 20 open · 17 listed". Null when no leg has reported or estimated seats
- * (typical loads stay neutral and stay on their leg).
+ * Route seat summary for the row's top line (Q-059): the route's chance word, e.g. "Long shot".
+ * Cards show just the word; the open and listed numbers are in the flight's sheet
+ * (John, 2026-10-31). Null when no leg has reported or estimated seats (typical loads stay neutral).
  */
 export function routeSeatSummary(it: Itinerary): string | null {
   if (it.tier === 'unknown') return null;
-  const leg = weakestLeg(it);
-  if (!leg || leg.seats.netSeats == null) return TIER_WORD[it.tier];
-  return `${TIER_WORD[it.tier]} · ${seatCounts(leg.seats)}`;
+  return TIER_WORD[it.tier];
 }
 
 /**

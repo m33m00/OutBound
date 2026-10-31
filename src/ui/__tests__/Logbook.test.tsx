@@ -84,6 +84,9 @@ describe('Logbook tab', () => {
       expect.objectContaining({ airline: 'AA', flightNumber: '1234', from: 'DFW', to: 'LAX', date: '2026-10-30', seat: '12A', source: 'manual' }),
     ]);
     expect(r!.root.findByProps({ testID: 'logbook-totals' }).props.accessibilityLabel).toMatch(/^1 flight, 1,2\d\d miles, 2 airports$/);
+    // One short footer: where the logbook lives (round 65 cut the miles explainer).
+    expect(texts()).toContain('Your logbook stays on this phone.');
+    expect(texts().some((t: string) => t.includes('straight-line'))).toBe(false);
     expect(texts()).toEqual(expect.arrayContaining(['DFW → LAX', 'Today · Seat 12A', 'OCTOBER 2026']));
   });
 

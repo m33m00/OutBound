@@ -65,7 +65,7 @@ export default function FeedScreen() {
               <RequestRow key={r.id} request={r} now={now} leg={legFor(r)} onAnswer={() => setReporting(r.id)} />
             ))}
           </ListGroup>
-          <SectionFooter>Answer with what you see on the departure board. People who ask only see the numbers, never who answered.</SectionFooter>
+          <SectionFooter>People who ask see the numbers, never who answered.</SectionFooter>
         </View>
       ) : (
         <EmptyState

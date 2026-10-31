@@ -95,3 +95,10 @@ Each item names its owner. One item per work session. spec-keeper runs a pre-fli
 | 88 | Design round 60: Add Flight moves box to box from the keyboard; boxes stack at big text | main | P3 | Built (design round 60, branch claude/project-thread-fzqwou) |
 | 89 | Design round 61: tap a logged flight to fix its details | main | P2 | Built (design round 61, branch claude/project-thread-fzqwou) |
 | 90 | Design round 62: Logbook totals call out your most flown airport and longest flight | main | P3 | Built (design round 62, branch claude/project-thread-fzqwou) |
+| 91 | Design round 63: Add to Logbook on a flight's status sheet from two hours before departure | main | P2 | Built (design round 63, branch claude/project-thread-fzqwou) |
+| 92 | Design round 64: drop the "Leaves from …, 35 min from …" line under routes (John) | main | P2 | Built (design round 64, branch claude/project-thread-fzqwou) |
+| 93 | Design round 65: cut explainer lines across tabs (design audit) | main | P3 | Built (design round 65, branch claude/project-thread-fzqwou) |
+| 94 | Design round 66: route card A (one headline, one line per flight, one seat age); cards show just the chance word, numbers in the flight sheet (John) | main | P1 | Built (design round 66, branch claude/project-thread-fzqwou) |
+| 95 | Design round 67: flight sheet tidied (age and Refresh on one line, Report and Ask side by side) | main | P2 | Built (design round 67, branch claude/project-thread-fzqwou) |
+| 96 | Design round 68: list rows keep flights on one line with one tag that names the flight (John) | main | P2 | Built (design round 68, branch claude/project-thread-fzqwou) |
+| 97 | Design round 69: Leave By card without the icon tile; chevron always shows | main | P3 | Built (design round 69, branch claude/project-thread-fzqwou) |
