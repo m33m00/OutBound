@@ -362,6 +362,24 @@ export default function HomeScreen() {
     }
     return false;
   }, [selectedId, showResults, closeRoute, backToSearch]);
+  // Whether Search is the tab on screen: the globe's idle motion stops on other tabs.
+  const [focused, setFocused] = useState(true);
+  useFocusEffect(
+    useCallback(() => {
+      setFocused(true);
+      return () => setFocused(false);
+    }, []),
+  );
+  const previewPair = useMemo(
+    () =>
+      origin && destination && origin !== destination && AIRPORTS[origin] && AIRPORTS[destination]
+        ? {
+            from: [AIRPORTS[origin].lon, AIRPORTS[origin].lat] as LonLat,
+            to: [AIRPORTS[destination].lon, AIRPORTS[destination].lat] as LonLat,
+          }
+        : null,
+    [origin, destination],
+  );
   // Only while Search is the tab on screen, so back on another tab isn't taken here.
   useFocusEffect(
     useCallback(() => {
@@ -441,6 +459,10 @@ export default function HomeScreen() {
           selectedRouteId={selectedId}
           // Rests on your From airport (your location when it's on) and drifts back there after a spin.
           home={homeCenter}
+          // Before a search: a faint arc draws itself between From and To (John, 2026-11-01).
+          preview={previewPair}
+          // Idle sway and the home pin ripple, only on the search page while this tab is in view.
+          homeMotion={focused && !showResults && !routeOpen}
           // A tap on a route picks it (with the same tick as a row); a tap on empty globe
           // closes the open route the same way "‹ Routes" does.
           onSelectRoute={(id) => {
