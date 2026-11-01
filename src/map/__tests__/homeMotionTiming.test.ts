@@ -25,6 +25,10 @@ describe('home globe motion (John, 2026-11-01)', () => {
     for (let ms = 0; ms < SWAY.periodMs * 2; ms += 250) most = Math.max(most, Math.abs(swayOffset(ms)));
     expect(most).toBeLessThanOrEqual(SWAY.amplitudeDeg);
     expect(most).toBeGreaterThan(SWAY.amplitudeDeg * 0.9);
+    // Barely there (John: tone it down): a few degrees, at most a quarter degree a second.
+    expect(SWAY.amplitudeDeg).toBeLessThanOrEqual(3);
+    expect((2 * Math.PI * SWAY.amplitudeDeg) / (SWAY.periodMs / 1000)).toBeLessThanOrEqual(0.25);
+    expect(SWAY.startAfterMs).toBeGreaterThanOrEqual(8000);
     // Slow: under a quarter degree per frame.
     expect(Math.abs(swayOffset(SWAY.rampMs + SWAY.frameMs) - swayOffset(SWAY.rampMs))).toBeLessThan(0.25);
   });
