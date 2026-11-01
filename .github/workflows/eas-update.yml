@@ -3,7 +3,10 @@
 # running `npx expo start`. Free tier; needs the EXPO_TOKEN repository secret
 # (Settings > Secrets and variables > Actions). Without it the job skips.
 #
-# The update uses sample data only: no Supabase keys are added here.
+# Live data (radar, airport delays, weather, flight status) turns on when the
+# SUPABASE_URL and SUPABASE_ANON_KEY repository secrets are set (John, 2026-11-01).
+# Both are the project's public values, the same ones the app ships with; without
+# them the update falls back to sample data.
 name: Publish to Expo Go
 
 on:
@@ -69,6 +72,8 @@ jobs:
         env:
           BRANCH: ${{ github.ref_name }}
           COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+          EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
           MESSAGE=$(printf '%s' "${COMMIT_MESSAGE:-Manual publish}" | head -n 1)
           eas update --branch "$BRANCH" --message "$MESSAGE" --environment preview --non-interactive
@@ -76,3 +81,25 @@ jobs:
             echo "### Published to Expo Go"
             echo "Open Expo Go, sign in, then Projects > outbound > branch \`$BRANCH\` and tap the newest update."
           } >> "$GITHUB_STEP_SUMMARY"
+
+      # Says in the run summary whether each live function answers, so a "couldn't load" in the
+      # app can be traced to a function that isn't deployed or set up yet. Never fails the run.
+      - name: Check the live functions
+        if: steps.token.outputs.ok == 'true'
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_ANON_KEY" ]; then
+            echo "Live data is off: SUPABASE_URL and SUPABASE_ANON_KEY aren't set." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          BASE="${SUPABASE_URL%/}/functions/v1"
+          echo "### Live functions" >> "$GITHUB_STEP_SUMMARY"
+          for path in "live-radar?regions=conus" "live-faa-status?airports=DFW" "live-weather?stations=KDFW"; do
+            code=$(curl -s -o /tmp/body -w '%{http_code}' --max-time 30 "$BASE/$path" \
+              -H "apikey: $SUPABASE_ANON_KEY" -H "Authorization: Bearer $SUPABASE_ANON_KEY" || true)
+            note=$(head -c 160 /tmp/body | tr -d '\n`' || true)
+            echo "- ${path%%\?*}: HTTP $code ${note:+(\`$note\`)}" >> "$GITHUB_STEP_SUMMARY"
+            echo "${path%%\?*}: HTTP $code $note"
+          done

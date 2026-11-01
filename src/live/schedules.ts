@@ -6,7 +6,7 @@
 import { AIRPORTS, type Flight, type FlightDataProvider } from '@/engine';
 
 import type { LiveSchedulesResponse } from '../../supabase/functions/_shared/schedules';
-import { readLiveConfig, type Fetcher, type LiveConfig } from './airportStatus';
+import { PUBLIC_ENV, readLiveConfig, type Fetcher, type LiveConfig } from './airportStatus';
 
 export type { LiveSchedulesResponse };
 
@@ -14,7 +14,7 @@ export type { LiveSchedulesResponse };
 export type ScheduleSource = 'live' | 'sample';
 
 /** 'live' only when the switch is on AND the Supabase config exists. */
-export function readScheduleSource(env: Record<string, string | undefined> = process.env): ScheduleSource {
+export function readScheduleSource(env: Record<string, string | undefined> = PUBLIC_ENV): ScheduleSource {
   return env.EXPO_PUBLIC_SCHEDULES === 'live' && readLiveConfig(env) ? 'live' : 'sample';
 }
 
