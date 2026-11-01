@@ -128,4 +128,17 @@ describe('Sheet snaps (design round 29)', () => {
     act(() => finish?.({ finished: true }));
     expect(onIndexChange).toHaveBeenCalledWith(2);
   });
+
+  it('a locked panel has no handle and no drag (John, 2026-11-01: a picked route stays put)', async () => {
+    await act(async () => {
+      r = create(
+        <Sheet snaps={[100, 300, 600]} index={1} onIndexChange={jest.fn()} locked>
+          <Text>Body</Text>
+        </Sheet>,
+      );
+    });
+    expect(mockPan?.enabled).toBe(false);
+    expect(r!.root.findAll((n) => n.props.accessibilityLabel === 'Results panel size')).toHaveLength(0);
+    expect(r!.root.findAll((n) => n.props.testID === 'sheet-locked-top' && typeof n.type === 'string')).toHaveLength(1);
+  });
 });

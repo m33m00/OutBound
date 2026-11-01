@@ -123,3 +123,4 @@ Each item names its owner. One item per work session. spec-keeper runs a pre-fli
 | 116 | Design round 88: drawer follows the finger and a hard flick glides to the next size, no stutter or bounce (John) | main | P1 | Built (design round 88, branch claude/project-thread-fzqwou) |
 | 117 | Design round 89: drawer drag runs natively, map re-frames after the drawer stops (John: still clunky) | main | P1 | Built (design round 89, branch claude/project-thread-fzqwou) |
 | 118 | Design round 90: legend hugs its text top-left; clean collapsed drawer; pager spacing; route title uses its own airports (John) | main | P1 | Built (design round 90, branch claude/project-thread-fzqwou) |
+| 119 | Design round 91: drawer locked at the route's size once a route is picked (John) | main | P1 | Built (design round 91, branch claude/project-thread-fzqwou) |

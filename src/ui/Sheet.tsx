@@ -42,7 +42,17 @@ export function pickSnap(snaps: readonly number[], visible: number, velocityY: n
   return best;
 }
 
+/** Height of the handle strip at the top of the panel. */
+export const SHEET_HANDLE_H = minTapTarget;
+/** Top strip of a locked panel: no handle, just room under the rounded corners. */
+export const SHEET_LOCKED_TOP = 12;
+
 export interface SheetProps {
+  /**
+   * Fixed at its size: no handle, no drag, no tap to resize (John, 2026-11-01: once a route is
+   * picked the panel should stay put).
+   */
+  locked?: boolean;
   /** Visible heights in pt, ascending: peek, half, full. */
   snaps: readonly number[];
   index: number;
@@ -61,7 +71,7 @@ export interface SheetProps {
  * the panel has stopped, so the map's re-framing never runs under the moving panel. Core Animated
  * and gesture handler only, both in Expo Go.
  */
-export function Sheet({ snaps, index, onIndexChange, children }: SheetProps) {
+export function Sheet({ snaps, index, onIndexChange, children, locked = false }: SheetProps) {
   const c = useColors();
   const reduceMotion = useReducedMotion();
   const full = snaps[snaps.length - 1];
@@ -133,6 +143,7 @@ export function Sheet({ snaps, index, onIndexChange, children }: SheetProps) {
   const snapsRef = useRef(snaps);
   snapsRef.current = snaps;
   const pan = usePanGesture({
+    enabled: !locked,
     useAnimated: true,
     activeOffsetY: [-4, 4],
     onUpdate: Animated.event([{ nativeEvent: { handlerData: { translationY: dragY } } }], { useNativeDriver: true }),
@@ -176,23 +187,27 @@ export function Sheet({ snaps, index, onIndexChange, children }: SheetProps) {
             shadowColor: c.text,
           },
         ]}>
-        <GestureDetector gesture={pan}>
-          <Pressable
-            accessibilityRole="adjustable"
-            accessibilityLabel="Results panel size"
-            accessibilityValue={{ text: SNAP_NAMES[index] }}
-            accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
-            onAccessibilityAction={(e) => {
-              const step = e.nativeEvent.actionName === 'increment' ? 1 : -1;
-              onIndexChange(Math.max(0, Math.min(snaps.length - 1, index + step)));
-            }}
-            // Tap grows the panel a size; at full it steps back one size instead of
-            // jumping to the smallest (drag or VoiceOver still reach it).
-            onPress={() => onIndexChange(index >= snaps.length - 1 ? Math.max(0, snaps.length - 2) : index + 1)}
-            style={styles.handleArea}>
-            <View style={[styles.handle, { backgroundColor: c.line2 }]} />
-          </Pressable>
-        </GestureDetector>
+        {locked ? (
+          <View style={{ height: SHEET_LOCKED_TOP }} testID="sheet-locked-top" />
+        ) : (
+          <GestureDetector gesture={pan}>
+            <Pressable
+              accessibilityRole="adjustable"
+              accessibilityLabel="Results panel size"
+              accessibilityValue={{ text: SNAP_NAMES[index] }}
+              accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
+              onAccessibilityAction={(e) => {
+                const step = e.nativeEvent.actionName === 'increment' ? 1 : -1;
+                onIndexChange(Math.max(0, Math.min(snaps.length - 1, index + step)));
+              }}
+              // Tap grows the panel a size; at full it steps back one size instead of
+              // jumping to the smallest (drag or VoiceOver still reach it).
+              onPress={() => onIndexChange(index >= snaps.length - 1 ? Math.max(0, snaps.length - 2) : index + 1)}
+              style={styles.handleArea}>
+              <View style={[styles.handle, { backgroundColor: c.line2 }]} />
+            </Pressable>
+          </GestureDetector>
+        )}
         <View style={[styles.body, { paddingBottom: Math.max(0, full - restHeight) }]} testID="sheet-body">
           {children}
         </View>
