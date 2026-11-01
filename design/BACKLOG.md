@@ -109,3 +109,4 @@ Each item names its owner. One item per work session. spec-keeper runs a pre-fli
 | 102 | Design round 74: route card flight chip right of its tag; connection line centered and labeled "connection at" (John) | main | P1 | Built (design round 74, branch claude/project-thread-fzqwou) |
 | 103 | Design round 75: connection label beside the middle of the timeline line, which now runs dot to dot (John) | main | P1 | Built (design round 75, branch claude/project-thread-fzqwou) |
 | 104 | Design round 76: route card tag and flight above the first flight's time, below later flights' (John) | main | P1 | Built (design round 76, branch claude/project-thread-fzqwou) |
+| 105 | Design round 77: route card tag and flight lines start at the dots' left edge; chevron right after the chip (John) | main | P1 | Built (design round 77, branch claude/project-thread-fzqwou) |

@@ -132,21 +132,29 @@ function LegTimeline({
         // The first flight's tag and flight sit above its time; every later flight's sit below
         // it, so the connection between them stays clear (John, 2026-11-01).
         const above = i === 0;
-        const meta = (
-          <View style={styles.leg}>
-            <View style={styles.railCol}>
-              {/* Under a leg that isn't the last, the line carries on down to the connection. */}
-              {!above && !last ? <View style={[styles.railLine, rail]} /> : null}
-            </View>
-            <View style={[styles.legMeta, above ? styles.legMetaAbove : styles.legMetaBelow]} testID="leg-flight">
-              {view?.tag ? <StatusTag label={view.tag.label} tone={TAG_TONE[view.tag.kind]} /> : null}
-              <View style={styles.legChip}>
-                <AirlinePill airline={leg.flight.airline} flightNumber={leg.flight.flightNumber} />
-                {onLegPress ? <Icon name="chevron.right" size={12} tintColor={c.muted} fallback={null} /> : null}
-              </View>
+        const pills = (
+          <View style={[styles.legMeta, above ? styles.legMetaAbove : styles.legMetaBelow]} testID="leg-flight">
+            {view?.tag ? <StatusTag label={view.tag.label} tone={TAG_TONE[view.tag.kind]} /> : null}
+            {/* The chevron follows the flight chip right away (John, 2026-11-01). */}
+            <View style={styles.legChip}>
+              <AirlinePill airline={leg.flight.airline} flightNumber={leg.flight.flightNumber} />
+              {onLegPress ? <Icon name="chevron.right" size={12} tintColor={c.muted} fallback={null} /> : null}
             </View>
           </View>
         );
+        // Lined up with the dots' left edge (John, 2026-11-01). Under a middle leg the line runs on
+        // down to the next connection, so there the pills keep clear of it.
+        const meta =
+          above || last ? (
+            pills
+          ) : (
+            <View style={styles.leg}>
+              <View style={styles.railCol}>
+                <View style={[styles.railLine, rail]} />
+              </View>
+              {pills}
+            </View>
+          );
         const body = (
           <>
             {above ? meta : null}
@@ -544,7 +552,7 @@ const styles = StyleSheet.create({
   railLine: { flex: 1, width: 2, minHeight: 4 },
   legText: { flex: 1, gap: 2, paddingVertical: LEG_PAD },
   // A leg's tag and flight, on their own line above (first leg) or below (later legs) its time.
-  legMeta: { flex: 1, flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', columnGap: spacing.group, rowGap: 2 },
+  legMeta: { flexShrink: 1, flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', columnGap: spacing.group, rowGap: 2 },
   legMetaAbove: { paddingTop: LEG_PAD },
   legMetaBelow: { paddingBottom: LEG_PAD },
   legChip: { flexDirection: 'row', alignItems: 'center', gap: 4 },
