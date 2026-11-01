@@ -20,3 +20,13 @@ export function searchRequest(
     destinationArea: wholeToArea ?? !!areaOn[destination],
   };
 }
+
+/**
+ * Get Home shows away from every home (Q-026), and not once To is already a home: then Find
+ * Routes goes to the same place and two main buttons were confusing (John, 2026-11-01).
+ * `homes` is the full home list, area airports included.
+ */
+export function showGetHome(homes: readonly { code: string }[], origin: string | null, destination: string | null): boolean {
+  const isHome = (code: string | null) => code != null && homes.some((h) => h.code === code);
+  return homes.length > 0 && origin != null && !isHome(origin) && !isHome(destination);
+}

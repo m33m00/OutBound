@@ -42,6 +42,14 @@ export function pickSnap(snaps: readonly number[], visible: number, velocityY: n
   return best;
 }
 
+/**
+ * The middle stop: about half the height (48%), or taller when the content needs it to show
+ * in full (John, 2026-11-01), never as tall as the full stop. `need` 0 means not measured yet.
+ */
+export function halfSnap(height: number, need: number, full: number): number {
+  return Math.min(full - 1, Math.max(Math.round(height * 0.48), Math.ceil(need)));
+}
+
 /** Height of the handle strip at the top of the panel. */
 export const SHEET_HANDLE_H = minTapTarget;
 /** Top strip of a locked panel: no handle, just room under the rounded corners. */

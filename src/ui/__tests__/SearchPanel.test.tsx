@@ -14,10 +14,7 @@ jest.mock('react-native/Libraries/Utilities/useWindowDimensions', () => ({
   default: () => ({ width: 393, height: 852, scale: 3, fontScale: mockFontScale }),
 }));
 
-function render(
-  fontScale: number,
-  extra: Partial<React.ComponentProps<typeof SearchPanel>> = {},
-) {
+function render(fontScale: number, extra: Partial<React.ComponentProps<typeof SearchPanel>> = {}) {
   mockFontScale = fontScale;
   const chips = dateChips('2026-10-20');
   let r: ReactTestRenderer | undefined;
@@ -98,7 +95,12 @@ describe('SearchPanel main button (Q-063)', () => {
   });
 
   const button = (label: string) =>
-    r!.root.findAll((n) => n.props.accessibilityRole === 'button' && typeof n.type === 'string' && String(n.props.accessibilityLabel).startsWith(label))[0];
+    r!.root.findAll(
+      (n) =>
+        n.props.accessibilityRole === 'button' &&
+        typeof n.type === 'string' &&
+        String(n.props.accessibilityLabel).startsWith(label),
+    )[0];
   const fill = (label: string) => StyleSheet.flatten(button(label).props.style).backgroundColor;
   const order = () =>
     r!.root
@@ -144,7 +146,9 @@ describe('SearchPanel first run (design round 39)', () => {
   let r: ReactTestRenderer | undefined;
   afterEach(() => act(() => r?.unmount()));
   const texts = () =>
-    r!.root.findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string').map((n) => n.props.children as string);
+    r!.root
+      .findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string')
+      .map((n) => n.props.children as string);
   const find = () => r!.root.findAll((n) => n.props.accessibilityLabel === 'Find Routes' && n.props.onPress)[0];
 
   it('says why Find Routes is off', () => {
@@ -156,12 +160,28 @@ describe('SearchPanel first run (design round 39)', () => {
     expect(texts()).toContain('From and To are the same airport. Change one to find routes.');
   });
 
-  it('does not swap when one side is empty, so To is not wiped', () => {
+  it('swaps with one side empty, moving it across; off only with both empty (John, 2026-11-01)', () => {
     const onSwap = jest.fn();
+    const swapButton = () => r!.root.findAll((n) => n.props.accessibilityLabel === 'Swap from and to' && n.props.onPress)[0];
+    r = render(1, { destination: null, onSwap });
+    expect(swapButton().props.disabled).toBe(false);
+    act(() => swapButton().props.onPress());
+    expect(onSwap).toHaveBeenCalledTimes(1);
+    act(() => r!.unmount());
     r = render(1, { origin: null, onSwap });
-    const swap = r.root.findAll((n) => n.props.accessibilityLabel === 'Swap from and to' && n.props.onPress)[0];
-    expect(swap.props.disabled).toBe(true);
-    expect(swap.props.accessibilityHint).toBe('Choose both airports first');
+    expect(swapButton().props.disabled).toBe(false);
+    act(() => r!.unmount());
+    r = render(1, { origin: null, destination: null, onSwap });
+    expect(swapButton().props.disabled).toBe(true);
+    expect(swapButton().props.accessibilityHint).toBe('Choose an airport first');
+  });
+
+  it('tells the screen how tall it is down to Find Routes, so the drawer opens that far', () => {
+    const onFitHeight = jest.fn();
+    r = render(1, { onFitHeight });
+    const row = r.root.findAll((n) => n.props.testID === 'search-actions' && typeof n.type === 'string')[0];
+    act(() => row.props.onLayout({ nativeEvent: { layout: { x: 0, y: 300.4, width: 360, height: 52 } } }));
+    expect(onFitHeight).toHaveBeenCalledWith(369);
   });
 
   it('shows what the empty From card is waiting on', () => {
@@ -186,7 +206,9 @@ describe('SearchPanel empty sides (round 53)', () => {
 
   it('says what to do on an empty side, once, for VoiceOver too', () => {
     r = render(1, { destination: null, originEmptyText: 'Location is off. Choose airport', origin: null });
-    const labels = r.root.findAll((n) => typeof n.props.accessibilityLabel === 'string' && n.props.onPress).map((n) => n.props.accessibilityLabel as string);
+    const labels = r.root
+      .findAll((n) => typeof n.props.accessibilityLabel === 'string' && n.props.onPress)
+      .map((n) => n.props.accessibilityLabel as string);
     expect(labels).toContain('From: Location is off. Choose airport');
     expect(labels).toContain('To: choose an airport');
   });

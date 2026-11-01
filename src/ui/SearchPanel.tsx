@@ -41,6 +41,8 @@ export interface SearchPanelProps {
   banner?: ReactNode;
   /** "At DAL? Report a load" (round 33), under the search buttons: searching stays the main job. */
   airportCard?: ReactNode;
+  /** How tall the panel is down to the bottom of Find Routes, so the drawer can open that far. */
+  onFitHeight?: (height: number) => void;
 }
 
 interface AirportCardProps {
@@ -85,7 +87,11 @@ export function AirportCard({ label, code, emptyText = 'Choose airport', onPress
             accessibilityLabel={`Area: include all ${area.city} airports`}
             accessibilityHint={`Searches ${listText(area.airports)}`}
             hitSlop={PILL_HIT_SLOP}
-            style={pressStyle([styles.areaPill, { borderColor: areaOn ? c.accent : c.line2 }, areaOn ? { backgroundColor: c.accent } : null])}>
+            style={pressStyle([
+              styles.areaPill,
+              { borderColor: areaOn ? c.accent : c.line2 },
+              areaOn ? { backgroundColor: c.accent } : null,
+            ])}>
             <Icon
               name={areaOn ? 'checkmark' : 'plus'}
               size={11}
@@ -118,12 +124,19 @@ export function AirportCard({ label, code, emptyText = 'Choose airport', onPress
                 : `${label}: ${emptyText} Choose an airport`
         }
         style={pressStyle(styles.cardButton, 'link')}>
-        <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, styles.cardLabel, { color: c.muted }]} maxFontSizeMultiplier={LABEL_MAX_SCALE}>
+        <Text
+          lineBreakStrategyIOS="push-out"
+          style={[textStyles.small, styles.cardLabel, { color: c.muted }]}
+          maxFontSizeMultiplier={LABEL_MAX_SCALE}>
           {label}
         </Text>
-        <Text lineBreakStrategyIOS="push-out" style={[textStyles.title, { color: code ? c.text : c.faint }]}>{code ?? '—'}</Text>
+        <Text lineBreakStrategyIOS="push-out" style={[textStyles.title, { color: code ? c.text : c.faint }]}>
+          {code ?? '—'}
+        </Text>
         {whole ? (
-          <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.text }]}>{area.airports.join(' · ')}</Text>
+          <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.text }]}>
+            {area.airports.join(' · ')}
+          </Text>
         ) : null}
         {/* Two lines so long names ("Dallas/Fort Worth International") show at big text sizes. */}
         {/* An empty side says what to do in blue, so a dimmed Find Routes never needs explaining (round 53);
@@ -171,7 +184,8 @@ export function SearchPanel(p: SearchPanelProps) {
   const wrapChips = fontScale >= WRAP_CHIPS_SCALE;
   // Why Find Routes is off, for VoiceOver and (same airport) on screen.
   const sameAirport = !!p.origin && p.origin === p.destination;
-  const canSwap = !!p.origin && !!p.destination;
+  // One side filled is enough: swapping moves it across (John, 2026-11-01).
+  const canSwap = !!p.origin || !!p.destination;
   const findBlocked = !p.origin
     ? 'Choose where you’re flying from first'
     : !p.destination
@@ -230,7 +244,11 @@ export function SearchPanel(p: SearchPanelProps) {
               name="calendar"
               size={18}
               tintColor={c.text}
-              fallback={<Text lineBreakStrategyIOS="push-out" style={[textStyles.bodyStrong, { color: c.text }]}>Date</Text>}
+              fallback={
+                <Text lineBreakStrategyIOS="push-out" style={[textStyles.bodyStrong, { color: c.text }]}>
+                  Date
+                </Text>
+              }
             />
           )}
         </Pressable>
@@ -255,11 +273,11 @@ export function SearchPanel(p: SearchPanelProps) {
         />
         <Pressable
           onPress={withTick(p.onSwap)}
-          // Off with one side empty: swapping would only clear the other.
+          // Off only with both sides empty; one filled side moves across.
           disabled={!canSwap}
           accessibilityRole="button"
           accessibilityLabel="Swap from and to"
-          accessibilityHint={canSwap ? undefined : 'Choose both airports first'}
+          accessibilityHint={canSwap ? undefined : 'Choose an airport first'}
           accessibilityState={{ disabled: !canSwap }}
           style={pressStyle([styles.swap, { backgroundColor: c.surface, borderColor: c.line, opacity: canSwap ? 1 : 0.5 }])}>
           <Icon
@@ -278,7 +296,8 @@ export function SearchPanel(p: SearchPanelProps) {
         />
       </View>
 
-      {/* Away from home, Get Home is the main button (Q-063, John 2026-10-30). */}
+      {/* Away from home, Get Home is the main button (Q-063, John 2026-10-30). The screen leaves it out
+          once To is already home, so there's one main button (John, 2026-11-01). */}
       {p.onGetHome ? (
         <Button
           label={p.homeName ? `Get Home · ${p.homeName}` : 'Get Home'}
@@ -288,10 +307,20 @@ export function SearchPanel(p: SearchPanelProps) {
         />
       ) : null}
       {sameAirport ? (
-        <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>From and To are the same airport. Change one to find routes.</Text>
+        <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>
+          From and To are the same airport. Change one to find routes.
+        </Text>
       ) : null}
-      {/* The main action sits right under From/To so it's in view at half height. */}
-      <View style={styles.actions}>
+      {/* The main action sits right under From/To so it's in view at half height; the drawer opens
+          down to here, so Filters and Find Routes are never under the fold (John, 2026-11-01). */}
+      <View
+        style={styles.actions}
+        testID="search-actions"
+        onLayout={
+          p.onFitHeight
+            ? (e) => p.onFitHeight!(Math.ceil(e.nativeEvent.layout.y + e.nativeEvent.layout.height + spacing.page))
+            : undefined
+        }>
         <Button
           label={p.filtersChanged ? `Filters (${p.filtersChanged})` : 'Filters'}
           icon="line.3.horizontal.decrease.circle"
@@ -320,7 +349,9 @@ export function SearchPanel(p: SearchPanelProps) {
             tintColor={c.accent}
             fallback={<Text style={[textStyles.small, { color: c.accent }]}>⌂</Text>}
           />
-          <Text lineBreakStrategyIOS="push-out" style={[textStyles.bodyStrong, styles.homeHintText, { color: c.accent }]}>Set your main home to use Get Home ›</Text>
+          <Text lineBreakStrategyIOS="push-out" style={[textStyles.bodyStrong, styles.homeHintText, { color: c.accent }]}>
+            Set your main home to use Get Home ›
+          </Text>
         </Pressable>
       ) : null}
       {p.airportCard}

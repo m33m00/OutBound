@@ -7,7 +7,7 @@ import { AIRPORTS, areaFor, localDate, toRouteLine, type Flight, type Itinerary 
 import { flightLookupKey, sampleRouteImpacts, useDriveTime, useFlightStatuses, useRouteImpacts } from '@/live';
 import { GlobeMap, type LonLat, type MapAirport } from '@/map';
 import { nearestAirport } from '@/search/airports';
-import { searchRequest } from '@/search/areas';
+import { searchRequest, showGetHome } from '@/search/areas';
 import { dateChips } from '@/search/dates';
 import { driveQuery } from '@/search/leaveBy';
 import { chooseOrigin, showLocationCard } from '@/search/origin';
@@ -35,7 +35,7 @@ import { ResultsBanner } from '@/ui/ResultsBanner';
 import { neighborDays } from '@/ui/DayStepper';
 import { ResultsPanel } from '@/ui/ResultsPanel';
 import { SearchPanel } from '@/ui/SearchPanel';
-import { Sheet, SHEET_HANDLE_H, SHEET_LOCKED_TOP } from '@/ui/Sheet';
+import { halfSnap, Sheet, SHEET_HANDLE_H, SHEET_LOCKED_TOP } from '@/ui/Sheet';
 import { useRadarLayers } from '@/ui/useRadarLayers';
 import { useSheetContent } from '@/ui/useSheetContent';
 import { selectionTick } from '@/ui/haptics';
@@ -49,6 +49,8 @@ const ROUTE_VIEW_SHARE = 0.56;
 const SHEET_CHROME = SHEET_HANDLE_H + 1;
 /** A picked route's panel is locked: no handle strip, just a little room at the top. */
 const LOCKED_CHROME = SHEET_LOCKED_TOP + 1;
+/** The search panel's handle strip plus the panel's top edge. */
+const SEARCH_CHROME = SHEET_HANDLE_H + 1;
 /** A route this close to full height (pt) opens full instead of a middle stop that would barely differ. */
 const TALL_ROUTE_SLACK = 24;
 
@@ -127,11 +129,15 @@ export default function HomeScreen() {
   // A route that needs (nearly) the whole height opens full; the middle stop stays a real half
   // so the handle still does something.
   const tallRoute = routeOpen && routeHeight > 0 && routeHeight + LOCKED_CHROME >= sheetFull - TALL_ROUTE_SLACK;
+  // The search panel's middle stop opens down to Find Routes, so nothing sits under the fold
+  // (John, 2026-11-01: "you have to scroll down just a bit").
+  const [searchFit, setSearchFit] = useState(0);
   const snaps = useMemo(() => {
     const h = sheetFull + spacing.group;
     const route = routeHeight > 0 ? routeHeight + LOCKED_CHROME : Math.round(h * ROUTE_VIEW_SHARE);
-    return [peek, routeOpen && !tallRoute ? Math.max(peek + 1, route) : Math.round(h * 0.48), sheetFull];
-  }, [sheetFull, routeOpen, routeHeight, tallRoute, peek]);
+    const half = halfSnap(h, searchFit > 0 ? searchFit + SEARCH_CHROME : 0, sheetFull);
+    return [peek, routeOpen && !tallRoute ? Math.max(peek + 1, route) : half, sheetFull];
+  }, [sheetFull, routeOpen, routeHeight, tallRoute, peek, searchFit]);
   useEffect(() => {
     if (tallRoute) setSheetIndex(SHEET.full);
   }, [tallRoute]);
@@ -252,8 +258,8 @@ export default function HomeScreen() {
       }
     : null;
 
-  // Get Home: shown when away from every home (Q-026).
-  const awayFromHome = mainHome != null && origin != null && !homes.some((h) => h.code === origin);
+  // Get Home: away from every home, and not once To is already home (Q-026, John 2026-11-01).
+  const getHomeShown = mainHome != null && showGetHome(homes, origin, destination);
   const getHome = () => {
     if (!mainHome) return;
     setDestination(mainHome);
@@ -475,7 +481,8 @@ export default function HomeScreen() {
                   onFilters={openFilters}
                   filtersChanged={filtersChanged}
                   onFind={() => runSearch()}
-                  onGetHome={awayFromHome ? getHome : undefined}
+                  onGetHome={getHomeShown ? getHome : undefined}
+                  onFitHeight={setSearchFit}
                   homeName={mainHome ? (areaFor(mainHome)?.city ?? mainHome) : undefined}
                   onSetHome={mainHome ? undefined : () => router.push({ pathname: '/settings', params: { section: 'homes' } })}
                   locationCard={

@@ -1,4 +1,4 @@
-import { FLICK_SPEED, pickSnap, SNAP_SPRING } from '../Sheet';
+import { FLICK_SPEED, halfSnap, pickSnap, SNAP_SPRING } from '../Sheet';
 
 // Peek, half, full (pt), like the home screen.
 const SNAPS = [120, 380, 700];
@@ -32,5 +32,14 @@ describe('sheet snaps (John, 2026-11-01: hard drags felt clunky)', () => {
   it('settles on the native driver without bouncing past the size', () => {
     expect(SNAP_SPRING.useNativeDriver).toBe(true);
     expect(SNAP_SPRING.overshootClamping).toBe(true);
+  });
+});
+
+describe('middle stop fits the search panel (John, 2026-11-01: had to scroll to Find Routes)', () => {
+  it('is about half until measured, grows to fit the content, and stays under the full stop', () => {
+    expect(halfSnap(800, 0, 790)).toBe(384);
+    expect(halfSnap(800, 300, 790)).toBe(384);
+    expect(halfSnap(800, 455.2, 790)).toBe(456);
+    expect(halfSnap(800, 900, 790)).toBe(789);
   });
 });
