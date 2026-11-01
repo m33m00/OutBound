@@ -3,6 +3,7 @@ import { AccessibilityInfo, Pressable, StyleSheet, Text, View } from 'react-nati
 
 import type { ResultsBanner as Banner } from '@/search/statusTags';
 import { minTapTarget, radius, spacing, textStyles, useColors } from '@/theme';
+import { PillButton } from './Buttons';
 import { Icon } from './Icon';
 import { pressStyle } from './press';
 
@@ -35,27 +36,23 @@ export function ResultsBanner({
       <View style={styles.message}>
         <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, { color: c.text }]}>
           {banner.text}
-          {banner.kind === 'hidden' || (banner.kind === 'noFlights' && next) ? ' ·' : ''}
         </Text>
         {banner.kind === 'noFlights' && next ? (
-          <Pressable
+          <PillButton
+            label={next.label}
+            trailing="chevron.right"
             onPress={next.onPress}
-            accessibilityRole="button"
-            accessibilityLabel={next.label}
             accessibilityHint={next.hint}
-            style={pressStyle(styles.link, 'link')}>
-            <Text lineBreakStrategyIOS="push-out" style={[textStyles.bodyStrong, { color: c.accent }]}>{next.label}</Text>
-          </Pressable>
+            style={styles.link}
+          />
         ) : null}
         {banner.kind === 'hidden' ? (
-          <Pressable
+          <PillButton
+            label={banner.action}
             onPress={onShow}
-            accessibilityRole="button"
-            accessibilityLabel={banner.action}
             accessibilityHint="Shows the hidden routes for this search only. Your filters stay the same."
-            style={pressStyle(styles.link, 'link')}>
-            <Text lineBreakStrategyIOS="push-out" style={[textStyles.bodyStrong, { color: c.accent }]}>{banner.action}</Text>
-          </Pressable>
+            style={styles.link}
+          />
         ) : null}
       </View>
       <Pressable onPress={onDismiss} accessibilityRole="button" accessibilityLabel="Dismiss notice" style={pressStyle(styles.close, 'link')}>
@@ -81,6 +78,6 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   message: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: spacing.group },
-  link: { minHeight: minTapTarget, justifyContent: 'center' },
+  link: { alignSelf: 'flex-start' },
   close: { width: minTapTarget, height: minTapTarget, alignItems: 'center', justifyContent: 'center' },
 });

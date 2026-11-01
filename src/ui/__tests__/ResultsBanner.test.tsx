@@ -55,7 +55,10 @@ describe('ResultsBanner (Q-047)', () => {
     const [tryNext, dismiss] = buttons();
     expect(tryNext.props.accessibilityLabel).toBe('Try Tomorrow');
     expect(tryNext.props.accessibilityHint).toBe('Searches Friday, October 31');
-    expect(StyleSheet.flatten(tryNext.props.style({ pressed: false }))).toMatchObject({ minHeight: minTapTarget });
+    // A capsule button (round 79): 36pt tall, its hit area makes up the 44pt tap target.
+    const h = StyleSheet.flatten(tryNext.props.style({ pressed: false })).minHeight as number;
+    expect(h + tryNext.props.hitSlop.top + tryNext.props.hitSlop.bottom).toBeGreaterThanOrEqual(minTapTarget);
+    expect(StyleSheet.flatten(tryNext.props.style({ pressed: false })).backgroundColor).toBeTruthy();
     expect(dismiss.props.accessibilityLabel).toBe('Dismiss notice');
     act(() => tryNext.props.onPress());
     expect(onPress).toHaveBeenCalled();

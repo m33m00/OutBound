@@ -10,7 +10,7 @@ import { shortDate } from '@/search/dates';
 import { formatAge, forSpeech, seatCounts, seatSourceText, seatText, TIER_WORD } from '@/search/format';
 import { radius, spacing, textStyles, useColors } from '@/theme';
 
-import { Button } from './Buttons';
+import { Button, PillButton } from './Buttons';
 import { ageText, delayText, movementLead, movementSpoken, placeText, sampleResponse, STATE_WORD } from './flightStatusText';
 import { Icon } from './Icon';
 import { useFocusOnMount } from './focusOnMount';
@@ -226,7 +226,8 @@ export function FlightStatusSheet({ flight, visible, now, onClose, liveOptions, 
                       accessibilityRole="button"
                       accessibilityLabel={loading ? 'Refreshing flight status' : 'Refresh flight status'}
                       accessibilityState={{ busy: loading }}
-                      style={pressStyle(styles.refresh, 'link')}>
+                      style={pressStyle([styles.refresh, styles.refreshPill, { backgroundColor: c.accentSoft }])}>
+                      <Icon name="arrow.clockwise" size={13} weight="semibold" tintColor={c.accent} fallback={null} />
                       <Text lineBreakStrategyIOS="push-out" style={[textStyles.bodyStrong, { color: c.accent }]}>{loading ? 'Refreshing…' : 'Refresh'}</Text>
                     </Pressable>
                   ) : null}
@@ -373,18 +374,17 @@ function LoadCard({
         </Text>
       )}
       {!askAnswer && asked && onCancelAsk ? (
-        <Pressable
+        // A soft capsule, regular weight: a real button, still quieter than the ones above it (round 79).
+        <PillButton
+          label="Cancel Request"
+          quiet
           onPress={() => {
             setCanceled(true);
             onCancelAsk();
           }}
-          accessibilityRole="button"
-          accessibilityLabel="Cancel Request"
           accessibilityHint="Frees one of your 5 requests"
-          style={pressStyle(styles.cancelAsk, 'link')}>
-          {/* Regular weight: quieter than the buttons above it. */}
-          <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, { color: c.accent }]}>Cancel Request</Text>
-        </Pressable>
+          style={styles.cancelAsk}
+        />
       ) : null}
     </View>
   );
@@ -410,6 +410,8 @@ const styles = StyleSheet.create({
   leadMeta: { fontFamily: textStyles.small.fontFamily, fontSize: textStyles.small.fontSize },
   struck: { textDecorationLine: 'line-through' },
   refresh: { minHeight: 44, justifyContent: 'center', marginLeft: 'auto' },
+  // Refresh as a soft capsule (round 79): 36pt tall, the margin keeps 44pt to tap.
+  refreshPill: { minHeight: 36, flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 12, borderRadius: 18, marginVertical: 4 },
   refreshRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: spacing.section },
   ageLine: { flexDirection: 'row', alignItems: 'flex-start', gap: 6, flexShrink: 1 },
   ageIcon: { marginTop: 3 },
@@ -419,5 +421,5 @@ const styles = StyleSheet.create({
   loadButtonsStacked: { flexDirection: 'column' },
   loadButton: { flex: 1 },
   undimmed: { opacity: 1 },
-  cancelAsk: { minHeight: 44, justifyContent: 'center', alignSelf: 'center' },
+  cancelAsk: { alignSelf: 'center' },
 });

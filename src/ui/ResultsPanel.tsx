@@ -433,12 +433,12 @@ function StepArrow({ dir, onPress }: { dir: 'prev' | 'next'; onPress?: () => voi
     <Pressable
       testID={`route-${dir}`}
       onPress={onPress}
-      hitSlop={{ left: 4, right: 4 }}
+      hitSlop={{ left: 6, right: 6, top: 6, bottom: 6 }}
       disabled={!onPress}
       accessibilityRole="button"
       accessibilityLabel={dir === 'prev' ? 'Previous route' : 'Next route'}
       accessibilityState={{ disabled: !onPress }}
-      style={pressStyle([styles.stepArrow, { opacity: onPress ? 1 : 0.35 }])}>
+      style={pressStyle([styles.stepArrow, { backgroundColor: c.accentSoft, opacity: onPress ? 1 : 0.35 }])}>
       <Icon
         name={dir === 'prev' ? 'chevron.left' : 'chevron.right'}
         size={16}
@@ -497,7 +497,8 @@ const styles = StyleSheet.create({
   hidden: { display: 'none' },
   focus: { padding: spacing.page, paddingTop: spacing.section, gap: spacing.section },
   pager: { flexDirection: 'row', alignItems: 'center' },
-  stepArrow: { width: 36, height: 44, alignItems: 'center', justifyContent: 'center' },
+  // Round soft buttons (round 79), so flipping routes reads as a button, not a bare chevron.
+  stepArrow: { width: 32, height: 32, borderRadius: 16, marginVertical: 6, alignItems: 'center', justifyContent: 'center' },
   pad: { paddingHorizontal: spacing.page },
   list: { paddingHorizontal: spacing.page, paddingBottom: spacing.page * 2 },
   header: { gap: 2, paddingTop: spacing.group, paddingBottom: spacing.section },
