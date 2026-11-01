@@ -335,9 +335,12 @@ describe('results bar at big text sizes', () => {
     });
     const button = () => r!.root.findAll((n) => n.props.testID === 'save-route' && n.props.accessibilityRole === 'button')[0];
     expect(button().props.accessibilityLabel).toBe('Save Route');
-    // In the route header, so it's in view at any panel height and text size.
+    // Top right of the route card, not crowding the header (John, 2026-11-01).
+    const slot = r!.root.findAll((n) => n.props.testID === 'route-card-action' && typeof n.type === 'string');
+    expect(slot).toHaveLength(1);
+    expect(slot[0].findAll((n) => n.props.testID === 'save-route').length).toBeGreaterThan(0);
     const header = r!.root.findAll((n) => n.props.testID === 'route-view' && typeof n.type === 'string')[0].children[0];
-    expect(typeof header !== 'string' && header.findAll((n) => n.props.testID === 'save-route').length).toBeGreaterThan(0);
+    expect(typeof header !== 'string' && header.findAll((n) => n.props.testID === 'save-route').length).toBe(0);
     expect(button().props.accessibilityHint).toBe('Keeps it in My Trips');
     const announce = jest.spyOn(AccessibilityInfo, 'announceForAccessibility').mockImplementation(() => {});
     act(() => button().props.onPress());

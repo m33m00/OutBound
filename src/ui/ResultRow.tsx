@@ -1,4 +1,4 @@
-import { memo, useState } from 'react';
+import { memo, type ReactNode, useState } from 'react';
 import { Pressable, StyleSheet, Text, type TextStyle, useWindowDimensions, View } from 'react-native';
 
 import { AIRPORTS, type Flight, type Itinerary } from '@/engine';
@@ -48,6 +48,8 @@ export interface ResultRowProps {
   large?: boolean;
   /** In My Trips (Q-043): a small bookmark before the route line in the list. */
   saved?: boolean;
+  /** Route card only: a control pinned top right, beside the headline (Save, John 2026-11-01). */
+  topAction?: ReactNode;
 }
 
 /** From this text size the seat chip and delay badge sit left-aligned under the times. */
@@ -246,6 +248,7 @@ export const ResultRow = memo(function ResultRow({
   status,
   large,
   saved,
+  topAction,
 }: ResultRowProps) {
   const c = useColors();
   // A memo row redraws when Bold Text changes.
@@ -380,9 +383,17 @@ export const ResultRow = memo(function ResultRow({
         {selected ? (
           // Route card A (John, 2026-10-31): one headline up top, the times, then one line per flight.
           <>
-            <View style={styles.line} testID="headline-row">
-              {headline ? <Headline headline={headline} /> : seatSummary(true)}
-              {badge}
+            {/* Save sits top right of the card, outside the headline's wrapping line (John, 2026-11-01). */}
+            <View style={styles.headlineRow}>
+              <View style={[styles.line, styles.headlineMain]} testID="headline-row">
+                {headline ? <Headline headline={headline} /> : seatSummary(true)}
+                {badge}
+              </View>
+              {topAction ? (
+                <View style={styles.topAction} testID="route-card-action">
+                  {topAction}
+                </View>
+              ) : null}
             </View>
             <View style={styles.line}>
               {times}
@@ -479,6 +490,10 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: spacing.group,
   },
+  headlineRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.group },
+  headlineMain: { flex: 1 },
+  // A 44pt tap target that doesn't make the headline line taller: it overhangs into the card's padding.
+  topAction: { marginVertical: -8, marginRight: -10 },
   topRight: {
     flexShrink: 1,
     flexDirection: 'row',
