@@ -26,7 +26,7 @@
  * tap (no movement) selects a route or clears the selection. Camera targets
  * fly (flyTo.ts) unless Reduce Motion is on, then they jump.
  */
-import { Canvas, Picture } from '@shopify/react-native-skia';
+import { Canvas, Group, Picture } from '@shopify/react-native-skia';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   AppState,
@@ -62,6 +62,7 @@ import { globeColors } from './globeColors';
 import { hitTestRoutes } from './hitTest';
 import { RouteLegend } from './RouteLegend';
 import { recordRouteLayer, type RouteLayer } from './routeLayer';
+import { RoutePulses } from './RoutePulses';
 import { drawnRoutes, nextSelection, routeSpokenName } from './routeModel';
 import { recordBaseLayer, recordRimLayer } from './staticLayer';
 import { canvasLayerOrder, RADAR, radarKey, radarSummary, type CanvasLayerName } from './radar';
@@ -714,7 +715,17 @@ export function GlobeMap({
                   rim: layers.rim,
                   marks: marksPicture,
                 }[name];
-                return picture ? <Picture key={name} picture={picture} /> : null;
+                if (!picture) return null;
+                // The slow pulse rides just over the route lines; still with Reduce Motion or while the globe moves.
+                if (name === 'routes' && routeLayer && !reduceMotion && !fast) {
+                  return (
+                    <Group key={name}>
+                      <Picture picture={picture} />
+                      <RoutePulses pulses={routeLayer.pulses} />
+                    </Group>
+                  );
+                }
+                return <Picture key={name} picture={picture} />;
               })}
             </Canvas>
           ) : null}
