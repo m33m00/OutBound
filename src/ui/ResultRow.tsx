@@ -132,10 +132,14 @@ function LegTimeline({
                   <LegClock leg={leg.flight} view={view} text={text} dimmed={dimmed} />
                   {`${legClockText(leg.flight, view) ? '  ' : ''}${leg.flight.from}\u00a0→\u00a0${leg.flight.to}`}
                 </Text>
-                {view?.tag ? <StatusTag label={view.tag.label} tone={TAG_TONE[view.tag.kind]} /> : null}
-                <View style={styles.legFlight}>
-                  <AirlinePill airline={leg.flight.airline} flightNumber={leg.flight.flightNumber} />
-                  {onLegPress ? <Icon name="chevron.right" size={12} tintColor={c.muted} fallback={null} /> : null}
+                {/* Tag and flight stay together, flight on the right (John, 2026-11-01); at big text
+                    they wrap under the time as one piece. */}
+                <View style={styles.legFlight} testID="leg-flight">
+                  {view?.tag ? <StatusTag label={view.tag.label} tone={TAG_TONE[view.tag.kind]} /> : null}
+                  <View style={styles.legChip}>
+                    <AirlinePill airline={leg.flight.airline} flightNumber={leg.flight.flightNumber} />
+                    {onLegPress ? <Icon name="chevron.right" size={12} tintColor={c.muted} fallback={null} /> : null}
+                  </View>
                 </View>
               </View>
             </View>
@@ -163,7 +167,8 @@ function LegTimeline({
             ) : (
               <View style={styles.leg}>{body}</View>
             )}
-            {/* At the connecting airport, i.e. after the inbound leg (Q-050). */}
+            {/* At the connecting airport, i.e. after the inbound leg (Q-050); centered between
+                the two flights and named as a connection (John, 2026-11-01). */}
             {last ? null : (
               <View style={styles.leg}>
                 <View style={styles.railCol}>
@@ -172,7 +177,7 @@ function LegTimeline({
                 <View style={[styles.legText, styles.connection]}>
                   {connection ? (
                     <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, styles.shrink, { color: c.muted }]}>
-                      {formatDuration(connection.layoverMin)} at {connection.airport}
+                      {formatDuration(connection.layoverMin)} connection at {connection.airport}
                       {connection.sameAirline ? '' : ' · change airlines'}
                     </Text>
                   ) : null}
@@ -505,8 +510,16 @@ const styles = StyleSheet.create({
   legText: { flex: 1, gap: 2, paddingVertical: LEG_PAD },
   legTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', columnGap: spacing.group, rowGap: 2 },
   // Pinned right, even when it wraps under the time at big text.
-  legFlight: { flexDirection: 'row', alignItems: 'center', gap: 4, marginLeft: 'auto' },
-  connection: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: spacing.group, paddingVertical: 6 },
+  legFlight: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end', columnGap: spacing.group, rowGap: 2, marginLeft: 'auto' },
+  legChip: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  connection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexWrap: 'wrap',
+    gap: spacing.group,
+    paddingVertical: 6,
+  },
   struck: { textDecorationLine: 'line-through' },
   // The replaced time inside the big time line: small, so the new time carries the weight.
   was: { fontFamily: textStyles.small.fontFamily, fontSize: textStyles.small.fontSize },

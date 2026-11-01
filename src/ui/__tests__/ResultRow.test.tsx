@@ -154,7 +154,7 @@ describe('ResultRow', () => {
     expect(texts.filter((t) => t.includes('reported just now'))).toEqual(['Seats reported just now', 'Seats reported just now']);
     // The route card names the connection between the legs.
     const all = r!.root.findAll((n) => typeof n.type === 'string' && n.props.children != null).map((n) => [n.props.children].flat().join(''));
-    expect(all).toContain('1h 30m at DEN');
+    expect(all).toContain('1h 30m connection at DEN');
     // Stops read as a timeline (round 56): one dot per leg in its seat color, no second seat chip.
     const timeline = r!.root.findAll((n) => n.props.testID === 'leg-timeline' && typeof n.type === 'string');
     expect(timeline.length).toBe(1);
@@ -229,6 +229,21 @@ describe('ResultRow', () => {
     expect(row.props.accessibilityLabel).toContain('Delayed 25 minutes, was 9:00 AM, now 9:25 AM');
     // The weather/FAA badge slot stays separate from status tags.
     expect(root.findAll((n) => n.props.testID === 'badge-slot')[0].findAll((n) => n.props.children === 'Delayed 25m')).toHaveLength(0);
+  });
+
+  it('route card: a leg\'s tag sits just left of its flight, in one piece (John, 2026-11-01)', async () => {
+    const it = await fullItinerary();
+    await act(async () => {
+      r = create(<ResultRow itinerary={it} selected now={NOW} onPress={jest.fn()} onLegPress={jest.fn()} status={statusFor(it, live(it, 'delayed', 25))} />);
+    });
+    const group = r!.root.findAll((n) => n.props.testID === 'leg-flight' && typeof n.type === 'string')[0];
+    const words = group.findAll((n) => typeof n.props.children === 'string').map((n) => n.props.children as string);
+    const tagAt = words.indexOf('Delayed 25m');
+    expect(tagAt).toBeGreaterThanOrEqual(0);
+    // The flight chip's text comes after the tag, inside the same group.
+    const flat = group.findAll((n) => typeof n.type === 'string' && n.props.children != null).map((n) => [n.props.children].flat().join(''));
+    const flightAt = flat.findIndex((t) => /AA\s?1/.test(t));
+    expect(flightAt).toBeGreaterThan(flat.indexOf('Delayed 25m'));
   });
 
   it('canceled: tag word and spoken text; departed: gray tag', async () => {
