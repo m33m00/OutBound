@@ -154,11 +154,8 @@ export default function SettingsScreen() {
               <MapsChoice value={settings.mapsApp} onChange={(mapsApp) => update({ mapsApp })} />
             ) : null}
           </View>
-          <SectionFooter>
-            {Platform.OS === 'ios'
-              ? 'Time to list and clear security. Tap the leave-by card for directions to the airport.'
-              : 'Time to list and clear security. The leave-by card counts back from your first departure.'}
-          </SectionFooter>
+          {/* The Leave By card's chevron already shows it opens directions (round 78). */}
+          <SectionFooter>Time to list and clear security.</SectionFooter>
         </View>
 
         <View style={styles.section} onLayout={sectionLayout('search')}>
