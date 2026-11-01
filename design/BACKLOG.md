@@ -112,3 +112,4 @@ Each item names its owner. One item per work session. spec-keeper runs a pre-fli
 | 105 | Design round 77: route card tag and flight lines start at the dots' left edge; chevron right after the chip (John) | main | P1 | Built (design round 77, branch claude/project-thread-fzqwou) |
 | 106 | Design round 78: Settings Leave-by footer down to one line | main | P3 | Built (design round 78, branch claude/project-thread-fzqwou) |
 | 107 | Design round 79: Back, Done, Cancel, banner actions, Refresh, Cancel Request and route/day arrows look like buttons (capsules), not bare words (John) | main | P1 | Built (design round 79, branch claude/project-thread-fzqwou) |
+| 108 | Design round 80: each flight in the route card is its own tappable box, no caret (John) | main | P1 | Built (design round 80, branch claude/project-thread-fzqwou) |

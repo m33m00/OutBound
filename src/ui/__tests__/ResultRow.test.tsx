@@ -183,26 +183,49 @@ describe('ResultRow', () => {
     const connection = () => r!.root.findAll((n) => n.props.testID === 'leg-connection' && typeof n.type === 'string')[0];
     const legs = r!.root.findAll((n) => typeof n.type === 'string' && typeof n.props.onLayout === 'function');
     expect(legs.length).toBe(2);
-    // A one-line leg: dot centered on it, so no extra space under the label.
-    const base = flat(connection().props.style).paddingBottom as number;
-    const top = flat(connection().props.style).paddingTop as number;
-    expect(base).toBe(top);
-    // When the first leg grows (its tag and flight wrap), the label's bottom space grows by the
-    // same amount, keeping it at the middle of the now longer line.
-    const pad = (h: number) => {
-      act(() => legs[0].props.onLayout({ nativeEvent: { layout: { height: h } } }));
-      return flat(connection().props.style).paddingBottom as number;
+    // Unmeasured or equal boxes: same space above and below the label.
+    const pads = () => {
+      const st = flat(connection().props.style);
+      return [st.paddingTop as number, st.paddingBottom as number];
     };
-    const tall = pad(100);
+    const [top, base] = pads();
+    expect(base).toBe(top);
+    // Each dot sits at its box's middle, so when the first box grows the line between the dots
+    // grows by half that, and so does the space under the label, keeping it at the middle.
+    const grow = (i: number, h: number) => act(() => legs[i].props.onLayout({ nativeEvent: { layout: { height: h } } }));
+    grow(0, 100);
+    const tall = pads()[1];
     expect(tall).toBeGreaterThan(base);
-    expect(pad(130) - tall).toBe(30);
-    // The first flight's tag and flight sit above its time, the last one's below it (John, 2026-11-01).
-    const order = r!.root
-      .findAll((n) => typeof n.type === 'string' && (n.props.testID === 'leg-dot' || n.props.testID === 'leg-flight'))
-      .map((n) => n.props.testID as string);
-    expect(order).toEqual(['leg-flight', 'leg-dot', 'leg-dot', 'leg-flight']);
-    // The line reaches the second dot: a short segment sits above it.
+    grow(0, 130);
+    expect(pads()[1] - tall).toBe(15);
+    // Same-size boxes balance out again.
+    grow(1, 130);
+    expect(pads()[0]).toBe(pads()[1]);
+    // Each flight is its own box (John, 2026-11-01): the first one's tag and flight sit above
+    // its time, the last one's below it.
+    const boxes = r!.root.findAll((n) => n.props.testID === 'leg-box' && typeof n.type === 'string');
+    expect(boxes).toHaveLength(2);
+    const inBox = (b: (typeof boxes)[number]) =>
+      b.findAll((n) => typeof n.type === 'string' && (n.props.testID === 'leg-flight' || /→/.test([n.props.children].flat().join(''))))
+        .map((n) => (n.props.testID === 'leg-flight' ? 'flight' : 'time'))
+        .filter((t, i, a) => a.indexOf(t) === i);
+    expect(inBox(boxes[0])).toEqual(['flight', 'time']);
+    expect(inBox(boxes[1])).toEqual(['time', 'flight']);
     expect(r!.root.findAll((n) => n.props.testID === 'leg-dot' && typeof n.type === 'string')).toHaveLength(2);
+  });
+
+  it('each flight box is the tap target, with no caret (John, 2026-11-01)', async () => {
+    const it = await fullItinerary();
+    const onLeg = jest.fn();
+    await act(async () => {
+      r = create(<ResultRow itinerary={it} selected now={NOW} onPress={jest.fn()} onLegPress={onLeg} />);
+    });
+    const box = r!.root.findAll((n) => n.props.testID === 'leg-box' && typeof n.props.onPress === 'function')[0];
+    expect(box.props.accessibilityLabel).toMatch(/^Flight status, AA 1/);
+    act(() => box.props.onPress());
+    expect(onLeg).toHaveBeenCalledWith(it.legs[0].flight);
+    const timeline = r!.root.findAll((n) => n.props.testID === 'leg-timeline' && typeof n.type === 'string')[0];
+    expect(timeline.findAll((n) => n.props.name === 'chevron.right')).toHaveLength(0);
   });
 
   it('grays the seat summary on a route that already left, keeping its words', async () => {
