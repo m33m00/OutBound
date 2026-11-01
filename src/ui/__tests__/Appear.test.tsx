@@ -6,9 +6,17 @@ import { Appear, APPEAR_MS } from '../Appear';
 import { Sheet } from '../Sheet';
 
 // The native gesture module isn't in jest; the handle's drag isn't what these tests check.
+let mockPan: Record<string, unknown> | null = null;
 jest.mock('react-native-gesture-handler', () => {
   const chain: object = new Proxy({}, { get: () => () => chain });
-  return { GestureDetector: ({ children }: { children: unknown }) => children, Gesture: { Pan: () => chain } };
+  return {
+    GestureDetector: ({ children }: { children: unknown }) => children,
+    Gesture: { Pan: () => chain },
+    usePanGesture: (config: Record<string, unknown>) => {
+      mockPan = config;
+      return {};
+    },
+  };
 });
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -87,5 +95,37 @@ describe('Sheet snaps (design round 29)', () => {
     spring.mockClear();
     await act(async () => r!.update(sheet(0)));
     expect(spring).not.toHaveBeenCalled();
+  });
+
+  it('the finger drives the panel on the native side, not through JS (John, 2026-11-01)', async () => {
+    await act(async () => {
+      r = create(
+        <Sheet snaps={[100, 300, 600]} index={1} onIndexChange={jest.fn()}>
+          <Text>Body</Text>
+        </Sheet>,
+      );
+    });
+    expect(mockPan?.useAnimated).toBe(true);
+    expect((mockPan?.onUpdate as { __isNative?: boolean }).__isNative).toBe(true);
+  });
+
+  it('tells the screen the new size only once the panel has settled', async () => {
+    const onIndexChange = jest.fn();
+    let finish: ((r: { finished: boolean }) => void) | undefined;
+    jest.spyOn(Animated, 'spring').mockImplementation(
+      () => ({ start: (cb?: (r: { finished: boolean }) => void) => (finish = cb), stop: () => {}, reset: () => {} }) as never,
+    );
+    await act(async () => {
+      r = create(
+        <Sheet snaps={[100, 300, 600]} index={1} onIndexChange={onIndexChange}>
+          <Text>Body</Text>
+        </Sheet>,
+      );
+    });
+    // A hard flick up from half.
+    act(() => (mockPan!.onDeactivate as (e: object) => void)({ translationY: -40, velocityY: -3000 }));
+    expect(onIndexChange).not.toHaveBeenCalled();
+    act(() => finish?.({ finished: true }));
+    expect(onIndexChange).toHaveBeenCalledWith(2);
   });
 });

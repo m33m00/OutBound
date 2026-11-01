@@ -121,3 +121,4 @@ Each item names its owner. One item per work session. spec-keeper runs a pre-fli
 | 114 | Design round 86: picked route shows alone on the globe, no ghost lines of the other options (John) | main | P1 | Built (design round 86, branch claude/project-thread-fzqwou) |
 | 115 | Design round 87: legend chip never covers the route; Leave By slimmed to one row so the map gets more room (John) | main | P1 | Built (design round 87, branch claude/project-thread-fzqwou) |
 | 116 | Design round 88: drawer follows the finger and a hard flick glides to the next size, no stutter or bounce (John) | main | P1 | Built (design round 88, branch claude/project-thread-fzqwou) |
+| 117 | Design round 89: drawer drag runs natively, map re-frames after the drawer stops (John: still clunky) | main | P1 | Built (design round 89, branch claude/project-thread-fzqwou) |

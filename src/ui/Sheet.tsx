@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Animated, Pressable, StyleSheet, View } from 'react-native';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { GestureDetector, usePanGesture } from 'react-native-gesture-handler';
 
 import { minTapTarget, radius, useColors } from '@/theme';
 
@@ -54,10 +54,12 @@ export interface SheetProps {
  * Bottom panel over the globe (prototype layout). Drag the handle to resize;
  * tapping the handle steps through sizes so it works without a gesture.
  *
- * The panel is always laid out at full height and slid down to show the size you're at, so
- * dragging and settling only move it (on the native driver) and never re-lay out what's inside
- * each frame (John, 2026-11-01: hard drags felt clunky). The space below the visible part is
- * padded off once it settles, so lists still scroll to their end.
+ * The panel is always laid out at full height and slid down to show the size you're at (round 88).
+ * Round 89 (John, 2026-11-01: still clunky on a hard drag): the finger's travel is mapped straight
+ * to the slide on the native side (gesture handler's Animated event), so a drag never waits on the
+ * JS thread; a flick settles from its release speed; and the screen hears the new size only once
+ * the panel has stopped, so the map's re-framing never runs under the moving panel. Core Animated
+ * and gesture handler only, both in Expo Go.
  */
 export function Sheet({ snaps, index, onIndexChange, children }: SheetProps) {
   const c = useColors();
@@ -65,87 +67,99 @@ export function Sheet({ snaps, index, onIndexChange, children }: SheetProps) {
   const full = snaps[snaps.length - 1];
   const fullRef = useRef(full);
   fullRef.current = full;
-  // Slide down from full: offset = full - visible height.
-  const offset = useRef(new Animated.Value(full - snaps[index])).current;
-  // The visible height when nothing moves, and the one a running settle is heading to.
-  const visible = useRef(snaps[index]);
+  const maxOffset = full - snaps[0];
+  // Where the panel rests (offset down from full height), moved by settles; and the finger's
+  // travel, written straight from the gesture on the native side so a drag never waits on JS.
+  const base = useRef(new Animated.Value(full - snaps[index])).current;
+  const dragY = useRef(new Animated.Value(0)).current;
+  const baseNow = useRef(full - snaps[index]);
+  // The visible height a running settle is heading to.
   const heading = useRef<number | null>(null);
-  const dragStart = useRef(0);
-  const dragReady = useRef(true);
   const lastFull = useRef(full);
-  // Content keeps the settled height; it only grows to full while a drag or a growing settle runs.
+  // Content keeps the settled height; it grows to full when a settle heads up.
   const [restHeight, setRestHeight] = useState(snaps[index]);
+  const translateY = useMemo(
+    () =>
+      Animated.add(base, dragY).interpolate({
+        inputRange: [0, Math.max(1, maxOffset)],
+        outputRange: [0, Math.max(1, maxOffset)],
+        extrapolate: 'clamp',
+      }),
+    [base, dragY, maxOffset],
+  );
 
   const settle = useCallback(
-    (to: number, velocityY = 0) => {
+    (to: number, velocityY = 0, then?: () => void) => {
       heading.current = to;
-      if (to > visible.current) setRestHeight(fullRef.current);
+      if (fullRef.current - to < baseNow.current) setRestHeight(fullRef.current);
+      const target = fullRef.current - to;
       const done = () => {
-        visible.current = to;
+        baseNow.current = target;
         heading.current = null;
         setRestHeight(to);
+        then?.();
       };
       if (reduceMotion) {
-        offset.setValue(fullRef.current - to);
+        base.setValue(target);
         return done();
       }
-      Animated.spring(offset, {
-        toValue: fullRef.current - to,
-        velocity: velocityY,
-        ...SNAP_SPRING,
-      }).start(({ finished }) => {
+      Animated.spring(base, { toValue: target, velocity: velocityY, ...SNAP_SPRING }).start(({ finished }) => {
         if (finished) done();
       });
     },
-    [offset, reduceMotion],
+    [base, reduceMotion],
   );
 
-  // One motion for every snap, from a tap, a drag or the app (design round 29). A size the panel
-  // is already heading to is left alone, so a flick's settle never restarts from a stop.
+  // One motion for every snap, from a tap or the app (design round 29). A size the panel is
+  // already at or heading to is left alone, so a flick's settle never restarts from a stop.
   useEffect(() => {
     const to = snaps[index];
     // The panel's full height changed (layout): keep the same visible height under the new frame.
     if (lastFull.current !== full) {
+      baseNow.current += full - lastFull.current;
       lastFull.current = full;
-      offset.setValue(full - visible.current);
+      base.setValue(baseNow.current);
     }
     if (heading.current === to) return;
-    if (heading.current == null && Math.abs(visible.current - to) < 0.5) {
-      offset.setValue(full - to);
+    if (heading.current == null && Math.abs(baseNow.current - (full - to)) < 0.5) {
       setRestHeight(to);
       return;
     }
     settle(to);
-  }, [index, snaps, full, offset, settle]);
+  }, [index, snaps, full, base, settle]);
 
-  const pan = Gesture.Pan()
-    .runOnJS(true)
-    .onStart(() => {
-      setRestHeight(fullRef.current);
-      const moving = heading.current != null;
+  const indexRef = useRef(index);
+  indexRef.current = index;
+  const snapsRef = useRef(snaps);
+  snapsRef.current = snaps;
+  const pan = usePanGesture({
+    useAnimated: true,
+    activeOffsetY: [-4, 4],
+    onUpdate: Animated.event([{ nativeEvent: { handlerData: { translationY: dragY } } }], { useNativeDriver: true }),
+    onBegin: () => {
+      // Catch a settle mid-way: the panel holds where it is and the drag carries on from there.
+      if (heading.current == null) return;
       heading.current = null;
-      dragReady.current = !moving;
-      dragStart.current = visible.current;
-      // Mid-settle, the native side knows where the panel is; the drag starts from there.
-      offset.stopAnimation((value) => {
-        if (dragReady.current) return;
-        visible.current = fullRef.current - value;
-        dragStart.current = visible.current;
-        dragReady.current = true;
+      base.stopAnimation((v) => {
+        baseNow.current = v;
       });
-    })
-    .onUpdate((e) => {
-      if (!dragReady.current) return;
-      const h = Math.max(snaps[0], Math.min(full, dragStart.current - e.translationY));
-      visible.current = h;
-      offset.setValue(full - h);
-    })
-    .onEnd((e) => {
-      const best = pickSnap(snaps, visible.current, e.velocityY);
-      // Start the settle here with the release speed; a new size only tells the screen.
-      settle(snaps[best], e.velocityY);
-      if (best !== index) onIndexChange(best);
-    });
+    },
+    onDeactivate: (e) => {
+      const f = fullRef.current;
+      const list = snapsRef.current;
+      const offsetNow = Math.max(0, Math.min(f - list[0], baseNow.current + e.translationY));
+      // Hand the finger's travel over to the resting position in one step, then settle from there.
+      base.setValue(offsetNow);
+      dragY.setValue(0);
+      baseNow.current = offsetNow;
+      const best = pickSnap(list, f - offsetNow, e.velocityY);
+      // The screen hears the new size once the panel has stopped, so the map's re-framing and the
+      // screen's re-render never run under the moving panel (John, 2026-11-01).
+      settle(list[best], e.velocityY, () => {
+        if (best !== indexRef.current) onIndexChange(best);
+      });
+    },
+  });
 
   return (
     // Clips the slid-down part so it never draws over the tab bar.
@@ -156,7 +170,7 @@ export function Sheet({ snaps, index, onIndexChange, children }: SheetProps) {
           styles.sheet,
           {
             height: full,
-            transform: [{ translateY: offset }],
+            transform: [{ translateY }],
             backgroundColor: c.surface,
             borderColor: c.line,
             shadowColor: c.text,
