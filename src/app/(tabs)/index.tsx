@@ -35,7 +35,6 @@ import { ResultsBanner } from '@/ui/ResultsBanner';
 import { neighborDays } from '@/ui/DayStepper';
 import { ResultsPanel } from '@/ui/ResultsPanel';
 import { SearchPanel } from '@/ui/SearchPanel';
-import { RadarButton } from '@/ui/RadarButton';
 import { Sheet } from '@/ui/Sheet';
 import { useRadarLayers } from '@/ui/useRadarLayers';
 import { useSheetContent } from '@/ui/useSheetContent';
@@ -453,14 +452,7 @@ export default function HomeScreen() {
           }}
           insets={{ bottom: snaps[sheetIndex] }}
         />
-        {radar.available ? (
-          <RadarButton
-            on={settings.radarOn}
-            caption={radar.caption}
-            showing={radar.showing}
-            onToggle={() => updateSettings({ radarOn: !settings.radarOn })}
-          />
-        ) : null}
+        {/* Rain radar is switched in Settings > Map, not on the map (John, 2026-11-01). */}
         {bodyHeight > 0 ? (
           <Sheet snaps={snaps} index={sheetIndex} onIndexChange={setSheetIndex}>
             {/* Search and results cross-fade as they swap (design round 29). */}
