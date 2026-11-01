@@ -77,7 +77,8 @@ describe('Sheet snaps (design round 29)', () => {
     spring.mockClear();
     await act(async () => r!.update(sheet(2)));
     expect(spring).toHaveBeenCalledTimes(1);
-    expect(spring.mock.calls[0][1]).toMatchObject({ toValue: 600, bounciness: 0 });
+    // The panel slides (offset from full height) rather than changing height (John, 2026-11-01).
+    expect(spring.mock.calls[0][1]).toMatchObject({ toValue: 0, overshootClamping: true, useNativeDriver: true });
     act(() => r!.unmount());
     reduce = true;
     await act(async () => {
