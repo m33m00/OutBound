@@ -721,7 +721,7 @@ export function GlobeMap({
                   return (
                     <Group key={name}>
                       <Picture picture={picture} />
-                      <RoutePulses pulses={routeLayer.pulses} />
+                      <RoutePulses pulses={routeLayer.pulses} width={viewport!.width} height={viewport!.height} />
                     </Group>
                   );
                 }
