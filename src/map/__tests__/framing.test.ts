@@ -64,7 +64,7 @@ describe('fitted arcs stay above the panel', () => {
 });
 
 describe('legend reserve', () => {
-  it('frames a picked route above the measured legend chip', () => {
+  it('frames a picked route clear of the measured legend', () => {
     expect(legendReserve(true, 24, 12)).toBe(36);
   });
   it('reserves nothing before it is measured or when hidden', () => {

@@ -126,14 +126,18 @@ export default function HomeScreen() {
     if (!routeOpen) setRouteHeight(0);
   }, [routeOpen]);
   const sheetFull = Math.max(bodyHeight, PEEK * 3) - spacing.group;
+  // Collapsed with a route open, the panel shows its handle and title bar and nothing cut in half
+  // (John, 2026-11-01: it looked squished).
+  const [routeBar, setRouteBar] = useState(0);
+  const peek = routeOpen && routeBar > 0 ? SHEET_CHROME + routeBar : PEEK;
   // A route that needs (nearly) the whole height opens full; the middle stop stays a real half
   // so the handle still does something.
   const tallRoute = routeOpen && routeHeight > 0 && routeHeight + SHEET_CHROME >= sheetFull - TALL_ROUTE_SLACK;
   const snaps = useMemo(() => {
     const h = sheetFull + spacing.group;
     const route = routeHeight > 0 ? routeHeight + SHEET_CHROME : Math.round(h * ROUTE_VIEW_SHARE);
-    return [PEEK, routeOpen && !tallRoute ? Math.max(PEEK + 1, route) : Math.round(h * 0.48), sheetFull];
-  }, [sheetFull, routeOpen, routeHeight, tallRoute]);
+    return [peek, routeOpen && !tallRoute ? Math.max(peek + 1, route) : Math.round(h * 0.48), sheetFull];
+  }, [sheetFull, routeOpen, routeHeight, tallRoute, peek]);
   useEffect(() => {
     if (tallRoute) setSheetIndex(SHEET.full);
   }, [tallRoute]);
@@ -545,6 +549,7 @@ export default function HomeScreen() {
                     rerun(d);
                   }}
                   onRouteHeight={onRouteHeight}
+                  onRouteBarHeight={setRouteBar}
                   onPullDown={() => setSheetIndex((i) => Math.max(SHEET.peek, i - 1))}
                   onFilters={openFilters}
                   filtersChanged={filtersChanged}

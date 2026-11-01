@@ -38,7 +38,7 @@ export function routeFrameTarget(
 }
 
 /**
- * Extra bottom inset that keeps a picked route framed above the legend chip, so the chip never
+ * Extra top inset that keeps a picked route framed below the legend, so the chip never
  * covers a line (John, 2026-11-01). Zero until the chip has been measured or when it isn't shown.
  */
 export function legendReserve(shown: boolean, legendHeight: number, gap: number): number {

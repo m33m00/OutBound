@@ -127,10 +127,11 @@ export function GlobeMap({
   const [flying, setFlying] = useState(false);
 
   const normInsets = normalizeInsets(insets);
-  // The route is framed above the legend chip so the chip never covers a line (John, 2026-11-01).
+  // The legend sits top-left, away from the drawer, and the route is framed below it so it never
+  // covers a line (John, 2026-11-01).
   const [legendHeight, setLegendHeight] = useState(0);
   const legendRoom = legendReserve(showLegend && selectedId != null, legendHeight, LEGEND_GAP);
-  const insetKey = JSON.stringify({ ...normInsets, bottom: normInsets.bottom + legendRoom });
+  const insetKey = JSON.stringify({ ...normInsets, top: normInsets.top + legendRoom });
   const viewport = useMemo<Viewport | null>(
     () => (size ? { ...size, insets: JSON.parse(insetKey) } : null),
     [size, insetKey],
@@ -741,7 +742,7 @@ export function GlobeMap({
           pointerEvents="none"
           style={[
             styles.legend,
-            { left: normInsets.left + LEGEND_GAP, bottom: normInsets.bottom + LEGEND_GAP },
+            { left: normInsets.left + LEGEND_GAP, top: normInsets.top + LEGEND_GAP },
           ]}>
           <RouteLegend route={selectedRoute!} />
         </View>

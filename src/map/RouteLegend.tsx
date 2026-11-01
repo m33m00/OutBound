@@ -7,10 +7,10 @@
  * Each row is one accessible element; the swatch is decorative. No weather
  * key (removed in DECISIONS.md).
  *
- * A slim one-row chip (John, 2026-11-01: the old two-row box covered the
- * route). GlobeMap places it bottom-left inside its insets and frames the
- * route above it, so it never sits on a line. Screens can pass
- * `showLegend={false}` and place this instead.
+ * A small card that hugs its lines (John, 2026-11-01: the chip ran wide and
+ * crowded the drawer). GlobeMap pins it top-left of the map, far from the
+ * drawer at every height, and frames the route below it, so it never sits
+ * on a line. Screens can pass `showLegend={false}` and place this instead.
  */
 import { StyleSheet, Text, View } from 'react-native';
 
@@ -75,18 +75,14 @@ export function RouteLegend({ route }: RouteLegendProps) {
 }
 
 const styles = StyleSheet.create({
-  // One row that wraps only if it runs out of width.
+  // Hugs its widest line; one line per key, stacked.
   box: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    alignItems: 'center',
     alignSelf: 'flex-start',
-    paddingVertical: 4,
+    paddingVertical: 6,
     paddingHorizontal: 10,
-    borderRadius: 999,
+    borderRadius: 10,
     borderWidth: StyleSheet.hairlineWidth,
-    columnGap: 12,
-    rowGap: 2,
+    gap: 3,
   },
   row: {
     flexDirection: 'row',

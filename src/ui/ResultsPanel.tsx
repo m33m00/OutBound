@@ -67,6 +67,8 @@ export interface ResultsPanelProps {
   note?: string;
   /** Height the open route needs (title bar plus everything under it), so the panel can fit it without scrolling (round 56). */
   onRouteHeight?: (height: number) => void;
+  /** Height of the open route's title bar, so the collapsed panel shows exactly that row (round 90). */
+  onRouteBarHeight?: (height: number) => void;
   /** A hard pull down on the route or list while it's at its top: the panel steps down a size (round 58). */
   onPullDown?: () => void;
 }
@@ -209,6 +211,11 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
   const focusIndex = p.selectedId ? results.findIndex((r) => r.id === p.selectedId) : -1;
   const focused = focusIndex >= 0 ? results[focusIndex] : undefined;
   const focusedId = focused?.id;
+  // A picked route is titled by its own airports: a DAL/DFW search that flies from DFW reads
+  // "DFW → LAX", matching the flight boxes and the globe (round 90).
+  const ends = focused ? routeEnds(focused) : null;
+  const focusTitle = ends ? `${ends.from} → ${ends.to}` : routeTitle;
+  const focusSpoken = ends ? `${ends.from} to ${ends.to}` : routeSpoken;
   // The open route's bar and content heights, reported together once both are known (round 56).
   // Content starts over when the route view closes, so a reopened route reports its own height.
   const [barH, setBarH] = useState(0);
@@ -220,6 +227,10 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
   useEffect(() => {
     if (focusedId && barH > 0 && contentH > 0) onRouteHeight?.(Math.ceil(barH + contentH));
   }, [focusedId, barH, contentH, onRouteHeight]);
+  const { onRouteBarHeight } = p;
+  useEffect(() => {
+    if (focusedId && barH > 0) onRouteBarHeight?.(Math.ceil(barH));
+  }, [focusedId, barH, onRouteBarHeight]);
 
   if (p.state.status === 'loading') {
     return (
@@ -308,9 +319,9 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
                   ref={routeTitleRef}
                   style={[textStyles.heading, styles.title, { color: c.text }]}
                   accessibilityRole="header"
-                  accessibilityLabel={routeSpoken}
+                  accessibilityLabel={focusSpoken}
                   numberOfLines={2}>
-                  {routeTitle}
+                  {focusTitle}
                 </Text>
               }
               right={
@@ -318,7 +329,8 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
                   <StepArrow dir="prev" onPress={step(focusIndex - 1)} />
                   {/* VoiceOver: swipe up or down here to flip routes (the arrows stay for Voice Control). */}
                   <Text
-                    style={[textStyles.body, { color: c.muted }]}
+                    style={[textStyles.body, styles.count, { color: c.muted }]}
+                    numberOfLines={1}
                     testID="route-count"
                     accessible
                     accessibilityRole="adjustable"
@@ -509,7 +521,9 @@ const styles = StyleSheet.create({
   selectedBlock: { gap: spacing.group },
   hidden: { display: 'none' },
   focus: { padding: spacing.page, paddingTop: spacing.section, gap: spacing.section },
-  pager: { flexDirection: 'row', alignItems: 'center' },
+  // Room between the arrows and the count so nothing touches (John, 2026-11-01).
+  pager: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  count: { textAlign: 'center', fontVariant: ['tabular-nums'] },
   // Round soft buttons (round 79), so flipping routes reads as a button, not a bare chevron.
   stepArrow: { width: 32, height: 32, borderRadius: 16, marginVertical: 6, alignItems: 'center', justifyContent: 'center' },
   pad: { paddingHorizontal: spacing.page },
@@ -556,4 +570,10 @@ function PlaceholderRow() {
       </View>
     </View>
   );
+}
+
+/** First departure and last arrival airports of a route. */
+export function routeEnds(it: { legs: readonly { flight: { from: string; to: string } }[] }): { from: string; to: string } | null {
+  if (it.legs.length === 0) return null;
+  return { from: it.legs[0].flight.from, to: it.legs[it.legs.length - 1].flight.to };
 }
