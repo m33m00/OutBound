@@ -37,6 +37,7 @@ describe('SavedRouteCard', () => {
       .findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string')
       .map((n) => n.props.children as string);
     expect(texts).toEqual(expect.arrayContaining(['DFW → ORD → LAX', 'Tue, Oct 20 · 7:05 AM – 1:20 PM', 'AA 1234, AA 88']));
+    expect(texts).not.toContain('Passed');
     const [open, remove] = buttons();
     expect(open.props.accessibilityLabel).toBe('DFW to ORD to LAX. Tue, Oct 20, 7:05 AM – 1:20 PM. Flights AA 1234, AA 88');
     expect(open.props.accessibilityHint).toBe('Searches this day again');
@@ -47,12 +48,17 @@ describe('SavedRouteCard', () => {
     expect(onRemove).toHaveBeenCalledTimes(1);
   });
 
-  it('says when its day has passed', async () => {
+  it('tags a day that has passed instead of a sentence, and still says so to VoiceOver', async () => {
     await act(async () => {
       r = create(<SavedRouteCard route={route} past now={EARLIER} onOpen={jest.fn()} onRemove={jest.fn()} />);
     });
+    const texts = r!.root
+      .findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string')
+      .map((n) => n.props.children as string);
+    expect(texts).toContain('Passed');
+    expect(texts.some((t) => t.includes('has passed'))).toBe(false);
     const [open] = buttons();
-    expect(open.props.accessibilityLabel).toContain('Your saved day has passed. Opens today’s search.');
+    expect(open.props.accessibilityLabel).toContain('Day passed. Opens today’s search.');
     expect(open.props.accessibilityHint).toBe('Searches today');
   });
 });

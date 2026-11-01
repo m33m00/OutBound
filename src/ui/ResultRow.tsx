@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo, useState } from 'react';
 import { Pressable, StyleSheet, Text, type TextStyle, useWindowDimensions, View } from 'react-native';
 
 import { AIRPORTS, type Flight, type Itinerary } from '@/engine';
@@ -63,6 +63,8 @@ const legDepartText = (leg: Flight) => formatTime(leg.departUtc, AIRPORTS[leg.fr
 const DOT = 10;
 /** Space above and below each leg's text on the timeline. */
 const LEG_PAD = 4;
+/** Space above and below a connection label, before any extra that centers it on the line. */
+const CONNECTION_PAD = 6;
 
 /**
  * A leg's departure on the timeline. The struck original lives only in the card's top time
@@ -110,6 +112,13 @@ function LegTimeline({
   const firstLine = Math.max((text.lineHeight ?? 20) * fontScale, (textStyles.small.lineHeight ?? 16) * fontScale + 4);
   const dotTop = LEG_PAD + Math.max(0, (firstLine - DOT) / 2);
   const rail = { backgroundColor: c.line2 };
+  // Each leg's measured height, so a connection label can sit at the middle of the line
+  // between the two dots even when the leg above wraps to a second line (John, 2026-11-01).
+  const [legHeights, setLegHeights] = useState<Record<number, number>>({});
+  const measure = (i: number) => (e: { nativeEvent: { layout: { height: number } } }) => {
+    const h = e.nativeEvent.layout.height;
+    setLegHeights((prev) => (prev[i] === h ? prev : { ...prev, [i]: h }));
+  };
   return (
     <View testID="leg-timeline">
       {it.legs.map((leg, i) => {
@@ -120,24 +129,53 @@ function LegTimeline({
         const typical = leg.seats.source === 'typical' || leg.seats.source === 'unknown';
         // The dot carries the leg's tier color; the route's chance word is in the headline.
         const dotColor = dimmed || typical ? c.unknown : c[leg.seats.tier];
+        // The first flight's tag and flight sit above its time; every later flight's sit below
+        // it, so the connection between them stays clear (John, 2026-11-01).
+        const above = i === 0;
+        const pills = (
+          <View style={[styles.legMeta, above ? styles.legMetaAbove : styles.legMetaBelow]} testID="leg-flight">
+            {view?.tag ? <StatusTag label={view.tag.label} tone={TAG_TONE[view.tag.kind]} /> : null}
+            {/* The chevron follows the flight chip right away (John, 2026-11-01). */}
+            <View style={styles.legChip}>
+              <AirlinePill airline={leg.flight.airline} flightNumber={leg.flight.flightNumber} />
+              {onLegPress ? <Icon name="chevron.right" size={12} tintColor={c.muted} fallback={null} /> : null}
+            </View>
+          </View>
+        );
+        // Lined up with the dots' left edge (John, 2026-11-01). Under a middle leg the line runs on
+        // down to the next connection, so there the pills keep clear of it.
+        const meta =
+          above || last ? (
+            pills
+          ) : (
+            <View style={styles.leg}>
+              <View style={styles.railCol}>
+                <View style={[styles.railLine, rail]} />
+              </View>
+              {pills}
+            </View>
+          );
         const body = (
           <>
-            <View style={styles.railCol}>
-              <View style={[styles.dot, { marginTop: dotTop, backgroundColor: dotColor }]} testID="leg-dot" />
-              {last ? null : <View style={[styles.railLine, rail]} />}
-            </View>
-            <View style={styles.legText}>
-              <View style={styles.legTop}>
-                <Text style={[text, styles.shrink, { color: c.muted }]}>
-                  <LegClock leg={leg.flight} view={view} text={text} dimmed={dimmed} />
-                  {`${legClockText(leg.flight, view) ? '  ' : ''}${leg.flight.from}\u00a0→\u00a0${leg.flight.to}`}
-                </Text>
-                {view?.tag ? <StatusTag label={view.tag.label} tone={TAG_TONE[view.tag.kind]} /> : null}
-                <View style={styles.legFlight}>
-                  <AirlinePill airline={leg.flight.airline} flightNumber={leg.flight.flightNumber} />
-                  {onLegPress ? <Icon name="chevron.right" size={12} tintColor={c.muted} fallback={null} /> : null}
+            {above ? meta : null}
+            {/* Measured from the dot's line down, so the connection label can sit at the middle
+                of the line between this dot and the next. */}
+            <View onLayout={measure(i)}>
+              <View style={styles.leg}>
+                <View style={styles.railCol}>
+                  {/* After the first leg the line runs right up to the dot, so it joins dot to dot. */}
+                  {i > 0 ? <View style={[styles.railHead, rail, { height: dotTop }]} /> : null}
+                  <View style={[styles.dot, { marginTop: i > 0 ? 0 : dotTop, backgroundColor: dotColor }]} testID="leg-dot" />
+                  {last ? null : <View style={[styles.railLine, rail]} />}
+                </View>
+                <View style={styles.legText}>
+                  <Text style={[text, styles.shrink, { color: c.muted }]}>
+                    <LegClock leg={leg.flight} view={view} text={text} dimmed={dimmed} />
+                    {`${legClockText(leg.flight, view) ? '  ' : ''}${leg.flight.from}\u00a0→\u00a0${leg.flight.to}`}
+                  </Text>
                 </View>
               </View>
+              {above ? null : meta}
             </View>
           </>
         );
@@ -157,22 +195,32 @@ function LegTimeline({
                 ]
                   .filter(Boolean)
                   .join(', ')}
-                style={pressStyle([styles.leg, styles.legTap], 'link')}>
+                style={pressStyle(styles.legTap, 'link')}>
                 {body}
               </Pressable>
             ) : (
-              <View style={styles.leg}>{body}</View>
+              <View>{body}</View>
             )}
-            {/* At the connecting airport, i.e. after the inbound leg (Q-050). */}
+            {/* At the connecting airport, i.e. after the inbound leg (Q-050), named as a
+                connection (John, 2026-11-01). */}
             {last ? null : (
               <View style={styles.leg}>
                 <View style={styles.railCol}>
                   <View style={[styles.railLine, rail]} />
                 </View>
-                <View style={[styles.legText, styles.connection]}>
+                {/* The line runs from this leg's dot to the next one's. The label sits beside it at
+                    its middle: when this leg wraps, the extra length below its dot is matched
+                    under the label. */}
+                <View
+                  testID="leg-connection"
+                  style={[
+                    styles.legText,
+                    styles.connection,
+                    { paddingBottom: CONNECTION_PAD + Math.max(0, (legHeights[i] ?? 0) - 2 * dotTop - DOT) },
+                  ]}>
                   {connection ? (
                     <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, styles.shrink, { color: c.muted }]}>
-                      {formatDuration(connection.layoverMin)} at {connection.airport}
+                      {formatDuration(connection.layoverMin)} connection at {connection.airport}
                       {connection.sameAirline ? '' : ' · change airlines'}
                     </Text>
                   ) : null}
@@ -503,10 +551,19 @@ const styles = StyleSheet.create({
   dot: { width: DOT, height: DOT, borderRadius: DOT / 2 },
   railLine: { flex: 1, width: 2, minHeight: 4 },
   legText: { flex: 1, gap: 2, paddingVertical: LEG_PAD },
-  legTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', columnGap: spacing.group, rowGap: 2 },
-  // Pinned right, even when it wraps under the time at big text.
-  legFlight: { flexDirection: 'row', alignItems: 'center', gap: 4, marginLeft: 'auto' },
-  connection: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: spacing.group, paddingVertical: 6 },
+  // A leg's tag and flight, on their own line above (first leg) or below (later legs) its time.
+  legMeta: { flexShrink: 1, flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', columnGap: spacing.group, rowGap: 2 },
+  legMetaAbove: { paddingTop: LEG_PAD },
+  legMetaBelow: { paddingBottom: LEG_PAD },
+  legChip: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  connection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: spacing.group,
+    paddingTop: CONNECTION_PAD,
+  },
+  railHead: { width: 2 },
   struck: { textDecorationLine: 'line-through' },
   // The replaced time inside the big time line: small, so the new time carries the weight.
   was: { fontFamily: textStyles.small.fontFamily, fontSize: textStyles.small.fontSize },

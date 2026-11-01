@@ -68,6 +68,9 @@ describe('Logbook tab', () => {
   it('starts empty, then logs a typed flight and shows totals', async () => {
     await mount();
     expect(texts()).toContain('No flights logged yet');
+    // One line on how to add, no bullet list (round 70).
+    expect(texts()).toContain('Scan a boarding pass, pick a screenshot of one, or type a flight in.');
+    expect(texts()).not.toContain('Or type the flight in');
     await act(async () => button('Add Flight').props.onPress());
     const add = () => button('Add to Logbook');
     expect(add().props.disabled).toBe(true);

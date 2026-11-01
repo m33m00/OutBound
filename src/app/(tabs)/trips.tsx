@@ -66,8 +66,7 @@ export default function TripsScreen() {
           <EmptyState
             icon="suitcase"
             title="No trips yet"
-            body="Two things show up here."
-            points={['Routes you save (tap the bookmark beside a route’s name in Search)', 'Replies when you tap Ask for Load on a flight']}
+            body="Routes you bookmark in Search and answers to your load requests show up here."
             action={<Button label="Find Routes" icon="magnifyingglass" onPress={() => router.navigate('/')} />}
           />
         ) : null}
