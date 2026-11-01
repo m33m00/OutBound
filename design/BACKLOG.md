@@ -104,3 +104,4 @@ Each item names its owner. One item per work session. spec-keeper runs a pre-fli
 | 97 | Design round 69: Leave By card without the icon tile; chevron always shows | main | P3 | Built (design round 69, branch claude/project-thread-fzqwou) |
 | 98 | Design round 70: My Trips and Logbook empty states down to one line each | main | P3 | Built (design round 70, branch claude/project-thread-fzqwou) |
 | 99 | Design round 71: a saved route whose day passed shows a gray Passed tag instead of a sentence | main | P3 | Built (design round 71, branch claude/project-thread-fzqwou) |
+| 100 | Design round 72: Feed empty state down to one line, like My Trips and Logbook | main | P3 | Built (design round 72, branch claude/project-thread-fzqwou) |

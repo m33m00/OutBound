@@ -71,7 +71,7 @@ export default function FeedScreen() {
         <EmptyState
           icon="text.bubble"
           title="No requests right now"
-          body="When someone asks about one of your airline’s flights, it shows up here so you can answer with open seats and nonrevs listed."
+          body="Asks about your airline’s flights show up here for you to answer."
         />
       )}
       {done.length ? (
