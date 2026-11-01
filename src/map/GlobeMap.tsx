@@ -57,7 +57,7 @@ import {
   shouldDriftHome,
   type Velocity,
 } from './momentum';
-import { routeFrameTarget } from './framing';
+import { legendReserve, routeFrameTarget } from './framing';
 import { globeColors } from './globeColors';
 import { hitTestRoutes } from './hitTest';
 import { RouteLegend } from './RouteLegend';
@@ -127,7 +127,10 @@ export function GlobeMap({
   const [flying, setFlying] = useState(false);
 
   const normInsets = normalizeInsets(insets);
-  const insetKey = JSON.stringify(normInsets);
+  // The route is framed above the legend chip so the chip never covers a line (John, 2026-11-01).
+  const [legendHeight, setLegendHeight] = useState(0);
+  const legendRoom = legendReserve(showLegend && selectedId != null, legendHeight, LEGEND_GAP);
+  const insetKey = JSON.stringify({ ...normInsets, bottom: normInsets.bottom + legendRoom });
   const viewport = useMemo<Viewport | null>(
     () => (size ? { ...size, insets: JSON.parse(insetKey) } : null),
     [size, insetKey],
@@ -438,6 +441,7 @@ export function GlobeMap({
   const [legendBox, setLegendBox] = useState<Box | null>(null);
   const onLegendLayout = useCallback((e: LayoutChangeEvent) => {
     const { x, y, width: w, height: h } = e.nativeEvent.layout;
+    setLegendHeight(Math.round(h));
     setLegendBox((prev) =>
       prev && prev.x0 === x && prev.y0 === y && prev.x1 === x + w && prev.y1 === y + h
         ? prev

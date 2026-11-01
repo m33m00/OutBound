@@ -1,7 +1,7 @@
 import { arcSamples, makeLiftedProjector } from '../arcs';
 import { DEFAULT_CENTER, cameraForTarget, normalizeInsets, type Viewport } from '../camera';
 import { devSampleRoutes } from '../devSampleRoutes';
-import { routeFramePoints, routeFrameTarget } from '../framing';
+import { legendReserve, routeFramePoints, routeFrameTarget } from '../framing';
 
 describe('routeFrameTarget (auto camera)', () => {
   it('no routes: the default view', () => {
@@ -61,4 +61,14 @@ describe('fitted arcs stay above the panel', () => {
       }
     });
   }
+});
+
+describe('legend reserve', () => {
+  it('frames a picked route above the measured legend chip', () => {
+    expect(legendReserve(true, 24, 12)).toBe(36);
+  });
+  it('reserves nothing before it is measured or when hidden', () => {
+    expect(legendReserve(true, 0, 12)).toBe(0);
+    expect(legendReserve(false, 24, 12)).toBe(0);
+  });
 });

@@ -119,3 +119,4 @@ Each item names its owner. One item per work session. spec-keeper runs a pre-fli
 | 112 | Design round 84: date chips all read the same, weekday over date, fixed sizes (John) | main | P1 | Built (design round 84, branch claude/project-thread-fzqwou) |
 | 113 | Design round 85: route arcs on the globe pulse slowly toward the destination (John) | main | P2 | Built (design round 85, branch claude/project-thread-fzqwou) |
 | 114 | Design round 86: picked route shows alone on the globe, no ghost lines of the other options (John) | main | P1 | Built (design round 86, branch claude/project-thread-fzqwou) |
+| 115 | Design round 87: legend chip never covers the route; Leave By slimmed to one row so the map gets more room (John) | main | P1 | Built (design round 87, branch claude/project-thread-fzqwou) |

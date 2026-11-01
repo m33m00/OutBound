@@ -120,3 +120,23 @@ export function leaveByText(r: LeaveBy, tz: string): LeaveByText {
       return { title: `Be at ${r.airport} by ${t(r.beAtUtc)}`, sub: `${r.bufferMin} min early to list and clear security` };
   }
 }
+
+/**
+ * The one short detail beside the title on the slim Leave By row (John, 2026-11-01: the card was
+ * too tall for what it says). The full line stays in the spoken label.
+ */
+export function leaveByShort(r: LeaveBy, tz: string): string {
+  const t = (utc: number) => formatTime(utc, tz);
+  switch (r.kind) {
+    case 'departed':
+      return 'Pick a later route';
+    case 'atAirport':
+      return `Departs ${t(r.departUtc)}`;
+    case 'leaveBy':
+      return `${r.live ? '' : '~'}${r.driveMin} min drive`;
+    case 'leaveNow':
+      return `At ${r.airport} by ${t(r.beAtUtc)}`;
+    case 'beAt':
+      return `${r.bufferMin} min early`;
+  }
+}

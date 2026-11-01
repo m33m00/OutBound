@@ -7,18 +7,20 @@
  * Each row is one accessible element; the swatch is decorative. No weather
  * key (removed in DECISIONS.md).
  *
- * GlobeMap places it bottom-left inside its insets (away from map buttons on
- * the right). Screens can pass `showLegend={false}` and place this instead.
+ * A slim one-row chip (John, 2026-11-01: the old two-row box covered the
+ * route). GlobeMap places it bottom-left inside its insets and frames the
+ * route above it, so it never sits on a line. Screens can pass
+ * `showLegend={false}` and place this instead.
  */
 import { StyleSheet, Text, View } from 'react-native';
 
-import { radius, spacing, textStyles, useColors } from '@/theme';
+import { textStyles, useColors } from '@/theme';
 
 import { hexToRgb, rgba } from './globeColors';
 import { DASH_PATTERN, legendEntries } from './routeModel';
 import type { RouteLine } from './types';
 
-const SWATCH_W = 22;
+const SWATCH_W = 16;
 const SWATCH_H = 3;
 
 function SolidSwatch({ color }: { color: string }) {
@@ -49,13 +51,14 @@ export interface RouteLegendProps {
 export function RouteLegend({ route }: RouteLegendProps) {
   const c = useColors();
   const rows = legendEntries(route);
-  const textStyle = [textStyles.small, { color: c.text }];
+  const textStyle = [textStyles.small, styles.label, { color: c.text }];
   return (
     <View
       style={[
         styles.box,
         { backgroundColor: rgba(hexToRgb(c.surface), 0.92), borderColor: c.line },
-      ]}>
+      ]}
+      testID="route-legend">
       {rows.map((row) => (
         <View
           key={row.key}
@@ -72,18 +75,25 @@ export function RouteLegend({ route }: RouteLegendProps) {
 }
 
 const styles = StyleSheet.create({
+  // One row that wraps only if it runs out of width.
   box: {
-    paddingVertical: spacing.group,
-    paddingHorizontal: spacing.rowX,
-    borderRadius: radius.sm,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: 999,
     borderWidth: StyleSheet.hairlineWidth,
-    gap: 4,
+    columnGap: 12,
+    rowGap: 2,
   },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.group,
+    gap: 6,
   },
+  label: { fontSize: 12, lineHeight: 16 },
   swatch: {
     width: SWATCH_W,
     height: SWATCH_H,

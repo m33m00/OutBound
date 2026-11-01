@@ -36,3 +36,11 @@ export function routeFrameTarget(
   if (points.length === 0) return { kind: 'center', center: home ?? DEFAULT_CENTER };
   return { kind: 'fit', points };
 }
+
+/**
+ * Extra bottom inset that keeps a picked route framed above the legend chip, so the chip never
+ * covers a line (John, 2026-11-01). Zero until the chip has been measured or when it isn't shown.
+ */
+export function legendReserve(shown: boolean, legendHeight: number, gap: number): number {
+  return shown && legendHeight > 0 ? legendHeight + gap : 0;
+}

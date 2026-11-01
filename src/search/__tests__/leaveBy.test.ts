@@ -1,6 +1,6 @@
 import { AIRPORTS, zonedToUtc } from '@/engine';
 
-import { computeLeaveBy, distanceKm, driveMinutes, driveQuery, leaveByText, LOCATION_FRESH_MS } from '../leaveBy';
+import { computeLeaveBy, distanceKm, driveMinutes, driveQuery, leaveByShort, leaveByText, LOCATION_FRESH_MS } from '../leaveBy';
 
 const BNA = AIRPORTS.BNA;
 const DEP = zonedToUtc('2026-10-20', '09:00', BNA.tz); // 9:00 AM Nashville
@@ -50,6 +50,7 @@ describe('computeLeaveBy', () => {
     const r = run({ location: { ...downtown, at: EARLY - 5 * MIN }, liveDriveMin: 32 });
     expect(r).toMatchObject({ kind: 'leaveBy', driveMin: 32, live: true, leaveUtc: DEP - 107 * MIN });
     expect(leaveByText(r, BNA.tz)).toEqual({ title: 'Leave by 7:13 AM', sub: '32 min drive with traffic · at BNA by 7:45 AM' });
+    expect(leaveByShort(r, BNA.tz)).toBe('32 min drive');
     // No live answer: the rough guess, marked with ~.
     expect(run({ location: { ...downtown, at: EARLY - 5 * MIN }, liveDriveMin: null })).toMatchObject({ driveMin: 25, live: false });
   });
@@ -98,6 +99,7 @@ describe('computeLeaveBy', () => {
     const r = run({ now: after, location: { lat: BNA.lat, lon: BNA.lon, at: after }, departed: true });
     expect(r).toEqual({ kind: 'departed', airport: 'BNA' });
     expect(leaveByText(r, BNA.tz)).toEqual({ title: 'Departed', sub: 'This flight has left BNA. Pick a later route.' });
+    expect(leaveByShort(r, BNA.tz)).toBe('Pick a later route');
   });
 });
 
