@@ -19,6 +19,7 @@ import {
   stateWord,
 } from '../flightStatusText';
 import { ResultRow } from '../ResultRow';
+import { outermost, restingStyle } from '@/testing/pressables';
 
 // The sheet's Add to Logbook link reads the logbook module (round 63).
 let mockFontScale = 1;
@@ -242,7 +243,7 @@ describe('seats card in the flight sheet (design round 32)', () => {
     clearFlightStatusMemo();
   });
   const btn = (label: string) =>
-    r!.root.find((n) => typeof n.type !== 'string' && n.props.accessibilityLabel === label && n.props.onPress);
+    outermost(r!.root.findAll((n) => typeof n.type !== 'string' && n.props.accessibilityLabel === label && n.props.onPress))[0];
   const texts = () =>
     r!.root
       .findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string')
@@ -376,7 +377,7 @@ describe('seats card in the flight sheet (design round 32)', () => {
   it('Asked stays full strength: a confirmation, not a dead button', async () => {
     await render({ askState: 'asked' });
     const asked = btn('Asked');
-    const flat = Object.assign({}, ...[asked.props.style({ pressed: false })].flat(Infinity).filter(Boolean));
+    const flat = restingStyle(asked);
     expect(flat.opacity).toBe(1);
   });
 });

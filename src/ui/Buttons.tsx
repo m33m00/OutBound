@@ -1,9 +1,9 @@
 import type { SFSymbol } from 'expo-symbols';
-import { Pressable, StyleSheet, Text, type AccessibilityState, type StyleProp, type TextStyle, type ViewStyle } from 'react-native';
+import { StyleSheet, Text, type AccessibilityState, type StyleProp, type TextStyle, type ViewStyle } from 'react-native';
 
 import { boldTextOn, fonts, minTapTarget, radius, spacing, textStyles, useColors } from '@/theme';
 import { Icon } from './Icon';
-import { pressStyle } from './press';
+import { ScalePressable } from './ScalePressable';
 
 interface ButtonProps {
   label: string;
@@ -33,21 +33,21 @@ export function Button({
   const primary = kind === 'primary';
   const fg = primary ? c.onAccent : c.text;
   return (
-    <Pressable
+    <ScalePressable
       onPress={onPress}
       disabled={disabled}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel ?? label}
       accessibilityHint={accessibilityHint}
       accessibilityState={{ disabled }}
-      style={pressStyle([
-        styles.button,
-        { backgroundColor: primary ? c.accent : c.surface2, opacity: disabled ? 0.5 : 1 },
-        style,
-      ])}>
+      style={[styles.button, { backgroundColor: primary ? c.accent : c.surface2, opacity: disabled ? 0.5 : 1 }, style]}>
       {icon ? <Icon name={icon} size={18} tintColor={fg} fallback={null} /> : null}
-      {label ? <Text lineBreakStrategyIOS="push-out" style={[textStyles.button, { color: fg }]}>{label}</Text> : null}
-    </Pressable>
+      {label ? (
+        <Text lineBreakStrategyIOS="push-out" style={[textStyles.button, { color: fg }]}>
+          {label}
+        </Text>
+      ) : null}
+    </ScalePressable>
   );
 }
 
@@ -116,7 +116,7 @@ export function PillButton({
     />
   );
   return (
-    <Pressable
+    <ScalePressable
       onPress={onPress}
       disabled={disabled || !onPress}
       accessibilityRole="button"
@@ -125,22 +125,27 @@ export function PillButton({
       accessibilityState={accessibilityState ?? (disabled ? { disabled: true } : undefined)}
       hitSlop={{ top: PILL_SLOP, bottom: PILL_SLOP, left: hitSlop?.left ?? 0, right: hitSlop?.right ?? 0 }}
       testID={testID}
-      style={pressStyle([
+      style={[
         styles.pill,
         iconOnly ? styles.pillIcon : leading ? styles.pillLeading : trailing ? styles.pillTrailing : null,
         { backgroundColor: bg, opacity: disabled ? 0.35 : 1 },
         style,
-      ])}>
+      ]}>
       {leading ? icon(leading) : null}
       {label ? (
         <Text
           lineBreakStrategyIOS="push-out"
-          style={[textStyles.bodyStrong, quiet && { fontFamily: boldTextOn() ? fonts.body : fonts.bodyMedium }, { color: fg }, textStyle]}>
+          style={[
+            textStyles.bodyStrong,
+            quiet && { fontFamily: boldTextOn() ? fonts.body : fonts.bodyMedium },
+            { color: fg },
+            textStyle,
+          ]}>
           {label}
         </Text>
       ) : null}
       {trailing ? icon(trailing) : null}
-    </Pressable>
+    </ScalePressable>
   );
 }
 

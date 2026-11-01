@@ -1,10 +1,10 @@
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Animated, StyleSheet, View } from 'react-native';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 
 import { dateChips } from '@/search/dates';
 
-import { SearchPanel, WRAP_CHIPS_SCALE } from '../SearchPanel';
+import { SearchPanel, SWAP_MS, SWAP_SLIDE, WRAP_CHIPS_SCALE } from '../SearchPanel';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -211,5 +211,81 @@ describe('SearchPanel empty sides (round 53)', () => {
       .map((n) => n.props.accessibilityLabel as string);
     expect(labels).toContain('From: Location is off. Choose airport');
     expect(labels).toContain('To: choose an airport');
+  });
+});
+
+describe('SearchPanel motion (John, 2026-11-01)', () => {
+  let r: ReactTestRenderer | undefined;
+  afterEach(() => {
+    act(() => r?.unmount());
+    jest.restoreAllMocks();
+  });
+
+  // Lays the chips out in one row, 70pt wide with 8pt gaps; the calendar is 44pt.
+  const layOut = () => {
+    const chips = r!.root.findAll((n) => typeof n.props.onLayout === 'function' && n.props.accessibilityRole === 'button');
+    const seen = new Set<string>();
+    let x = 0;
+    for (const n of chips) {
+      const key = String(n.props.accessibilityLabel);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      const width = /later date/.test(key) ? 44 : 70;
+      act(() => n.props.onLayout({ nativeEvent: { layout: { x, y: 0, width, height: 52 } } }));
+      x += width + 8;
+    }
+  };
+  const highlight = () => r!.root.findAll((n) => n.props.testID === 'date-highlight' && typeof n.type === 'string');
+
+  it('the picked date highlight slides between chips once they are measured', () => {
+    const chips = dateChips('2026-10-20');
+    r = render(1);
+    expect(highlight()).toHaveLength(0);
+    layOut();
+    expect(highlight()).toHaveLength(1);
+    const timing = jest.spyOn(Animated, 'timing');
+    act(() =>
+      r!.update(
+        <SearchPanel
+          chips={chips}
+          date={chips[2].date}
+          onDate={jest.fn()}
+          origin="DAL"
+          destination="LAX"
+          onPickOrigin={jest.fn()}
+          onPickDestination={jest.fn()}
+          onSwap={jest.fn()}
+          areaOn={{}}
+          onToggleArea={jest.fn()}
+          onFilters={jest.fn()}
+          filtersChanged={0}
+          onFind={jest.fn()}
+        />,
+      ),
+    );
+    // Third chip: two chips and two gaps in.
+    expect(timing.mock.calls.map((c) => (c[1] as { toValue: number }).toValue)).toContain(156);
+  });
+
+  it('no sliding highlight when the chips go two to a row', () => {
+    r = render(WRAP_CHIPS_SCALE);
+    layOut();
+    expect(highlight()).toHaveLength(0);
+  });
+
+  it('a swap turns the button half a turn and slides both codes in from the other side', () => {
+    const onSwap = jest.fn();
+    r = render(1, { onSwap });
+    const timing = jest.spyOn(Animated, 'timing');
+    const swap = r.root.findAll((n) => n.props.accessibilityLabel === 'Swap from and to' && n.props.onPress)[0];
+    act(() => swap.props.onPress());
+    expect(onSwap).toHaveBeenCalledTimes(1);
+    const calls = timing.mock.calls.map((c) => c[1] as { toValue: number; duration: number; useNativeDriver: boolean });
+    // The turn, plus a slide and a fade for each card.
+    expect(calls[0]).toMatchObject({ toValue: 1, duration: SWAP_MS, useNativeDriver: true });
+    expect(calls.filter((c) => c.toValue === 0 && c.duration === SWAP_MS)).toHaveLength(2);
+    const codes = r.root.findAll((n) => n.props.testID === 'card-code' && typeof n.type === 'string');
+    expect(codes).toHaveLength(2);
+    expect(SWAP_SLIDE).toBeGreaterThan(0);
   });
 });

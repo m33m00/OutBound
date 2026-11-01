@@ -6,6 +6,7 @@ import { resultsBanner } from '@/search/statusTags';
 import { minTapTarget } from '@/theme';
 
 import { ResultsBanner } from '../ResultsBanner';
+import { outermost, restingStyle } from '@/testing/pressables';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -13,18 +14,20 @@ describe('ResultsBanner (Q-047)', () => {
   let r: ReactTestRenderer | undefined;
   afterEach(() => act(() => r?.unmount()));
 
-  const buttons = () => r!.root.findAll((n) => n.props.accessibilityRole === 'button' && n.props.onPress);
+  const buttons = () => outermost(r!.root.findAll((n) => n.props.accessibilityRole === 'button' && n.props.onPress));
 
   it('hidden routes: Show Them and a 44pt Dismiss notice', () => {
     const onShow = jest.fn();
     const onDismiss = jest.fn();
     act(() => {
-      r = create(<ResultsBanner banner={resultsBanner({ results: [], hiddenCount: 3 })!} onShow={onShow} onDismiss={onDismiss} />);
+      r = create(
+        <ResultsBanner banner={resultsBanner({ results: [], hiddenCount: 3 })!} onShow={onShow} onDismiss={onDismiss} />,
+      );
     });
     const [show, dismiss] = buttons();
     expect(show.props.accessibilityLabel).toBe('Show Them');
     expect(dismiss.props.accessibilityLabel).toBe('Dismiss notice');
-    expect(StyleSheet.flatten(dismiss.props.style({ pressed: false }))).toMatchObject({ width: minTapTarget, height: minTapTarget });
+    expect(restingStyle(dismiss)).toMatchObject({ width: minTapTarget, height: minTapTarget });
     act(() => show.props.onPress());
     act(() => dismiss.props.onPress());
     expect(onShow).toHaveBeenCalled();
@@ -33,7 +36,9 @@ describe('ResultsBanner (Q-047)', () => {
 
   it('no flights: text and Dismiss only', () => {
     act(() => {
-      r = create(<ResultsBanner banner={resultsBanner({ results: [], hiddenCount: 0 })!} onShow={jest.fn()} onDismiss={jest.fn()} />);
+      r = create(
+        <ResultsBanner banner={resultsBanner({ results: [], hiddenCount: 0 })!} onShow={jest.fn()} onDismiss={jest.fn()} />,
+      );
     });
     expect(buttons().map((b) => b.props.accessibilityLabel)).toEqual(['Dismiss notice']);
     const texts = r!.root.findAll((n) => (n.type as unknown) === 'Text').map((n) => [n.props.children].flat().join(''));
@@ -56,9 +61,9 @@ describe('ResultsBanner (Q-047)', () => {
     expect(tryNext.props.accessibilityLabel).toBe('Try Tomorrow');
     expect(tryNext.props.accessibilityHint).toBe('Searches Friday, October 31');
     // A capsule button (round 79): 36pt tall, its hit area makes up the 44pt tap target.
-    const h = StyleSheet.flatten(tryNext.props.style({ pressed: false })).minHeight as number;
+    const h = restingStyle(tryNext).minHeight as number;
     expect(h + tryNext.props.hitSlop.top + tryNext.props.hitSlop.bottom).toBeGreaterThanOrEqual(minTapTarget);
-    expect(StyleSheet.flatten(tryNext.props.style({ pressed: false })).backgroundColor).toBeTruthy();
+    expect(restingStyle(tryNext).backgroundColor).toBeTruthy();
     expect(dismiss.props.accessibilityLabel).toBe('Dismiss notice');
     act(() => tryNext.props.onPress());
     expect(onPress).toHaveBeenCalled();
