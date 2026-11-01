@@ -1,6 +1,6 @@
 import { AIRPORTS, zonedToUtc } from '@/engine';
 
-import { computeLeaveBy, distanceKm, driveMinutes, leaveByText, LOCATION_FRESH_MS } from '../leaveBy';
+import { computeLeaveBy, distanceKm, driveMinutes, driveQuery, leaveByText, LOCATION_FRESH_MS } from '../leaveBy';
 
 const BNA = AIRPORTS.BNA;
 const DEP = zonedToUtc('2026-10-20', '09:00', BNA.tz); // 9:00 AM Nashville
@@ -44,6 +44,26 @@ describe('computeLeaveBy', () => {
       title: 'Leave by 7:20 AM',
       sub: '~25 min drive · at BNA by 7:45 AM',
     });
+  });
+
+  it('uses a maps drive time with traffic when one came back (John, 2026-11-01)', () => {
+    const r = run({ location: { ...downtown, at: EARLY - 5 * MIN }, liveDriveMin: 32 });
+    expect(r).toMatchObject({ kind: 'leaveBy', driveMin: 32, live: true, leaveUtc: DEP - 107 * MIN });
+    expect(leaveByText(r, BNA.tz)).toEqual({ title: 'Leave by 7:13 AM', sub: '32 min drive with traffic · at BNA by 7:45 AM' });
+    // No live answer: the rough guess, marked with ~.
+    expect(run({ location: { ...downtown, at: EARLY - 5 * MIN }, liveDriveMin: null })).toMatchObject({ driveMin: 25, live: false });
+  });
+
+  it('asks maps about the trip only when a drive estimate would show, leaving around the rough leave time', () => {
+    const base = { airport: BNA, departUtc: DEP, bufferMin: 75, now: EARLY };
+    expect(driveQuery({ ...base, location: null })).toBeNull();
+    expect(driveQuery({ ...base, location: { ...downtown, at: EARLY - LOCATION_FRESH_MS - 1 } })).toBeNull();
+    expect(driveQuery({ ...base, location: { lat: BNA.lat, lon: BNA.lon, at: EARLY } })).toBeNull();
+    expect(driveQuery({ ...base, location: { ...downtown, at: EARLY }, departed: true })).toBeNull();
+    const q = driveQuery({ ...base, location: { ...downtown, at: EARLY } });
+    expect(q).toEqual({ from: downtown, to: { lat: BNA.lat, lon: BNA.lon }, departMs: DEP - 100 * MIN });
+    // Already past the rough leave time: traffic for now.
+    expect(driveQuery({ ...base, now: DEP - 90 * MIN, location: { ...downtown, at: DEP - 90 * MIN } })?.departMs).toBe(DEP - 90 * MIN);
   });
 
   it('ignores a stale location', () => {

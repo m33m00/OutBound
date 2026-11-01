@@ -4,11 +4,12 @@ import { BackHandler, FlatList, StyleSheet, Text, View, type LayoutChangeEvent }
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AIRPORTS, areaFor, localDate, toRouteLine, type Flight, type Itinerary } from '@/engine';
-import { flightLookupKey, sampleRouteImpacts, useFlightStatuses, useRouteImpacts } from '@/live';
+import { flightLookupKey, sampleRouteImpacts, useDriveTime, useFlightStatuses, useRouteImpacts } from '@/live';
 import { GlobeMap, type LonLat, type MapAirport } from '@/map';
 import { nearestAirport } from '@/search/airports';
 import { searchRequest } from '@/search/areas';
 import { dateChips } from '@/search/dates';
+import { driveQuery } from '@/search/leaveBy';
 import { chooseOrigin, showLocationCard } from '@/search/origin';
 import { departedFirst, legLookup, resultsBanner, rowStatus, statusLookups } from '@/search/statusTags';
 import { SAMPLE_TZ, SCHEDULE_SOURCE, useRouteSearch } from '@/search/useRouteSearch';
@@ -408,6 +409,18 @@ export default function HomeScreen() {
   const filtersChanged = changedFilters(filters, settings.search);
   const selected = results.find((r) => r.id === selectedId);
   const firstLeg = selected?.legs[0].flight;
+  // Real drive time with traffic for the Leave By card (John, 2026-11-01); the rough guess until it answers.
+  const trip = firstLeg
+    ? driveQuery({
+        airport: AIRPORTS[firstLeg.from],
+        departUtc: firstLeg.departUtc,
+        bufferMin: settings.bufferMin,
+        now,
+        location,
+        departed: !!(selected && rowStatuses?.[selected.id]?.dimmed),
+      })
+    : null;
+  const liveDrive = useDriveTime(trip?.from ?? null, trip?.to ?? null, trip?.departMs ?? null);
   const impactIt = impactSheet.shown ? results.find((r) => r.id === impactSheet.shown) : undefined;
   const impactRoute = impactIt ? [impactIt.origin, ...impactIt.legs.map((l) => l.flight.to)].join(' → ') : null;
 
@@ -562,6 +575,7 @@ export default function HomeScreen() {
                         location={location}
                         locationStatus={locationStatus}
                         mapsApp={settings.mapsApp}
+                        liveDriveMin={liveDrive?.minutes ?? null}
                         onUseLocation={async () => {
                           if (await requestLocation()) updateSettings({ useLocation: true });
                         }}

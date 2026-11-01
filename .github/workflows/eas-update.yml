@@ -96,7 +96,7 @@ jobs:
           fi
           BASE="${SUPABASE_URL%/}/functions/v1"
           echo "### Live functions" >> "$GITHUB_STEP_SUMMARY"
-          for path in "live-radar?regions=conus" "live-faa-status?airports=DFW" "live-weather?stations=DFW"; do
+          for path in "live-radar?regions=conus" "live-faa-status?airports=DFW" "live-weather?stations=DFW" "live-drive-time?from=32.85,-96.85&to=32.8998,-97.0403"; do
             code=$(curl -s -o /tmp/body -w '%{http_code}' --max-time 30 "$BASE/$path" \
               -H "apikey: $SUPABASE_ANON_KEY" -H "Authorization: Bearer $SUPABASE_ANON_KEY" || true)
             note=$(head -c 160 /tmp/body | tr -d '\n`' || true)

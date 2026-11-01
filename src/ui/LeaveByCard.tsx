@@ -28,6 +28,8 @@ export interface LeaveByCardProps {
   delayedText?: string | null;
   /** Where a tap on the card opens directions to the airport (Settings, default Apple Maps). */
   mapsApp?: MapsApp;
+  /** Drive minutes with traffic from a maps service; without it the card uses its rough estimate. */
+  liveDriveMin?: number | null;
 }
 
 /** From this text size the location button gets its own row. */
