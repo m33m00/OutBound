@@ -108,3 +108,4 @@ Each item names its owner. One item per work session. spec-keeper runs a pre-fli
 | 101 | Design round 73: Settings Notifications footer drops the sentence that repeated the switch captions | main | P3 | Built (design round 73, branch claude/project-thread-fzqwou) |
 | 102 | Design round 74: route card flight chip right of its tag; connection line centered and labeled "connection at" (John) | main | P1 | Built (design round 74, branch claude/project-thread-fzqwou) |
 | 103 | Design round 75: connection label beside the middle of the timeline line, which now runs dot to dot (John) | main | P1 | Built (design round 75, branch claude/project-thread-fzqwou) |
+| 104 | Design round 76: route card tag and flight above the first flight's time, below later flights' (John) | main | P1 | Built (design round 76, branch claude/project-thread-fzqwou) |

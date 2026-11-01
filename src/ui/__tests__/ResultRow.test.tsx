@@ -196,6 +196,11 @@ describe('ResultRow', () => {
     const tall = pad(100);
     expect(tall).toBeGreaterThan(base);
     expect(pad(130) - tall).toBe(30);
+    // The first flight's tag and flight sit above its time, the last one's below it (John, 2026-11-01).
+    const order = r!.root
+      .findAll((n) => typeof n.type === 'string' && (n.props.testID === 'leg-dot' || n.props.testID === 'leg-flight'))
+      .map((n) => n.props.testID as string);
+    expect(order).toEqual(['leg-flight', 'leg-dot', 'leg-dot', 'leg-flight']);
     // The line reaches the second dot: a short segment sits above it.
     expect(r!.root.findAll((n) => n.props.testID === 'leg-dot' && typeof n.type === 'string')).toHaveLength(2);
   });

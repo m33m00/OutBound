@@ -129,30 +129,45 @@ function LegTimeline({
         const typical = leg.seats.source === 'typical' || leg.seats.source === 'unknown';
         // The dot carries the leg's tier color; the route's chance word is in the headline.
         const dotColor = dimmed || typical ? c.unknown : c[leg.seats.tier];
+        // The first flight's tag and flight sit above its time; every later flight's sit below
+        // it, so the connection between them stays clear (John, 2026-11-01).
+        const above = i === 0;
+        const meta = (
+          <View style={styles.leg}>
+            <View style={styles.railCol}>
+              {/* Under a leg that isn't the last, the line carries on down to the connection. */}
+              {!above && !last ? <View style={[styles.railLine, rail]} /> : null}
+            </View>
+            <View style={[styles.legMeta, above ? styles.legMetaAbove : styles.legMetaBelow]} testID="leg-flight">
+              {view?.tag ? <StatusTag label={view.tag.label} tone={TAG_TONE[view.tag.kind]} /> : null}
+              <View style={styles.legChip}>
+                <AirlinePill airline={leg.flight.airline} flightNumber={leg.flight.flightNumber} />
+                {onLegPress ? <Icon name="chevron.right" size={12} tintColor={c.muted} fallback={null} /> : null}
+              </View>
+            </View>
+          </View>
+        );
         const body = (
           <>
-            <View style={styles.railCol}>
-              {/* After the first leg the line runs right up to the dot, so it joins dot to dot. */}
-              {i > 0 ? <View style={[styles.railHead, rail, { height: dotTop }]} /> : null}
-              <View style={[styles.dot, { marginTop: i > 0 ? 0 : dotTop, backgroundColor: dotColor }]} testID="leg-dot" />
-              {last ? null : <View style={[styles.railLine, rail]} />}
-            </View>
-            <View style={styles.legText}>
-              <View style={styles.legTop}>
-                <Text style={[text, styles.shrink, { color: c.muted }]}>
-                  <LegClock leg={leg.flight} view={view} text={text} dimmed={dimmed} />
-                  {`${legClockText(leg.flight, view) ? '  ' : ''}${leg.flight.from}\u00a0→\u00a0${leg.flight.to}`}
-                </Text>
-                {/* Tag and flight stay together, flight on the right (John, 2026-11-01); at big text
-                    they wrap under the time as one piece. */}
-                <View style={styles.legFlight} testID="leg-flight">
-                  {view?.tag ? <StatusTag label={view.tag.label} tone={TAG_TONE[view.tag.kind]} /> : null}
-                  <View style={styles.legChip}>
-                    <AirlinePill airline={leg.flight.airline} flightNumber={leg.flight.flightNumber} />
-                    {onLegPress ? <Icon name="chevron.right" size={12} tintColor={c.muted} fallback={null} /> : null}
-                  </View>
+            {above ? meta : null}
+            {/* Measured from the dot's line down, so the connection label can sit at the middle
+                of the line between this dot and the next. */}
+            <View onLayout={measure(i)}>
+              <View style={styles.leg}>
+                <View style={styles.railCol}>
+                  {/* After the first leg the line runs right up to the dot, so it joins dot to dot. */}
+                  {i > 0 ? <View style={[styles.railHead, rail, { height: dotTop }]} /> : null}
+                  <View style={[styles.dot, { marginTop: i > 0 ? 0 : dotTop, backgroundColor: dotColor }]} testID="leg-dot" />
+                  {last ? null : <View style={[styles.railLine, rail]} />}
+                </View>
+                <View style={styles.legText}>
+                  <Text style={[text, styles.shrink, { color: c.muted }]}>
+                    <LegClock leg={leg.flight} view={view} text={text} dimmed={dimmed} />
+                    {`${legClockText(leg.flight, view) ? '  ' : ''}${leg.flight.from}\u00a0→\u00a0${leg.flight.to}`}
+                  </Text>
                 </View>
               </View>
+              {above ? null : meta}
             </View>
           </>
         );
@@ -172,14 +187,11 @@ function LegTimeline({
                 ]
                   .filter(Boolean)
                   .join(', ')}
-                onLayout={measure(i)}
-                style={pressStyle([styles.leg, styles.legTap], 'link')}>
+                style={pressStyle(styles.legTap, 'link')}>
                 {body}
               </Pressable>
             ) : (
-              <View style={styles.leg} onLayout={measure(i)}>
-                {body}
-              </View>
+              <View>{body}</View>
             )}
             {/* At the connecting airport, i.e. after the inbound leg (Q-050), named as a
                 connection (John, 2026-11-01). */}
@@ -531,9 +543,10 @@ const styles = StyleSheet.create({
   dot: { width: DOT, height: DOT, borderRadius: DOT / 2 },
   railLine: { flex: 1, width: 2, minHeight: 4 },
   legText: { flex: 1, gap: 2, paddingVertical: LEG_PAD },
-  legTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', columnGap: spacing.group, rowGap: 2 },
-  // Pinned right, even when it wraps under the time at big text.
-  legFlight: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end', columnGap: spacing.group, rowGap: 2, marginLeft: 'auto' },
+  // A leg's tag and flight, on their own line above (first leg) or below (later legs) its time.
+  legMeta: { flex: 1, flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', columnGap: spacing.group, rowGap: 2 },
+  legMetaAbove: { paddingTop: LEG_PAD },
+  legMetaBelow: { paddingBottom: LEG_PAD },
   legChip: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   connection: {
     flexDirection: 'row',
