@@ -166,6 +166,40 @@ describe('ResultRow', () => {
     expect(all.some((t) => t.endsWith('  BNA\u00a0→\u00a0DEN'))).toBe(true);
   });
 
+  it('connection label sits at the middle of the line between the dots, even when a leg wraps (John, 2026-11-01)', async () => {
+    const at = (hhmm: string) => zonedToUtc('2026-10-20', hhmm, 'America/Chicago');
+    const provider = createMemoryProvider(
+      [
+        { id: 'A', airline: 'WN', flightNumber: '10', from: 'BNA', to: 'DEN', departUtc: at('08:00'), arriveUtc: at('10:00') },
+        { id: 'B', airline: 'WN', flightNumber: '20', from: 'DEN', to: 'LAX', departUtc: at('11:30'), arriveUtc: at('13:30') },
+      ],
+      { A: [{ source: 'reported', openSeats: 30, listed: 5, asOf: NOW }], B: [{ source: 'reported', openSeats: 6, listed: 4, asOf: NOW }] },
+    );
+    const [it] = await searchItineraries(provider, { origin: 'BNA', destination: 'LAX', date: '2026-10-20' }, { now: NOW });
+    await act(async () => {
+      r = create(<ResultRow itinerary={it} selected now={NOW} onPress={jest.fn()} />);
+    });
+    const flat = (style: unknown) => Object.assign({}, ...([style] as unknown[]).flat(3).filter(Boolean));
+    const connection = () => r!.root.findAll((n) => n.props.testID === 'leg-connection' && typeof n.type === 'string')[0];
+    const legs = r!.root.findAll((n) => typeof n.type === 'string' && typeof n.props.onLayout === 'function');
+    expect(legs.length).toBe(2);
+    // A one-line leg: dot centered on it, so no extra space under the label.
+    const base = flat(connection().props.style).paddingBottom as number;
+    const top = flat(connection().props.style).paddingTop as number;
+    expect(base).toBe(top);
+    // When the first leg grows (its tag and flight wrap), the label's bottom space grows by the
+    // same amount, keeping it at the middle of the now longer line.
+    const pad = (h: number) => {
+      act(() => legs[0].props.onLayout({ nativeEvent: { layout: { height: h } } }));
+      return flat(connection().props.style).paddingBottom as number;
+    };
+    const tall = pad(100);
+    expect(tall).toBeGreaterThan(base);
+    expect(pad(130) - tall).toBe(30);
+    // The line reaches the second dot: a short segment sits above it.
+    expect(r!.root.findAll((n) => n.props.testID === 'leg-dot' && typeof n.type === 'string')).toHaveLength(2);
+  });
+
   it('grays the seat summary on a route that already left, keeping its words', async () => {
     const it = await fullItinerary();
     const status = { legs: [], risks: [], dimmed: true, canceled: false, spoken: ['Departed'] };

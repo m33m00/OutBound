@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo, useState } from 'react';
 import { Pressable, StyleSheet, Text, type TextStyle, useWindowDimensions, View } from 'react-native';
 
 import { AIRPORTS, type Flight, type Itinerary } from '@/engine';
@@ -63,6 +63,8 @@ const legDepartText = (leg: Flight) => formatTime(leg.departUtc, AIRPORTS[leg.fr
 const DOT = 10;
 /** Space above and below each leg's text on the timeline. */
 const LEG_PAD = 4;
+/** Space above and below a connection label, before any extra that centers it on the line. */
+const CONNECTION_PAD = 6;
 
 /**
  * A leg's departure on the timeline. The struck original lives only in the card's top time
@@ -110,6 +112,13 @@ function LegTimeline({
   const firstLine = Math.max((text.lineHeight ?? 20) * fontScale, (textStyles.small.lineHeight ?? 16) * fontScale + 4);
   const dotTop = LEG_PAD + Math.max(0, (firstLine - DOT) / 2);
   const rail = { backgroundColor: c.line2 };
+  // Each leg's measured height, so a connection label can sit at the middle of the line
+  // between the two dots even when the leg above wraps to a second line (John, 2026-11-01).
+  const [legHeights, setLegHeights] = useState<Record<number, number>>({});
+  const measure = (i: number) => (e: { nativeEvent: { layout: { height: number } } }) => {
+    const h = e.nativeEvent.layout.height;
+    setLegHeights((prev) => (prev[i] === h ? prev : { ...prev, [i]: h }));
+  };
   return (
     <View testID="leg-timeline">
       {it.legs.map((leg, i) => {
@@ -123,7 +132,9 @@ function LegTimeline({
         const body = (
           <>
             <View style={styles.railCol}>
-              <View style={[styles.dot, { marginTop: dotTop, backgroundColor: dotColor }]} testID="leg-dot" />
+              {/* After the first leg the line runs right up to the dot, so it joins dot to dot. */}
+              {i > 0 ? <View style={[styles.railHead, rail, { height: dotTop }]} /> : null}
+              <View style={[styles.dot, { marginTop: i > 0 ? 0 : dotTop, backgroundColor: dotColor }]} testID="leg-dot" />
               {last ? null : <View style={[styles.railLine, rail]} />}
             </View>
             <View style={styles.legText}>
@@ -161,20 +172,32 @@ function LegTimeline({
                 ]
                   .filter(Boolean)
                   .join(', ')}
+                onLayout={measure(i)}
                 style={pressStyle([styles.leg, styles.legTap], 'link')}>
                 {body}
               </Pressable>
             ) : (
-              <View style={styles.leg}>{body}</View>
+              <View style={styles.leg} onLayout={measure(i)}>
+                {body}
+              </View>
             )}
-            {/* At the connecting airport, i.e. after the inbound leg (Q-050); centered between
-                the two flights and named as a connection (John, 2026-11-01). */}
+            {/* At the connecting airport, i.e. after the inbound leg (Q-050), named as a
+                connection (John, 2026-11-01). */}
             {last ? null : (
               <View style={styles.leg}>
                 <View style={styles.railCol}>
                   <View style={[styles.railLine, rail]} />
                 </View>
-                <View style={[styles.legText, styles.connection]}>
+                {/* The line runs from this leg's dot to the next one's. The label sits beside it at
+                    its middle: when this leg wraps, the extra length below its dot is matched
+                    under the label. */}
+                <View
+                  testID="leg-connection"
+                  style={[
+                    styles.legText,
+                    styles.connection,
+                    { paddingBottom: CONNECTION_PAD + Math.max(0, (legHeights[i] ?? 0) - 2 * dotTop - DOT) },
+                  ]}>
                   {connection ? (
                     <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, styles.shrink, { color: c.muted }]}>
                       {formatDuration(connection.layoverMin)} connection at {connection.airport}
@@ -515,11 +538,11 @@ const styles = StyleSheet.create({
   connection: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
     flexWrap: 'wrap',
     gap: spacing.group,
-    paddingVertical: 6,
+    paddingTop: CONNECTION_PAD,
   },
+  railHead: { width: 2 },
   struck: { textDecorationLine: 'line-through' },
   // The replaced time inside the big time line: small, so the new time carries the weight.
   was: { fontFamily: textStyles.small.fontFamily, fontSize: textStyles.small.fontSize },

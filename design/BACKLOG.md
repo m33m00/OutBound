@@ -107,3 +107,4 @@ Each item names its owner. One item per work session. spec-keeper runs a pre-fli
 | 100 | Design round 72: Feed empty state down to one line, like My Trips and Logbook | main | P3 | Built (design round 72, branch claude/project-thread-fzqwou) |
 | 101 | Design round 73: Settings Notifications footer drops the sentence that repeated the switch captions | main | P3 | Built (design round 73, branch claude/project-thread-fzqwou) |
 | 102 | Design round 74: route card flight chip right of its tag; connection line centered and labeled "connection at" (John) | main | P1 | Built (design round 74, branch claude/project-thread-fzqwou) |
+| 103 | Design round 75: connection label beside the middle of the timeline line, which now runs dot to dot (John) | main | P1 | Built (design round 75, branch claude/project-thread-fzqwou) |
