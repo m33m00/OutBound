@@ -135,10 +135,8 @@ export default function SettingsScreen() {
               divided
             />
           </View>
-          <SectionFooter>
-            Notifications start once requests go live. Other employees can ask about your airline’s flights, at most 5
-            requests a day. Nobody sees who asked or who answered.
-          </SectionFooter>
+          {/* The switch captions already say who asks and the 5-a-day cap (round 73). */}
+          <SectionFooter>Notifications start once requests go live. Nobody sees who asked or who answered.</SectionFooter>
         </View>
 
         <View style={styles.section} onLayout={sectionLayout('leaveBy')}>
