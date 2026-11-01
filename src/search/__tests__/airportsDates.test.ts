@@ -21,9 +21,11 @@ describe('dateChips', () => {
   it('offers today through 7 days out', () => {
     const chips = dateChips('2026-10-14');
     expect(chips).toHaveLength(8);
-    expect(chips[0]).toEqual({ date: '2026-10-14', label: 'Today', long: 'Wednesday, October 14' });
+    expect(chips[0]).toEqual({ date: '2026-10-14', label: 'Today', day: 'Oct 14', long: 'Wednesday, October 14' });
     expect(chips[1].label).toBe('Tomorrow');
-    expect(chips[2].label).toBe('Fri 16');
+    // Every chip: a top word over the same "Oct 16" date (John, 2026-11-01).
+    expect([chips[2].label, chips[2].day]).toEqual(['Fri', 'Oct 16']);
+    expect(chips.map((c) => c.day)).toEqual(['Oct 14', 'Oct 15', 'Oct 16', 'Oct 17', 'Oct 18', 'Oct 19', 'Oct 20', 'Oct 21']);
     expect(chips[7].date).toBe('2026-10-21');
   });
   it('crosses month ends', () => {
@@ -36,11 +38,11 @@ describe('dateChips', () => {
 
 describe('calendar dates', () => {
   it('gives chips to today plus the next three days', () => {
-    expect(dateChips('2026-10-14').slice(0, QUICK_DATE_CHIPS).map((c) => c.label)).toEqual([
-      'Today',
-      'Tomorrow',
-      'Fri 16',
-      'Sat 17',
+    expect(dateChips('2026-10-14').slice(0, QUICK_DATE_CHIPS).map((c) => `${c.label} ${c.day}`)).toEqual([
+      'Today Oct 14',
+      'Tomorrow Oct 15',
+      'Fri Oct 16',
+      'Sat Oct 17',
     ]);
   });
   it('round-trips picker dates as calendar days', () => {

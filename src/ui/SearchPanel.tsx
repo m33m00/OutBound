@@ -206,13 +206,7 @@ export function SearchPanel(p: SearchPanelProps) {
                 wrapChips && styles.dateChipWrap,
                 { backgroundColor: on ? c.accent : c.surface2 },
               ])}>
-              <Text
-                numberOfLines={1}
-                adjustsFontSizeToFit
-                minimumFontScale={0.85}
-                style={[textStyles.bodyStrong, { color: on ? c.onAccent : c.text }]}>
-                {chip.label}
-              </Text>
+              <ChipDate chip={chip} on={on} />
             </Pressable>
           );
         })}
@@ -228,21 +222,17 @@ export function SearchPanel(p: SearchPanelProps) {
             wrapChips && styles.dateChipWrap,
             { backgroundColor: later ? c.accent : c.surface2 },
           ])}>
-          <Icon
-            name="calendar"
-            size={18}
-            tintColor={later ? c.onAccent : c.text}
-            fallback={later ? null : <Text lineBreakStrategyIOS="push-out" style={[textStyles.bodyStrong, { color: c.text }]}>Date</Text>}
-          />
+          {/* A later day reads like any other chip; the calendar icon alone means "pick a day". */}
           {later ? (
-            <Text
-              numberOfLines={1}
-              adjustsFontSizeToFit
-              minimumFontScale={0.85}
-              style={[textStyles.bodyStrong, { color: c.onAccent }]}>
-              {later.label}
-            </Text>
-          ) : null}
+            <ChipDate chip={later} on />
+          ) : (
+            <Icon
+              name="calendar"
+              size={18}
+              tintColor={c.text}
+              fallback={<Text lineBreakStrategyIOS="push-out" style={[textStyles.bodyStrong, { color: c.text }]}>Date</Text>}
+            />
+          )}
         </Pressable>
       </View>
       <DatePickerModal
@@ -338,16 +328,38 @@ export function SearchPanel(p: SearchPanelProps) {
   );
 }
 
+/**
+ * One look for every date chip (John, 2026-11-01: "Tue 2, Wed 3 ... font size is also not
+ * consistent"): a small line on top (Today, Tomorrow or the weekday) over the date in bold
+ * ("Nov 3"). Fixed sizes, never shrunk to fit, so every chip matches.
+ */
+function ChipDate({ chip, on }: { chip: DateChip; on: boolean }) {
+  const c = useColors();
+  return (
+    <View style={styles.chipDate} testID="chip-date">
+      <Text numberOfLines={1} style={[textStyles.small, { color: on ? c.onAccent : c.muted }]}>
+        {chip.label}
+      </Text>
+      <Text numberOfLines={1} style={[textStyles.bodyStrong, { color: on ? c.onAccent : c.text }]}>
+        {chip.day}
+      </Text>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
+  chipDate: { alignItems: 'center' },
   body: { paddingHorizontal: spacing.page, paddingBottom: spacing.page, gap: spacing.section },
   chips: { flexDirection: 'row', gap: spacing.group },
   chip: {
     minHeight: minTapTarget,
     paddingHorizontal: spacing.rowX,
+    paddingVertical: 6,
     borderRadius: radius.sm,
     justifyContent: 'center',
   },
-  dateChip: { flex: 1, paddingHorizontal: 6, alignItems: 'center' },
+  // Narrow side padding so "Tomorrow" fits five across on a 375pt phone without shrinking.
+  dateChip: { flex: 1, paddingHorizontal: 4, alignItems: 'center' },
   chipsWrap: { flexWrap: 'wrap' },
   // Two per row; the calendar button takes the last row on its own.
   dateChipWrap: { flexGrow: 1, flexBasis: '40%' },

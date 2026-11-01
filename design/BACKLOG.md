@@ -115,3 +115,5 @@ Each item names its owner. One item per work session. spec-keeper runs a pre-fli
 | 108 | Design round 80: each flight in the route card is its own tappable box, no caret (John) | main | P1 | Built (design round 80, branch claude/project-thread-fzqwou) |
 | 109 | Design round 81: Save moves into the route card top right; route title truly centered in both result headers (John) | main | P1 | Built (design round 81, branch claude/project-thread-fzqwou) |
 | 110 | Design round 82: Leave By drive time from Apple Maps with traffic (live-drive-time function), rough guess as fallback (John) | main | P1 | Built (design round 82, branch claude/project-thread-fzqwou); on once John adds the Apple key and deploys |
+| 111 | Design round 83: rain radar switch moves from the map into Settings > Map (John) | main | P2 | Built (design round 83, branch claude/project-thread-fzqwou) |
+| 112 | Design round 84: date chips all read the same, weekday over date, fixed sizes (John) | main | P1 | Built (design round 84, branch claude/project-thread-fzqwou) |

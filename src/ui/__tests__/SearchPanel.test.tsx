@@ -53,6 +53,24 @@ describe('SearchPanel text size', () => {
     act(() => r?.unmount());
   });
 
+  it('draws every date chip the same way: a small top word over the bold date, never shrunk (John, 2026-11-01)', () => {
+    r = render(1, { date: dateChips('2026-10-20')[6].date });
+    const chips = r.root.findAll((n) => n.props.testID === 'chip-date' && typeof n.type === 'string');
+    // Four quick chips, plus the calendar holding the later day.
+    expect(chips).toHaveLength(5);
+    const lines = chips.map((ch) => ch.findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string'));
+    expect(lines.map((l) => l.map((t) => t.props.children))).toEqual([
+      ['Today', 'Oct 20'],
+      ['Tomorrow', 'Oct 21'],
+      ['Thu', 'Oct 22'],
+      ['Fri', 'Oct 23'],
+      ['Mon', 'Oct 26'],
+    ]);
+    const sizes = new Set(lines.map((l) => l.map((t) => StyleSheet.flatten(t.props.style).fontSize).join('/')));
+    expect(sizes.size).toBe(1);
+    expect(lines.flat().some((t) => t.props.adjustsFontSizeToFit)).toBe(false);
+  });
+
   it('keeps the date chips on one row at normal sizes', () => {
     r = render(1);
     expect(chipRow(r).flexWrap).toBeUndefined();
