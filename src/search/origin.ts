@@ -37,3 +37,25 @@ export function showLocationCard(s: {
 }): boolean {
   return s.settingsLoaded && !s.locationAsked && !s.useLocation && s.permission === 'undetermined';
 }
+
+/** Where the globe rests on the search page, with the From and To it was set for. */
+export interface RestSpot<T> {
+  from: string | null;
+  to: string | null;
+  spot: T | null;
+}
+
+/**
+ * The globe rests on From. A swap (the same two airports, reversed) keeps the spot it had, so the
+ * globe holds still instead of turning to the new From (John, 2026-11-01).
+ */
+export function restSpot<T>(
+  prev: RestSpot<T> | null,
+  from: string | null,
+  to: string | null,
+  spotOf: (code: string) => T,
+): RestSpot<T> {
+  if (prev && (from || to) && prev.from === to && prev.to === from) return { from, to, spot: prev.spot };
+  if (prev && prev.from === from && prev.to === to) return prev;
+  return { from, to, spot: from ? spotOf(from) : null };
+}

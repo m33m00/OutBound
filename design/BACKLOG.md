@@ -126,3 +126,4 @@ Each item names its owner. One item per work session. spec-keeper runs a pre-fli
 | 119 | Design round 91: drawer locked at the route's size once a route is picked (John) | main | P1 | Built (design round 91, branch claude/project-thread-fzqwou) |
 | 120 | Design round 92: diversions name where they went, keep their times, continue to the destination, flag the connection (John) | main | P1 | Built (design round 92, branch claude/project-thread-fzqwou) |
 | 121 | Design round 93: one main button when To is home; swap with To empty; search panel fits without scrolling (John) | main | P1 | Built (design round 93, branch claude/project-thread-fzqwou) |
+| 122 | Design round 94: globe holds still on a swap; state lines never blink while the globe moves (John) | main | P1 | Built (design round 94, branch claude/project-thread-fzqwou) |

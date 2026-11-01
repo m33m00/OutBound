@@ -50,6 +50,21 @@ export function halfSnap(height: number, need: number, full: number): number {
   return Math.min(full - 1, Math.max(Math.round(height * 0.48), Math.ceil(need)));
 }
 
+/** A measured content height, kept per layout (`key`) so the drawer's stop doesn't move back and forth. */
+export interface FitHeight {
+  key: string;
+  height: number;
+}
+
+/**
+ * Only grows while the layout key stays the same, so a row that comes and goes (Get Home after a
+ * swap) doesn't move the drawer and re-zoom the globe (John, 2026-11-01). A new key starts over.
+ */
+export function growFit(prev: FitHeight, key: string, height: number): FitHeight {
+  if (prev.key !== key) return { key, height };
+  return height > prev.height ? { key, height } : prev;
+}
+
 /** Height of the handle strip at the top of the panel. */
 export const SHEET_HANDLE_H = minTapTarget;
 /** Top strip of a locked panel: no handle, just room under the rounded corners. */

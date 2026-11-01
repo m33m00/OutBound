@@ -1,4 +1,4 @@
-import { FLICK_SPEED, halfSnap, pickSnap, SNAP_SPRING } from '../Sheet';
+import { FLICK_SPEED, growFit, halfSnap, pickSnap, SNAP_SPRING } from '../Sheet';
 
 // Peek, half, full (pt), like the home screen.
 const SNAPS = [120, 380, 700];
@@ -41,5 +41,17 @@ describe('middle stop fits the search panel (John, 2026-11-01: had to scroll to 
     expect(halfSnap(800, 300, 790)).toBe(384);
     expect(halfSnap(800, 455.2, 790)).toBe(456);
     expect(halfSnap(800, 900, 790)).toBe(789);
+  });
+});
+
+describe('drawer fit holds still (John, 2026-11-01: the globe re-zoomed on a swap)', () => {
+  it('only grows within one layout, so a row coming and going does not move the drawer', () => {
+    let f = growFit({ key: '', height: 0 }, 'plain', 360);
+    f = growFit(f, 'plain', 300);
+    expect(f.height).toBe(360);
+    f = growFit(f, 'plain', 380);
+    expect(f.height).toBe(380);
+    // The location card going away is a new layout: measure afresh.
+    expect(growFit({ key: 'card', height: 520 }, 'plain', 360)).toEqual({ key: 'plain', height: 360 });
   });
 });

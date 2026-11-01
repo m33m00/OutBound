@@ -10,7 +10,7 @@ import { nearestAirport } from '@/search/airports';
 import { searchRequest, showGetHome } from '@/search/areas';
 import { dateChips } from '@/search/dates';
 import { driveQuery } from '@/search/leaveBy';
-import { chooseOrigin, showLocationCard } from '@/search/origin';
+import { chooseOrigin, restSpot, showLocationCard, type RestSpot } from '@/search/origin';
 import { departedFirst, legLookup, resultsBanner, rowStatus, statusLookups } from '@/search/statusTags';
 import { SAMPLE_TZ, SCHEDULE_SOURCE, useRouteSearch } from '@/search/useRouteSearch';
 import { minTapTarget, spacing, textStyles, useColors } from '@/theme';
@@ -35,7 +35,7 @@ import { ResultsBanner } from '@/ui/ResultsBanner';
 import { neighborDays } from '@/ui/DayStepper';
 import { ResultsPanel } from '@/ui/ResultsPanel';
 import { SearchPanel } from '@/ui/SearchPanel';
-import { halfSnap, Sheet, SHEET_HANDLE_H, SHEET_LOCKED_TOP } from '@/ui/Sheet';
+import { growFit, halfSnap, Sheet, SHEET_HANDLE_H, SHEET_LOCKED_TOP, type FitHeight } from '@/ui/Sheet';
 import { useRadarLayers } from '@/ui/useRadarLayers';
 import { useSheetContent } from '@/ui/useSheetContent';
 import { selectionTick } from '@/ui/haptics';
@@ -86,7 +86,11 @@ export default function HomeScreen() {
     [settings.useLocation, location],
   );
   const origin = chooseOrigin({ picked: pickedOrigin, nearest, mainHome, lastOrigin: settings.lastOrigin });
-  const homeCenter = useMemo<LonLat | null>(() => (origin ? [AIRPORTS[origin].lon, AIRPORTS[origin].lat] : null), [origin]);
+  const restRef = useRef<RestSpot<LonLat> | null>(null);
+  const homeCenter = useMemo<LonLat | null>(() => {
+    restRef.current = restSpot(restRef.current, origin, destination, (code) => [AIRPORTS[code].lon, AIRPORTS[code].lat]);
+    return restRef.current.spot;
+  }, [origin, destination]);
   const locationCard = showLocationCard({
     settingsLoaded,
     locationAsked: settings.locationAsked,
@@ -131,7 +135,10 @@ export default function HomeScreen() {
   const tallRoute = routeOpen && routeHeight > 0 && routeHeight + LOCKED_CHROME >= sheetFull - TALL_ROUTE_SLACK;
   // The search panel's middle stop opens down to Find Routes, so nothing sits under the fold
   // (John, 2026-11-01: "you have to scroll down just a bit").
-  const [searchFit, setSearchFit] = useState(0);
+  // Grows only, per layout (location card, banner or plain), so Get Home coming and going on a
+  // swap doesn't move the drawer or re-zoom the globe (John, 2026-11-01).
+  const [fit, setFit] = useState<FitHeight>({ key: '', height: 0 });
+  const searchFit = fit.height;
   const snaps = useMemo(() => {
     const h = sheetFull + spacing.group;
     const route = routeHeight > 0 ? routeHeight + LOCKED_CHROME : Math.round(h * ROUTE_VIEW_SHARE);
@@ -482,7 +489,9 @@ export default function HomeScreen() {
                   filtersChanged={filtersChanged}
                   onFind={() => runSearch()}
                   onGetHome={getHomeShown ? getHome : undefined}
-                  onFitHeight={setSearchFit}
+                  onFitHeight={(h) =>
+                    setFit((prev) => growFit(prev, `${locationCard ? 'card' : ''}${banner ? 'banner' : ''}`, h))
+                  }
                   homeName={mainHome ? (areaFor(mainHome)?.city ?? mainHome) : undefined}
                   onSetHome={mainHome ? undefined : () => router.push({ pathname: '/settings', params: { section: 'homes' } })}
                   locationCard={
