@@ -77,7 +77,7 @@ function LegClock({ leg, view, text, dimmed }: { leg: Flight; view?: LegStatusVi
   return <Text style={[text, { fontFamily: fonts.bodySemiBold, color: dimmed ? c.muted : c.text }]}>{keep(time)}</Text>;
 }
 
-/** The time a leg line shows: the new time when it moved, none when canceled or diverted, else the schedule. */
+/** The time a leg line shows: the new time when it moved, none when canceled, else the schedule (a diversion keeps it). */
 export function legClockText(leg: Flight, view?: LegStatusView): string | null {
   if (!view?.struck) return legDepartText(leg);
   return view.newText;
@@ -140,6 +140,12 @@ function LegTimeline({
               <LegClock leg={leg.flight} view={view} text={text} dimmed={dimmed} />
               {`${legClockText(leg.flight, view) ? '  ' : ''}${leg.flight.from}\u00a0→\u00a0${leg.flight.to}`}
             </Text>
+            {/* A diversion goes on to the planned airport, late (John, 2026-11-01). */}
+            {view?.tag?.kind === 'diverted' ? (
+              <Text style={[textStyles.small, { color: c.muted }]} testID="leg-diverted-note">
+                {`Continuing to ${leg.flight.to} · new arrival time pending`}
+              </Text>
+            ) : null}
             {above ? null : pills}
           </>
         );
@@ -223,7 +229,10 @@ function Headline({ headline }: { headline: StatusHeadline }) {
         styles.summary,
         styles.summaryLead,
         styles.headline,
-        { backgroundColor: c[TONE_BG[headline.tone]], borderColor: headline.tone === 'gone' ? c.line2 : c[TONE_BG[headline.tone]] },
+        {
+          backgroundColor: c[TONE_BG[headline.tone]],
+          borderColor: headline.tone === 'gone' ? c.line2 : c[TONE_BG[headline.tone]],
+        },
       ]}
       testID="headline">
       {headline.tone === 'canceled' ? (
@@ -302,7 +311,9 @@ export const ResultRow = memo(function ResultRow({
           {/* The new time is full size; the old one sits small and struck before it (John, 2026-10-30). */}
           {first?.struck && first.newText ? (
             <>
-              <Text style={[styles.was, styles.struck, { color: c.muted }]}>{keep(t.depart)}</Text>{'\u00a0'}{keep(first.newText)}
+              <Text style={[styles.was, styles.struck, { color: c.muted }]}>{keep(t.depart)}</Text>
+              {'\u00a0'}
+              {keep(first.newText)}
             </>
           ) : (
             t.depart
@@ -311,7 +322,9 @@ export const ResultRow = memo(function ResultRow({
           {/* A late arrival shows like a late departure: old time small and struck, then the new time. */}
           {status?.arrival ? (
             <>
-              <Text style={[styles.was, styles.struck, { color: c.muted }]}>{keep(t.arrive)}</Text>{'\u00a0'}{keep(status.arrival.newText)}
+              <Text style={[styles.was, styles.struck, { color: c.muted }]}>{keep(t.arrive)}</Text>
+              {'\u00a0'}
+              {keep(status.arrival.newText)}
             </>
           ) : (
             t.arrive
@@ -344,7 +357,9 @@ export const ResultRow = memo(function ResultRow({
       {hasImpact ? (
         <ImpactBadge impact={impact} onPress={() => onImpactPress?.(it.id)} />
       ) : impactLoading ? (
-        <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>Checking…</Text>
+        <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>
+          Checking…
+        </Text>
       ) : null}
     </View>
   );
@@ -434,9 +449,8 @@ export const ResultRow = memo(function ResultRow({
                 {slimStops(it)} · {formatDuration(it.totalMin)}
               </Text>
             </View>
-            // Slim row: who flies it and anything live; seats per leg live in the route card.
-            // One line of flights and at most one tag, which names the flight it means
-            // ("PHX → LAX delayed 40m"), so the row never stacks (John, 2026-10-31).
+            // Slim row: who flies it and anything live; seats per leg live in the route card. // One line of flights and at most
+            one tag, which names the flight it means // ("PHX → LAX delayed 40m"), so the row never stacks (John, 2026-10-31).
             <View style={styles.legLine} testID="flights-line">
               {it.legs.map((leg) => (
                 <View key={leg.flight.id} style={styles.flight} testID="flight-item">
@@ -542,7 +556,15 @@ const styles = StyleSheet.create({
   railLine: { flex: 1, width: 2, minHeight: 4 },
   railHalf: { flex: 1, width: 2 },
   // One flight: a tinted box you tap to open the flight (John, 2026-11-01).
-  legBox: { flex: 1, minHeight: 44, justifyContent: 'center', gap: 6, paddingVertical: 10, paddingHorizontal: 12, borderRadius: radius.sm },
+  legBox: {
+    flex: 1,
+    minHeight: 44,
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: radius.sm,
+  },
   // A leg's tag and flight chip, above (first flight) or below (later flights) its time.
   legMeta: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', columnGap: spacing.group, rowGap: 2 },
   connection: { flex: 1, flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: spacing.group },

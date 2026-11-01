@@ -12,6 +12,16 @@ export const STATE_WORD: Record<FlightState, string> = {
   diverted: 'Diverted',
 };
 
+/**
+ * The sheet's state word. A diversion names where it landed when the data gives an airport other
+ * than the planned one (John, 2026-11-01: "it doesn't show where it diverted").
+ */
+export function stateWord(status: { state: FlightState; arrival: { airport: string | null } }, plannedTo: string): string {
+  const landed = status.arrival.airport?.toUpperCase();
+  if (status.state === 'diverted' && landed && landed !== plannedTo.toUpperCase()) return `Diverted to ${landed}`;
+  return STATE_WORD[status.state];
+}
+
 /** "50 min late", "4 min early", "On time"; null when unknown. */
 export function delayText(min: number | null): string | null {
   if (min == null) return null;

@@ -71,12 +71,7 @@ export default function HomeScreen() {
   const [filters, setFilters] = useState<SearchFilters>(DEFAULT_FILTERS);
   // Each search starts from the saved defaults (Settings).
   useEffect(() => setFilters(settings.search), [settings.search]);
-  const {
-    location,
-    status: locationStatus,
-    permission: locationPermission,
-    request: requestLocation,
-  } = useSharedLocation();
+  const { location, status: locationStatus, permission: locationPermission, request: requestLocation } = useSharedLocation();
   const homes = useMemo(() => homeAirports(settings.homes), [settings.homes]);
   const mainHome = settings.homes.main;
   // From (Q-051): a hand pick (picker, swap) wins for the rest of the session,
@@ -89,10 +84,7 @@ export default function HomeScreen() {
     [settings.useLocation, location],
   );
   const origin = chooseOrigin({ picked: pickedOrigin, nearest, mainHome, lastOrigin: settings.lastOrigin });
-  const homeCenter = useMemo<LonLat | null>(
-    () => (origin ? [AIRPORTS[origin].lon, AIRPORTS[origin].lat] : null),
-    [origin],
-  );
+  const homeCenter = useMemo<LonLat | null>(() => (origin ? [AIRPORTS[origin].lon, AIRPORTS[origin].lat] : null), [origin]);
   const locationCard = showLocationCard({
     settingsLoaded,
     locationAsked: settings.locationAsked,
@@ -153,10 +145,7 @@ export default function HomeScreen() {
 
   // At-airport shortcut (round 33): within 4 km of an airport, report from its departures board.
   const atAirport = settings.useLocation ? airportYouAreAt(location, now) : null;
-  const departures = useMemo(
-    () => (atAirport && !LIVE_FLIGHTS ? sampleDepartures(atAirport, now) : []),
-    [atAirport, now],
-  );
+  const departures = useMemo(() => (atAirport && !LIVE_FLIGHTS ? sampleDepartures(atAirport, now) : []), [atAirport, now]);
   const [departuresFor, setDeparturesFor] = useState<string | null>(null);
   const departuresSheet = useSheetContent(departuresFor);
 
@@ -201,10 +190,7 @@ export default function HomeScreen() {
   // hook reports 'off'; dev builds then show sample impacts so the screens look finished (round 30: no labels).
   const live = useRouteImpacts(results);
   const sampleImpacts = __DEV__ && live.state === 'off';
-  const impacts = useMemo(
-    () => (sampleImpacts ? sampleRouteImpacts(results) : live),
-    [sampleImpacts, results, live],
-  );
+  const impacts = useMemo(() => (sampleImpacts ? sampleRouteImpacts(results) : live), [sampleImpacts, results, live]);
   // Live status tags on every row (Q-047, Q-050): one lookup per distinct flight.
   const lookups = useMemo(() => statusLookups(results), [results]);
   // Sample flights get sample statuses; real flights from the schedule DB get live ones.
@@ -231,10 +217,7 @@ export default function HomeScreen() {
 
   // Radar overlay (items 13-14): on by default, remembered (Q-032).
   const radar = useRadarLayers(settings.radarOn, now);
-  const statusMarks = useMemo(
-    () => impacts.airports.map((a) => ({ ...mark(a.code), level: a.level })),
-    [impacts.airports],
-  );
+  const statusMarks = useMemo(() => impacts.airports.map((a) => ({ ...mark(a.code), level: a.level })), [impacts.airports]);
 
   // Area toggles (Q-048): remembered per airport code; off = exactly that airport.
   const areaOn = settings.areaOn;
@@ -288,17 +271,17 @@ export default function HomeScreen() {
     const to = searched?.destination ?? destination;
     const codes = new Set(to ? [to] : []);
     for (const r of results) codes.add(r.destination);
+    // Where the picked route's flight diverted to, when the live data says (John, 2026-11-01).
+    const picked = selectedId ? rowStatuses?.[selectedId] : undefined;
+    for (const l of picked?.legs ?? []) if (l.divertedTo && AIRPORTS[l.divertedTo]) codes.add(l.divertedTo);
     return [...codes].map(mark);
-  }, [searched, destination, results]);
+  }, [searched, destination, results, selectedId, rowStatuses]);
 
-  const select = useCallback(
-    (id: string | null) => {
-      setSelectedId(id);
-      // Picking a route drops the panel to its route-view height so the globe shows it.
-      if (id) setSheetIndex(SHEET.half);
-    },
-    [],
-  );
+  const select = useCallback((id: string | null) => {
+    setSelectedId(id);
+    // Picking a route drops the panel to its route-view height so the globe shows it.
+    if (id) setSheetIndex(SHEET.half);
+  }, []);
 
   // Opening a saved route from My Trips (Q-043): run its day's search again (today once
   // that day has passed), then open the same flights if they're still in the results.
@@ -332,8 +315,7 @@ export default function HomeScreen() {
     if (outcome.hidden) setShowHidden(true);
     select(outcome.id);
   }, [reopening, reopenPast, state, select]);
-  const missingNote =
-    state.status === 'done' && reopenNote?.at === state.searchedAt ? reopenNote.text : undefined;
+  const missingNote = state.status === 'done' && reopenNote?.at === state.searchedAt ? reopenNote.text : undefined;
 
   // Closing the route view goes back to the tall list, at the route you had open.
   const closeRoute = useCallback(
@@ -342,9 +324,7 @@ export default function HomeScreen() {
       setSheetIndex(SHEET.full);
       const index = departedFirst(results, rowStatuses).findIndex((r) => r.id === id);
       if (index >= 0) {
-        requestAnimationFrame(() =>
-          listRef.current?.scrollToIndex({ index, viewPosition: 0.3, animated: false }),
-        );
+        requestAnimationFrame(() => listRef.current?.scrollToIndex({ index, viewPosition: 0.3, animated: false }));
       }
     },
     [select, results, rowStatuses],
@@ -461,7 +441,11 @@ export default function HomeScreen() {
         {/* Rain radar is switched in Settings > Map, not on the map (John, 2026-11-01). */}
         {/* A picked route holds the panel at its size: no drag, no handle (John, 2026-11-01). */}
         {bodyHeight > 0 ? (
-          <Sheet snaps={snaps} index={routeOpen ? (tallRoute ? SHEET.full : SHEET.half) : sheetIndex} onIndexChange={setSheetIndex} locked={routeOpen}>
+          <Sheet
+            snaps={snaps}
+            index={routeOpen ? (tallRoute ? SHEET.full : SHEET.half) : sheetIndex}
+            onIndexChange={setSheetIndex}
+            locked={routeOpen}>
             {/* Search and results cross-fade as they swap (design round 29). */}
             <Appear key={showResults ? 'results' : 'search'}>
               {!showResults ? (

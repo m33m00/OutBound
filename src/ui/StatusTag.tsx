@@ -12,7 +12,7 @@ export const TAG_TONE: Record<LegTagKind, Tone> = {
   departed: 'gone',
   arrived: 'gone',
   canceled: 'canceled',
-  diverted: 'canceled',
+  diverted: 'delayed',
 };
 
 /** A live-status word on a row ("Delayed 25m", "Departed", "Canceled"), shared by results and requests. */
@@ -20,12 +20,17 @@ export function StatusTag({ label, tone }: { label: string; tone: Tone }) {
   const c = useColors();
   return (
     <View
-      style={[styles.statusTag, { backgroundColor: c[TONE_BG[tone]], borderColor: tone === 'gone' ? c.line2 : c[TONE_BG[tone]] }]}>
+      style={[
+        styles.statusTag,
+        { backgroundColor: c[TONE_BG[tone]], borderColor: tone === 'gone' ? c.line2 : c[TONE_BG[tone]] },
+      ]}>
       {/* Icon keeps Canceled / Diverted from reading as a Full-tier red edge; the word stays. */}
-      {tone === 'canceled' ? (
-        <Icon name="xmark.circle" size={12} tintColor={c[TONE_FG[tone]]} fallback={null} />
-      ) : null}
-      <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, styles.shrink, { fontFamily: fonts.bodySemiBold, color: c[TONE_FG[tone]] }]}>{label}</Text>
+      {tone === 'canceled' ? <Icon name="xmark.circle" size={12} tintColor={c[TONE_FG[tone]]} fallback={null} /> : null}
+      <Text
+        lineBreakStrategyIOS="push-out"
+        style={[textStyles.small, styles.shrink, { fontFamily: fonts.bodySemiBold, color: c[TONE_FG[tone]] }]}>
+        {label}
+      </Text>
     </View>
   );
 }

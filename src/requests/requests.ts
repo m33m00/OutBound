@@ -168,9 +168,10 @@ export function liveRequestDetail(r: LoadRequest, now: number, live: RequestLive
       };
     }
     case 'canceled':
-    case 'diverted':
       // The tag says "Canceled, was 2:15 PM", so speech only adds when it was asked.
       return { prefix: 'Scheduled ', time: null, struck: nb(live.scheduledText), tail, spoken: `asked ${asked}` };
+    // A diverted flight left on its time and goes on late; its departure isn't struck (John, 2026-11-01).
+    case 'diverted':
     case 'departed':
     case 'arrived':
       return {

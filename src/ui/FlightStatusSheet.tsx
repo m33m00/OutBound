@@ -5,13 +5,21 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { AIRPORTS, localDate, type Flight, type LegSeats } from '@/engine';
 import { useFlightStatus, type FlightLookup, type UseFlightStatusOptions, type Movement } from '@/live';
 import type { FlightStatusEntry } from '@/live/flightStatus';
-import { answerText, answerTier, askNote, reportClosedNote, type AskState, type LoadAnswer, type ReportWindow } from '@/requests/requests';
+import {
+  answerText,
+  answerTier,
+  askNote,
+  reportClosedNote,
+  type AskState,
+  type LoadAnswer,
+  type ReportWindow,
+} from '@/requests/requests';
 import { shortDate } from '@/search/dates';
 import { formatAge, forSpeech, seatCounts, seatSourceText, seatText, TIER_WORD } from '@/search/format';
 import { radius, spacing, textStyles, useColors } from '@/theme';
 
 import { Button, PillButton } from './Buttons';
-import { ageText, delayText, movementLead, movementSpoken, placeText, sampleResponse, STATE_WORD } from './flightStatusText';
+import { ageText, delayText, movementLead, movementSpoken, placeText, sampleResponse, stateWord } from './flightStatusText';
 import { Icon } from './Icon';
 import { useFocusOnMount } from './focusOnMount';
 import { LogFlightLink } from './LogFlightLink';
@@ -60,7 +68,13 @@ export interface FlightLoadActions {
 
 export function lookupForFlight(f: Flight): FlightLookup {
   const tz = AIRPORTS[f.from]?.tz ?? 'UTC';
-  return { airline: f.airline, flightNumber: f.flightNumber, date: localDate(f.departUtc, tz), from: f.from, departUtc: f.departUtc };
+  return {
+    airline: f.airline,
+    flightNumber: f.flightNumber,
+    date: localDate(f.departUtc, tz),
+    from: f.from,
+    departUtc: f.departUtc,
+  };
 }
 
 const FETCH_FAILED_TEXT = 'Couldn’t get flight status. Try again in a moment.';
@@ -113,12 +127,20 @@ export function FlightStatusSheet({ flight, visible, now, onClose, liveOptions, 
       <View
         key={label}
         accessible
-        accessibilityLabel={forSpeech([`${label}, ${code}`, delay, movementSpoken(m, tz), placeText(m)].filter(Boolean).join('. '))}
+        accessibilityLabel={forSpeech(
+          [`${label}, ${code}`, delay, movementSpoken(m, tz), placeText(m)].filter(Boolean).join('. '),
+        )}
         style={[styles.card, { backgroundColor: c.surface, borderColor: c.line }]}>
         <View style={styles.top}>
           <Text style={[textStyles.number, { color: c.text }]}>{code}</Text>
-          <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>{label}</Text>
-          {delay ? <Text lineBreakStrategyIOS="push-out" style={[textStyles.bodyStrong, styles.trailing, { color: c.text }]}>{delay}</Text> : null}
+          <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>
+            {label}
+          </Text>
+          {delay ? (
+            <Text lineBreakStrategyIOS="push-out" style={[textStyles.bodyStrong, styles.trailing, { color: c.text }]}>
+              {delay}
+            </Text>
+          ) : null}
         </View>
         {/* The time that matters now is full size; the scheduled one it replaced sits small and struck before it (John, 2026-10-30). */}
         {lead ? (
@@ -133,7 +155,9 @@ export function FlightStatusSheet({ flight, visible, now, onClose, liveOptions, 
             <Text style={[styles.leadMeta, { color: c.muted }]}>{`  ${lead.label}`}</Text>
           </Text>
         ) : null}
-        <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, { color: c.muted }]}>{placeText(m)}</Text>
+        <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, { color: c.muted }]}>
+          {placeText(m)}
+        </Text>
       </View>
     );
   };
@@ -158,10 +182,14 @@ export function FlightStatusSheet({ flight, visible, now, onClose, liveOptions, 
             <SheetHeader title={title} subtitle={subtitle || undefined} action="Done" onAction={onClose} />
             <ScrollView contentContainerStyle={styles.body}>
               {error === 'not_configured' ? (
-                <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, { color: c.muted }]}>Flight status isn’t available right now.</Text>
+                <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, { color: c.muted }]}>
+                  Flight status isn’t available right now.
+                </Text>
               ) : null}
               {error === 'fetch_failed' && !response ? (
-                <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, { color: c.text }]}>{FETCH_FAILED_TEXT}</Text>
+                <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, { color: c.text }]}>
+                  {FETCH_FAILED_TEXT}
+                </Text>
               ) : null}
               {loading && !response ? <ActivityIndicator accessibilityLabel="Loading flight status" /> : null}
               {response && !status ? (
@@ -174,7 +202,7 @@ export function FlightStatusSheet({ flight, visible, now, onClose, liveOptions, 
                   {/* Same colors as the row tags (Q-050); the word carries the state. */}
                   <View
                     accessible
-                    accessibilityLabel={`Status: ${STATE_WORD[status.state]}`}
+                    accessibilityLabel={`Status: ${stateWord(status, flight.to)}${status.state === 'diverted' ? `, continuing to ${flight.to}` : ''}`}
                     style={[
                       styles.state,
                       {
@@ -189,7 +217,7 @@ export function FlightStatusSheet({ flight, visible, now, onClose, liveOptions, 
                     <Text
                       style={[textStyles.title, { color: tone ? c[TONE_FG[tone]] : c.text }]}
                       maxFontSizeMultiplier={TITLE_MAX_SCALE}>
-                      {STATE_WORD[status.state]}
+                      {stateWord(status, flight.to)}
                     </Text>
                   </View>
                   {side('Departs', flight.from, status.departure)}
@@ -207,7 +235,12 @@ export function FlightStatusSheet({ flight, visible, now, onClose, liveOptions, 
                           <Icon name="clock" size={14} tintColor={c.text} fallback={null} />
                         </View>
                       ) : null}
-                      <Text style={[response.stale ? textStyles.bodyStrong : textStyles.small, styles.ageText, { color: response.stale ? c.text : c.muted }]}>
+                      <Text
+                        style={[
+                          response.stale ? textStyles.bodyStrong : textStyles.small,
+                          styles.ageText,
+                          { color: response.stale ? c.text : c.muted },
+                        ]}>
                         {ageText(response, now)}
                       </Text>
                     </View>
@@ -219,7 +252,9 @@ export function FlightStatusSheet({ flight, visible, now, onClose, liveOptions, 
                         // "Just updated" only when the last answer really is fresh.
                         if (loading || refresh() !== false) return;
                         const note =
-                          error || response?.stale ? 'Try again in a couple of minutes.' : 'Just updated. You can refresh again in a couple of minutes.';
+                          error || response?.stale
+                            ? 'Try again in a couple of minutes.'
+                            : 'Just updated. You can refresh again in a couple of minutes.';
                         setRefreshNote(note);
                         announce(note);
                       }}
@@ -228,21 +263,33 @@ export function FlightStatusSheet({ flight, visible, now, onClose, liveOptions, 
                       accessibilityState={{ busy: loading }}
                       style={pressStyle([styles.refresh, styles.refreshPill, { backgroundColor: c.accentSoft }])}>
                       <Icon name="arrow.clockwise" size={13} weight="semibold" tintColor={c.accent} fallback={null} />
-                      <Text lineBreakStrategyIOS="push-out" style={[textStyles.bodyStrong, { color: c.accent }]}>{loading ? 'Refreshing…' : 'Refresh'}</Text>
+                      <Text lineBreakStrategyIOS="push-out" style={[textStyles.bodyStrong, { color: c.accent }]}>
+                        {loading ? 'Refreshing…' : 'Refresh'}
+                      </Text>
                     </Pressable>
                   ) : null}
                 </View>
               ) : null}
-              {refreshNote ? <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>{refreshNote}</Text> : null}
+              {refreshNote ? (
+                <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>
+                  {refreshNote}
+                </Text>
+              ) : null}
               {error === 'fetch_failed' && response ? (
-                <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.text }]}>Couldn’t refresh just now; showing the last status.</Text>
+                <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.text }]}>
+                  Couldn’t refresh just now; showing the last status.
+                </Text>
               ) : null}
               {load && flight ? (
                 <LoadCard load={load} seats={seats} now={now} focus={backFromReport} onReport={() => setReporting(true)} />
               ) : null}
               {flight ? <LogFlightLink flight={flight} now={now} /> : null}
               {/* The source line names a real feed, so it shows only for live status (round 30: no sample labels). */}
-              {isSample ? null : <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>Data from AeroDataBox.</Text>}
+              {isSample ? null : (
+                <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>
+                  Data from AeroDataBox.
+                </Text>
+              )}
             </ScrollView>
           </>
         )}
@@ -268,12 +315,19 @@ function SearchSeats({ seats, now }: { seats: LegSeats; now: number }) {
   const counts = seatCounts(seats);
   const age = seatSourceText(seats, now);
   return (
-    <View accessible accessibilityLabel={forSpeech([`${TIER_WORD[seats.tier]} · ${counts}`, age].filter(Boolean).join('. '))} testID="search-seats">
+    <View
+      accessible
+      accessibilityLabel={forSpeech([`${TIER_WORD[seats.tier]} · ${counts}`, age].filter(Boolean).join('. '))}
+      testID="search-seats">
       <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, { color: c.text }]}>
         <Text style={[textStyles.bodyStrong, { color: c[TIER_FG[seats.tier]] }]}>{TIER_WORD[seats.tier]}</Text>
         {` · ${counts}`}
       </Text>
-      {age ? <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>{age}</Text> : null}
+      {age ? (
+        <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>
+          {age}
+        </Text>
+      ) : null}
     </View>
   );
 }
@@ -324,7 +378,9 @@ function LoadCard({
           accessibilityLabel={forSpeech(`You reported ${answerText(yourReport)} · ${formatAge(yourReport.at, now)}`)}>
           {/* Amber means you; the tier word keeps its tier color. */}
           <Text style={{ color: c.youText }}>You reported </Text>
-          <Text lineBreakStrategyIOS="push-out" style={[textStyles.bodyStrong, { color: c[TIER_FG[tier]] }]}>{TIER_WORD[tier]}</Text>
+          <Text lineBreakStrategyIOS="push-out" style={[textStyles.bodyStrong, { color: c[TIER_FG[tier]] }]}>
+            {TIER_WORD[tier]}
+          </Text>
           {` · ${yourReport.open} open · ${yourReport.listed} listed · ${formatAge(yourReport.at, now)}`}
         </Text>
       ) : null}
@@ -334,7 +390,9 @@ function LoadCard({
           style={[textStyles.body, { color: c.text }]}
           accessibilityLabel={forSpeech(`Your request was answered: ${answerText(askAnswer)} · ${formatAge(askAnswer.at, now)}`)}>
           {'Answered: '}
-          <Text lineBreakStrategyIOS="push-out" style={[textStyles.bodyStrong, { color: c[TIER_FG[answerTierWord]] }]}>{TIER_WORD[answerTierWord]}</Text>
+          <Text lineBreakStrategyIOS="push-out" style={[textStyles.bodyStrong, { color: c[TIER_FG[answerTierWord]] }]}>
+            {TIER_WORD[answerTierWord]}
+          </Text>
           {` · ${askAnswer.open} open · ${askAnswer.listed} listed · ${formatAge(askAnswer.at, now)}`}
         </Text>
       ) : null}
@@ -411,7 +469,15 @@ const styles = StyleSheet.create({
   struck: { textDecorationLine: 'line-through' },
   refresh: { minHeight: 44, justifyContent: 'center', marginLeft: 'auto' },
   // Refresh as a soft capsule (round 79): 36pt tall, the margin keeps 44pt to tap.
-  refreshPill: { minHeight: 36, flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 12, borderRadius: 18, marginVertical: 4 },
+  refreshPill: {
+    minHeight: 36,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 12,
+    borderRadius: 18,
+    marginVertical: 4,
+  },
   refreshRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: spacing.section },
   ageLine: { flexDirection: 'row', alignItems: 'flex-start', gap: 6, flexShrink: 1 },
   ageIcon: { marginTop: 3 },

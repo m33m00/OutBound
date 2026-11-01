@@ -2,15 +2,7 @@ import { createMemoryProvider, searchItineraries, type Flight, type Itinerary } 
 import { DATE, NOW, flight } from '@/engine/testHelpers';
 import { flightLookupKey, type FlightState, type FlightStatus, type Movement } from '@/live';
 
-import {
-  departedFirst,
-  legLookup,
-  legStatus,
-  resultsBanner,
-  rowStatus,
-  spokenDuration,
-  statusLookups,
-} from '../statusTags';
+import { departedFirst, legLookup, legStatus, resultsBanner, rowStatus, spokenDuration, statusLookups } from '../statusTags';
 
 const MIN = 60_000;
 const MINS = { minConnectSameAirlineMin: 60, minConnectSwitchMin: 90 };
@@ -46,7 +38,11 @@ const a = flight('A1', 'AA', 'BNA', 'DFW', '15:10', 120);
 const b = flight('B2', 'AA', 'DFW', 'LAX', '18:20', 180);
 
 async function oneStop(): Promise<Itinerary> {
-  const [it] = await searchItineraries(createMemoryProvider([a, b], {}), { origin: 'BNA', destination: 'LAX', date: DATE }, { now: NOW });
+  const [it] = await searchItineraries(
+    createMemoryProvider([a, b], {}),
+    { origin: 'BNA', destination: 'LAX', date: DATE },
+    { now: NOW },
+  );
   return it;
 }
 
@@ -91,11 +87,26 @@ describe('legStatus', () => {
     expect(legStatus(a, status(a, 'departed')).struck).toBe(false);
   });
 
-  it('canceled and diverted: time struck, spoken with the old time', () => {
+  it('canceled: time struck, spoken with the old time', () => {
     const c = legStatus(a, status(a, 'canceled'));
     expect(c).toMatchObject({ struck: true, newText: null });
     expect(c.tag).toEqual({ kind: 'canceled', label: 'Canceled', spoken: 'Canceled, was 3:10 PM' });
-    expect(legStatus(a, status(a, 'diverted')).tag).toMatchObject({ kind: 'diverted', label: 'Diverted' });
+  });
+
+  it('diverted: keeps its time and names where it landed when the data says (John, 2026-11-01)', () => {
+    const plain = legStatus(a, status(a, 'diverted'));
+    expect(plain).toMatchObject({ struck: false, divertedTo: null });
+    expect(plain.tag).toEqual({
+      kind: 'diverted',
+      label: 'Diverted',
+      spoken: 'Diverted, continuing to DFW, new arrival time pending',
+    });
+    const st = status(a, 'diverted');
+    const there = legStatus(a, { ...st, arrival: { ...st.arrival, airport: 'AUS' } });
+    expect(there).toMatchObject({ struck: false, divertedTo: 'AUS' });
+    expect(there.tag?.label).toBe('Diverted to AUS');
+    // The planned airport in the data isn't a diversion airport.
+    expect(legStatus(a, { ...st, arrival: { ...st.arrival, airport: 'DFW' } }).divertedTo).toBeNull();
   });
 
   it('no live status: no tag and nothing struck, even past the scheduled time', () => {
@@ -104,6 +115,14 @@ describe('legStatus', () => {
 });
 
 describe('rowStatus', () => {
+  it('a diverted inbound flight is not a cancellation: arrival pending, onward connection at risk', async () => {
+    const it = await oneStop();
+    const s = rowStatus(it, { [keyOf(a)]: status(a, 'diverted'), [keyOf(b)]: status(b, 'scheduled') }, MINS);
+    expect(s.canceled).toBe(false);
+    expect(s.arrivalPending).toBe(true);
+    expect(s.risks).toEqual([expect.objectContaining({ index: 0, airport: 'DFW', diverted: true })]);
+  });
+
   it('no tags and no risk when everything is on time', async () => {
     const it = await oneStop();
     const s = rowStatus(it, { [keyOf(a)]: status(a, 'scheduled'), [keyOf(b)]: status(b, 'scheduled') }, MINS);
@@ -115,10 +134,7 @@ describe('rowStatus', () => {
     // 25m late in, 70m scheduled layover -> 45m < 60 same airline.
     const s = rowStatus(it, { [keyOf(a)]: status(a, 'delayed', 25) }, MINS);
     expect(s.risks).toEqual([{ index: 0, airport: 'DFW', layoverMin: 45, minConnectMin: 60 }]);
-    expect(s.spoken).toEqual([
-      'AA A1: Delayed 25 minutes, was 3:10 PM, now 3:35 PM',
-      'Connection at risk at DFW',
-    ]);
+    expect(s.spoken).toEqual(['AA A1: Delayed 25 minutes, was 3:10 PM, now 3:35 PM', 'Connection at risk at DFW']);
   });
 
   it('uses the estimated arrival when the provider gives one', async () => {
@@ -146,7 +162,11 @@ describe('rowStatus', () => {
 
   it('uses the switching minimum for different airlines', async () => {
     const b2 = { ...flight('B3', 'UA', 'DFW', 'LAX', '18:50', 180) };
-    const [it] = await searchItineraries(createMemoryProvider([a, b2], {}), { origin: 'BNA', destination: 'LAX', date: DATE }, { now: NOW });
+    const [it] = await searchItineraries(
+      createMemoryProvider([a, b2], {}),
+      { origin: 'BNA', destination: 'LAX', date: DATE },
+      { now: NOW },
+    );
     // 100m scheduled; 15m late -> 85m < 90 switching.
     const s = rowStatus(it, { [keyOf(a)]: status(a, 'delayed', 15) }, MINS);
     expect(s.risks).toMatchObject([{ airport: 'DFW', layoverMin: 85, minConnectMin: 90 }]);
@@ -171,7 +191,11 @@ describe('rowStatus', () => {
 
   it('no live status: no dimming and no at-risk, even for a tight scheduled connection', async () => {
     const tight = flight('B9', 'AA', 'DFW', 'LAX', '17:40', 180); // 30m scheduled (a "Show Them" route)
-    const [it] = await searchItineraries(createMemoryProvider([a, tight], {}), { origin: 'BNA', destination: 'LAX', date: DATE }, { now: NOW, minConnectSameAirlineMin: 30 });
+    const [it] = await searchItineraries(
+      createMemoryProvider([a, tight], {}),
+      { origin: 'BNA', destination: 'LAX', date: DATE },
+      { now: NOW, minConnectSameAirlineMin: 30 },
+    );
     expect(rowStatus(it, {}, MINS)).toEqual(expect.objectContaining({ risks: [], dimmed: false, canceled: false, spoken: [] }));
   });
 
@@ -212,7 +236,10 @@ describe('resultsBanner (Q-047)', () => {
     expect(resultsBanner({ results: [{}], hiddenCount: 0 })).toBeNull();
   });
   it('no flights in the market that day', () => {
-    expect(resultsBanner({ results: [], hiddenCount: 0 })).toEqual({ kind: 'noFlights', text: 'No Flights Found on Selected Date' });
+    expect(resultsBanner({ results: [], hiddenCount: 0 })).toEqual({
+      kind: 'noFlights',
+      text: 'No Flights Found on Selected Date',
+    });
   });
   it('filters hid routes: count, singular, Title Case action', () => {
     expect(resultsBanner({ results: [], hiddenCount: 3 })).toEqual({

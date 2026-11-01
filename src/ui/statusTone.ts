@@ -3,8 +3,8 @@ import type { ColorToken } from '@/theme';
 
 /**
  * Status colors (Q-050), shared by row tags and the flight status sheet.
- * Delayed = violet Caution; Departed / Arrived = gray; Canceled / Diverted =
- * canceled red (provisional, Q-053). Amber is never used ("you" only).
+ * Delayed and Diverted = violet Caution (a diversion goes on late, John
+ * 2026-11-01); Departed / Arrived = gray; Canceled = canceled red (Q-053). Amber is never used ("you" only).
  * Words always carry the state; color only backs them up.
  */
 export type Tone = 'delayed' | 'gone' | 'canceled';
@@ -18,5 +18,5 @@ export const STATE_TONE: Record<FlightState, Tone | null> = {
   departed: 'gone',
   arrived: 'gone',
   canceled: 'canceled',
-  diverted: 'canceled',
+  diverted: 'delayed',
 };

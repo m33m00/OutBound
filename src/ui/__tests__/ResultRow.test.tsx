@@ -1,5 +1,5 @@
 import React from 'react';
-import { act, create, type ReactTestRenderer } from 'react-test-renderer';
+import { act, create, type ReactTestInstance, type ReactTestRenderer } from 'react-test-renderer';
 
 import { createMemoryProvider, searchItineraries, zonedToUtc } from '@/engine';
 import { flightLookupKey, type FlightStatus } from '@/live';
@@ -42,7 +42,9 @@ describe('ResultRow', () => {
     // Just the chance word on the row; the numbers are in the flight's sheet (John, 2026-10-31).
     expect(texts).toContain('Full');
     expect(texts.some((t) => / open · \d+ listed/.test(String(t)))).toBe(false);
-    expect(root.findAll((n) => n.props.testID === 'seat-age' && typeof n.type === 'string')[0].props.children).toBe('Reported just now');
+    expect(root.findAll((n) => n.props.testID === 'seat-age' && typeof n.type === 'string')[0].props.children).toBe(
+      'Reported just now',
+    );
     expect(root.findAll((n) => n.props.testID === 'flights-line' && typeof n.type === 'string').length).toBe(1);
     expect(root.findAll((n) => n.props.testID === 'seat-summary').length).toBeGreaterThan(0);
     act(() => button.props.onPress());
@@ -75,7 +77,12 @@ describe('ResultRow', () => {
       // The route still names the airport it leaves from: the route line, or each flight's line on the card.
       const all = r!.root
         .findAll((n) => typeof n.type === 'string' && n.props.children != null)
-        .map((n) => [n.props.children].flat().filter((x: unknown) => typeof x === 'string').join(''));
+        .map((n) =>
+          [n.props.children]
+            .flat()
+            .filter((x: unknown) => typeof x === 'string')
+            .join(''),
+        );
       expect(all.some((t) => t.startsWith('BNA →') || t.includes('BNA\u00a0→'))).toBe(true);
     }
   });
@@ -100,7 +107,9 @@ describe('ResultRow', () => {
       ],
     };
     await act(async () => {
-      r = create(<ResultRow itinerary={it} selected={false} now={NOW} onPress={jest.fn()} impact={impact} onImpactPress={onImpact} />);
+      r = create(
+        <ResultRow itinerary={it} selected={false} now={NOW} onPress={jest.fn()} impact={impact} onImpactPress={onImpact} />,
+      );
     });
     const root = r!.root;
     const row = root.findAll((n) => n.props.accessibilityRole === 'button')[0];
@@ -130,7 +139,7 @@ describe('ResultRow', () => {
     expect(texts).toContain('Nonstop');
   });
 
-  it('connections: the headline is the weakest leg\'s chance word; legs are one line each (round 66)', async () => {
+  it("connections: the headline is the weakest leg's chance word; legs are one line each (round 66)", async () => {
     const at = (hhmm: string) => zonedToUtc('2026-10-20', hhmm, 'America/Chicago');
     const provider = createMemoryProvider(
       [
@@ -153,7 +162,9 @@ describe('ResultRow', () => {
     // One age for the card, none per leg.
     expect(texts.filter((t) => t.includes('reported just now'))).toEqual(['Seats reported just now', 'Seats reported just now']);
     // The route card names the connection between the legs.
-    const all = r!.root.findAll((n) => typeof n.type === 'string' && n.props.children != null).map((n) => [n.props.children].flat().join(''));
+    const all = r!.root
+      .findAll((n) => typeof n.type === 'string' && n.props.children != null)
+      .map((n) => [n.props.children].flat().join(''));
     expect(all).toContain('1h 30m connection at DEN');
     // Stops read as a timeline (round 56): one dot per leg in its seat color, no second seat chip.
     const timeline = r!.root.findAll((n) => n.props.testID === 'leg-timeline' && typeof n.type === 'string');
@@ -173,7 +184,10 @@ describe('ResultRow', () => {
         { id: 'A', airline: 'WN', flightNumber: '10', from: 'BNA', to: 'DEN', departUtc: at('08:00'), arriveUtc: at('10:00') },
         { id: 'B', airline: 'WN', flightNumber: '20', from: 'DEN', to: 'LAX', departUtc: at('11:30'), arriveUtc: at('13:30') },
       ],
-      { A: [{ source: 'reported', openSeats: 30, listed: 5, asOf: NOW }], B: [{ source: 'reported', openSeats: 6, listed: 4, asOf: NOW }] },
+      {
+        A: [{ source: 'reported', openSeats: 30, listed: 5, asOf: NOW }],
+        B: [{ source: 'reported', openSeats: 6, listed: 4, asOf: NOW }],
+      },
     );
     const [it] = await searchItineraries(provider, { origin: 'BNA', destination: 'LAX', date: '2026-10-20' }, { now: NOW });
     await act(async () => {
@@ -206,7 +220,10 @@ describe('ResultRow', () => {
     const boxes = r!.root.findAll((n) => n.props.testID === 'leg-box' && typeof n.type === 'string');
     expect(boxes).toHaveLength(2);
     const inBox = (b: (typeof boxes)[number]) =>
-      b.findAll((n) => typeof n.type === 'string' && (n.props.testID === 'leg-flight' || /→/.test([n.props.children].flat().join(''))))
+      b
+        .findAll(
+          (n) => typeof n.type === 'string' && (n.props.testID === 'leg-flight' || /→/.test([n.props.children].flat().join(''))),
+        )
         .map((n) => (n.props.testID === 'leg-flight' ? 'flight' : 'time'))
         .filter((t, i, a) => a.indexOf(t) === i);
     expect(inBox(boxes[0])).toEqual(['flight', 'time']);
@@ -256,30 +273,70 @@ describe('ResultRow', () => {
     return {
       flightNumber: 'AA1',
       state,
-      departure: { airport: 'BNA', scheduledUtc: d, estimatedUtc: lateMin ? new Date(f.departUtc + lateMin * 60_000).toISOString() : null, actualUtc: null, delayMin: lateMin || null, terminal: null, gate: null },
-      arrival: { airport: 'LAX', scheduledUtc: null, estimatedUtc: null, actualUtc: null, delayMin: null, terminal: null, gate: null },
+      departure: {
+        airport: 'BNA',
+        scheduledUtc: d,
+        estimatedUtc: lateMin ? new Date(f.departUtc + lateMin * 60_000).toISOString() : null,
+        actualUtc: null,
+        delayMin: lateMin || null,
+        terminal: null,
+        gate: null,
+      },
+      arrival: {
+        airport: 'LAX',
+        scheduledUtc: null,
+        estimatedUtc: null,
+        actualUtc: null,
+        delayMin: null,
+        terminal: null,
+        gate: null,
+      },
       providerUpdatedAt: null,
     };
   };
   const statusFor = (it: Awaited<ReturnType<typeof fullItinerary>>, s: FlightStatus) =>
-    rowStatus(it, { [flightLookupKey(legLookup(it.legs[0].flight))]: s }, { minConnectSameAirlineMin: 60, minConnectSwitchMin: 90 });
+    rowStatus(
+      it,
+      { [flightLookupKey(legLookup(it.legs[0].flight))]: s },
+      { minConnectSameAirlineMin: 60, minConnectSwitchMin: 90 },
+    );
   const strings = (root: ReactTestRenderer['root']) =>
     root.findAll((n) => typeof n.props.children === 'string').map((n) => n.props.children as string);
 
   it('delayed: violet tag, old time struck through, new time, spoken in the row label', async () => {
     const it = await fullItinerary();
     await act(async () => {
-      r = create(<ResultRow itinerary={it} selected={false} now={NOW} onPress={jest.fn()} status={statusFor(it, live(it, 'delayed', 25))} />);
+      r = create(
+        <ResultRow
+          itinerary={it}
+          selected={false}
+          now={NOW}
+          onPress={jest.fn()}
+          status={statusFor(it, live(it, 'delayed', 25))}
+        />,
+      );
     });
     const root = r!.root;
     expect(strings(root)).toContain('Delayed 25m');
-    const struck = root.findAll((n) => (n.type as unknown) === 'Text' && [n.props.style].flat(3).some((st: { textDecorationLine?: string } | undefined) => st?.textDecorationLine === 'line-through'));
+    const struck = root.findAll(
+      (n) =>
+        (n.type as unknown) === 'Text' &&
+        [n.props.style]
+          .flat(3)
+          .some((st: { textDecorationLine?: string } | undefined) => st?.textDecorationLine === 'line-through'),
+    );
     // In the top time line only (not again on the leg line): the old departure, and the old
     // arrival, since a 25-minute late departure lands about 25 minutes late (design round 25).
     expect(struck).toHaveLength(2);
     const times = root.findAll((n) => n.props.testID === 'row-times' && typeof n.type === 'string')[0];
     const flat = (n: unknown): string =>
-      typeof n === 'string' ? n : Array.isArray(n) ? n.map(flat).join('') : n && typeof n === 'object' && 'props' in n ? flat((n as { props: { children?: unknown } }).props.children) : '';
+      typeof n === 'string'
+        ? n
+        : Array.isArray(n)
+          ? n.map(flat).join('')
+          : n && typeof n === 'object' && 'props' in n
+            ? flat((n as { props: { children?: unknown } }).props.children)
+            : '';
     // Each time keeps its number and AM/PM together (non-breaking space, design round 26).
     // The old time small and struck on the left, then the new time (John, 2026-10-30, round 58).
     expect(flat(times.props.children)).toBe('9:00\u00a0AM\u00a09:25\u00a0AM – 11:20\u00a0AM\u00a011:45\u00a0AM');
@@ -290,20 +347,33 @@ describe('ResultRow', () => {
     const row = root.findAll((n) => n.props.accessibilityRole === 'button')[0];
     expect(row.props.accessibilityLabel).toContain('Delayed 25 minutes, was 9:00 AM, now 9:25 AM');
     // The weather/FAA badge slot stays separate from status tags.
-    expect(root.findAll((n) => n.props.testID === 'badge-slot')[0].findAll((n) => n.props.children === 'Delayed 25m')).toHaveLength(0);
+    expect(
+      root.findAll((n) => n.props.testID === 'badge-slot')[0].findAll((n) => n.props.children === 'Delayed 25m'),
+    ).toHaveLength(0);
   });
 
-  it('route card: a leg\'s tag sits just left of its flight, in one piece (John, 2026-11-01)', async () => {
+  it("route card: a leg's tag sits just left of its flight, in one piece (John, 2026-11-01)", async () => {
     const it = await fullItinerary();
     await act(async () => {
-      r = create(<ResultRow itinerary={it} selected now={NOW} onPress={jest.fn()} onLegPress={jest.fn()} status={statusFor(it, live(it, 'delayed', 25))} />);
+      r = create(
+        <ResultRow
+          itinerary={it}
+          selected
+          now={NOW}
+          onPress={jest.fn()}
+          onLegPress={jest.fn()}
+          status={statusFor(it, live(it, 'delayed', 25))}
+        />,
+      );
     });
     const group = r!.root.findAll((n) => n.props.testID === 'leg-flight' && typeof n.type === 'string')[0];
     const words = group.findAll((n) => typeof n.props.children === 'string').map((n) => n.props.children as string);
     const tagAt = words.indexOf('Delayed 25m');
     expect(tagAt).toBeGreaterThanOrEqual(0);
     // The flight chip's text comes after the tag, inside the same group.
-    const flat = group.findAll((n) => typeof n.type === 'string' && n.props.children != null).map((n) => [n.props.children].flat().join(''));
+    const flat = group
+      .findAll((n) => typeof n.type === 'string' && n.props.children != null)
+      .map((n) => [n.props.children].flat().join(''));
     const flightAt = flat.findIndex((t) => /AA\s?1/.test(t));
     expect(flightAt).toBeGreaterThan(flat.indexOf('Delayed 25m'));
   });
@@ -311,12 +381,18 @@ describe('ResultRow', () => {
   it('canceled: tag word and spoken text; departed: gray tag', async () => {
     const it = await fullItinerary();
     await act(async () => {
-      r = create(<ResultRow itinerary={it} selected={false} now={NOW} onPress={jest.fn()} status={statusFor(it, live(it, 'canceled'))} />);
+      r = create(
+        <ResultRow itinerary={it} selected={false} now={NOW} onPress={jest.fn()} status={statusFor(it, live(it, 'canceled'))} />,
+      );
     });
     expect(strings(r!.root)).toContain('Canceled');
-    expect(r!.root.findAll((n) => n.props.accessibilityRole === 'button')[0].props.accessibilityLabel).toContain('Canceled, was 9:00 AM');
+    expect(r!.root.findAll((n) => n.props.accessibilityRole === 'button')[0].props.accessibilityLabel).toContain(
+      'Canceled, was 9:00 AM',
+    );
     await act(async () => {
-      r!.update(<ResultRow itinerary={it} selected={false} now={NOW} onPress={jest.fn()} status={statusFor(it, live(it, 'departed'))} />);
+      r!.update(
+        <ResultRow itinerary={it} selected={false} now={NOW} onPress={jest.fn()} status={statusFor(it, live(it, 'departed'))} />,
+      );
     });
     expect(strings(r!.root)).toContain('Departed');
   });
@@ -324,9 +400,17 @@ describe('ResultRow', () => {
   it('route card: the struck original shows only in the top line; legs show the new time or nothing (round 59)', async () => {
     const it = await fullItinerary();
     const struckTexts = () =>
-      r!.root.findAll((n) => (n.type as unknown) === 'Text' && [n.props.style].flat(3).some((st: { textDecorationLine?: string } | undefined) => st?.textDecorationLine === 'line-through'));
+      r!.root.findAll(
+        (n) =>
+          (n.type as unknown) === 'Text' &&
+          [n.props.style]
+            .flat(3)
+            .some((st: { textDecorationLine?: string } | undefined) => st?.textDecorationLine === 'line-through'),
+      );
     await act(async () => {
-      r = create(<ResultRow itinerary={it} selected large now={NOW} onPress={jest.fn()} status={statusFor(it, live(it, 'delayed', 25))} />);
+      r = create(
+        <ResultRow itinerary={it} selected large now={NOW} onPress={jest.fn()} status={statusFor(it, live(it, 'delayed', 25))} />,
+      );
     });
     // Old departure and old arrival in the top line, none on the leg.
     expect(struckTexts()).toHaveLength(2);
@@ -335,12 +419,16 @@ describe('ResultRow', () => {
     expect(legWords).toContain('9:25\u00a0AM');
     expect(legWords).not.toContain('9:00\u00a0AM');
     await act(async () => {
-      r!.update(<ResultRow itinerary={it} selected large now={NOW} onPress={jest.fn()} status={statusFor(it, live(it, 'canceled'))} />);
+      r!.update(
+        <ResultRow itinerary={it} selected large now={NOW} onPress={jest.fn()} status={statusFor(it, live(it, 'canceled'))} />,
+      );
     });
     // Only the top line is struck; the leg says Canceled with no time.
     expect(struckTexts()).toHaveLength(1);
     const after = r!.root.findAll((n) => n.props.testID === 'leg-timeline' && typeof n.type === 'string')[0];
-    const words = after.findAll((n) => typeof n.type === 'string').flatMap((n) => [n.props.children].flat().filter((x): x is string => typeof x === 'string'));
+    const words = after
+      .findAll((n) => typeof n.type === 'string')
+      .flatMap((n) => [n.props.children].flat().filter((x): x is string => typeof x === 'string'));
     expect(words).toContain('Canceled');
     // No time before the airports (no leading gap either).
     expect(words).toContain('BNA\u00a0→\u00a0LAX');
@@ -360,11 +448,31 @@ describe('ResultRow', () => {
     const canceled: FlightStatus = {
       flightNumber: 'WN20',
       state: 'canceled',
-      departure: { airport: 'DEN', scheduledUtc: new Date(second.departUtc).toISOString(), estimatedUtc: null, actualUtc: null, delayMin: null, terminal: null, gate: null },
-      arrival: { airport: 'LAX', scheduledUtc: null, estimatedUtc: null, actualUtc: null, delayMin: null, terminal: null, gate: null },
+      departure: {
+        airport: 'DEN',
+        scheduledUtc: new Date(second.departUtc).toISOString(),
+        estimatedUtc: null,
+        actualUtc: null,
+        delayMin: null,
+        terminal: null,
+        gate: null,
+      },
+      arrival: {
+        airport: 'LAX',
+        scheduledUtc: null,
+        estimatedUtc: null,
+        actualUtc: null,
+        delayMin: null,
+        terminal: null,
+        gate: null,
+      },
       providerUpdatedAt: null,
     };
-    const status = rowStatus(it, { [flightLookupKey(legLookup(second))]: canceled }, { minConnectSameAirlineMin: 60, minConnectSwitchMin: 90 });
+    const status = rowStatus(
+      it,
+      { [flightLookupKey(legLookup(second))]: canceled },
+      { minConnectSameAirlineMin: 60, minConnectSwitchMin: 90 },
+    );
     await act(async () => {
       r = create(<ResultRow itinerary={it} selected={false} now={NOW} onPress={jest.fn()} status={status} />);
     });
@@ -376,7 +484,69 @@ describe('ResultRow', () => {
     expect(words.flat().some((w) => /cancel/i.test(w))).toBe(false);
     const tags = line.findAll((n) => n.props.testID === 'row-tag' && typeof n.type === 'string');
     expect(tags).toHaveLength(1);
-    expect(tags[0].findAll((x) => typeof x.props.children === 'string').map((x) => x.props.children)).toContain('DEN → LAX canceled');
+    expect(tags[0].findAll((x) => typeof x.props.children === 'string').map((x) => x.props.children)).toContain(
+      'DEN → LAX canceled',
+    );
+  });
+
+  it('a diverted leg keeps its time, names where it went and says it continues (John, 2026-11-01)', async () => {
+    const at = (hhmm: string) => zonedToUtc('2026-10-20', hhmm, 'America/Chicago');
+    const provider = createMemoryProvider(
+      [
+        { id: 'A', airline: 'WN', flightNumber: '10', from: 'BNA', to: 'DEN', departUtc: at('08:00'), arriveUtc: at('10:00') },
+        { id: 'B', airline: 'WN', flightNumber: '20', from: 'DEN', to: 'LAX', departUtc: at('11:30'), arriveUtc: at('13:30') },
+      ],
+      {
+        A: [{ source: 'reported', openSeats: 30, listed: 5, asOf: NOW }],
+        B: [{ source: 'reported', openSeats: 20, listed: 4, asOf: NOW }],
+      },
+    );
+    const [it] = await searchItineraries(provider, { origin: 'BNA', destination: 'LAX', date: '2026-10-20' }, { now: NOW });
+    const first = it.legs[0].flight;
+    const diverted: FlightStatus = {
+      flightNumber: 'WN10',
+      state: 'diverted',
+      departure: {
+        airport: 'BNA',
+        scheduledUtc: new Date(first.departUtc).toISOString(),
+        estimatedUtc: null,
+        actualUtc: null,
+        delayMin: null,
+        terminal: null,
+        gate: null,
+      },
+      arrival: {
+        airport: 'COS',
+        scheduledUtc: null,
+        estimatedUtc: null,
+        actualUtc: null,
+        delayMin: null,
+        terminal: null,
+        gate: null,
+      },
+      providerUpdatedAt: null,
+    };
+    const status = rowStatus(
+      it,
+      { [flightLookupKey(legLookup(first))]: diverted },
+      { minConnectSameAirlineMin: 60, minConnectSwitchMin: 90 },
+    );
+    expect(status.canceled).toBe(false);
+    await act(async () => {
+      r = create(<ResultRow itinerary={it} selected now={NOW} onPress={jest.fn()} status={status} />);
+    });
+    const strings = (n: ReactTestInstance) =>
+      n.findAll((x) => typeof x.props.children === 'string').map((x) => x.props.children as string);
+    const notes = r!.root.findAll((n) => n.props.testID === 'leg-diverted-note' && typeof n.type === 'string');
+    expect(notes).toHaveLength(1);
+    expect(strings(notes[0]).join('')).toBe('Continuing to DEN \u00b7 new arrival time pending');
+    const all = strings(r!.root);
+    expect(all).toContain('Diverted to COS');
+    // No strike through for a diversion: only a canceled flight's time is crossed out.
+    const struck = r!.root.findAll(
+      (n) => typeof n.type === 'string' && JSON.stringify(n.props.style ?? '').includes('line-through'),
+    );
+    expect(struck).toHaveLength(0);
   });
 
   it('route card A: a canceled leg is the headline; the seats step down to the bottom line (round 66)', async () => {
@@ -386,18 +556,41 @@ describe('ResultRow', () => {
         { id: 'A', airline: 'WN', flightNumber: '10', from: 'BNA', to: 'DEN', departUtc: at('08:00'), arriveUtc: at('10:00') },
         { id: 'B', airline: 'WN', flightNumber: '20', from: 'DEN', to: 'LAX', departUtc: at('11:30'), arriveUtc: at('13:30') },
       ],
-      { A: [{ source: 'reported', openSeats: 30, listed: 5, asOf: NOW }], B: [{ source: 'reported', openSeats: 20, listed: 4, asOf: NOW }] },
+      {
+        A: [{ source: 'reported', openSeats: 30, listed: 5, asOf: NOW }],
+        B: [{ source: 'reported', openSeats: 20, listed: 4, asOf: NOW }],
+      },
     );
     const [it] = await searchItineraries(provider, { origin: 'BNA', destination: 'LAX', date: '2026-10-20' }, { now: NOW });
     const second = it.legs[1].flight;
     const canceled: FlightStatus = {
       flightNumber: 'WN20',
       state: 'canceled',
-      departure: { airport: 'DEN', scheduledUtc: new Date(second.departUtc).toISOString(), estimatedUtc: null, actualUtc: null, delayMin: null, terminal: null, gate: null },
-      arrival: { airport: 'LAX', scheduledUtc: null, estimatedUtc: null, actualUtc: null, delayMin: null, terminal: null, gate: null },
+      departure: {
+        airport: 'DEN',
+        scheduledUtc: new Date(second.departUtc).toISOString(),
+        estimatedUtc: null,
+        actualUtc: null,
+        delayMin: null,
+        terminal: null,
+        gate: null,
+      },
+      arrival: {
+        airport: 'LAX',
+        scheduledUtc: null,
+        estimatedUtc: null,
+        actualUtc: null,
+        delayMin: null,
+        terminal: null,
+        gate: null,
+      },
       providerUpdatedAt: null,
     };
-    const status = rowStatus(it, { [flightLookupKey(legLookup(second))]: canceled }, { minConnectSameAirlineMin: 60, minConnectSwitchMin: 90 });
+    const status = rowStatus(
+      it,
+      { [flightLookupKey(legLookup(second))]: canceled },
+      { minConnectSameAirlineMin: 60, minConnectSwitchMin: 90 },
+    );
     await act(async () => {
       r = create(<ResultRow itinerary={it} selected large now={NOW} onPress={jest.fn()} status={status} />);
     });
