@@ -10,28 +10,31 @@ describe('Bold Text', () => {
   afterEach(() => applyBoldText(false));
 
   it('steps each face up a weight and stops at the heaviest', () => {
-    expect(heavierFont('Inter_400Regular')).toBe('Inter_600SemiBold');
-    expect(heavierFont('Inter_500Medium')).toBe('Inter_700Bold');
-    expect(heavierFont('Inter_800ExtraBold')).toBe('Inter_800ExtraBold');
+    expect(heavierFont('DMSans_400Regular')).toBe('DMSans_600SemiBold');
+    expect(heavierFont('DMSans_500Medium')).toBe('DMSans_700Bold');
+    expect(heavierFont('DMSans_800ExtraBold')).toBe('DMSans_800ExtraBold');
+    expect(heavierFont('DMMono_400Regular')).toBe('DMMono_500Medium');
+    expect(heavierFont('InstrumentSerif_400Regular')).toBe('InstrumentSerif_400Regular');
     expect(heavierFont('BigShouldersDisplay_700Bold')).toBe('BigShouldersDisplay_800ExtraBold');
   });
 
   it('turns every style heavier and back again', () => {
     applyBoldText(true);
     expect(boldTextOn()).toBe(true);
-    expect(textStyles.body.fontFamily).toBe('Inter_600SemiBold');
-    expect(textStyles.small.fontFamily).toBe('Inter_700Bold');
-    expect(textStyles.title.fontFamily).toBe('Inter_800ExtraBold');
-    expect(fonts.bodyMedium).toBe('Inter_700Bold');
+    expect(textStyles.body.fontFamily).toBe('DMSans_600SemiBold');
+    expect(textStyles.small.fontFamily).toBe('DMSans_700Bold');
+    expect(textStyles.code.fontFamily).toBe('DMSans_800ExtraBold');
+    expect(textStyles.title.fontFamily).toBe('InstrumentSerif_400Regular');
+    expect(fonts.bodyMedium).toBe('DMSans_700Bold');
     applyBoldText(false);
-    expect(textStyles.body.fontFamily).toBe('Inter_400Regular');
-    expect(fonts.bodyMedium).toBe('Inter_500Medium');
+    expect(textStyles.body.fontFamily).toBe('DMSans_400Regular');
+    expect(fonts.bodyMedium).toBe('DMSans_500Medium');
   });
 
   it('turning it on twice does not step up twice', () => {
     applyBoldText(true);
     applyBoldText(true);
-    expect(textStyles.body.fontFamily).toBe('Inter_600SemiBold');
+    expect(textStyles.body.fontFamily).toBe('DMSans_600SemiBold');
   });
 
   it('redraws parts that watch it when the setting changes', () => {

@@ -13,11 +13,14 @@ import { textStyles } from './typography';
  * rows, map labels) follow through `useBoldText`.
  */
 const HEAVIER: Record<string, string> = {
-  Inter_400Regular: 'Inter_600SemiBold',
-  Inter_500Medium: 'Inter_700Bold',
-  Inter_600SemiBold: 'Inter_700Bold',
-  Inter_700Bold: 'Inter_800ExtraBold',
-  Inter_800ExtraBold: 'Inter_800ExtraBold',
+  DMSans_400Regular: 'DMSans_600SemiBold',
+  DMSans_500Medium: 'DMSans_700Bold',
+  DMSans_600SemiBold: 'DMSans_700Bold',
+  DMSans_700Bold: 'DMSans_800ExtraBold',
+  DMSans_800ExtraBold: 'DMSans_800ExtraBold',
+  DMMono_400Regular: 'DMMono_500Medium',
+  DMMono_500Medium: 'DMMono_500Medium',
+  // Instrument Serif has one weight; it stays as drawn.
   BigShouldersDisplay_700Bold: 'BigShouldersDisplay_800ExtraBold',
   BigShouldersDisplay_800ExtraBold: 'BigShouldersDisplay_800ExtraBold',
 };

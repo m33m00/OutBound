@@ -67,7 +67,7 @@ export function ImpactSheet({ visible, title, subtitle, impact, now, onClose }: 
                 accessibilityLabel={spoken}
                 style={[styles.station, { backgroundColor: c.surface, borderColor: c.line }]}>
                 <View style={styles.stationTop}>
-                  <Text style={[textStyles.number, { color: c.text }]}>{s.code}</Text>
+                  <Text style={[textStyles.code, { color: c.text }]}>{s.code}</Text>
                   <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>
                     {s.role === 'destination' ? 'Destination' : 'Connection'}
                   </Text>

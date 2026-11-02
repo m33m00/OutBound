@@ -51,7 +51,7 @@ export function AirportPicker({ visible, title, onPick, onClose, current, neares
         accessibilityState={{ selected: on }}
         accessibilityLabel={[airport.code, airport.name, tag].filter(Boolean).join(', ')}
         style={pressStyle([styles.item, { borderColor: c.line }])}>
-        <Text style={[textStyles.number, styles.code, { color: c.text }]}>{airport.code}</Text>
+        <Text style={[textStyles.code, styles.code, { color: c.text }]}>{airport.code}</Text>
         <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, styles.name, { color: c.muted }]} numberOfLines={2}>
           {airport.name}
         </Text>

@@ -174,7 +174,7 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
         title={
           <Text
             ref={listTitleRef}
-            style={[textStyles.heading, styles.title, { color: c.text }]}
+            style={[textStyles.routeTitle, styles.title, { color: c.text }]}
             accessibilityRole="header"
             accessibilityLabel={routeSpoken}
             numberOfLines={2}>
@@ -351,7 +351,7 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
               title={
                 <Text
                   ref={routeTitleRef}
-                  style={[textStyles.heading, styles.title, { color: c.text }]}
+                  style={[textStyles.routeTitle, styles.title, { color: c.text }]}
                   accessibilityRole="header"
                   accessibilityLabel={focusSpoken}
                   numberOfLines={2}>
@@ -382,6 +382,8 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
               {/* Keyed by route so each one opens at its top. */}
               <ScrollView
                 key={focused.id}
+                // The pass sits on the page color, so its torn edge reads as cut out (round 114).
+                style={{ backgroundColor: c.bg }}
                 contentContainerStyle={styles.focus}
                 onScrollEndDrag={pullDown}
                 onContentSizeChange={(_, h) => setContentH(h)}>
@@ -419,6 +421,8 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
         <FlatList
           ref={setListRef}
           data={results}
+          // White cards on the page color, like passes on a counter (round 114).
+          style={{ backgroundColor: c.bg }}
           onScrollBeginDrag={() => {
             userScrolled.current = true;
           }}

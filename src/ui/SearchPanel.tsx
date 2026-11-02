@@ -182,7 +182,7 @@ export function AirportCard({
           {label}
         </Text>
         <Animated.View style={slide} testID="card-code">
-          <Text lineBreakStrategyIOS="push-out" style={[textStyles.title, { color: code ? c.text : c.faint }]}>
+          <Text lineBreakStrategyIOS="push-out" style={[textStyles.code, styles.bigCode, { color: code ? c.text : c.faint }]}>
             {code ?? '—'}
           </Text>
         </Animated.View>
@@ -546,6 +546,8 @@ function useChipHighlight(target: ChipBox | undefined, boxes: Record<string, Chi
 }
 
 const styles = StyleSheet.create({
+  // The From and To codes are the hero of the search card, a little bigger than codes elsewhere (round 114).
+  bigCode: { fontSize: 30, lineHeight: 34, letterSpacing: -0.5 },
   chipDate: { alignItems: 'center' },
   chipBack: { position: 'absolute', borderRadius: radius.sm },
   body: { paddingHorizontal: spacing.page, paddingBottom: spacing.page, gap: spacing.section },

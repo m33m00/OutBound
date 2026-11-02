@@ -19,7 +19,18 @@ import {
 import { statusHeadline } from '@/search/headline';
 import { impactSummary } from '@/search/impactText';
 import { liveLayoverMin, liveTotalMin, type LegStatusView, type RowStatus } from '@/search/statusTags';
-import { elevation, fonts, radius, spacing, textStyles, useBoldText, useColors } from '@/theme';
+import {
+  elevation,
+  fonts,
+  InkContext,
+  inkColors,
+  radius,
+  spacing,
+  textStyles,
+  useBoldText,
+  useColors,
+  useColorSchemeName,
+} from '@/theme';
 
 import { AirlinePill } from './AirlinePill';
 import { Icon } from './Icon';
@@ -94,7 +105,7 @@ function LegTimes({ leg, view, text, dimmed }: { leg: Flight; view?: LegStatusVi
   const departColor = tint(view?.newUtc != null ? shiftMinutes(view.newUtc, view.scheduledUtc) : null);
   const arriveColor = tint(view?.arrival ? shiftMinutes(view.arrival.newUtc, leg.arriveUtc) : null);
   // Tabular figures so times line up row to row (round 113).
-  const strong = { fontFamily: fonts.bodySemiBold, fontVariant: ['tabular-nums' as const] };
+  const strong = { fontFamily: fonts.mono, fontVariant: ['tabular-nums' as const] };
   return (
     <Text style={[text, strong, canceled && styles.struck]} testID="leg-times">
       <Text style={{ color: departColor }} testID="leg-clock">
@@ -375,6 +386,7 @@ export const ResultRow = memo(function ResultRow({
   topAction,
 }: ResultRowProps) {
   const c = useColors();
+  const scheme = useColorSchemeName();
   // A memo row redraws when Bold Text changes.
   useBoldText();
   const { fontScale } = useWindowDimensions();
@@ -408,11 +420,14 @@ export const ResultRow = memo(function ResultRow({
   // Departed rows are dimmed with a gray fill and edge; text keeps 4.5:1.
   const dimmed = !!status?.dimmed;
   const notFlyable = !!status?.canceled;
-  const timeColor = dimmed ? c.muted : c.text;
+  // The route card's stub is the navy ink band (round 114, Boarding pass): what's drawn on it takes
+  // the ink palette, so the times and seat chip read on navy.
+  const hc = large ? inkColors[scheme] : c;
+  const timeColor = dimmed ? hc.muted : hc.text;
   // A time that moved is tinted by how far: early green, then yellow, orange, red (John, 2026-11-02).
   const tint = (min: number | null) => {
     const token = dimmed ? null : shiftToken(min);
-    return token ? { color: c[token] } : null;
+    return token ? { color: hc[token] } : null;
   };
   const departTint = first?.newUtc != null ? tint(shiftMinutes(first.newUtc, first.scheduledUtc)) : null;
   const lastLeg = it.legs[it.legs.length - 1]?.flight;
@@ -433,7 +448,7 @@ export const ResultRow = memo(function ResultRow({
   const times = (
     <View style={styles.shrink} testID="row-times-block">
       {departMoved || arriveMoved ? (
-        <Text style={[textStyles.small, styles.struck, { color: c.muted }]} numberOfLines={1} testID="row-was">
+        <Text style={[textStyles.small, styles.struck, { color: hc.muted }]} numberOfLines={1} testID="row-was">
           {t.depart} – {t.arrive}
         </Text>
       ) : null}
@@ -446,7 +461,7 @@ export const ResultRow = memo(function ResultRow({
         {status?.canceled ? (
           // A canceled leg: the top times go grey, not struck; the leg's pill and struck times say it
           // (John, 2026-11-02).
-          <Text style={{ color: c.muted }} testID="row-times-canceled">
+          <Text style={{ color: hc.muted }} testID="row-times-canceled">
             {t.depart} – {t.arrive}
           </Text>
         ) : (
@@ -461,7 +476,7 @@ export const ResultRow = memo(function ResultRow({
             {' – '}
             {pendingArrival ? (
               // A diversion on the route: the arrival isn't known yet, like the leg's own TBD (John, 2026-11-02).
-              <Text style={{ color: c.muted }} testID="row-arrive-tbd">
+              <Text style={{ color: hc.muted }} testID="row-arrive-tbd">
                 {ARRIVAL_TBD}
               </Text>
             ) : arriveMoved ? (
@@ -473,7 +488,7 @@ export const ResultRow = memo(function ResultRow({
             )}
           </>
         )}
-        {t.plusDays ? <Text style={[textStyles.small, { color: c.muted }]}> {t.plusDays}</Text> : null}
+        {t.plusDays ? <Text style={[textStyles.small, { color: hc.muted }]}> {t.plusDays}</Text> : null}
       </Text>
     </View>
   );
@@ -482,24 +497,24 @@ export const ResultRow = memo(function ResultRow({
   // chance (John, 2026-11-02: it said "Likely" with a canceled first flight).
   const seatSummary = (lead: boolean) =>
     notFlyable ? (
-      <View style={[styles.summary, lead && styles.summaryLead, { backgroundColor: c.surface2 }]} testID="seat-summary">
-        <Text lineBreakStrategyIOS="push-out" style={[lead ? textStyles.heading : textStyles.bodyStrong, { color: c.muted }]}>
+      <View style={[styles.summary, lead && styles.summaryLead, { backgroundColor: hc.surface2 }]} testID="seat-summary">
+        <Text lineBreakStrategyIOS="push-out" style={[lead ? textStyles.heading : textStyles.bodyStrong, { color: hc.muted }]}>
           {NOT_FLYABLE}
         </Text>
       </View>
     ) : summary ? (
       <View
-        style={[styles.summary, lead && styles.summaryLead, { backgroundColor: dimmed ? c.surface : c[TIER_BG[it.tier]] }]}
+        style={[styles.summary, lead && styles.summaryLead, { backgroundColor: dimmed ? hc.surface : hc[TIER_BG[it.tier]] }]}
         testID="seat-summary">
         <Text
           lineBreakStrategyIOS="push-out"
-          style={[lead ? textStyles.heading : textStyles.bodyStrong, { color: dimmed ? c.muted : c[TIER_FG[it.tier]] }]}>
+          style={[lead ? textStyles.heading : textStyles.bodyStrong, { color: dimmed ? hc.muted : hc[TIER_FG[it.tier]] }]}>
           {summary}
         </Text>
       </View>
     ) : (
       // Typical loads stay neutral (no tier word or color) but still say what's known.
-      <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]} testID="seat-neutral">
+      <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: hc.muted }]} testID="seat-neutral">
         {neutralSeatText(it, now)}
       </Text>
     );
@@ -539,34 +554,45 @@ export const ResultRow = memo(function ResultRow({
         (highlight || it.isFull) && styles.strongBorder,
       ]}>
       {/* Route color = weakest leg. */}
-      <View style={[styles.edge, { backgroundColor: dimmed || notFlyable ? c.unknown : c[it.tier] }]} />
-      <View style={styles.content}>
+      {large ? null : <View style={[styles.edge, { backgroundColor: dimmed || notFlyable ? c.unknown : c[it.tier] }]} />}
+      <View style={large ? styles.ticket : styles.content}>
         {selected ? (
           // Route card A (John, 2026-10-31): the seat chip up top, the times, then one box per flight.
+          // In the route view it's a boarding pass (round 114): a navy stub with the chip, Save and the
+          // times, a torn edge, then the flights on white.
           <>
-            {/* Save sits top right of the card, outside the headline's wrapping line (John, 2026-11-01). */}
-            <View style={styles.headlineRow}>
-              <View style={[styles.line, styles.headlineMain]} testID="headline-row">
-                {seatSummary(true)}
-              </View>
-              {topAction ? (
-                <View style={styles.topAction} testID="route-card-action">
-                  {topAction}
+            <InkContext.Provider value={!!large}>
+              <View
+                style={large ? [styles.stub, { backgroundColor: c.ink }] : styles.stubSlim}
+                testID={large ? 'ticket-stub' : undefined}>
+                {/* Save sits top right of the card, outside the headline's wrapping line (John, 2026-11-01). */}
+                <View style={styles.headlineRow}>
+                  <View style={[styles.line, styles.headlineMain]} testID="headline-row">
+                    {seatSummary(true)}
+                  </View>
+                  {topAction ? (
+                    <View style={styles.topAction} testID="route-card-action">
+                      {topAction}
+                    </View>
+                  ) : null}
                 </View>
+                <View style={styles.line}>
+                  {times}
+                  <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, { color: hc.muted }]}>
+                    {[stopCount(it), tripLength(it, status)].filter(Boolean).join(' · ')}
+                  </Text>
+                </View>
+              </View>
+            </InkContext.Provider>
+            {large ? <TicketTear notch={c.bg} line={c.line2} /> : null}
+            <View style={large ? styles.ticketBody : styles.stubSlim}>
+              <LegTimeline itinerary={it} status={status} now={now} large={!!large} dimmed={dimmed} onLegPress={onLegPress} />
+              {cardAge ? (
+                <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]} testID="seat-age">
+                  {cardAge}
+                </Text>
               ) : null}
             </View>
-            <View style={styles.line}>
-              {times}
-              <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, { color: c.muted }]}>
-                {[stopCount(it), tripLength(it, status)].filter(Boolean).join(' · ')}
-              </Text>
-            </View>
-            <LegTimeline itinerary={it} status={status} now={now} large={!!large} dimmed={dimmed} onLegPress={onLegPress} />
-            {cardAge ? (
-              <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]} testID="seat-age">
-                {cardAge}
-              </Text>
-            ) : null}
           </>
         ) : (
           <>
@@ -629,6 +655,24 @@ export const ResultRow = memo(function ResultRow({
   );
 });
 
+/** Half the height of the bite at each end of the tear. */
+const TEAR_NOTCH = 10;
+
+/**
+ * A boarding pass's torn edge (round 114): a dashed rule with a half-circle bite at each end, filled
+ * with the page behind the card so it reads as cut out.
+ */
+function TicketTear({ notch, line }: { notch: string; line: string }) {
+  const bite = { width: TEAR_NOTCH, height: TEAR_NOTCH * 2, backgroundColor: notch, borderColor: line };
+  return (
+    <View style={styles.tear} testID="ticket-tear" importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
+      <View style={[bite, styles.biteLeft]} />
+      <View style={[styles.tearLine, { borderColor: line }]} />
+      <View style={[bite, styles.biteRight]} />
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   // No overflow clip, so the soft shadow shows; the edge rounds its own corners instead.
   row: {
@@ -641,6 +685,20 @@ const styles = StyleSheet.create({
   strongBorder: {
     borderWidth: 2,
   },
+  biteLeft: {
+    marginLeft: -StyleSheet.hairlineWidth,
+    borderTopRightRadius: TEAR_NOTCH,
+    borderBottomRightRadius: TEAR_NOTCH,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderLeftWidth: 0,
+  },
+  biteRight: {
+    marginRight: -StyleSheet.hairlineWidth,
+    borderTopLeftRadius: TEAR_NOTCH,
+    borderBottomLeftRadius: TEAR_NOTCH,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRightWidth: 0,
+  },
   edge: {
     width: 5,
     borderTopLeftRadius: radius.md - 1,
@@ -652,6 +710,26 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.rowX,
     gap: spacing.group,
   },
+  // The route view's boarding pass (round 114): no padding of its own; the stub and body pad themselves.
+  ticket: { flex: 1 },
+  stub: {
+    paddingTop: spacing.rowY,
+    paddingBottom: spacing.rowY + 2,
+    paddingHorizontal: spacing.rowX,
+    gap: spacing.group,
+    borderTopLeftRadius: radius.md - 1,
+    borderTopRightRadius: radius.md - 1,
+  },
+  // In the list, the picked row keeps its old stack: the same parts, no stub.
+  stubSlim: { gap: spacing.group },
+  ticketBody: {
+    paddingTop: spacing.group,
+    paddingBottom: spacing.rowY,
+    paddingHorizontal: spacing.rowX,
+    gap: spacing.group,
+  },
+  tear: { flexDirection: 'row', alignItems: 'center', height: TEAR_NOTCH * 2 },
+  tearLine: { flex: 1, borderTopWidth: 1.5, borderStyle: 'dashed', marginHorizontal: 6 },
   path: { flexDirection: 'row', alignItems: 'center', gap: 4, flexShrink: 1 },
   line: {
     flexDirection: 'row',

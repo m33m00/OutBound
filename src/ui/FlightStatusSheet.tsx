@@ -133,7 +133,7 @@ export function FlightStatusSheet({ flight, visible, now, onClose, liveOptions, 
         )}
         style={[styles.card, { backgroundColor: c.surface, borderColor: c.line }]}>
         <View style={styles.top}>
-          <Text style={[textStyles.number, { color: c.text }]}>{code}</Text>
+          <Text style={[textStyles.code, { color: c.text }]}>{code}</Text>
           <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>
             {label}
           </Text>

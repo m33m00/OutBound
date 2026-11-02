@@ -285,7 +285,7 @@ function NumberField({
           maxFontSizeMultiplier={BIG_TEXT_MAX_SCALE}
           accessibilityLabel={forSpeech(`${label}, ${caption}`)}
           accessibilityHint={`Type a number from 0 to ${max}`}
-          style={[styles.bignum, { fontFamily: fonts.displayHeavy, color: c.text, borderColor: c.line }]}
+          style={[styles.bignum, { fontFamily: fonts.mono, color: c.text, borderColor: c.line }]}
         />
         {btn(1)}
       </View>

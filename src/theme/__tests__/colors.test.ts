@@ -70,3 +70,18 @@ describe('Ice Mix colors', () => {
     });
   });
 });
+
+describe('Boarding pass ink band (round 114)', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { inkColors } = require('../colors') as typeof import('../colors');
+  it.each(['light', 'dark'] as const)('%s: every text pair reads on the navy band', (scheme) => {
+    const p = inkColors[scheme];
+    for (const [fg, bg] of textPairs) {
+      expect({ pair: `${fg} on ${bg}`, ok: contrast(p[fg], p[bg]) >= 4.5 }).toEqual({ pair: `${fg} on ${bg}`, ok: true });
+    }
+  });
+
+  it('keeps the same tokens as the main palettes', () => {
+    expect(Object.keys(inkColors.light).sort()).toEqual(Object.keys(colors.light).sort());
+  });
+});

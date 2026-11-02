@@ -22,6 +22,10 @@ export const colors = {
     // Darker than the prototype #66758a to meet 4.5:1 (Q-006).
     faint: '#606f84',
 
+    // Boarding pass navy (round 114): the stub of a picked route's ticket. Text on it comes from
+    // inkColors, through InkSurface.
+    ink: '#13254d',
+
     // Primary
     accent: '#1d3d84',
     onAccent: '#ffffff',
@@ -83,6 +87,8 @@ export const colors = {
     muted: '#9cadc0',
     faint: '#8d9db0',
 
+    ink: '#172b57',
+
     accent: '#9bb8ef',
     onAccent: '#0a1530',
     accentSoft: '#17233b',
@@ -129,3 +135,31 @@ export const colors = {
 
 export type ColorToken = keyof typeof colors.light;
 export type Palette = Record<ColorToken, string>;
+
+/**
+ * Colors for things drawn on the navy ink band (round 114): the dark palette's tier, status and
+ * time colors already read on deep navy, with the surfaces moved onto the band. The same in
+ * light and dark, apart from the band itself.
+ */
+function onInk(ink: string, raised: string): Palette {
+  return {
+    ...colors.dark,
+    bg: ink,
+    surface: ink,
+    surface2: raised,
+    line: '#2d4680',
+    line2: '#3a5590',
+    text: '#ffffff',
+    muted: '#b9c6e2',
+    faint: '#aebcdb',
+    accent: '#cddcff',
+    onAccent: '#0f1e40',
+    accentSoft: raised,
+    ink,
+  };
+}
+
+export const inkColors: Record<ColorScheme, Palette> = {
+  light: onInk(colors.light.ink, '#21386b'),
+  dark: onInk(colors.dark.ink, '#233c70'),
+};

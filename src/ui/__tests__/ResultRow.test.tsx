@@ -4,7 +4,7 @@ import { act, create, type ReactTestInstance, type ReactTestRenderer } from 'rea
 import { createMemoryProvider, searchItineraries, zonedToUtc } from '@/engine';
 import { flightLookupKey, type FlightStatus } from '@/live';
 import { legLookup, rowStatus } from '@/search/statusTags';
-import { colors } from '@/theme';
+import { colors, inkColors } from '@/theme';
 
 import { connectionText, dotSeats, ResultRow, tagColumnWidth } from '../ResultRow';
 import { StatusTag } from '../StatusTag';
@@ -511,12 +511,13 @@ describe('ResultRow', () => {
         <ResultRow itinerary={it} selected large now={NOW} onPress={jest.fn()} status={statusFor(it, live(it, 'canceled'))} />,
       );
     });
-    // The leg keeps its scheduled times, struck; the top times go grey, not struck.
+    // The leg keeps its scheduled times, struck; the top times go grey, not struck (on the pass's navy
+    // stub, its own grey).
     const struck = struckTexts();
     expect(struck).toHaveLength(1);
     expect(struck[0].props.testID).toBe('leg-times');
     const top = r!.root.findAll((n) => n.props.testID === 'row-times-canceled' && typeof n.type === 'string')[0];
-    expect(top.props.style).toEqual({ color: colors.light.muted });
+    expect(top.props.style).toEqual({ color: inkColors.light.muted });
     const after = r!.root.findAll((n) => n.props.testID === 'leg-timeline' && typeof n.type === 'string')[0];
     const words = after
       .findAll((n) => typeof n.type === 'string')
@@ -804,5 +805,29 @@ describe('ResultRow at big text sizes (design round 26)', () => {
     expect(flat(chip.props.style)).toMatchObject({ flexShrink: 1, maxWidth: '100%' });
     const holder = r!.root.findAll((n) => n.props.testID === 'top-right' && typeof n.type === 'string')[0];
     expect(flat(holder.props.style)).toMatchObject({ flexBasis: '100%', justifyContent: 'flex-start' });
+  });
+});
+
+describe('Route card as a boarding pass (round 114)', () => {
+  it('puts the chip, Save and times on a navy stub, tears, then the flights on white', async () => {
+    const it = await twoLegItinerary();
+    let r: ReactTestRenderer;
+    await act(async () => {
+      r = create(<ResultRow itinerary={it} selected large now={NOW} onPress={jest.fn()} topAction={<></>} />);
+    });
+    const host = (id: string) => r!.root.findAll((n) => n.props.testID === id && typeof n.type === 'string')[0];
+    const stub = host('ticket-stub');
+    expect(stub.props.style).toEqual(expect.arrayContaining([expect.objectContaining({ backgroundColor: colors.light.ink })]));
+    // The times on the stub are white; the flights below it are not on the stub.
+    expect(stub.findAll((n) => n.props.testID === 'row-times').length).toBeGreaterThan(0);
+    expect(stub.findAll((n) => n.props.testID === 'leg-timeline')).toHaveLength(0);
+    expect(host('ticket-tear')).toBeTruthy();
+    await act(async () => {
+      r!.update(<ResultRow itinerary={it} selected now={NOW} onPress={jest.fn()} />);
+    });
+    // In the list, the picked row has no stub or tear.
+    expect(r!.root.findAll((n) => n.props.testID === 'ticket-stub')).toHaveLength(0);
+    expect(r!.root.findAll((n) => n.props.testID === 'ticket-tear')).toHaveLength(0);
+    r!.unmount();
   });
 });

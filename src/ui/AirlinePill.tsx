@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 
-import { radius, textStyles, useColors } from '@/theme';
+import { fonts, radius, textStyles, useColors } from '@/theme';
 
 import { Icon } from './Icon';
 
@@ -28,7 +28,8 @@ export function AirlinePill({
         tintColor={c.accent}
         fallback={<Text style={[textStyles.small, { color: c.accent }]}>✈</Text>}
       />
-      <Text style={[text, { color: c.accent }]}>
+      {/* Flight numbers in the pass's mono, like a printed ticket (round 114). */}
+      <Text style={[text, { fontFamily: fonts.mono, color: c.accent }]}>
         {airline} {flightNumber}
       </Text>
     </View>

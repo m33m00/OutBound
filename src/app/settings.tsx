@@ -75,7 +75,7 @@ export default function SettingsScreen() {
             ) : (
               homeList.map((h, i) => (
                 <View key={h.code} style={[styles.row, i > 0 ? [styles.divided, { borderTopColor: c.line }] : null]}>
-                  <Text style={[textStyles.number, styles.code, { color: c.text }]}>{h.code}</Text>
+                  <Text style={[textStyles.code, styles.code, { color: c.text }]}>{h.code}</Text>
                   <View style={styles.label}>
                     <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, { color: c.text }]}>
                       {AIRPORTS[h.code]?.name}
