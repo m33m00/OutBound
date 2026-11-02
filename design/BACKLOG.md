@@ -135,3 +135,4 @@ Each item names its owner. One item per work session. spec-keeper runs a pre-fli
 | 128 | Design round 100: status pills share one width so flight number chips line up across legs (John) | main | P2 | Built (design round 100, branch claude/project-thread-fzqwou) |
 | 129 | Design round 101: results list fills the screen until a route is picked, no globe sliver (John) | main | P2 | Built (design round 101, branch claude/project-thread-fzqwou) |
 | 130 | Design round 102: moved times tinted green to red by how far they moved (John) | main | P2 | Built (design round 102, branch claude/project-thread-fzqwou) |
+| 131 | Design round 103: sample flights for every route out of Dallas, varied delays and early arrivals (John) | main | P2 | Built (design round 103, branch claude/project-thread-fzqwou) |

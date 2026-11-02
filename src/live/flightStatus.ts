@@ -20,6 +20,8 @@ export interface FlightLookup {
   date: string;
   from: string;
   departUtc: number;
+  /** Scheduled arrival, for sample statuses only (never sent to the server). */
+  arriveUtc?: number;
 }
 
 export const CLIENT_COOLDOWN_MS = FLIGHT_STATUS_CONFIG.clientCooldownMs;

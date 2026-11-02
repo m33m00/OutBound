@@ -218,7 +218,14 @@ describe('statusLookups', () => {
     const it = await oneStop();
     const lookups = statusLookups([it, it]);
     expect(lookups).toHaveLength(2);
-    expect(lookups[0]).toEqual({ airline: 'AA', flightNumber: 'A1', date: DATE, from: 'BNA', departUtc: a.departUtc });
+    expect(lookups[0]).toEqual({
+      airline: 'AA',
+      flightNumber: 'A1',
+      date: DATE,
+      from: 'BNA',
+      departUtc: a.departUtc,
+      arriveUtc: a.arriveUtc,
+    });
   });
 });
 

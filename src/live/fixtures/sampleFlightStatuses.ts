@@ -1,13 +1,18 @@
 /**
  * Sample flight statuses for when no backend is configured (UI shows a "Sample status" label).
  * Deterministic from the flight id (flight number + date + origin), so a row never flickers between renders.
- * Mix by hash % 12: 7 on time, then delayed 25m, departed, canceled, arrived, diverted (one each).
+ * Mix by hash % 12: 6 on time, then landing early, delayed (10, 25, 50 or 80 min, so every time tint
+ * shows up), departed, canceled, arrived, diverted (one each; John, 2026-11-02).
  */
 import { flightLookupKey, type FlightLookup, type FlightStatusEntry, type Movement } from '../flightStatus';
 
 const MIN = 60_000;
-/** Assumed block time for the sample arrival (the lookup has no arrival time). */
+/** Assumed block time for the sample arrival when the lookup has no arrival time. */
 const SAMPLE_BLOCK_MIN = 150;
+/** Delay sizes for the delayed bucket: yellow, orange, orange, red tints. */
+const SAMPLE_DELAYS_MIN = [10, 25, 50, 80] as const;
+/** How early an early flight lands. */
+const SAMPLE_EARLY_MIN = [8, 12, 18] as const;
 
 function hash(s: string): number {
   let h = 2166136261;
@@ -34,13 +39,18 @@ export function sampleFlightStatus(lookup: FlightLookup, nowMs: number): FlightS
   const key = flightLookupKey(lookup);
   const flightNumber = `${lookup.airline}${lookup.flightNumber}`.replace(/\s+/g, '').toUpperCase();
   const dep = lookup.departUtc;
-  const arr = dep + SAMPLE_BLOCK_MIN * MIN;
-  const bucket = hash(key) % 12;
-  const late = 25 * MIN;
+  const arr = lookup.arriveUtc ?? dep + SAMPLE_BLOCK_MIN * MIN;
+  const h = hash(key);
+  const bucket = h % 12;
+  const late = SAMPLE_DELAYS_MIN[(h >>> 4) % SAMPLE_DELAYS_MIN.length] * MIN;
+  const early = SAMPLE_EARLY_MIN[(h >>> 4) % SAMPLE_EARLY_MIN.length] * MIN;
   let state: FlightStatusEntry['state'] = 'scheduled';
   let d = mv(lookup.from || null, dep, null, null);
   let a = mv(null, arr, null, null);
-  if (bucket === 7) {
+  if (bucket === 6) {
+    // Leaves on time, a tailwind lands it early.
+    a = mv(null, arr, arr - early, null);
+  } else if (bucket === 7) {
     state = 'delayed';
     d = mv(lookup.from || null, dep, dep + late, null);
     a = mv(null, arr, arr + late, null);

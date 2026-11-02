@@ -86,6 +86,7 @@ export function legLookup(f: Flight): FlightLookup {
     date: localDate(f.departUtc, tz(f.from)),
     from: f.from,
     departUtc: f.departUtc,
+    arriveUtc: f.arriveUtc,
   };
 }
 

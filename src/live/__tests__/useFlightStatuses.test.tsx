@@ -1,7 +1,20 @@
 import React from 'react';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
-import { useFlightStatuses, clearFlightStatusesMemo, type UseFlightStatusesResult, type UseFlightStatusesOptions } from '../useFlightStatuses';
-import { BATCH_MAX, CLIENT_COOLDOWN_MS, dedupeLookups, fetchFlightStatuses, flightLookupKey, type FlightLookup, type BatchResponse } from '../flightStatus';
+import {
+  useFlightStatuses,
+  clearFlightStatusesMemo,
+  type UseFlightStatusesResult,
+  type UseFlightStatusesOptions,
+} from '../useFlightStatuses';
+import {
+  BATCH_MAX,
+  CLIENT_COOLDOWN_MS,
+  dedupeLookups,
+  fetchFlightStatuses,
+  flightLookupKey,
+  type FlightLookup,
+  type BatchResponse,
+} from '../flightStatus';
 import { sampleFlightStatus } from '../fixtures/sampleFlightStatuses';
 import type { Fetcher } from '../airportStatus';
 
@@ -10,7 +23,12 @@ import type { Fetcher } from '../airportStatus';
 const config = { baseUrl: 'https://x.supabase.co', anonKey: 'anon' };
 const DEP = Date.UTC(2026, 9, 22, 14);
 const mkLookup = (n: number, over: Partial<FlightLookup> = {}): FlightLookup => ({
-  airline: 'AA', flightNumber: String(100 + n), date: '2026-10-22', from: 'ORD', departUtc: DEP, ...over,
+  airline: 'AA',
+  flightNumber: String(100 + n),
+  date: '2026-10-22',
+  from: 'ORD',
+  departUtc: DEP,
+  ...over,
 });
 const lookups = (n: number) => Array.from({ length: n }, (_, i) => mkLookup(i));
 
@@ -32,8 +50,24 @@ function batchFetcher(opts: { fail?: boolean; stale?: boolean } = {}) {
         status: {
           flightNumber: fl.flight,
           state: 'delayed' as const,
-          departure: { airport: 'ORD', scheduledUtc: null, estimatedUtc: null, actualUtc: null, delayMin: 25, terminal: null, gate: null },
-          arrival: { airport: 'LAX', scheduledUtc: null, estimatedUtc: null, actualUtc: null, delayMin: 20, terminal: null, gate: null },
+          departure: {
+            airport: 'ORD',
+            scheduledUtc: null,
+            estimatedUtc: null,
+            actualUtc: null,
+            delayMin: 25,
+            terminal: null,
+            gate: null,
+          },
+          arrival: {
+            airport: 'LAX',
+            scheduledUtc: null,
+            estimatedUtc: null,
+            actualUtc: null,
+            delayMin: 20,
+            terminal: null,
+            gate: null,
+          },
           providerUpdatedAt: null,
         },
       })),
@@ -57,7 +91,12 @@ describe('fetchFlightStatuses', () => {
       { flight: 'AA101', date: '2026-10-22', from: 'ORD', dep: DEP },
     ]);
     expect(Object.keys(out)).toEqual([flightLookupKey(mkLookup(0)), flightLookupKey(mkLookup(1))]);
-    expect(out[flightLookupKey(mkLookup(0))]).toMatchObject({ state: 'delayed', delayMin: 25, asOf: '2026-10-21T11:56:00.000Z', stale: false });
+    expect(out[flightLookupKey(mkLookup(0))]).toMatchObject({
+      state: 'delayed',
+      delayMin: 25,
+      asOf: '2026-10-21T11:56:00.000Z',
+      stale: false,
+    });
   });
 
   it('splits more than BATCH_MAX lookups into several requests', async () => {
@@ -69,15 +108,22 @@ describe('fetchFlightStatuses', () => {
 
   it('omits flights the server has no status for, and throws on a non-OK reply', async () => {
     const f = jest.fn(async () => ({
-      ok: true, status: 200,
-      json: async () => ({ asOf: 'x', results: [{ key: 'k', state: 'not_found', stale: false, paused: false, fetchedAt: null, status: null }] }),
+      ok: true,
+      status: 200,
+      json: async () => ({
+        asOf: 'x',
+        results: [{ key: 'k', state: 'not_found', stale: false, paused: false, fetchedAt: null, status: null }],
+      }),
     }));
     expect(await fetchFlightStatuses([mkLookup(0)], config, f as unknown as Fetcher)).toEqual({});
     await expect(fetchFlightStatuses([mkLookup(0)], config, batchFetcher({ fail: true }))).rejects.toThrow('502');
   });
 
   it('dedupeLookups keeps first, in order', () => {
-    expect(dedupeLookups([mkLookup(1), mkLookup(0), mkLookup(1)]).map((d) => d.key)).toEqual([flightLookupKey(mkLookup(1)), flightLookupKey(mkLookup(0))]);
+    expect(dedupeLookups([mkLookup(1), mkLookup(0), mkLookup(1)]).map((d) => d.key)).toEqual([
+      flightLookupKey(mkLookup(1)),
+      flightLookupKey(mkLookup(0)),
+    ]);
   });
 });
 
@@ -98,7 +144,8 @@ async function render(l: readonly FlightLookup[], opts: UseFlightStatusesOptions
   await act(async () => void mounted.push((r = create(<C list={l} o={opts} />))));
   return {
     get: () => latest,
-    rerender: (list: readonly FlightLookup[], o: UseFlightStatusesOptions = opts) => act(async () => r.update(<C list={list} o={o} />)),
+    rerender: (list: readonly FlightLookup[], o: UseFlightStatusesOptions = opts) =>
+      act(async () => r.update(<C list={list} o={o} />)),
   };
 }
 
@@ -118,14 +165,26 @@ describe('useFlightStatuses', () => {
     expect(sampleFlightStatus(mkLookup(3), 0).state).toBe(sampleFlightStatus(mkLookup(3), 99).state);
   });
 
-  it('sample fixtures cover on-time, delayed 25m, departed, canceled, arrived, diverted', () => {
+  it('sample fixtures cover on-time, early, delayed by several sizes, departed, canceled, arrived, diverted', () => {
     const seen: Record<string, number | null> = {};
+    const delays = new Set<number | null>();
+    const earlyArrivals = new Set<number>();
     for (let i = 0; i < 400; i++) {
       const s = sampleFlightStatus(mkLookup(i), 0);
       seen[s.state] = s.delayMin;
+      if (s.state === 'delayed') delays.add(s.delayMin);
+      if (s.state === 'scheduled' && (s.arrival.delayMin ?? 0) < 0) earlyArrivals.add(s.arrival.delayMin!);
     }
     expect(Object.keys(seen).sort()).toEqual(['arrived', 'canceled', 'delayed', 'departed', 'diverted', 'scheduled']);
-    expect(seen.delayed).toBe(25);
+    // Every late tint shows up: yellow (10), orange (25, 50), red (80) (John, 2026-11-02).
+    expect([...delays].sort((a, b) => a! - b!)).toEqual([10, 25, 50, 80]);
+    // Some land early (green), by 8 to 18 minutes.
+    expect([...earlyArrivals].sort((a, b) => a - b)).toEqual([-18, -12, -8]);
+  });
+
+  it("sample arrivals keep the flight's own arrival time when the lookup has it", () => {
+    const l = { ...mkLookup(1), arriveUtc: mkLookup(1).departUtc + 200 * 60_000 };
+    expect(Date.parse(sampleFlightStatus(l, 0).arrival.scheduledUtc!)).toBe(l.arriveUtc);
   });
 
   it('empty list: off, nothing fetched', async () => {
@@ -187,9 +246,16 @@ describe('useFlightStatuses', () => {
     clearFlightStatusesMemo();
     let ok = true;
     const f = batchFetcher();
-    const flaky = jest.fn(async (u: string, i?: { body?: string }) => (ok ? (f as unknown as Fetcher)(u, i) : { ok: false, status: 502, json: async () => ({}) }));
+    const flaky = jest.fn(async (u: string, i?: { body?: string }) =>
+      ok ? (f as unknown as Fetcher)(u, i) : { ok: false, status: 502, json: async () => ({}) },
+    );
     let t = 0;
-    const h = await render(lookups(2), { config, fetcher: flaky as unknown as Fetcher, refreshMs: CLIENT_COOLDOWN_MS, now: () => t });
+    const h = await render(lookups(2), {
+      config,
+      fetcher: flaky as unknown as Fetcher,
+      refreshMs: CLIENT_COOLDOWN_MS,
+      now: () => t,
+    });
     expect(Object.values(h.get().byKey).every((s) => !s.stale)).toBe(true);
     ok = false;
     t += CLIENT_COOLDOWN_MS;
