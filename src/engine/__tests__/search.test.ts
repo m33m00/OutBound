@@ -291,6 +291,15 @@ describe('toRouteLine', () => {
 });
 
 describe('sample provider', () => {
+  it('BNA->LAX keeps its nonstop among many connections (John, 2026-11-02)', async () => {
+    const provider = createSampleProvider(DATE, 8, NOW);
+    const result = await searchItineraries(provider, { origin: 'BNA', destination: 'LAX', date: DATE }, { now: NOW });
+    expect(result.filter((r) => r.stops === 0).map((r) => `${r.legs[0].flight.airline}${r.legs[0].flight.flightNumber}`)).toEqual(
+      ['WN890'],
+    );
+    expect(result.length).toBe(10);
+  });
+
   it('returns sorted DFW->LAX options, nonstops and connections', async () => {
     const provider = createSampleProvider(DATE, 8, NOW);
     const result = await searchItineraries(provider, { origin: 'DFW', destination: 'LAX', date: DATE }, { now: NOW });
@@ -359,5 +368,41 @@ describe('pickResults: which 10 to show in departure order', () => {
   it('never keeps more than KEEP_LEFT routes that left when enough are still to leave', () => {
     const picked = pickResults(day(30, -15), NOW_MS, 10);
     expect(picked.filter((r) => r.departUtc < NOW_MS)).toHaveLength(KEEP_LEFT);
+  });
+
+  describe('every nonstop still to leave makes the list (John, 2026-11-02: "Always show nonstops")', () => {
+    const at = (id: string, hour: number, stops: number) => ({ id, departUtc: NOW_MS + hour * H, stops }) as unknown as Itinerary;
+
+    it('a late nonstop takes the place of the latest route with the most stops', () => {
+      const list = [
+        ...Array.from({ length: 10 }, (_, i) => at(`c${i}`, i + 1, i % 2 ? 3 : 1)),
+        at('n1', 12, 0),
+        at('c11', 13, 2),
+      ];
+      const picked = pickResults(list, NOW_MS, 10).map((r) => r.id);
+      expect(picked).toHaveLength(10);
+      expect(picked).toContain('n1');
+      // c9 (3 stops, latest) made way; departure order kept.
+      expect(picked).not.toContain('c9');
+      expect(picked).toEqual(['c0', 'c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8', 'n1']);
+    });
+
+    it('when nonstops alone fill the list, connections give way and it stays at the limit', () => {
+      const list = [at('c0', 1, 1), ...Array.from({ length: 12 }, (_, i) => at(`n${i}`, i + 2, 0))];
+      const picked = pickResults(list, NOW_MS, 10);
+      expect(picked).toHaveLength(10);
+      expect(picked.every((r) => r.stops === 0)).toBe(true);
+    });
+
+    it('a nonstop that already left follows the usual rule', () => {
+      const list = [at('n-old', -10, 0), ...Array.from({ length: 12 }, (_, i) => at(`c${i}`, i + 1, 1))];
+      expect(pickResults(list, NOW_MS, 10).some((r) => r.id === 'n-old')).toBe(true); // within KEEP_LEFT
+      const crowded = [
+        at('n-old', -10, 0),
+        ...Array.from({ length: 4 }, (_, i) => at(`l${i}`, -4 + i, 1)),
+        ...Array.from({ length: 12 }, (_, i) => at(`c${i}`, i + 1, 1)),
+      ];
+      expect(pickResults(crowded, NOW_MS, 10).some((r) => r.id === 'n-old')).toBe(false);
+    });
   });
 });
