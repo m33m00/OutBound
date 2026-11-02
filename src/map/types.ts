@@ -177,8 +177,8 @@ export interface GlobeMapProps {
    */
   preview?: { from: LonLat; to: LonLat } | null;
   /**
-   * Home motion on (John, 2026-11-01): a slow idle sway of the globe once it's left alone, and a
-   * soft ripple off the home pin. The screen turns it off while results are up or the tab is
+   * Home motion on (John, 2026-11-01): a soft ripple off the home pin (the idle sway was removed
+   * 2026-11-02; the globe stays still until moved). The screen turns it off while results are up or the tab is
    * away. Reduce Motion turns it off whatever this says.
    */
   homeMotion?: boolean;

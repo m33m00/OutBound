@@ -24,6 +24,7 @@ import { FiltersModal } from '@/ui/FiltersModal';
 import { airportYouAreAt, sampleDepartures } from '@/requests/atAirport';
 import { useRequests } from '@/requests/RequestsProvider';
 import { AtAirportCard } from '@/ui/AtAirportCard';
+import { DropBanner } from '@/ui/DropBanner';
 import { DeparturesSheet } from '@/ui/DeparturesSheet';
 import { FlightStatusSheet } from '@/ui/FlightStatusSheet';
 import { useFlightLoad } from '@/ui/useFlightLoad';
@@ -167,6 +168,9 @@ export default function HomeScreen() {
 
   // At-airport shortcut (round 33): within 4 km of an airport, report from its departures board.
   const atAirport = settings.useLocation ? airportYouAreAt(location, now) : null;
+  // Live boards need the schedule feed; until then only sample departures are listed.
+  const airportBanner = !!atAirport && !LIVE_FLIGHTS && !showResults && !routeOpen;
+  const [airportBannerH, setAirportBannerH] = useState(0);
   const departures = useMemo(() => (atAirport && !LIVE_FLIGHTS ? sampleDepartures(atAirport, now) : []), [atAirport, now]);
   const [departuresFor, setDeparturesFor] = useState<string | null>(null);
   const departuresSheet = useSheetContent(departuresFor);
@@ -203,6 +207,9 @@ export default function HomeScreen() {
     [state, showHidden],
   );
   const routes = useMemo(() => results.map((it) => toRouteLine(it, airport)), [results]);
+  // The globe draws only the picked route: no overview of every result's grey lines, so it can't
+  // flash on screen while the panel moves after a search (John, 2026-11-02).
+  const globeRoutes = useMemo(() => (selectedId ? routes.filter((r) => r.id === selectedId) : []), [routes, selectedId]);
 
   // Delay/weather badges (item 7). Until the live functions are deployed the
   // hook reports 'off'; dev builds then show sample impacts so the screens look finished (round 30: no labels).
@@ -455,7 +462,7 @@ export default function HomeScreen() {
 
       <View style={styles.body} onLayout={onBodyLayout}>
         <GlobeMap
-          routes={routes}
+          routes={globeRoutes}
           homeAirports={homeMarks}
           origin={markOrigin ? mark(markOrigin) : null}
           destinations={markDestinations}
@@ -466,7 +473,7 @@ export default function HomeScreen() {
           home={homeCenter}
           // Before a search: a faint arc draws itself between From and To (John, 2026-11-01).
           preview={previewPair}
-          // Idle sway and the home pin ripple, only on the search page while this tab is in view.
+          // The home pin ripple, only on the search page while this tab is in view.
           homeMotion={focused && !showResults && !routeOpen}
           // A tap on a route picks it (with the same tick as a row); a tap on empty globe
           // closes the open route the same way "‹ Routes" does.
@@ -476,8 +483,20 @@ export default function HomeScreen() {
               select(id);
             } else if (selectedId) closeRoute(selectedId);
           }}
-          insets={{ bottom: snaps[sheetAt] }}
+          insets={{ bottom: snaps[sheetAt], top: airportBanner && airportBannerH ? airportBannerH + spacing.group : 0 }}
         />
+        {/* "At DAL? Report a load" drops down from the top into the map, out of the drawer
+            (John, 2026-11-02). Only on the search page; the panel covers it when pulled up. */}
+        {airportBanner && atAirport ? (
+          <DropBanner onHeight={setAirportBannerH}>
+            <AtAirportCard
+              code={atAirport}
+              upcoming={departures.filter((f) => f.departUtc > now).length}
+              onBoard={departures.length}
+              onReport={() => setDeparturesFor(atAirport)}
+            />
+          </DropBanner>
+        ) : null}
         {/* Rain radar is switched in Settings > Map, not on the map (John, 2026-11-01). */}
         {/* A picked route holds the panel at its size: no drag, no handle (John, 2026-11-01). */}
         {bodyHeight > 0 ? (
@@ -514,11 +533,7 @@ export default function HomeScreen() {
                   onGetHome={getHomeShown ? getHome : undefined}
                   onFitHeight={(h) =>
                     setFit((prev) =>
-                      growFit(
-                        prev,
-                        `${locationCard ? 'card' : ''}${banner ? 'banner' : ''}${atAirport && !LIVE_FLIGHTS ? 'airport' : ''}${mainHome ? '' : 'sethome'}`,
-                        h,
-                      ),
+                      growFit(prev, `${locationCard ? 'card' : ''}${banner ? 'banner' : ''}${mainHome ? '' : 'sethome'}`, h),
                     )
                   }
                   homeName={mainHome ? (areaFor(mainHome)?.city ?? mainHome) : undefined}
@@ -531,17 +546,6 @@ export default function HomeScreen() {
                           updateSettings((await requestLocation()) ? { useLocation: true } : { locationAsked: true });
                         }}
                         onNotNow={() => updateSettings({ locationAsked: true })}
-                      />
-                    ) : null
-                  }
-                  airportCard={
-                    // Live boards need the schedule feed; until then only sample departures are listed.
-                    atAirport && !LIVE_FLIGHTS ? (
-                      <AtAirportCard
-                        code={atAirport}
-                        upcoming={departures.filter((f) => f.departUtc > now).length}
-                        onBoard={departures.length}
-                        onReport={() => setDeparturesFor(atAirport)}
                       />
                     ) : null
                   }

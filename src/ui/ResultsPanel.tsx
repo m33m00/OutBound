@@ -108,13 +108,19 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
   useEffect(() => {
     if (p.selectedId) userScrolled.current = true;
   }, [p.selectedId]);
-  useEffect(() => {
+  // The list opens with the Now line at the top (John, 2026-11-02: "I shouldn't see the flights
+  // before that"); routes that left are a scroll up. Rows measure in over a few frames and the
+  // panel grows to full screen, so it pins again on every layout change until you scroll.
+  const retries = useRef(0);
+  const pinNow = useCallback(() => {
     if (searchKey == null || nowAt <= 0 || userScrolled.current) return;
-    const frame = requestAnimationFrame(() =>
-      listRef.current?.scrollToIndex({ index: nowAt, viewPosition: 0, animated: false }),
-    );
-    return () => cancelAnimationFrame(frame);
+    listRef.current?.scrollToIndex({ index: nowAt, viewPosition: 0, animated: false });
   }, [searchKey, nowAt]);
+  useEffect(() => {
+    retries.current = 0;
+    const frame = requestAnimationFrame(pinNow);
+    return () => cancelAnimationFrame(frame);
+  }, [pinNow]);
   // VoiceOver follows the panel (design round 29): opening or flipping a route lands on its
   // title, and coming back lands on the list's title, instead of staying on a button that's gone.
   const routeTitleRef = useRef<ComponentRef<typeof Text>>(null);
@@ -162,7 +168,15 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
         right={
           p.onFilters ? (
             <Button
-              label={tight ? (p.filtersChanged ? String(p.filtersChanged) : '') : p.filtersChanged ? `Filters (${p.filtersChanged})` : 'Filters'}
+              label={
+                tight
+                  ? p.filtersChanged
+                    ? String(p.filtersChanged)
+                    : ''
+                  : p.filtersChanged
+                    ? `Filters (${p.filtersChanged})`
+                    : 'Filters'
+              }
               accessibilityLabel={p.filtersChanged ? `Filters, ${p.filtersChanged} changed` : 'Filters'}
               icon="line.3.horizontal.decrease.circle"
               kind="secondary"
@@ -241,7 +255,9 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
           <View style={styles.loadingBlock} accessible accessibilityLabel="Finding routes">
             <View style={styles.loading}>
               <ActivityIndicator color={c.accent} />
-              <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, { color: c.muted }]}>Finding routes…</Text>
+              <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, { color: c.muted }]}>
+                Finding routes…
+              </Text>
             </View>
             {/* Row-shaped placeholders so the panel isn't empty while it loads; static, so Reduce Motion needs nothing (round 54). */}
             {[0, 1, 2, 3].map((i) => (
@@ -269,7 +285,9 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
                 fallback={null}
               />
               <View style={styles.errorText}>
-                <Text lineBreakStrategyIOS="push-out" style={[textStyles.heading, { color: c.text }]}>Couldn’t load flights</Text>
+                <Text lineBreakStrategyIOS="push-out" style={[textStyles.heading, { color: c.text }]}>
+                  Couldn’t load flights
+                </Text>
                 <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, { color: c.muted }]}>
                   {p.sampleFlights !== false
                     ? 'Your search is still set. Try again in a moment.'
@@ -388,6 +406,8 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
           onScrollBeginDrag={() => {
             userScrolled.current = true;
           }}
+          onContentSizeChange={pinNow}
+          onLayout={pinNow}
           onScrollEndDrag={pullDown}
           keyExtractor={(it) => it.id}
           contentContainerStyle={styles.list}
@@ -419,10 +439,15 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
               </View>
             );
           }}
-          // Rows aren't measured yet: jump near the row by its average height instead.
-          onScrollToIndexFailed={(info) =>
-            listRef.current?.scrollToOffset({ offset: info.averageItemLength * info.index, animated: false })
-          }
+          // Rows aren't measured yet: jump near the row by its average height, then try again once
+          // they are (a few times at most).
+          onScrollToIndexFailed={(info) => {
+            listRef.current?.scrollToOffset({ offset: info.averageItemLength * info.index, animated: false });
+            if (retries.current < 5) {
+              retries.current += 1;
+              setTimeout(pinNow, 50);
+            }
+          }}
           ListFooterComponent={
             <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, styles.footer, { color: c.muted }]}>
               Follow your airline’s rules on sharing loads.
@@ -510,7 +535,9 @@ function NowLine({ time }: { time: string | null }) {
       accessible
       accessibilityLabel={`Now${time ? `, ${time}` : ''}. Flights below haven’t left yet.`}>
       <View style={[styles.rule, { backgroundColor: c.accent }]} />
-      <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { fontFamily: fonts.bodySemiBold, color: c.accent }]}>{time ? `Now · ${time}` : 'Now'}</Text>
+      <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { fontFamily: fonts.bodySemiBold, color: c.accent }]}>
+        {time ? `Now · ${time}` : 'Now'}
+      </Text>
       <View style={[styles.rule, { backgroundColor: c.accent }]} />
     </View>
   );
@@ -573,7 +600,9 @@ function PlaceholderRow() {
 }
 
 /** First departure and last arrival airports of a route. */
-export function routeEnds(it: { legs: readonly { flight: { from: string; to: string } }[] }): { from: string; to: string } | null {
+export function routeEnds(it: {
+  legs: readonly { flight: { from: string; to: string } }[];
+}): { from: string; to: string } | null {
   if (it.legs.length === 0) return null;
   return { from: it.legs[0].flight.from, to: it.legs[it.legs.length - 1].flight.to };
 }

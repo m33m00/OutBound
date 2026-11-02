@@ -43,7 +43,6 @@ import { RouteLegend } from './RouteLegend';
 import { recordRouteLayer, type RouteLayer } from './routeLayer';
 import { RoutePulses } from './RoutePulses';
 import { HomeRipple, PreviewArc } from './HomeMotion';
-import { SWAY, swayOffset } from './homeMotionTiming';
 import { drawnRoutes, nextSelection, routeSpokenName } from './routeModel';
 import { recordBaseLayer, recordRimLayer } from './staticLayer';
 import { canvasLayerOrder, RADAR, radarKey, radarSummary, type CanvasLayerName } from './radar';
@@ -163,24 +162,12 @@ export function GlobeMap({
     clearTimeout(driftTimer.current);
     driftTimer.current = null;
   }, []);
-  // Idle sway (homeMotionTiming.ts): the wait before it starts, and its frame loop.
-  const swayTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const swayFrame = useRef<number | null>(null);
-  const [swayEpoch, setSwayEpoch] = useState(0);
-  const stopSway = useCallback(() => {
-    if (swayTimer.current != null) clearTimeout(swayTimer.current);
-    if (swayFrame.current != null) cancelAnimationFrame(swayFrame.current);
-    swayTimer.current = null;
-    swayFrame.current = null;
-  }, []);
   useEffect(
     () => () => {
       if (frameRef.current != null) cancelAnimationFrame(frameRef.current);
       if (flightRef.current != null) cancelAnimationFrame(flightRef.current);
       if (coastRef.current != null) cancelAnimationFrame(coastRef.current);
       if (driftTimer.current != null) clearTimeout(driftTimer.current);
-      if (swayTimer.current != null) clearTimeout(swayTimer.current);
-      if (swayFrame.current != null) cancelAnimationFrame(swayFrame.current);
     },
     [],
   );
@@ -237,7 +224,6 @@ export function GlobeMap({
     // no coasting or pending drift from before.
     stopCoast();
     cancelDrift();
-    stopSway();
 
     // First camera: launch spin-in (once per app launch, item 11).
     if (!cameraRef.current) {
@@ -273,35 +259,10 @@ export function GlobeMap({
     } else {
       flyTo(next, plan.durationMs, plan.spin);
     }
-  }, [targetKey, viewport, reduceKnown, flyTo, stopFlight, stopCoast, cancelDrift, stopSway]);
+  }, [targetKey, viewport, reduceKnown, flyTo, stopFlight, stopCoast, cancelDrift]);
 
-  // Idle sway (John, 2026-11-01): on the home globe with nothing drawn, once it has been left
-  // alone a few seconds, it turns gently east and west of where it sits. Any touch, a new
-  // target, a route or Reduce Motion stops it where it is, with no jump.
-  const swayAllowed = homeMotion && !reduceMotion && reduceKnown && routes.length === 0 && selectedId == null;
-  const hasCamera = camera != null;
-  useEffect(() => {
-    stopSway();
-    if (!swayAllowed || !hasCamera || moving || flying) return;
-    swayTimer.current = setTimeout(() => {
-      swayTimer.current = null;
-      const base = cameraRef.current;
-      if (!base) return;
-      const t0 = performance.now();
-      let last = 0;
-      const step = (now: number) => {
-        if (now - last >= SWAY.frameMs) {
-          last = now;
-          const next = { ...base, center: [base.center[0] + swayOffset(now - t0), base.center[1]] as LonLat };
-          cameraRef.current = next;
-          setCamera(next);
-        }
-        swayFrame.current = requestAnimationFrame(step);
-      };
-      swayFrame.current = requestAnimationFrame(step);
-    }, SWAY.startAfterMs);
-    return stopSway;
-  }, [swayAllowed, hasCamera, moving, flying, targetKey, viewport, swayEpoch, stopSway]);
+  // No idle sway: the globe stays still until you move it (John, 2026-11-02, removed after round 98's
+  // toned-down version).
 
   // After a pinch (or any release under Reduce Motion), once the globe has
   // been still for a while, glide it slowly back home; never with a route
@@ -583,10 +544,7 @@ export function GlobeMap({
     if (flightTargetRef.current?.spin) stopFlight(true);
     stopCoast();
     cancelDrift();
-    // Any touch stops the idle sway at once and starts its wait over (John, 2026-11-01).
-    stopSway();
-    setSwayEpoch((n) => n + 1);
-  }, [stopFlight, stopCoast, cancelDrift, stopSway]);
+  }, [stopFlight, stopCoast, cancelDrift]);
   const touchRef = useRef(onTouchDown);
   useEffect(() => {
     touchRef.current = onTouchDown;

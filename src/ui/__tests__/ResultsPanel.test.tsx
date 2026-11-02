@@ -44,7 +44,16 @@ describe('ResultsPanel', () => {
     const state = { status: 'done' as const, request, results: list, hiddenCount: 0, hiddenResults: [], searchedAt: NOW };
     const raf = jest.spyOn(globalThis, 'requestAnimationFrame').mockImplementation(() => 0);
     await act(async () => {
-      r = create(<ResultsPanel state={state} selectedId={list[0].id} now={NOW} onSelect={jest.fn()} onBack={jest.fn()} onRetry={jest.fn()} />);
+      r = create(
+        <ResultsPanel
+          state={state}
+          selectedId={list[0].id}
+          now={NOW}
+          onSelect={jest.fn()}
+          onBack={jest.fn()}
+          onRetry={jest.fn()}
+        />,
+      );
     });
     const view = r!.root.findAll((n) => n.props.testID === 'route-view' && typeof n.type === 'string')[0];
     const header = view.find((n) => n.props.accessibilityRole === 'header' && typeof n.type === 'string');
@@ -130,7 +139,8 @@ describe('ResultsPanel', () => {
     expect(r!.root.findAll((n) => n.props.testID === 'card' && typeof n.type === 'string').length).toBe(1);
     // "2 of 2": next is off at the end, previous picks the first route.
     expect(r!.root.findAll((n) => n.props.accessibilityLabel === 'Route 2 of 2').length).toBeGreaterThan(0);
-    const arrow = (dir: string) => r!.root.findAll((n) => n.props.testID === `route-${dir}` && n.props.accessibilityRole === 'button')[0];
+    const arrow = (dir: string) =>
+      r!.root.findAll((n) => n.props.testID === `route-${dir}` && n.props.accessibilityRole === 'button')[0];
     expect(arrow('next').props.accessibilityState).toEqual({ disabled: true });
     act(() => arrow('prev').props.onPress());
     expect(onSelect).toHaveBeenCalledWith(list[0].id);
@@ -253,7 +263,14 @@ describe('Now line', () => {
     const state = { status: 'done' as const, request, results: list, hiddenCount: 0, hiddenResults: [], searchedAt: NOW };
     await act(async () => {
       r = create(
-        <ResultsPanel state={state} selectedId={null} now={between} onSelect={jest.fn()} onBack={jest.fn()} onRetry={jest.fn()} />,
+        <ResultsPanel
+          state={state}
+          selectedId={null}
+          now={between}
+          onSelect={jest.fn()}
+          onBack={jest.fn()}
+          onRetry={jest.fn()}
+        />,
       );
     });
     const lines = r!.root.findAll((n) => n.props.testID === 'now-line' && typeof n.type === 'string');
@@ -272,10 +289,26 @@ describe('Now line', () => {
     const state = { status: 'done' as const, request, results: list, hiddenCount: 0, hiddenResults: [], searchedAt: NOW };
     await act(async () => {
       r = create(
-        <ResultsPanel state={state} selectedId={null} now={between} onSelect={jest.fn()} onBack={jest.fn()} onRetry={jest.fn()} />,
+        <ResultsPanel
+          state={state}
+          selectedId={null}
+          now={between}
+          onSelect={jest.fn()}
+          onBack={jest.fn()}
+          onRetry={jest.fn()}
+        />,
       );
     });
     expect(scroll).toHaveBeenCalledWith({ index: 1, viewPosition: 0, animated: false });
+    // Rows measure in and the panel grows: it pins to the Now line again until you scroll (John, 2026-11-02).
+    const flat = r!.root.findByType(FlatList);
+    scroll.mockClear();
+    act(() => flat.props.onContentSizeChange(390, 1200));
+    expect(scroll).toHaveBeenCalledWith({ index: 1, viewPosition: 0, animated: false });
+    scroll.mockClear();
+    act(() => flat.props.onScrollBeginDrag());
+    act(() => flat.props.onContentSizeChange(390, 1300));
+    expect(scroll).not.toHaveBeenCalled();
     scroll.mockClear();
     // Nothing has left yet the day before: the list starts at the top as usual.
     await act(async () => {
@@ -409,7 +442,12 @@ describe('results bar at big text sizes', () => {
     });
     const marks = r!.root.findAll((n) => n.props.testID === 'row-saved' && typeof n.type === 'string');
     expect(marks.length).toBe(1);
-    const rows = r!.root.findAll((n) => n.props.accessibilityRole === 'button' && typeof n.type === 'string' && n.props.accessibilityHint?.startsWith('Opens the route card'));
+    const rows = r!.root.findAll(
+      (n) =>
+        n.props.accessibilityRole === 'button' &&
+        typeof n.type === 'string' &&
+        n.props.accessibilityHint?.startsWith('Opens the route card'),
+    );
     const saidSaved = rows.map((n) => (n.props.accessibilityLabel as string).endsWith('Saved to My Trips'));
     expect(saidSaved).toEqual([false, true]);
   });
