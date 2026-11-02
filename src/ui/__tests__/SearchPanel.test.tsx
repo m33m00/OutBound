@@ -44,6 +44,25 @@ function render(fontScale: number, extra: Partial<React.ComponentProps<typeof Se
 const chipRow = (r: ReactTestRenderer) =>
   StyleSheet.flatten(r.root.findAll((n) => n.props.testID === 'date-chips' && typeof n.type === 'string')[0].props.style);
 
+describe('SearchPanel area pills', () => {
+  it('the To card gets the area pill too, whenever its airport has a sister airport in the app (John, 2026-11-02)', () => {
+    const pills = (r: ReactTestRenderer) =>
+      r.root
+        .findAll((n) => n.props.accessibilityRole === 'switch' && typeof n.type === 'string')
+        .map((p) => p.props.accessibilityLabel);
+    const toOnly = render(1, { origin: 'BNA', destination: 'DFW' });
+    expect(pills(toOnly)).toEqual(['Area: include all Dallas airports']);
+    act(() => toOnly.unmount());
+    const both = render(1, { origin: 'DAL', destination: 'DFW' });
+    expect(pills(both)).toEqual(['Area: include all Dallas airports', 'Area: include all Dallas airports']);
+    act(() => both.unmount());
+    // LAX's area airports aren't in the app's airport list yet, so there's nothing to add.
+    const none = render(1, { origin: 'BNA', destination: 'LAX' });
+    expect(pills(none)).toEqual([]);
+    act(() => none.unmount());
+  });
+});
+
 describe('SearchPanel text size', () => {
   let r: ReactTestRenderer | undefined;
   afterEach(() => {

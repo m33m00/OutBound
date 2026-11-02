@@ -1,10 +1,10 @@
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import type { Flight } from '@/engine';
 import { flightLookupKey, useFlightStatuses } from '@/live';
-import { MAX_OPEN_REQUESTS, openRequestCount } from '@/requests/requests';
+import { MAX_OPEN_REQUESTS, openRequestCount, upcomingRequests } from '@/requests/requests';
 import { useRequests } from '@/requests/RequestsProvider';
 import { legLookup, legStatus } from '@/search/statusTags';
 import { SCHEDULE_SOURCE } from '@/search/useRouteSearch';
@@ -12,7 +12,6 @@ import { spacing } from '@/theme';
 import { confirmRemove } from '@/trips/confirmRemove';
 import { isPast, savedRouteTitle, sortSaved } from '@/trips/savedRoutes';
 import { useSavedRoutes } from '@/trips/SavedRoutesProvider';
-import { Button } from '@/ui/Buttons';
 import { EmptyState } from '@/ui/EmptyState';
 import { FlightStatusSheet } from '@/ui/FlightStatusSheet';
 import { ListGroup, SectionFooter, SectionHeader } from '@/ui/ListGroup';
@@ -35,16 +34,28 @@ export default function TripsScreen() {
   const [now, setNow] = useState(Date.now());
   useFocusEffect(useCallback(() => setNow(Date.now()), []));
   const list = sortSaved(routes, now);
-  const { mine: requests } = useRequests();
-  const openCount = openRequestCount(requests);
+  const { mine } = useRequests();
+  const openCount = openRequestCount(mine, now);
   // A request opens its flight: status, seats, and Cancel Request while it waits (round 34).
   const [flightOpen, setFlightOpen] = useState<Flight | null>(null);
   const flightSheet = useSheetContent(flightOpen);
   const load = useFlightLoad(flightSheet.shown, now, { fromTrips: true });
   // Sample flights show the same sample status Search does; live ones ask the status service.
   const live = SCHEDULE_SOURCE === 'live';
-  const lookups = useMemo(() => requests.map((r) => legLookup(r.flight)), [requests]);
+  const lookups = useMemo(() => mine.map((r) => legLookup(r.flight)), [mine]);
   const statuses = useFlightStatuses(lookups, live ? {} : SAMPLE_STATUS_OPTIONS);
+  // Only flights still to leave; one that live data says departed or arrived drops off too.
+  const requests = upcomingRequests(mine, now, (r) => {
+    const kind = legStatus(r.flight, statuses.byKey[flightLookupKey(legLookup(r.flight))]).tag?.kind;
+    return kind === 'departed' || kind === 'arrived';
+  });
+  // Tick at the next departure so that flight drops off while the tab is open.
+  const nextDepart = requests[0]?.flight.departUtc;
+  useEffect(() => {
+    if (nextDepart == null) return;
+    const timer = setTimeout(() => setNow(Date.now()), Math.max(0, nextDepart - Date.now()) + 1000);
+    return () => clearTimeout(timer);
+  }, [nextDepart, now]);
   const sheet = (
     <FlightStatusSheet
       flight={flightSheet.shown}
@@ -67,7 +78,6 @@ export default function TripsScreen() {
             icon="suitcase"
             title="No trips yet"
             body="Routes you bookmark in Search and answers to your load requests show up here."
-            action={<Button label="Find Routes" icon="magnifyingglass" onPress={() => router.navigate('/')} />}
           />
         ) : null}
         {sheet}
@@ -91,19 +101,15 @@ export default function TripsScreen() {
               />
             ))}
           </ListGroup>
-          <SectionFooter>
-            {`${openCount} of ${MAX_OPEN_REQUESTS} requests open`}
-          </SectionFooter>
+          <SectionFooter>{`${openCount} of ${MAX_OPEN_REQUESTS} requests open`}</SectionFooter>
         </View>
       ) : null}
       <View style={styles.section}>
         <SectionHeader title="Saved routes" />
         {/* No saved routes yet: say where the bookmark is and give a way there (round 52). */}
+        {/* No Find Routes button: the Search tab is one tap away (John, 2026-11-02). */}
         {list.length ? null : (
-          <>
-            <SectionFooter>Open a route in Search, then tap the bookmark beside its name to keep it here.</SectionFooter>
-            <Button label="Find Routes" kind="secondary" icon="magnifyingglass" onPress={() => router.navigate('/')} style={styles.find} />
-          </>
+          <SectionFooter>Open a route in Search, then tap the bookmark beside its name to keep it here.</SectionFooter>
         )}
         {list.map((route) => (
           <SavedRouteCard
@@ -128,5 +134,4 @@ const SAMPLE_STATUS_OPTIONS = { config: null } as const;
 
 const styles = StyleSheet.create({
   section: { gap: spacing.group },
-  find: { alignSelf: 'flex-start' },
 });

@@ -224,8 +224,17 @@ export function reportClosedNote(w: ReportWindow): string | null {
 /** One flight on one day, whichever list it came from. */
 export const flightKey = (f: Flight) => `${f.airline}${f.flightNumber}-${f.from}-${f.departUtc}`;
 
-/** Asks still waiting for an answer. */
-export const openRequestCount = (mine: LoadRequest[]) => mine.filter((r) => !r.answer).length;
+/** Asks still waiting for an answer; with `now`, only for flights that haven't left (they drop off at departure). */
+export const openRequestCount = (mine: LoadRequest[], now?: number) =>
+  mine.filter((r) => !r.answer && (now == null || r.flight.departUtc > now)).length;
+
+/**
+ * Your asks for flights still to leave, soonest first (John, 2026-11-02: nothing that departed or
+ * arrived). Each drops off at its departure time; `gone` drops one live data says already left.
+ */
+export function upcomingRequests(mine: LoadRequest[], now: number, gone?: (r: LoadRequest) => boolean): LoadRequest[] {
+  return mine.filter((r) => r.flight.departUtc > now && !gone?.(r)).sort((a, b) => a.flight.departUtc - b.flight.departUtc);
+}
 
 /** ready: can ask; asked: already asked about this flight; full: 5 asks still waiting; left: the flight has gone. */
 export type AskState = 'ready' | 'asked' | 'full' | 'left';
@@ -234,7 +243,7 @@ export function askState(mine: LoadRequest[], flight: Flight, now: number): AskS
   const key = flightKey(flight);
   if (mine.some((r) => flightKey(r.flight) === key)) return 'asked';
   if (flight.departUtc <= now) return 'left';
-  if (openRequestCount(mine) >= MAX_OPEN_REQUESTS) return 'full';
+  if (openRequestCount(mine, now) >= MAX_OPEN_REQUESTS) return 'full';
   return 'ready';
 }
 
