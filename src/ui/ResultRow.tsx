@@ -28,6 +28,7 @@ import { pressStyle } from './press';
 import { StatusTag, TAG_TONE } from './StatusTag';
 import { TONE_BG, TONE_FG } from './statusTone';
 import { withTick } from './haptics';
+import { shiftMinutes, shiftToken } from './timeShift';
 import { TIER_BG, TIER_FG } from './tierColors';
 
 export interface ResultRowProps {
@@ -74,7 +75,14 @@ function LegClock({ leg, view, text, dimmed }: { leg: Flight; view?: LegStatusVi
   const c = useColors();
   const time = legClockText(leg, view);
   if (!time) return null;
-  return <Text style={[text, { fontFamily: fonts.bodySemiBold, color: dimmed ? c.muted : c.text }]}>{keep(time)}</Text>;
+  // A moved departure is tinted by how far it moved (John, 2026-11-02).
+  const token = !dimmed && view?.newUtc != null ? shiftToken(shiftMinutes(view.newUtc, view.scheduledUtc)) : null;
+  const color = dimmed ? c.muted : token ? c[token] : c.text;
+  return (
+    <Text style={[text, { fontFamily: fonts.bodySemiBold, color }]} testID="leg-clock">
+      {keep(time)}
+    </Text>
+  );
 }
 
 /** The time a leg line shows: the new time when it moved, none when canceled, else the schedule (a diversion keeps it). */
@@ -322,6 +330,14 @@ export const ResultRow = memo(function ResultRow({
   // Departed rows are dimmed with a gray fill and edge; text keeps 4.5:1.
   const dimmed = !!status?.dimmed;
   const timeColor = dimmed ? c.muted : c.text;
+  // A time that moved is tinted by how far: early green, then yellow, orange, red (John, 2026-11-02).
+  const tint = (min: number | null) => {
+    const token = dimmed ? null : shiftToken(min);
+    return token ? { color: c[token] } : null;
+  };
+  const departTint = first?.newUtc != null ? tint(shiftMinutes(first.newUtc, first.scheduledUtc)) : null;
+  const lastLeg = it.legs[it.legs.length - 1]?.flight;
+  const arriveTint = status?.arrival && lastLeg ? tint(shiftMinutes(status.arrival.newUtc, lastLeg.arriveUtc)) : null;
   const highlight = selected && !large;
   // Every value shows its age: the summary's comes from the leg that sets it.
   const summaryAge = summary ? routeSeatAge(it, now) : null;
@@ -343,7 +359,9 @@ export const ResultRow = memo(function ResultRow({
             <>
               <Text style={[styles.was, styles.struck, { color: c.muted }]}>{keep(t.depart)}</Text>
               {'\u00a0'}
-              {keep(first.newText)}
+              <Text style={departTint} testID="row-new-depart">
+                {keep(first.newText)}
+              </Text>
             </>
           ) : (
             t.depart
@@ -354,7 +372,9 @@ export const ResultRow = memo(function ResultRow({
             <>
               <Text style={[styles.was, styles.struck, { color: c.muted }]}>{keep(t.arrive)}</Text>
               {'\u00a0'}
-              {keep(status.arrival.newText)}
+              <Text style={arriveTint} testID="row-new-arrive">
+                {keep(status.arrival.newText)}
+              </Text>
             </>
           ) : (
             t.arrive

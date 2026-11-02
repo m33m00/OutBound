@@ -304,6 +304,31 @@ describe('ResultRow', () => {
   const strings = (root: ReactTestRenderer['root']) =>
     root.findAll((n) => typeof n.props.children === 'string').map((n) => n.props.children as string);
 
+  it('a moved time is tinted by how far it moved: yellow, orange, red (John, 2026-11-02)', async () => {
+    const it = await fullItinerary();
+    const colorOf = (id: string) => {
+      const n = r!.root.findAll((x) => x.props.testID === id && typeof x.type === 'string')[0];
+      return n ? ([n.props.style].flat(3).find((st: { color?: string } | null) => st?.color)?.color ?? null) : undefined;
+    };
+    for (const [late, token] of [
+      [10, 'timeSlight'],
+      [25, 'timeLate'],
+      [60, 'timeVeryLate'],
+    ] as const) {
+      await act(async () => {
+        r = create(
+          <ResultRow itinerary={it} selected now={NOW} onPress={jest.fn()} status={statusFor(it, live(it, 'delayed', late))} />,
+        );
+      });
+      expect(colorOf('row-new-depart')).toBe(colors.light[token]);
+      expect(colorOf('row-new-arrive')).toBe(colors.light[token]);
+      // The leg's new time carries the same tint.
+      expect(colorOf('leg-clock')).toBe(colors.light[token]);
+      await act(async () => r!.unmount());
+      r = undefined;
+    }
+  });
+
   it('delayed: violet tag, old time struck through, new time, spoken in the row label', async () => {
     const it = await fullItinerary();
     await act(async () => {

@@ -66,6 +66,10 @@ describe('flight status text', () => {
     const lead = movementLead(status.departure, 'America/New_York')!;
     expect(lead.label).toBe('Estimated');
     expect(lead.was).not.toBeNull();
+    // How far it moved, for the time's tint (John, 2026-11-02).
+    expect(lead.shiftMin).toBe(
+      Math.round((Date.parse(status.departure.estimatedUtc!) - Date.parse(status.departure.scheduledUtc!)) / 60_000),
+    );
     expect(movementSpoken(status.departure, 'America/New_York')).toBe(`Estimated ${lead.time}, scheduled ${lead.was}`);
     expect(placeText(status.departure)).toBe('Terminal S · Gate B22');
     expect(placeText(status.arrival)).toBe('Terminal A');

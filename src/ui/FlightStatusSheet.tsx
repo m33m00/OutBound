@@ -20,6 +20,7 @@ import { radius, spacing, textStyles, useColors } from '@/theme';
 
 import { Button, PillButton } from './Buttons';
 import { ageText, delayText, movementLead, movementSpoken, placeText, sampleResponse, stateWord } from './flightStatusText';
+import { shiftToken } from './timeShift';
 import { Icon } from './Icon';
 import { useFocusOnMount } from './focusOnMount';
 import { LogFlightLink } from './LogFlightLink';
@@ -151,7 +152,9 @@ export function FlightStatusSheet({ flight, visible, now, onClose, liveOptions, 
                 {'\u00a0'}
               </Text>
             ) : null}
-            {lead.time.replace(/ /g, '\u00a0')}
+            <Text style={shiftToken(lead.shiftMin) ? { color: c[shiftToken(lead.shiftMin)!] } : null} testID="lead-time">
+              {lead.time.replace(/ /g, '\u00a0')}
+            </Text>
             <Text style={[styles.leadMeta, { color: c.muted }]}>{`  ${lead.label}`}</Text>
           </Text>
         ) : null}
