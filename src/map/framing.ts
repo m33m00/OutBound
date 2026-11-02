@@ -26,10 +26,10 @@ export function routeFramePoints(routes: readonly RouteLine[]): LonLat[] {
  *   the default view (continental US), at HOME_ZOOM.
  */
 /**
- * Home view zoom: a bit closer than the whole-globe fit so your region fills the view
- * (John, 2026-11-02: "a little too zoomed out by default").
+ * Home view zoom: closer than the whole-globe fit so your region fills the view
+ * (John, 2026-11-02: "a little too zoomed out by default", then "zoom in more" after 1.3).
  */
-export const HOME_ZOOM = 1.3;
+export const HOME_ZOOM = 1.8;
 
 export function routeFrameTarget(routes: readonly RouteLine[], selectedId: string | null, home?: LonLat | null): CameraTarget {
   const selected = selectedId ? routes.find((r) => r.id === selectedId) : undefined;
