@@ -3,6 +3,7 @@
  * an itinerary should be checked at. Item 7 (badges) calls these.
  */
 import type { Itinerary } from '@/engine/types';
+import { formatDuration } from '@/search/format';
 import type { AirportStatus, FaaEvent } from './airportStatus';
 import type { StationWeather, WeatherLevel, WeatherRequest } from './airportWeather';
 
@@ -39,7 +40,7 @@ export function faaEventText(e: FaaEvent): string {
     case 'closure':
       return 'Airport closed';
     case 'delay':
-      return e.maxMinutes ? `Delays up to ${e.maxMinutes} min` : 'Delays';
+      return e.maxMinutes ? `Delays up to ${formatDuration(e.maxMinutes)}` : 'Delays';
   }
 }
 
@@ -65,18 +66,14 @@ export function combineImpact(faa: FaaInput | null | undefined, weather: Station
   return { level, reasons, asOf: stamps.length ? oldest(stamps) : null };
 }
 
-const oldest = (isoStamps: string[]): string =>
-  isoStamps.reduce((a, b) => (Date.parse(b) < Date.parse(a) ? b : a));
+const oldest = (isoStamps: string[]): string => isoStamps.reduce((a, b) => (Date.parse(b) < Date.parse(a) ? b : a));
 
 /**
  * Where to check weather for an itinerary (origin is not evaluated):
  * - each connection airport, from landing to the next departure;
  * - the destination, from arrival minus/plus `padMs` (default 1 h).
  */
-export function weatherRequestsForItinerary(
-  itin: Pick<Itinerary, 'legs'>,
-  padMs: number = 60 * 60 * 1000,
-): WeatherRequest[] {
+export function weatherRequestsForItinerary(itin: Pick<Itinerary, 'legs'>, padMs: number = 60 * 60 * 1000): WeatherRequest[] {
   const legs = itin.legs;
   const out: WeatherRequest[] = [];
   for (let i = 0; i < legs.length - 1; i++) {

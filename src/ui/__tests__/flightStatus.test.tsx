@@ -55,8 +55,8 @@ describe('flight status text', () => {
 
   const status = parseFlightStatus(ADB_DELAYED, { flightNumber: 'DL2210', date: '2026-10-22', from: null, departMs: null })!;
   it('delay words', () => {
-    expect(delayText(50)).toBe('50 min late');
-    expect(delayText(-9)).toBe('9 min early');
+    expect(delayText(50)).toBe('50m late');
+    expect(delayText(-9)).toBe('9m early');
     expect(delayText(3)).toBe('On time');
     expect(delayText(null)).toBeNull();
   });
@@ -150,7 +150,7 @@ describe('leg tap and sheet', () => {
     const texts = r!.root.findAll((n) => typeof n.props.children === 'string').map((n) => n.props.children);
     expect(fetcher).toHaveBeenCalledTimes(1);
     expect(texts).toContain('Delayed');
-    expect(texts).toContain('50 min late');
+    expect(texts).toContain('50m late');
     expect(texts).toContain('Terminal S · Gate B22');
     expect(texts).toContain('Updated 7m ago · may be out of date');
   });

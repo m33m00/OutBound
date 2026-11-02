@@ -60,11 +60,11 @@ const vp: Viewport = { width: 400, height: 800, insets: normalizeInsets({ top: 6
 const camUS: GlobeCamera = { center: [-92, 37], radius: 600 };
 
 describe('duration format (H:MM)', () => {
-  it('formats without a leading zero on hours', () => {
-    expect(formatLegDuration(45)).toBe('0:45');
-    expect(formatLegDuration(155)).toBe('2:35');
-    expect(formatLegDuration(605)).toBe('10:05');
-    expect(formatLegDuration(60)).toBe('1:00');
+  it('formats like every other duration in the app (John, 2026-11-02 audit)', () => {
+    expect(formatLegDuration(45)).toBe('45m');
+    expect(formatLegDuration(155)).toBe('2h 35m');
+    expect(formatLegDuration(605)).toBe('10h 5m');
+    expect(formatLegDuration(60)).toBe('1h');
   });
 
   it('rounds the epoch-ms difference to the nearest minute', () => {
@@ -93,8 +93,8 @@ describe('which labels show', () => {
   it('one per leg of the selected route', () => {
     const s = legTimeSpecs(route);
     expect(s.map((x) => [x.legId, x.text])).toEqual([
-      ['a', '2:35'],
-      ['b', '0:45'],
+      ['a', '2h 35m'],
+      ['b', '45m'],
     ]);
   });
 
@@ -114,9 +114,7 @@ describe('which labels show', () => {
   });
 
   it('accessibility text per leg', () => {
-    expect(legTimesSummary(route)).toBe(
-      'DFW to ORD, flight time 2 hours 35 minutes. ORD to LGA, flight time 45 minutes.',
-    );
+    expect(legTimesSummary(route)).toBe('DFW to ORD, flight time 2 hours 35 minutes. ORD to LGA, flight time 45 minutes.');
     expect(legTimesSummary(null)).toBe('');
   });
 });

@@ -6,7 +6,7 @@ import { flightLookupKey, type FlightStatus } from '@/live';
 import { legLookup, rowStatus } from '@/search/statusTags';
 import { colors } from '@/theme';
 
-import { dotSeats, ResultRow, tagColumnWidth } from '../ResultRow';
+import { connectionText, dotSeats, ResultRow, tagColumnWidth } from '../ResultRow';
 import { StatusTag } from '../StatusTag';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -75,7 +75,7 @@ describe('ResultRow', () => {
         r = create(<ResultRow itinerary={it} selected={selected} now={NOW} onPress={jest.fn()} />);
       });
       const texts = r!.root.findAll((n) => typeof n.props.children === 'string').map((n) => String(n.props.children));
-      expect(texts.some((t) => t.includes('min from') || t.startsWith('Leaves from'))).toBe(false);
+      expect(texts.some((t) => t.includes('m from') || t.startsWith('Leaves from'))).toBe(false);
       // The route still names the airport it leaves from: the route line, or each flight's line on the card.
       const all = r!.root
         .findAll((n) => typeof n.type === 'string' && n.props.children != null)
@@ -172,7 +172,7 @@ describe('ResultRow', () => {
     expect(chips.length).toBe(1);
     // Each leg line leads with its own departure time.
     expect(all).toContain('8:00\u00a0AM');
-    expect(all.some((t) => t.endsWith('  BNA\u00a0→\u00a0DEN'))).toBe(true);
+    expect(all).toContain('BNA\u00a0→\u00a0DEN');
   });
 
   it('connection label sits at the middle of the line between the dots, even when a leg wraps (John, 2026-11-01)', async () => {
@@ -224,7 +224,8 @@ describe('ResultRow', () => {
         )
         .map((n) => (n.props.testID === 'leg-flight' ? 'flight' : 'time'))
         .filter((t, i, a) => a.indexOf(t) === i);
-    expect(inBox(boxes[0])).toEqual(['flight', 'time']);
+    // Every box has the same order: times and airports, then the flight chip (John, 2026-11-02).
+    expect(inBox(boxes[0])).toEqual(['time', 'flight']);
     expect(inBox(boxes[1])).toEqual(['time', 'flight']);
     expect(r!.root.findAll((n) => n.props.testID === 'leg-dot' && typeof n.type === 'string')).toHaveLength(2);
   });
@@ -505,7 +506,7 @@ describe('ResultRow', () => {
     expect(words).toContain('Canceled');
     expect(words).toContain('9:00\u00a0AM');
     expect(words).toContain('11:20\u00a0AM');
-    expect(words).toContain('  BNA\u00a0→\u00a0LAX');
+    expect(words).toContain('BNA\u00a0→\u00a0LAX');
   });
 
   it('a canceled second leg: flights on one line, one tag that names that flight (round 68, John)', async () => {
@@ -751,6 +752,14 @@ describe('ResultRow', () => {
     const words = timeline.findAll((n) => typeof n.props.children === 'string').map((n) => n.props.children as string);
     expect(words).toContain('Canceled');
     expect(words.some((w) => /open|listed|reported/.test(w))).toBe(false);
+  });
+});
+
+describe('connectionText (John, 2026-11-02)', () => {
+  it('gives the live minutes, or says the connection is missed', () => {
+    expect(connectionText({ airport: 'DEN', sameAirline: true }, 125)).toBe('2h 5m connection at DEN');
+    expect(connectionText({ airport: 'DEN', sameAirline: false }, 35)).toBe('35m connection at DEN · change airlines');
+    expect(connectionText({ airport: 'DEN', sameAirline: true }, -10)).toBe('Misses the connection at DEN');
   });
 });
 

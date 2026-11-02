@@ -101,17 +101,26 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
   );
   const searchKey = p.state.status === 'done' ? `${p.state.searchedAt}:${!!p.showingHidden}` : null;
   const userScrolled = useRef(false);
+  const retries = useRef(0);
   useEffect(() => {
     userScrolled.current = false;
   }, [searchKey]);
-  // Picking a route counts too: coming back should land on that route, not the Now line.
+  // An open route holds the list still; coming back lands on the Now line at the top again
+  // (John, 2026-11-02: "it shows the flights above the now line").
+  const wasOpen = useRef(false);
   useEffect(() => {
-    if (p.selectedId) userScrolled.current = true;
+    if (p.selectedId) {
+      userScrolled.current = true;
+      wasOpen.current = true;
+    } else if (wasOpen.current) {
+      wasOpen.current = false;
+      userScrolled.current = false;
+      retries.current = 0;
+    }
   }, [p.selectedId]);
   // The list opens with the Now line at the top (John, 2026-11-02: "I shouldn't see the flights
   // before that"); routes that left are a scroll up. Rows measure in over a few frames and the
   // panel grows to full screen, so it pins again on every layout change until you scroll.
-  const retries = useRef(0);
   const pinNow = useCallback(() => {
     if (searchKey == null || nowAt <= 0 || userScrolled.current) return;
     listRef.current?.scrollToIndex({ index: nowAt, viewPosition: 0, animated: false });
@@ -120,7 +129,7 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
     retries.current = 0;
     const frame = requestAnimationFrame(pinNow);
     return () => cancelAnimationFrame(frame);
-  }, [pinNow]);
+  }, [pinNow, p.selectedId]);
   // VoiceOver follows the panel (design round 29): opening or flipping a route lands on its
   // title, and coming back lands on the list's title, instead of staying on a button that's gone.
   const routeTitleRef = useRef<ComponentRef<typeof Text>>(null);

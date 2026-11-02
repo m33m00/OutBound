@@ -1,10 +1,11 @@
-import { StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
 import { atAirportNote } from '@/requests/atAirport';
-import { radius, spacing, textStyles, useColors } from '@/theme';
+import { minTapTarget, radius, spacing, textStyles, useColors } from '@/theme';
 
 import { Button } from './Buttons';
 import { Icon } from './Icon';
+import { pressStyle } from './press';
 
 export interface AtAirportCardProps {
   /** Airport you're at. */
@@ -14,10 +15,12 @@ export interface AtAirportCardProps {
   /** Anything on the board, counting flights that left in the last 30 minutes (shows Report). */
   onBoard: number;
   onReport: () => void;
+  /** Hides the card (the X; John, 2026-11-02: "should be able to dismiss"). */
+  onDismiss?: () => void;
 }
 
 /** "At DAL? Report a load" on the Search tab when you're at an airport (DECISIONS.md, round 33). */
-export function AtAirportCard({ code, upcoming, onBoard, onReport }: AtAirportCardProps) {
+export function AtAirportCard({ code, upcoming, onBoard, onReport, onDismiss }: AtAirportCardProps) {
   const c = useColors();
   // Large text: the button gets its own full-width row, like the Leave-by card.
   const stacked = useWindowDimensions().fontScale >= 1.3;
@@ -50,6 +53,23 @@ export function AtAirportCard({ code, upcoming, onBoard, onReport }: AtAirportCa
           style={[styles.button, stacked && styles.buttonStacked]}
         />
       ) : null}
+      {onDismiss ? (
+        <Pressable
+          onPress={onDismiss}
+          accessibilityRole="button"
+          accessibilityLabel="Dismiss"
+          hitSlop={4}
+          style={pressStyle(styles.close, 'link')}
+          testID="at-airport-dismiss">
+          <Icon
+            name="xmark"
+            size={14}
+            weight="semibold"
+            tintColor={c.muted}
+            fallback={<Text style={[textStyles.bodyStrong, { color: c.muted }]}>×</Text>}
+          />
+        </Pressable>
+      ) : null}
     </View>
   );
 }
@@ -71,4 +91,13 @@ const styles = StyleSheet.create({
   text: { flex: 1, minWidth: 180, gap: 2 },
   button: { paddingHorizontal: spacing.section },
   buttonStacked: { flexBasis: '100%' },
+  // Tight to the card's right edge; the tap target still meets the minimum.
+  close: {
+    width: minTapTarget,
+    height: minTapTarget,
+    marginVertical: -8,
+    marginRight: -10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });

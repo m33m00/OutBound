@@ -327,6 +327,37 @@ describe('Now line', () => {
     scroll.mockRestore();
     raf.mockRestore();
   });
+
+  it('coming back from a route lands on the Now line again, even after a scroll (John, 2026-11-02)', async () => {
+    const { request, list } = await results();
+    const between = zonedToUtc('2026-10-20', '12:00', 'America/Chicago');
+    const raf = jest.spyOn(globalThis, 'requestAnimationFrame').mockImplementation((cb) => {
+      cb(0);
+      return 0;
+    });
+    const scroll = jest.spyOn(FlatList.prototype, 'scrollToIndex').mockImplementation(() => {});
+    const state = { status: 'done' as const, request, results: list, hiddenCount: 0, hiddenResults: [], searchedAt: NOW };
+    const panel = (selectedId: string | null) => (
+      <ResultsPanel
+        state={state}
+        selectedId={selectedId}
+        now={between}
+        onSelect={jest.fn()}
+        onBack={jest.fn()}
+        onRetry={jest.fn()}
+      />
+    );
+    await act(async () => {
+      r = create(panel(null));
+    });
+    act(() => r!.root.findByType(FlatList).props.onScrollBeginDrag());
+    await act(async () => r!.update(panel(list[0].id)));
+    scroll.mockClear();
+    await act(async () => r!.update(panel(null)));
+    expect(scroll).toHaveBeenCalledWith({ index: 1, viewPosition: 0, animated: false });
+    scroll.mockRestore();
+    raf.mockRestore();
+  });
 });
 
 describe('results bar at big text sizes', () => {
@@ -456,6 +487,8 @@ describe('results bar at big text sizes', () => {
     const { request, list } = await results();
     const state = { status: 'done' as const, request, results: list, hiddenCount: 0, hiddenResults: [], searchedAt: NOW };
     const send = jest.spyOn(AccessibilityInfo, 'sendAccessibilityEvent').mockImplementation(() => {});
+    // React Native's test setup makes this a shared mock, so drop calls from earlier tests.
+    send.mockClear();
     const raf = jest.spyOn(globalThis, 'requestAnimationFrame').mockImplementation((cb: FrameRequestCallback) => {
       cb(0);
       return 0;

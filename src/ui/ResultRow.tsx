@@ -18,7 +18,7 @@ import {
 } from '@/search/format';
 import { statusHeadline } from '@/search/headline';
 import { impactSummary } from '@/search/impactText';
-import type { LegStatusView, RowStatus } from '@/search/statusTags';
+import { liveLayoverMin, liveTotalMin, type LegStatusView, type RowStatus } from '@/search/statusTags';
 import { fonts, radius, spacing, textStyles, useBoldText, useColors } from '@/theme';
 
 import { AirlinePill } from './AirlinePill';
@@ -110,6 +110,13 @@ function LegTimes({ leg, view, text, dimmed }: { leg: Flight; view?: LegStatusVi
   );
 }
 
+/** "3h 25m connection at DEN · change airlines"; "Misses the connection at DEN" when the onward flight leaves first. */
+export function connectionText(c: { airport: string; sameAirline: boolean }, layoverMin: number): string {
+  const what =
+    layoverMin < 0 ? `Misses the connection at ${c.airport}` : `${formatDuration(layoverMin)} connection at ${c.airport}`;
+  return `${what}${c.sameAirline ? '' : ' · change airlines'}`;
+}
+
 /**
  * Width every leg's status tag is widened to, so the flight chips that follow line up: the widest
  * measured tag, once all `tagged` legs have reported. Undefined until then (tags show at their own size).
@@ -175,6 +182,18 @@ function LegTimeline({
       return base[i] === w && prev.key === tagKey ? prev : { key: tagKey, widths: { ...base, [i]: w } };
     });
   };
+  // The same for each leg's times, so the airports after them start at one spot in every box
+  // (John, 2026-11-02: "markets in both containers don't align top to bottom").
+  const timesKey = it.legs.map((l, i) => Object.values(legTimesText(l.flight, status?.legs[i])).join('-')).join('|');
+  const [timeWidths, setTimeWidths] = useState<{ key: string; widths: Record<number, number> }>({ key: timesKey, widths: {} });
+  const timesColumn = stacked ? undefined : tagColumnWidth(timeWidths.key === timesKey ? timeWidths.widths : {}, it.legs.length);
+  const measureTimes = (i: number) => (e: { nativeEvent: { layout: { width: number } } }) => {
+    const w = e.nativeEvent.layout.width;
+    setTimeWidths((prev) => {
+      const base = prev.key === timesKey ? prev.widths : {};
+      return base[i] === w && prev.key === timesKey ? prev : { key: timesKey, widths: { ...base, [i]: w } };
+    });
+  };
   const measure = (i: number) => (e: { nativeEvent: { layout: { height: number } } }) => {
     const h = e.nativeEvent.layout.height;
     setLegHeights((prev) => (prev[i] === h ? prev : { ...prev, [i]: h }));
@@ -185,11 +204,14 @@ function LegTimeline({
         const view = status?.legs[i];
         const risk = status?.risks.find((r) => r.index === i);
         const connection = it.connections[i];
+        // The connection with the times shown, so a delay moves it (John, 2026-11-02).
+        const layover = connection ? liveLayoverMin(it, status, i) : NaN;
         const last = i === it.legs.length - 1;
         const typical = leg.seats.source === 'typical' || leg.seats.source === 'unknown';
         // The dot carries the leg's tier color; the route's chance word is in the headline.
         const dotTier = dimmed || typical ? 'unknown' : leg.seats.tier;
-        const above = i === 0;
+        // Every box has one layout (John, 2026-11-02): times and airports first, then the flight
+        // chip with its status pill after it.
         const pills = (
           <View style={styles.legMeta} testID="leg-flight">
             {view?.tag ? (
@@ -205,24 +227,31 @@ function LegTimeline({
         );
         const content = (
           <>
-            {above ? pills : null}
-            {/* Both times and the airports on one line; it shrinks a little to fit rather than wrap. */}
-            <Text
-              style={[text, { color: c.muted }]}
-              numberOfLines={stacked ? undefined : 1}
-              adjustsFontSizeToFit={!stacked}
-              minimumFontScale={0.8}
-              testID="leg-line">
-              <LegTimes leg={leg.flight} view={view} text={text} dimmed={dimmed} />
-              {`  ${leg.flight.from}\u00a0→\u00a0${leg.flight.to}`}
-            </Text>
+            {/* Times, then the airports in one column across the boxes; the airports shrink a little
+                to fit rather than wrap. */}
+            <View style={[styles.legLineRow, stacked && styles.legLineWrap]} testID="leg-line">
+              <View
+                style={timesColumn ? { minWidth: timesColumn } : null}
+                onLayout={timesColumn || stacked ? undefined : measureTimes(i)}
+                testID="leg-times-col">
+                <LegTimes leg={leg.flight} view={view} text={text} dimmed={dimmed} />
+              </View>
+              <Text
+                style={[text, styles.shrink, { color: c.muted }]}
+                numberOfLines={stacked ? undefined : 1}
+                adjustsFontSizeToFit={!stacked}
+                minimumFontScale={0.8}
+                testID="leg-airports">
+                {`${leg.flight.from}\u00a0→\u00a0${leg.flight.to}`}
+              </Text>
+            </View>
             {/* A diversion goes on to the planned airport, late (John, 2026-11-01). */}
             {view?.tag?.kind === 'diverted' ? (
               <Text style={[textStyles.small, { color: c.muted }]} testID="leg-diverted-note">
                 {`Continuing to ${leg.flight.to} · new arrival time pending`}
               </Text>
             ) : null}
-            {above ? null : pills}
+            {pills}
           </>
         );
         const boxStyle = [styles.legBox, { backgroundColor: c.surface2 }];
@@ -289,13 +318,15 @@ function LegTimeline({
                     },
                   ]}>
                   {connection ? (
-                    <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, styles.shrink, { color: c.muted }]}>
-                      {formatDuration(connection.layoverMin)} connection at {connection.airport}
-                      {connection.sameAirline ? '' : ' · change airlines'}
+                    <Text
+                      lineBreakStrategyIOS="push-out"
+                      style={[textStyles.small, styles.shrink, { color: c.muted }]}
+                      testID="leg-connection-text">
+                      {connectionText(connection, layover)}
                     </Text>
                   ) : null}
-                  {/* The headline names the airport; here the tag just marks which connection. */}
-                  {risk ? <StatusTag label="At risk" tone="delayed" /> : null}
+                  {/* The tag marks a connection the live times squeeze or break. */}
+                  {risk ? <StatusTag label={layover < 0 ? 'Missed' : 'At risk'} tone="delayed" /> : null}
                 </View>
               </View>
             )}
@@ -481,7 +512,7 @@ export const ResultRow = memo(function ResultRow({
             <View style={styles.line}>
               {times}
               <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, { color: c.muted }]}>
-                {stopCount(it)} · {formatDuration(it.totalMin)}
+                {stopCount(it)} · {formatDuration(liveTotalMin(it, status))}
               </Text>
             </View>
             <LegTimeline itinerary={it} status={status} now={now} large={!!large} dimmed={dimmed} onLegPress={onLegPress} />
@@ -514,7 +545,11 @@ export const ResultRow = memo(function ResultRow({
               </View>
               <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, { color: c.muted }]}>
                 {/* The route line already names the connections; the slim row adds short layovers. */}
-                {slimStops(it)} · {formatDuration(it.totalMin)}
+                {slimStops(
+                  it,
+                  it.connections.map((_, i) => liveLayoverMin(it, status, i)),
+                )}{' '}
+                · {formatDuration(liveTotalMin(it, status))}
               </Text>
             </View>
             {/* Slim row: who flies it and anything live; seats per leg live in the route card. One line of
@@ -642,4 +677,6 @@ const styles = StyleSheet.create({
   legMeta: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', columnGap: spacing.group, rowGap: 2 },
   connection: { flex: 1, flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: spacing.group },
   struck: { textDecorationLine: 'line-through' },
+  legLineRow: { flexDirection: 'row', alignItems: 'baseline', columnGap: spacing.group },
+  legLineWrap: { flexWrap: 'wrap' },
 });

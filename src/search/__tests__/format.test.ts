@@ -148,6 +148,13 @@ describe('slim row seat and stop text (design round 22)', () => {
     expect(slimStops(route([seats({}), seats({})], 'good', [{ airport: 'DEN', layoverMin: 45 }]))).toBe('1 stop · 45m at DEN');
     expect(slimStops(route([seats({}), seats({})], 'good', [{ airport: 'DEN', layoverMin: 90 }]))).toBe('1 stop');
   });
+
+  it('uses live connection minutes when given, and names a missed one (John, 2026-11-02)', () => {
+    const r = route([seats({}), seats({})], 'good', [{ airport: 'DEN', layoverMin: 90 }]);
+    expect(slimStops(r, [35])).toBe('1 stop · 35m at DEN');
+    expect(slimStops(r, [-10])).toBe('1 stop · missed at DEN');
+    expect(slimStops(r, [NaN])).toBe('1 stop');
+  });
 });
 
 describe('row text', () => {
@@ -164,7 +171,7 @@ describe('row text', () => {
 
   it('notes area airports', async () => {
     const it = await itinerary([flight('1', 'DAL', 'LAX', '09:00', 200)], 'DFW', 'LAX', {}, true);
-    expect(nearbyNotes(it)).toEqual(['Leaves from DAL, 35 min from DFW']);
+    expect(nearbyNotes(it)).toEqual(['Leaves from DAL, 35m from DFW']);
   });
 
   it('says "near" when an area pair has no transfer time yet', async () => {
@@ -201,6 +208,12 @@ describe('forSpeech (design round 26)', () => {
     expect(forSpeech('Est. 2h ago')).toBe('Estimated 2 hours ago');
     expect(forSpeech('DAL → PHX → LAX')).toBe('DAL to PHX to LAX');
     expect(forSpeech('Updated 3d ago')).toBe('Updated 3 days ago');
+  });
+  it('says short durations in words, not meters (round 110)', () => {
+    expect(forSpeech('2h 5m connection at DEN')).toBe('2 hours 5 minutes connection at DEN');
+    expect(forSpeech('~25m drive')).toBe('about 25 minutes drive');
+    expect(forSpeech('1h 15m')).toBe('1 hour 15 minutes');
+    expect(forSpeech('Longest: 1,240 mi')).toBe('Longest: 1,240 mi');
   });
   it('leaves clock times alone', () => {
     expect(forSpeech('Departs 9:00 AM')).toBe('Departs 9:00 AM');

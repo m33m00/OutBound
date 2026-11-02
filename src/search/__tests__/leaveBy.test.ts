@@ -29,7 +29,7 @@ describe('computeLeaveBy', () => {
     expect(r).toEqual({ kind: 'beAt', airport: 'BNA', beAtUtc: DEP - 75 * MIN, bufferMin: 75 });
     expect(leaveByText(r, BNA.tz)).toEqual({
       title: 'Be at BNA by 7:45 AM',
-      sub: '75 min early to list and clear security',
+      sub: '1h 15m early to list and clear security',
     });
   });
 
@@ -42,17 +42,20 @@ describe('computeLeaveBy', () => {
     expect(r).toMatchObject({ kind: 'leaveBy', driveMin: 25, leaveUtc: DEP - 100 * MIN });
     expect(leaveByText(r, BNA.tz)).toEqual({
       title: 'Leave by 7:20 AM',
-      sub: '~25 min drive · at BNA by 7:45 AM',
+      sub: '~25m drive · at BNA by 7:45 AM',
     });
   });
 
   it('uses a maps drive time with traffic when one came back (John, 2026-11-01)', () => {
     const r = run({ location: { ...downtown, at: EARLY - 5 * MIN }, liveDriveMin: 32 });
     expect(r).toMatchObject({ kind: 'leaveBy', driveMin: 32, live: true, leaveUtc: DEP - 107 * MIN });
-    expect(leaveByText(r, BNA.tz)).toEqual({ title: 'Leave by 7:13 AM', sub: '32 min drive with traffic · at BNA by 7:45 AM' });
-    expect(leaveByShort(r, BNA.tz)).toBe('32 min drive');
+    expect(leaveByText(r, BNA.tz)).toEqual({ title: 'Leave by 7:13 AM', sub: '32m drive with traffic · at BNA by 7:45 AM' });
+    expect(leaveByShort(r, BNA.tz)).toBe('32m drive');
     // No live answer: the rough guess, marked with ~.
-    expect(run({ location: { ...downtown, at: EARLY - 5 * MIN }, liveDriveMin: null })).toMatchObject({ driveMin: 25, live: false });
+    expect(run({ location: { ...downtown, at: EARLY - 5 * MIN }, liveDriveMin: null })).toMatchObject({
+      driveMin: 25,
+      live: false,
+    });
   });
 
   it('asks maps about the trip only when a drive estimate would show, leaving around the rough leave time', () => {
@@ -64,7 +67,9 @@ describe('computeLeaveBy', () => {
     const q = driveQuery({ ...base, location: { ...downtown, at: EARLY } });
     expect(q).toEqual({ from: downtown, to: { lat: BNA.lat, lon: BNA.lon }, departMs: DEP - 100 * MIN });
     // Already past the rough leave time: traffic for now.
-    expect(driveQuery({ ...base, now: DEP - 90 * MIN, location: { ...downtown, at: DEP - 90 * MIN } })?.departMs).toBe(DEP - 90 * MIN);
+    expect(driveQuery({ ...base, now: DEP - 90 * MIN, location: { ...downtown, at: DEP - 90 * MIN } })?.departMs).toBe(
+      DEP - 90 * MIN,
+    );
   });
 
   it('ignores a stale location', () => {
@@ -80,7 +85,9 @@ describe('computeLeaveBy', () => {
 
   it('says you are at the airport within 3 km', () => {
     const r = run({ location: { lat: BNA.lat + 0.01, lon: BNA.lon, at: EARLY } });
-    expect(leaveByText(r, BNA.tz)).toEqual({ title: 'You’re at BNA', sub: 'Departs 9:00 AM' });
+    // The airport's name too, and "Flight departs at" (John, 2026-11-02).
+    expect(leaveByText(r, BNA.tz)).toEqual({ title: `You’re at BNA (${AIRPORTS.BNA.name})`, sub: 'Flight departs at 9:00 AM' });
+    expect(leaveByShort(r, BNA.tz)).toBe('Flight departs at 9:00 AM');
   });
 
   it('says leave now when it is already too late', () => {
@@ -102,4 +109,3 @@ describe('computeLeaveBy', () => {
     expect(leaveByShort(r, BNA.tz)).toBe('Pick a later route');
   });
 });
-

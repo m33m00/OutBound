@@ -47,14 +47,20 @@ const plural = (n: string, unit: string) => `${n} ${unit}${n === '1' ? '' : 's'}
  * pause, "→" "to", "~" "about", "est." "estimated", and "4m ago" "4 minutes ago".
  */
 export function forSpeech(text: string): string {
-  return text
-    .replace(/ · /g, ', ')
-    .replace(/ → /g, ' to ')
-    .replace(/~/g, 'about ')
-    .replace(/\best\./gi, (m) => (m[0] === 'E' ? 'Estimated' : 'estimated'))
-    .replace(/\b(\d+)m ago\b/g, (_, n: string) => `${plural(n, 'minute')} ago`)
-    .replace(/\b(\d+)h ago\b/g, (_, n: string) => `${plural(n, 'hour')} ago`)
-    .replace(/\b(\d+)d ago\b/g, (_, n: string) => `${plural(n, 'day')} ago`);
+  return (
+    text
+      .replace(/ · /g, ', ')
+      .replace(/ → /g, ' to ')
+      .replace(/~/g, 'about ')
+      .replace(/\best\./gi, (m) => (m[0] === 'E' ? 'Estimated' : 'estimated'))
+      .replace(/\b(\d+)m ago\b/g, (_, n: string) => `${plural(n, 'minute')} ago`)
+      .replace(/\b(\d+)h ago\b/g, (_, n: string) => `${plural(n, 'hour')} ago`)
+      .replace(/\b(\d+)d ago\b/g, (_, n: string) => `${plural(n, 'day')} ago`)
+      // Short durations ("2h 5m", "25m") would read as meters; say them in words.
+      .replace(/\b(\d+)h (\d+)m\b/g, (_, h: string, m: string) => `${plural(h, 'hour')} ${plural(m, 'minute')}`)
+      .replace(/\b(\d+)h\b/g, (_, n: string) => plural(n, 'hour'))
+      .replace(/\b(\d+)m\b/g, (_, n: string) => plural(n, 'minute'))
+  );
 }
 
 /** Every value shows its age: "just now", "12m ago", "3h ago", "2d ago". */
@@ -141,9 +147,14 @@ export function neutralSeatText(it: Itinerary, now: number): string {
 export const SHORT_LAYOVER_MIN = 60;
 
 /** Slim row stops: "Nonstop", "1 stop", or "1 stop · 45m at DEN" when a connection is short. */
-export function slimStops(it: Itinerary): string {
-  const short = it.connections.filter((c) => c.layoverMin < SHORT_LAYOVER_MIN);
-  return [stopCount(it), ...short.map((c) => `${formatDuration(c.layoverMin)} at ${c.airport}`)].join(' · ');
+export function slimStops(it: Itinerary, layovers?: readonly number[]): string {
+  // Live layovers when given (a delay moves them, John 2026-11-02); a missed one says so.
+  const mins = it.connections.map((c, i) => (layovers && Number.isFinite(layovers[i]) ? layovers[i] : c.layoverMin));
+  const short = it.connections.flatMap((c, i) => (mins[i] < SHORT_LAYOVER_MIN ? [{ airport: c.airport, min: mins[i] }] : []));
+  return [
+    stopCount(it),
+    ...short.map((c) => (c.min < 0 ? `missed at ${c.airport}` : `${formatDuration(c.min)} at ${c.airport}`)),
+  ].join(' · ');
 }
 
 /** Where a leg's seat number came from and its age: "Reported 5m ago", "Est. 2h ago". */
@@ -163,10 +174,10 @@ export function stopsText(it: Itinerary): string {
   return `${stopCount(it)} · ${it.connections.map((c) => c.airport).join(', ')}`;
 }
 
-/** "35 min from DFW", or "near DFW" when the transfer time is unknown. */
-const fromText = (min: number | null, code: string) => (min == null ? `near ${code}` : `${min} min from ${code}`);
+/** "35m from DFW", or "near DFW" when the transfer time is unknown. */
+const fromText = (min: number | null, code: string) => (min == null ? `near ${code}` : `${formatDuration(min)} from ${code}`);
 
-/** Area-airport notes, e.g. "Leaves from DAL, 35 min from DFW". */
+/** Area-airport notes, e.g. "Leaves from DAL, 35m from DFW". */
 export function nearbyNotes(it: Itinerary): string[] {
   const notes: string[] = [];
   if (it.origin !== it.requestedOrigin) {

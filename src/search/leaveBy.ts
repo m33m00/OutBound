@@ -3,9 +3,9 @@
  * be at the airport `bufferMin` before the first departure, and leave a
  * drive estimate earlier when a fresh phone location is known.
  */
-import type { Airport } from '@/engine';
+import { AIRPORTS, type Airport } from '@/engine';
 
-import { formatTime } from './format';
+import { formatDuration, formatTime } from './format';
 
 export interface PhoneLocation {
   lat: number;
@@ -31,7 +31,7 @@ export function distanceKm(aLat: number, aLon: number, bLat: number, bLon: numbe
 
 /** Prototype estimate: road factor 1.3 at 55 km/h plus 10 min, rounded to 5. */
 export function driveMinutes(km: number): number {
-  return Math.round(((km * 1.3) / 55 * 60 + 10) / 5) * 5;
+  return Math.round((((km * 1.3) / 55) * 60 + 10) / 5) * 5;
 }
 
 export type LeaveBy =
@@ -95,6 +95,12 @@ export function driveQuery(input: {
   return { from: { lat: loc.lat, lon: loc.lon }, to: { lat: airport.lat, lon: airport.lon }, departMs };
 }
 
+/** "You’re at DAL (Dallas Love Field)". */
+function youreAt(code: string): string {
+  const name = AIRPORTS[code]?.name;
+  return name ? `You’re at ${code} (${name})` : `You’re at ${code}`;
+}
+
 export interface LeaveByText {
   title: string;
   sub: string;
@@ -107,17 +113,21 @@ export function leaveByText(r: LeaveBy, tz: string): LeaveByText {
     case 'departed':
       return { title: 'Departed', sub: `This flight has left ${r.airport}. Pick a later route.` };
     case 'atAirport':
-      return { title: `You’re at ${r.airport}`, sub: `Departs ${t(r.departUtc)}` };
+      // The airport's name too, and "Flight departs at" (John, 2026-11-02).
+      return { title: youreAt(r.airport), sub: `Flight departs at ${t(r.departUtc)}` };
     case 'leaveBy':
       // A maps-service time is said plainly; the straight-line guess keeps its "~".
       return {
         title: `Leave by ${t(r.leaveUtc)}`,
-        sub: `${r.live ? '' : '~'}${r.driveMin} min drive${r.live ? ' with traffic' : ''} · at ${r.airport} by ${t(r.beAtUtc)}`,
+        sub: `${r.live ? '' : '~'}${formatDuration(r.driveMin)} drive${r.live ? ' with traffic' : ''} · at ${r.airport} by ${t(r.beAtUtc)}`,
       };
     case 'leaveNow':
       return { title: 'Leave now', sub: `Be at ${r.airport} by ${t(r.beAtUtc)}` };
     case 'beAt':
-      return { title: `Be at ${r.airport} by ${t(r.beAtUtc)}`, sub: `${r.bufferMin} min early to list and clear security` };
+      return {
+        title: `Be at ${r.airport} by ${t(r.beAtUtc)}`,
+        sub: `${formatDuration(r.bufferMin)} early to list and clear security`,
+      };
   }
 }
 
@@ -131,12 +141,12 @@ export function leaveByShort(r: LeaveBy, tz: string): string {
     case 'departed':
       return 'Pick a later route';
     case 'atAirport':
-      return `Departs ${t(r.departUtc)}`;
+      return `Flight departs at ${t(r.departUtc)}`;
     case 'leaveBy':
-      return `${r.live ? '' : '~'}${r.driveMin} min drive`;
+      return `${r.live ? '' : '~'}${formatDuration(r.driveMin)} drive`;
     case 'leaveNow':
       return `At ${r.airport} by ${t(r.beAtUtc)}`;
     case 'beAt':
-      return `${r.bufferMin} min early`;
+      return `${formatDuration(r.bufferMin)} early`;
   }
 }

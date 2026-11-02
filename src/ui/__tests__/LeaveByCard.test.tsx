@@ -18,12 +18,17 @@ jest.mock('react-native/Libraries/Utilities/useWindowDimensions', () => ({
 
 const NOW = Date.UTC(2026, 9, 30, 15);
 
-
 /** The slim row's whole text: the title and its one detail (round 87). */
 function lineText(r: ReactTestRenderer): string {
   const line = r.root.find((n) => n.props.testID === 'leave-by-line' && typeof n.type === 'string');
   const flat = (c: unknown): string =>
-    typeof c === 'string' ? c : Array.isArray(c) ? c.map(flat).join('') : c && typeof c === 'object' && 'props' in c ? flat((c as { props: { children?: unknown } }).props.children) : '';
+    typeof c === 'string'
+      ? c
+      : Array.isArray(c)
+        ? c.map(flat).join('')
+        : c && typeof c === 'object' && 'props' in c
+          ? flat((c as { props: { children?: unknown } }).props.children)
+          : '';
   return flat(line.props.children);
 }
 
@@ -87,7 +92,9 @@ describe('LeaveByCard location button', () => {
         />,
       );
     });
-    const texts = r!.root.findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string').map((n) => n.props.children as string);
+    const texts = r!.root
+      .findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string')
+      .map((n) => n.props.children as string);
     expect(lineText(r!)).toMatch(/^Departed/);
     expect(r!.root.findAll((n) => /Use Location|Open Settings/.test(String(n.props.accessibilityLabel)))).toHaveLength(0);
     expect(texts.some((t) => t.startsWith('Location is off'))).toBe(false);
@@ -111,12 +118,16 @@ describe('LeaveByCard location button', () => {
         />,
       );
     });
-    const texts = r!.root.findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string').map((n) => n.props.children as string);
+    const texts = r!.root
+      .findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string')
+      .map((n) => n.props.children as string);
     expect(texts).toContain('Flight delayed to 2:40 PM');
     // The title still counts back from the schedule: 4 h out minus the 60 min buffer.
     expect(lineText(r!)).toMatch(/^Be at DFW by /);
-    const label = r!.root.find((n) => n.props.accessible && typeof n.props.accessibilityLabel === 'string' && n.props.accessibilityLabel.startsWith('Be at')).props
-      .accessibilityLabel as string;
+    const label = r!.root.find(
+      (n) =>
+        n.props.accessible && typeof n.props.accessibilityLabel === 'string' && n.props.accessibilityLabel.startsWith('Be at'),
+    ).props.accessibilityLabel as string;
     expect(label).toContain('Flight delayed to 2:40 PM');
   });
 
@@ -184,10 +195,13 @@ describe('LeaveByCard location button', () => {
         />,
       );
     });
-    expect(lineText(r!)).toMatch(/^Leave by .+ · {2}32 min drive$/);
-    const texts = r!.root.findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string').map((n) => n.props.children as string);
+    expect(lineText(r!)).toMatch(/^Leave by .+ · {2}32m drive$/);
+    const texts = r!.root
+      .findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string')
+      .map((n) => n.props.children as string);
     expect(texts.some((t) => t.includes('at DFW by'))).toBe(false);
-    const label = r!.root.find((n) => n.props.accessible && String(n.props.accessibilityLabel).startsWith('Leave by')).props.accessibilityLabel as string;
+    const label = r!.root.find((n) => n.props.accessible && String(n.props.accessibilityLabel).startsWith('Leave by')).props
+      .accessibilityLabel as string;
     expect(label).toContain('at DFW by');
   });
 });

@@ -11,7 +11,7 @@ import { searchRequest, showGetHome } from '@/search/areas';
 import { dateChips } from '@/search/dates';
 import { driveQuery } from '@/search/leaveBy';
 import { chooseOrigin, restSpot, showLocationCard, type RestSpot } from '@/search/origin';
-import { departedFirst, legLookup, resultsBanner, rowStatus, statusLookups } from '@/search/statusTags';
+import { legLookup, resultsBanner, rowStatus, statusLookups } from '@/search/statusTags';
 import { SAMPLE_TZ, SCHEDULE_SOURCE, useRouteSearch } from '@/search/useRouteSearch';
 import { minTapTarget, spacing, textStyles, useColors } from '@/theme';
 import { openRequest, reopenOutcome, savedKey, savedRouteFrom, type SavedRoute } from '@/trips/savedRoutes';
@@ -169,7 +169,9 @@ export default function HomeScreen() {
   // At-airport shortcut (round 33): within 4 km of an airport, report from its departures board.
   const atAirport = settings.useLocation ? airportYouAreAt(location, now) : null;
   // Live boards need the schedule feed; until then only sample departures are listed.
-  const airportBanner = !!atAirport && !LIVE_FLIGHTS && !showResults && !routeOpen;
+  // Dismissed for that airport until the app restarts (John, 2026-11-02: swipe up or X).
+  const [bannerGoneAt, setBannerGoneAt] = useState<string | null>(null);
+  const airportBanner = !!atAirport && atAirport !== bannerGoneAt && !LIVE_FLIGHTS && !showResults && !routeOpen;
   const [airportBannerH, setAirportBannerH] = useState(0);
   const departures = useMemo(() => (atAirport && !LIVE_FLIGHTS ? sampleDepartures(atAirport, now) : []), [atAirport, now]);
   const [departuresFor, setDeparturesFor] = useState<string | null>(null);
@@ -242,7 +244,6 @@ export default function HomeScreen() {
 
   // Radar overlay (items 13-14): on by default, remembered (Q-032).
   const radar = useRadarLayers(settings.radarOn, now);
-  const statusMarks = useMemo(() => impacts.airports.map((a) => ({ ...mark(a.code), level: a.level })), [impacts.airports]);
 
   // Area toggles (Q-048): remembered per airport code; off = exactly that airport.
   const areaOn = settings.areaOn;
@@ -342,17 +343,14 @@ export default function HomeScreen() {
   }, [reopening, reopenPast, state, select]);
   const missingNote = state.status === 'done' && reopenNote?.at === state.searchedAt ? reopenNote.text : undefined;
 
-  // Closing the route view goes back to the tall list, at the route you had open.
+  // Closing the route view goes back to the tall list with the Now line at the top, the same
+  // as a fresh search (John, 2026-11-02); the list pins itself.
   const closeRoute = useCallback(
-    (id: string) => {
+    (_id: string) => {
       select(null);
       setSheetIndex(SHEET.full);
-      const index = departedFirst(results, rowStatuses).findIndex((r) => r.id === id);
-      if (index >= 0) {
-        requestAnimationFrame(() => listRef.current?.scrollToIndex({ index, viewPosition: 0.3, animated: false }));
-      }
     },
-    [select, results, rowStatuses],
+    [select],
   );
   const backToSearch = useCallback(() => {
     setSelectedId(null);
@@ -466,7 +464,8 @@ export default function HomeScreen() {
           homeAirports={homeMarks}
           origin={markOrigin ? mark(markOrigin) : null}
           destinations={markDestinations}
-          airportStatus={statusMarks}
+          // No airport delay badges (the purple diamonds): they had no key and repeated the delay
+          // callout John dropped in round 104 (John, 2026-11-02).
           radar={radar.layers}
           selectedRouteId={selectedId}
           // Rests on your From airport (your location when it's on) and drifts back there after a spin.
@@ -488,8 +487,9 @@ export default function HomeScreen() {
         {/* "At DAL? Report a load" drops down from the top into the map, out of the drawer
             (John, 2026-11-02). Only on the search page; the panel covers it when pulled up. */}
         {airportBanner && atAirport ? (
-          <DropBanner onHeight={setAirportBannerH}>
+          <DropBanner onHeight={setAirportBannerH} onDismiss={() => setBannerGoneAt(atAirport)}>
             <AtAirportCard
+              onDismiss={() => setBannerGoneAt(atAirport)}
               code={atAirport}
               upcoming={departures.filter((f) => f.departUtc > now).length}
               onBoard={departures.length}

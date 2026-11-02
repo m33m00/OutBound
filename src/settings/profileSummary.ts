@@ -4,6 +4,7 @@
  */
 import { AIRPORTS } from '@/engine';
 import { MAPS_APP_NAME } from '@/search/directions';
+import { formatDuration } from '@/search/format';
 
 import { homeAirports, type Settings } from './settings';
 
@@ -52,7 +53,7 @@ export function profileSummary(s: Settings, ios = true): SummaryRow[] {
     // Same order as the Settings sections they open.
     { key: 'location', label: 'Use your location', value: s.useLocation ? 'On' : 'Off' },
     { key: 'notify', label: 'Notifications', value: notifyText(s) },
-    { key: 'buffer', label: 'Airport buffer', value: `${s.bufferMin} min`, detail: 'Before departure' },
+    { key: 'buffer', label: 'Airport buffer', value: formatDuration(s.bufferMin), detail: 'Before departure' },
     // Where the Leave By card opens directions (round 49); Android has no choice.
     ...(ios ? [{ key: 'maps' as const, label: 'Directions open in', value: MAPS_APP_NAME[s.mapsApp] }] : []),
     { key: 'search', label: 'Search defaults', value: stopsText(s.search.maxStops) },
