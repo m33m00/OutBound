@@ -31,6 +31,7 @@ import { pressStyle } from './press';
 import { Icon } from './Icon';
 import { ResultRow } from './ResultRow';
 import { SaveRouteButton } from './SaveRouteButton';
+import { StaggerIn } from './StaggerIn';
 
 export interface ResultsPanelProps {
   state: Exclude<SearchState, { status: 'idle' }>;
@@ -105,8 +106,11 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
   const searchKey = p.state.status === 'done' ? `${p.state.searchedAt}:${!!p.showingHidden}` : null;
   const userScrolled = useRef(false);
   const retries = useRef(0);
+  // When this list first showed: rows that mount soon after rise in; later ones just appear.
+  const listShownAt = useRef(Date.now());
   useEffect(() => {
     userScrolled.current = false;
+    listShownAt.current = Date.now();
   }, [searchKey]);
   // An open route holds the list still; coming back lands on the Now line at the top again
   // (John, 2026-11-02: "it shows the flights above the now line").
@@ -441,7 +445,12 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
                 saved={p.isSaved?.(item)}
               />
             );
-            const block = row;
+            // A fresh list's rows rise in one after another from the top of what you see (round 113).
+            const block = (
+              <StaggerIn step={index - Math.max(0, nowAt)} play={Date.now() - listShownAt.current < STAGGER_WINDOW_MS}>
+                {row}
+              </StaggerIn>
+            );
             if (index !== nowAt) return block;
             const tz = AIRPORTS[item.origin]?.tz;
             return (
@@ -532,6 +541,9 @@ export function areaLines(request: SearchRequest): string[] {
  * to leave, only when routes that already left sit above it (so today only).
  * -1 when there's no line.
  */
+/** How long after a list shows its rows still rise in. */
+const STAGGER_WINDOW_MS = 900;
+
 export function nowLineIndex(results: Itinerary[], now: number, statuses?: Record<string, RowStatus>): number {
   const i = results.findIndex((it) => it.departUtc >= now && !statuses?.[it.id]?.dimmed);
   return i > 0 ? i : -1;

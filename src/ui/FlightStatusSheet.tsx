@@ -411,6 +411,7 @@ function LoadCard({
           <Button
             label={asked ? 'Asked' : 'Ask for Load'}
             kind="secondary"
+            haptic="success"
             icon={asked ? 'checkmark' : undefined}
             onPress={() => {
               setCanceled(false);

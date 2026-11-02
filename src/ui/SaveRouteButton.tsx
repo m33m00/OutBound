@@ -2,7 +2,7 @@ import { AccessibilityInfo, Pressable, StyleSheet } from 'react-native';
 
 import { minTapTarget, useColors } from '@/theme';
 
-import { withTick } from './haptics';
+import { selectionTick, successTap } from './haptics';
 import { Icon } from './Icon';
 import { pressStyle } from './press';
 
@@ -15,22 +15,20 @@ export function SaveRouteButton({ saved, onPress }: { saved: boolean; onPress: (
   const c = useColors();
   return (
     <Pressable
-      onPress={withTick(() => {
+      onPress={() => {
+        // Saving lands with the "done" tap; taking it back out is just a tick.
+        if (saved) selectionTick();
+        else successTap();
         onPress();
         // The icon is the only change on screen, so VoiceOver says what happened.
         AccessibilityInfo.announceForAccessibility(saved ? 'Removed from My Trips' : 'Saved to My Trips');
-      })}
+      }}
       accessibilityRole="button"
       accessibilityLabel={saved ? 'Saved to My Trips' : 'Save Route'}
       accessibilityHint={saved ? 'Removes it from My Trips' : 'Keeps it in My Trips'}
       testID="save-route"
       style={pressStyle(styles.button, 'link')}>
-      <Icon
-        name={saved ? 'bookmark.fill' : 'bookmark'}
-        size={20}
-        tintColor={c.accent}
-        fallback={null}
-      />
+      <Icon name={saved ? 'bookmark.fill' : 'bookmark'} size={20} tintColor={c.accent} fallback={null} />
     </Pressable>
   );
 }

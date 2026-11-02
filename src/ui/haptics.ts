@@ -22,3 +22,23 @@ export const withTick =
     selectionTick();
     fn(...args);
   };
+
+/** A soft thump for a primary button (round 113): heavier than a pick, lighter than a success. */
+export function impactTick(): void {
+  if (Platform.OS === 'web') return;
+  try {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+  } catch {
+    // No haptics engine (simulator, tests).
+  }
+}
+
+/** The double tap iOS uses for "done": a saved route, a sent report, an ask (round 113). */
+export function successTap(): void {
+  if (Platform.OS === 'web') return;
+  try {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+  } catch {
+    // No haptics engine (simulator, tests).
+  }
+}

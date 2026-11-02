@@ -19,11 +19,12 @@ import {
 import { statusHeadline } from '@/search/headline';
 import { impactSummary } from '@/search/impactText';
 import { liveLayoverMin, liveTotalMin, type LegStatusView, type RowStatus } from '@/search/statusTags';
-import { fonts, radius, spacing, textStyles, useBoldText, useColors } from '@/theme';
+import { elevation, fonts, radius, spacing, textStyles, useBoldText, useColors } from '@/theme';
 
 import { AirlinePill } from './AirlinePill';
 import { Icon } from './Icon';
 import { pressStyle } from './press';
+import { ScalePressable } from './ScalePressable';
 import { StatusTag, TAG_TONE } from './StatusTag';
 import { withTick } from './haptics';
 import { shiftMinutes, shiftToken } from './timeShift';
@@ -92,7 +93,8 @@ function LegTimes({ leg, view, text, dimmed }: { leg: Flight; view?: LegStatusVi
   };
   const departColor = tint(view?.newUtc != null ? shiftMinutes(view.newUtc, view.scheduledUtc) : null);
   const arriveColor = tint(view?.arrival ? shiftMinutes(view.arrival.newUtc, leg.arriveUtc) : null);
-  const strong = { fontFamily: fonts.bodySemiBold };
+  // Tabular figures so times line up row to row (round 113).
+  const strong = { fontFamily: fonts.bodySemiBold, fontVariant: ['tabular-nums' as const] };
   return (
     <Text style={[text, strong, canceled && styles.struck]} testID="leg-times">
       <Text style={{ color: departColor }} testID="leg-clock">
@@ -145,6 +147,10 @@ export function tripLength(it: Itinerary, status: RowStatus | undefined): string
 
 /** The route's chip when a leg is canceled, in place of its chance word. */
 export const NOT_FLYABLE = 'Not flyable';
+
+/** A result row under the finger: a gentler shrink and dim than a button, so a big card doesn't jump. */
+export const CARD_PRESS_SCALE = 0.985;
+export const CARD_PRESSED_OPACITY = 0.92;
 
 /** What a diverted leg's arrival slot reads. */
 export const ARRIVAL_TBD = 'TBD';
@@ -294,8 +300,10 @@ function LegTimeline({
                 <View style={[styles.railHalf, !last && rail]} />
               </View>
               {onLegPress ? (
-                <Pressable
-                  onPress={() => onLegPress(leg.flight)}
+                <ScalePressable
+                  scaleTo={0.98}
+                  pressedOpacity={0.85}
+                  onPress={withTick(() => onLegPress(leg.flight))}
                   accessibilityRole="button"
                   // The label replaces what's inside, so it says the leg's time and seats too.
                   accessibilityLabel={[
@@ -308,9 +316,9 @@ function LegTimeline({
                     .filter(Boolean)
                     .join(', ')}
                   testID="leg-box"
-                  style={pressStyle(boxStyle)}>
+                  style={boxStyle}>
                   {content}
-                </Pressable>
+                </ScalePressable>
               ) : (
                 <View style={boxStyle} testID="leg-box">
                   {content}
@@ -496,7 +504,11 @@ export const ResultRow = memo(function ResultRow({
       </Text>
     );
   return (
-    <Pressable
+    // Soft depth and a gentle press: the card shrinks a hair and dims a little (round 113). The
+    // route view's big card stays still under the finger.
+    <ScalePressable
+      scaleTo={large ? 1 : CARD_PRESS_SCALE}
+      pressedOpacity={large ? 1 : CARD_PRESSED_OPACITY}
       // In the route view the card doesn't close on a stray tap; "‹ Routes" does that.
       onPress={large ? undefined : withTick(() => onPress(it.id))}
       accessibilityRole={large ? undefined : 'button'}
@@ -514,16 +526,18 @@ export const ResultRow = memo(function ResultRow({
       accessibilityHint={
         large ? undefined : selected ? 'Closes the route card' : 'Opens the route card and shows the route on the globe'
       }
-      style={pressStyle([
+      style={[
         styles.row,
+        dimmed ? null : elevation.card,
         {
           // Full routes stay in time order, grayed with a red edge; text keeps full contrast.
           // The route view's card drops the selected tint so the Leave By card above it leads.
           backgroundColor: highlight ? c.accentSoft : it.isFull || dimmed ? c.surface2 : c.surface,
           borderColor: highlight ? c.accent : it.isFull ? c.full : c.line,
+          shadowColor: c.text,
         },
         (highlight || it.isFull) && styles.strongBorder,
-      ])}>
+      ]}>
       {/* Route color = weakest leg. */}
       <View style={[styles.edge, { backgroundColor: dimmed || notFlyable ? c.unknown : c[it.tier] }]} />
       <View style={styles.content}>
@@ -611,16 +625,16 @@ export const ResultRow = memo(function ResultRow({
           </>
         )}
       </View>
-    </Pressable>
+    </ScalePressable>
   );
 });
 
 const styles = StyleSheet.create({
+  // No overflow clip, so the soft shadow shows; the edge rounds its own corners instead.
   row: {
     flexDirection: 'row',
     borderRadius: radius.md,
-    borderWidth: 1,
-    overflow: 'hidden',
+    borderWidth: StyleSheet.hairlineWidth,
     minHeight: 44,
   },
   shrink: { flexShrink: 1 },
@@ -629,6 +643,8 @@ const styles = StyleSheet.create({
   },
   edge: {
     width: 5,
+    borderTopLeftRadius: radius.md - 1,
+    borderBottomLeftRadius: radius.md - 1,
   },
   content: {
     flex: 1,

@@ -1,38 +1,38 @@
+import { BigShouldersDisplay_700Bold, BigShouldersDisplay_800ExtraBold } from '@expo-google-fonts/big-shoulders-display';
 import {
-  BigShouldersDisplay_600SemiBold,
-  BigShouldersDisplay_700Bold,
-  BigShouldersDisplay_800ExtraBold,
-} from '@expo-google-fonts/big-shoulders-display';
-import {
-  Manrope_400Regular,
-  Manrope_500Medium,
-  Manrope_600SemiBold,
-  Manrope_700Bold,
-} from '@expo-google-fonts/manrope';
+  Inter_400Regular,
+  Inter_500Medium,
+  Inter_600SemiBold,
+  Inter_700Bold,
+  Inter_800ExtraBold,
+} from '@expo-google-fonts/inter';
 
 /**
- * Big Shoulders Display (uppercase display) + Manrope (body), per DECISIONS.md.
- * Weights confirmed in DECISIONS.md (Q-005).
+ * Inter for everything you read (John, 2026-11-02: the app should feel premium, not bare-bones):
+ * one clean family with tabular figures for times, like the best flight apps. Big Shoulders stays
+ * only for the OUTBOUND wordmark, as the brand mark.
  *
  * In React Native each weight is its own family name, so pick a family
  * instead of setting `fontWeight`.
  */
 export const fontAssets = {
-  BigShouldersDisplay_600SemiBold,
   BigShouldersDisplay_700Bold,
   BigShouldersDisplay_800ExtraBold,
-  Manrope_400Regular,
-  Manrope_500Medium,
-  Manrope_600SemiBold,
-  Manrope_700Bold,
+  Inter_400Regular,
+  Inter_500Medium,
+  Inter_600SemiBold,
+  Inter_700Bold,
+  Inter_800ExtraBold,
 };
 
 export const fonts = {
-  display: 'BigShouldersDisplay_700Bold',
-  displaySemiBold: 'BigShouldersDisplay_600SemiBold',
-  displayHeavy: 'BigShouldersDisplay_800ExtraBold',
-  body: 'Manrope_400Regular',
-  bodyMedium: 'Manrope_500Medium',
-  bodySemiBold: 'Manrope_600SemiBold',
-  bodyBold: 'Manrope_700Bold',
+  /** The wordmark only. */
+  brand: 'BigShouldersDisplay_700Bold',
+  display: 'Inter_700Bold',
+  displaySemiBold: 'Inter_600SemiBold',
+  displayHeavy: 'Inter_800ExtraBold',
+  body: 'Inter_400Regular',
+  bodyMedium: 'Inter_500Medium',
+  bodySemiBold: 'Inter_600SemiBold',
+  bodyBold: 'Inter_700Bold',
 } as const satisfies Record<string, keyof typeof fontAssets>;

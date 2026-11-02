@@ -1,8 +1,14 @@
 import * as Haptics from 'expo-haptics';
 
-import { selectionTick, withTick } from '../haptics';
+import { impactTick, selectionTick, successTap, withTick } from '../haptics';
 
-jest.mock('expo-haptics', () => ({ selectionAsync: jest.fn(() => Promise.resolve()) }));
+jest.mock('expo-haptics', () => ({
+  selectionAsync: jest.fn(() => Promise.resolve()),
+  impactAsync: jest.fn(() => Promise.resolve()),
+  notificationAsync: jest.fn(() => Promise.resolve()),
+  ImpactFeedbackStyle: { Light: 'light' },
+  NotificationFeedbackType: { Success: 'success' },
+}));
 
 describe('haptics (design round 10)', () => {
   beforeEach(() => jest.clearAllMocks());
@@ -21,5 +27,16 @@ describe('haptics (design round 10)', () => {
     expect(() => selectionTick()).not.toThrow();
     (Haptics.selectionAsync as jest.Mock).mockImplementationOnce(() => Promise.reject(new Error('no engine')));
     expect(() => selectionTick()).not.toThrow();
+  });
+
+  it('primary buttons get a light thump and "done" actions the success tap (round 113)', () => {
+    impactTick();
+    expect(Haptics.impactAsync).toHaveBeenCalledWith('light');
+    successTap();
+    expect(Haptics.notificationAsync).toHaveBeenCalledWith('success');
+    (Haptics.impactAsync as jest.Mock).mockImplementationOnce(() => {
+      throw new Error('no engine');
+    });
+    expect(() => impactTick()).not.toThrow();
   });
 });

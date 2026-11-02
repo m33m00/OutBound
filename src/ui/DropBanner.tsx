@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, type ReactNode } from 'react';
 import { Animated, PanResponder, StyleSheet } from 'react-native';
 
-import { spacing, useColors } from '@/theme';
+import { elevation, spacing, useColors } from '@/theme';
 
 import { useReducedMotion } from './useReducedMotion';
 
@@ -90,9 +90,6 @@ const styles = StyleSheet.create({
     top: spacing.group,
     left: spacing.page,
     right: spacing.page,
-    shadowOpacity: 0.14,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 4,
+    ...elevation.raised,
   },
 });

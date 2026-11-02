@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { forSpeech } from '@/search/format';
-import { minTapTarget, radius, spacing, textStyles, useColors } from '@/theme';
+import { elevation, minTapTarget, radius, spacing, textStyles, useColors } from '@/theme';
 import { savedRouteFlights, savedRouteTitle, savedRouteWhen, type SavedRoute } from '@/trips/savedRoutes';
 
 import { Icon } from './Icon';
@@ -33,19 +33,27 @@ export function SavedRouteCard({ route, past, now, onOpen, onRemove }: SavedRout
   const shortWhen = when.split(' · ')[0];
   const pastNote = 'Day passed. Opens today’s search.';
   return (
-    <View style={[styles.card, { backgroundColor: c.surface, borderColor: c.line }]} testID="saved-route">
+    <View
+      style={[styles.card, elevation.card, { backgroundColor: c.surface, borderColor: c.line, shadowColor: c.text }]}
+      testID="saved-route">
       <Pressable
         onPress={onOpen}
         accessibilityRole="button"
         accessibilityLabel={forSpeech([title, when, `Flights ${flights}`, past ? pastNote : null].filter(Boolean).join('. '))}
         accessibilityHint={past ? 'Searches today' : 'Searches this day again'}
         style={pressStyle(styles.main)}>
-        <Text lineBreakStrategyIOS="push-out" style={[textStyles.heading, { color: past ? c.muted : c.text }]}>{title}</Text>
+        <Text lineBreakStrategyIOS="push-out" style={[textStyles.heading, { color: past ? c.muted : c.text }]}>
+          {title}
+        </Text>
         <View style={styles.whenLine}>
-          <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, styles.shrink, { color: c.muted }]}>{when}</Text>
+          <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, styles.shrink, { color: c.muted }]}>
+            {when}
+          </Text>
           {past ? <StatusTag label="Passed" tone="gone" /> : null}
         </View>
-        <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>{flights}</Text>
+        <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>
+          {flights}
+        </Text>
       </Pressable>
       <View style={styles.chevron} importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
         <Icon

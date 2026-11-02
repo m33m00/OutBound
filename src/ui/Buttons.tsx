@@ -2,6 +2,7 @@ import type { SFSymbol } from 'expo-symbols';
 import { StyleSheet, Text, type AccessibilityState, type StyleProp, type TextStyle, type ViewStyle } from 'react-native';
 
 import { boldTextOn, fonts, minTapTarget, radius, spacing, textStyles, useColors } from '@/theme';
+import { impactTick, successTap } from './haptics';
 import { Icon } from './Icon';
 import { ScalePressable } from './ScalePressable';
 
@@ -16,7 +17,11 @@ interface ButtonProps {
   /** Decorative SF Symbol before the label (iOS; Android shows the label only). */
   icon?: SFSymbol;
   style?: StyleProp<ViewStyle>;
+  /** What the tap feels like: primary buttons thump, "done" actions (submit, ask) get the success tap. */
+  haptic?: 'impact' | 'success' | 'none';
 }
+
+const HAPTIC = { impact: impactTick, success: successTap, none: () => {} };
 
 /** Title Case labels (DECISIONS.md: Find Routes, Get Home). */
 export function Button({
@@ -28,13 +33,18 @@ export function Button({
   accessibilityHint,
   icon,
   style,
+  haptic,
 }: ButtonProps) {
   const c = useColors();
   const primary = kind === 'primary';
+  const feel = HAPTIC[haptic ?? (primary ? 'impact' : 'none')];
   const fg = primary ? c.onAccent : c.text;
   return (
     <ScalePressable
-      onPress={onPress}
+      onPress={() => {
+        feel();
+        onPress();
+      }}
       disabled={disabled}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel ?? label}

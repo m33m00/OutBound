@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
 import { atAirportNote } from '@/requests/atAirport';
-import { radius, spacing, textStyles, useColors } from '@/theme';
+import { elevation, radius, spacing, textStyles, useColors } from '@/theme';
 
 import { Button } from './Buttons';
 import { Icon } from './Icon';
@@ -26,7 +26,9 @@ export function AtAirportCard({ code, upcoming, onBoard, onReport, onDismiss }: 
   const stacked = useWindowDimensions().fontScale >= 1.3;
   const note = atAirportNote(code, upcoming);
   return (
-    <View style={[styles.card, { backgroundColor: c.surface, borderColor: c.line }]} testID="at-airport-card">
+    <View
+      style={[styles.card, elevation.card, { backgroundColor: c.surface, borderColor: c.line, shadowColor: c.text }]}
+      testID="at-airport-card">
       <View style={[styles.icon, { backgroundColor: c.accentSoft }]}>
         <Icon
           name="airplane.departure"
