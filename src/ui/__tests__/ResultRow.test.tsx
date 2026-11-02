@@ -6,7 +6,7 @@ import { flightLookupKey, type FlightStatus } from '@/live';
 import { legLookup, rowStatus } from '@/search/statusTags';
 import { colors } from '@/theme';
 
-import { ResultRow, tagColumnWidth } from '../ResultRow';
+import { dotSeats, ResultRow, tagColumnWidth } from '../ResultRow';
 import { StatusTag } from '../StatusTag';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -27,7 +27,7 @@ describe('ResultRow', () => {
   let r: ReactTestRenderer | undefined;
   afterEach(() => act(() => r?.unmount()));
 
-  it('renders tier word, badge slot and a single accessible label; full routes say Full', async () => {
+  it('renders tier word and a single accessible label; full routes say Full', async () => {
     const it = await fullItinerary();
     const onPress = jest.fn();
     await act(async () => {
@@ -37,7 +37,8 @@ describe('ResultRow', () => {
     const button = root.findAll((n) => n.props.accessibilityRole === 'button')[0];
     expect(button.props.accessibilityLabel).toContain('Full route');
     expect(button.props.accessibilityState).toEqual({ selected: false });
-    expect(root.findAll((n) => n.props.testID === 'badge-slot').length).toBeGreaterThan(0);
+    // No weather/FAA pill on the row (John, 2026-11-02: "Likely Delays is a dumb callout/container").
+    expect(root.findAll((n) => n.props.testID === 'badge-slot')).toHaveLength(0);
     const texts = root.findAll((n) => typeof n.props.children === 'string').map((n) => n.props.children);
     // Seats lead the top line (Q-059) with their age; the slim row has no per-leg seat chips (Q-062).
     // Just the chance word on the row; the numbers are in the flight's sheet (John, 2026-10-31).
@@ -88,7 +89,7 @@ describe('ResultRow', () => {
     }
   });
 
-  it('shows the delay badge and exposes details as a VoiceOver action', async () => {
+  it('no Likely delays pill on the row; the details stay a VoiceOver action (John, 2026-11-02)', async () => {
     const it = await fullItinerary();
     const onImpact = jest.fn();
     const impact = {
@@ -119,11 +120,7 @@ describe('ResultRow', () => {
     act(() => row.props.onAccessibilityAction({ nativeEvent: { actionName: 'impact' } }));
     expect(onImpact).toHaveBeenCalledWith(it.id);
     const texts = root.findAll((n) => typeof n.props.children === 'string').map((n) => n.props.children);
-    // The badge is just the word; the airport and age are in the sheet (Q-072, John: C).
-    expect(texts).toContain('Likely delays');
-    expect(texts.some((t) => / ago$/.test(String(t)) && String(t).startsWith('Likely'))).toBe(false);
-    const pill = root.findAll((n) => n.props.hitSlop != null)[0];
-    expect(pill.props.hitSlop).toEqual({ top: 11, bottom: 11, left: 10, right: 10 });
+    expect(texts.some((t) => String(t).startsWith('Likely delays'))).toBe(false);
   });
 
   it('reaches each leg flight status as a VoiceOver action; stops line skips the airports', async () => {
@@ -259,13 +256,17 @@ describe('ResultRow', () => {
     expect(text.props.children).toBe('Full');
   });
 
-  it('shows Checking… while live data loads', async () => {
+  it('the slim row renders no stray text outside a Text (a broken comment once leaked into the layout)', async () => {
     const it = await fullItinerary();
     await act(async () => {
       r = create(<ResultRow itinerary={it} selected={false} now={NOW} onPress={jest.fn()} impactLoading />);
     });
+    const views = r!.root.findAll((n) => (n.type as unknown) === 'View');
+    for (const v of views) {
+      for (const child of [v.props.children].flat(5)) expect(typeof child === 'string' ? child : '').toBe('');
+    }
     const texts = r!.root.findAll((n) => typeof n.props.children === 'string').map((n) => n.props.children);
-    expect(texts).toContain('Checking…');
+    expect(texts).not.toContain('Checking…');
   });
 
   const live = (it: Awaited<ReturnType<typeof fullItinerary>>, state: FlightStatus['state'], lateMin = 0): FlightStatus => {
@@ -372,10 +373,32 @@ describe('ResultRow', () => {
     expect(line.findAll((n) => n.props.testID === 'row-tag' && typeof n.type === 'string')).toHaveLength(1);
     const row = root.findAll((n) => n.props.accessibilityRole === 'button')[0];
     expect(row.props.accessibilityLabel).toContain('Delayed 25 minutes, was 9:00 AM, now 9:25 AM');
-    // The weather/FAA badge slot stays separate from status tags.
-    expect(
-      root.findAll((n) => n.props.testID === 'badge-slot')[0].findAll((n) => n.props.children === 'Delayed 25m'),
-    ).toHaveLength(0);
+  });
+
+  it('the seat chip stays on the times line at normal text size, struck or moved (John, 2026-11-02)', async () => {
+    const it = await fullItinerary();
+    const RN = jest.requireActual<typeof import('react-native')>('react-native');
+    const spy = jest.spyOn(RN, 'useWindowDimensions').mockReturnValue({ width: 390, height: 844, scale: 3, fontScale: 1 });
+    try {
+      await act(async () => {
+        r = create(
+          <ResultRow
+            itinerary={it}
+            selected={false}
+            now={NOW}
+            onPress={jest.fn()}
+            status={statusFor(it, live(it, 'canceled'))}
+          />,
+        );
+      });
+      const top = r!.root.findAll((n) => n.props.testID === 'top-line' && typeof n.type === 'string')[0];
+      const flat = Object.assign({}, ...[top.props.style].flat(3).filter(Boolean));
+      expect(flat.flexWrap).toBe('nowrap');
+      const right = top.findAll((n) => n.props.testID === 'top-right' && typeof n.type === 'string')[0];
+      expect(Object.assign({}, ...[right.props.style].flat(3).filter(Boolean)).flexShrink).toBe(0);
+    } finally {
+      spy.mockRestore();
+    }
   });
 
   it("route card: a leg's tag sits just left of its flight, in one piece (John, 2026-11-01)", async () => {
@@ -573,6 +596,22 @@ describe('ResultRow', () => {
       (n) => typeof n.type === 'string' && JSON.stringify(n.props.style ?? '').includes('line-through'),
     );
     expect(struck).toHaveLength(0);
+  });
+
+  it('each leg dot holds its open/listed seats (John, 2026-11-02)', async () => {
+    const base = { tier: 'good' as const, asOf: NOW };
+    expect(dotSeats({ ...base, source: 'reported', netSeats: 7, openSeats: 10, listed: 3 })).toBe('10/3');
+    expect(dotSeats({ ...base, source: 'estimate', netSeats: -15, openSeats: 5, listed: 20 })).toBe('5/20');
+    expect(dotSeats({ ...base, source: 'estimate', netSeats: 12 })).toBe('12');
+    expect(dotSeats({ ...base, tier: 'unknown', source: 'typical', netSeats: 20 })).toBe('~20');
+    expect(dotSeats({ tier: 'unknown', source: 'unknown', netSeats: null, asOf: null })).toBe('–');
+
+    const it = await fullItinerary();
+    await act(async () => {
+      r = create(<ResultRow itinerary={it} selected now={NOW} onPress={jest.fn()} />);
+    });
+    const dots = r!.root.findAll((n) => n.props.testID === 'leg-dot-seats' && typeof n.type === 'string');
+    expect(dots.map((d) => d.props.children)).toEqual(['4/9']);
   });
 
   it('status tags widen to the widest so the flight chips line up (John, 2026-11-02)', async () => {

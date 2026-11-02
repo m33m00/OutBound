@@ -1,7 +1,7 @@
 import { memo, type ReactNode, useState } from 'react';
 import { Pressable, StyleSheet, Text, type TextStyle, useWindowDimensions, View } from 'react-native';
 
-import { AIRPORTS, type Flight, type Itinerary } from '@/engine';
+import { AIRPORTS, type Flight, type Itinerary, type LegSeats } from '@/engine';
 import type { RouteImpact } from '@/live';
 import {
   forSpeech,
@@ -23,7 +23,6 @@ import { fonts, radius, spacing, textStyles, useBoldText, useColors } from '@/th
 
 import { AirlinePill } from './AirlinePill';
 import { Icon } from './Icon';
-import { ImpactBadge } from './ImpactBadge';
 import { pressStyle } from './press';
 import { StatusTag, TAG_TONE } from './StatusTag';
 import { TONE_BG, TONE_FG } from './statusTone';
@@ -62,8 +61,19 @@ const keep = (time: string) => time.replace(/ /g, '\u00a0');
 /** A leg's scheduled departure at its origin, e.g. "8:00 AM". */
 const legDepartText = (leg: Flight) => formatTime(leg.departUtc, AIRPORTS[leg.from]?.tz ?? 'UTC');
 
-/** Size of the dot that marks each leg on the route card's timeline. */
-const DOT = 10;
+/** Size of the dot that marks each leg on the route card's timeline: big enough to hold "60/19" (John, 2026-11-02). */
+const DOT = 40;
+
+/**
+ * The seats inside a leg's dot (John, 2026-11-02): open/listed, "10/3"; the net count when only that's
+ * known; "~20" for a typical load; a dash when there's no data.
+ */
+export function dotSeats(seats: LegSeats): string {
+  if (seats.source === 'unknown' || seats.netSeats == null) return '–';
+  if (seats.source === 'typical') return `~${Math.max(0, seats.netSeats)}`;
+  if (seats.openSeats != null && seats.listed != null) return `${seats.openSeats}/${seats.listed}`;
+  return `${Math.max(0, seats.netSeats)}`;
+}
 /** Space above and below a connection label, before any extra that centers it on the line. */
 const CONNECTION_PAD = 6;
 
@@ -156,7 +166,7 @@ function LegTimeline({
         const last = i === it.legs.length - 1;
         const typical = leg.seats.source === 'typical' || leg.seats.source === 'unknown';
         // The dot carries the leg's tier color; the route's chance word is in the headline.
-        const dotColor = dimmed || typical ? c.unknown : c[leg.seats.tier];
+        const dotTier = dimmed || typical ? 'unknown' : leg.seats.tier;
         const above = i === 0;
         const pills = (
           <View style={styles.legMeta} testID="leg-flight">
@@ -197,7 +207,17 @@ function LegTimeline({
             <View style={styles.leg} onLayout={measure(i)}>
               <View style={styles.railCol}>
                 <View style={[styles.railHalf, i > 0 && rail]} />
-                <View style={[styles.dot, { backgroundColor: dotColor }]} testID="leg-dot" />
+                <View style={[styles.dot, { backgroundColor: c[TIER_BG[dotTier]], borderColor: c[dotTier] }]} testID="leg-dot">
+                  <Text
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.7}
+                    maxFontSizeMultiplier={1.2}
+                    style={[styles.dotText, { color: c[TIER_FG[dotTier]] }]}
+                    testID="leg-dot-seats">
+                    {dotSeats(leg.seats)}
+                  </Text>
+                </View>
                 <View style={[styles.railHalf, !last && rail]} />
               </View>
               {onLegPress ? (
@@ -289,7 +309,6 @@ export const ResultRow = memo(function ResultRow({
   now,
   onPress,
   impact,
-  impactLoading,
   onImpactPress,
   onLegPress,
   status,
@@ -347,7 +366,7 @@ export const ResultRow = memo(function ResultRow({
   const ageWords = summaryAge ? summaryAge[0].toLowerCase() + summaryAge.slice(1) : null;
   const cardAge = !ageWords ? null : headline ? `Seats: ${summary} · ${ageWords}` : `Seats ${ageWords}`;
   const times = (
-    <Text style={[textStyles.number, { color: timeColor }]} testID="row-times">
+    <Text style={[textStyles.number, styles.shrink, { color: timeColor }]} testID="row-times">
       {status?.canceled ? (
         <Text style={styles.struck}>
           {t.depart} – {t.arrive}
@@ -402,17 +421,6 @@ export const ResultRow = memo(function ResultRow({
         {neutralSeatText(it, now)}
       </Text>
     );
-  const badge = (
-    <View style={styles.badgeSlot} testID="badge-slot">
-      {hasImpact ? (
-        <ImpactBadge impact={impact} onPress={() => onImpactPress?.(it.id)} />
-      ) : impactLoading ? (
-        <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>
-          Checking…
-        </Text>
-      ) : null}
-    </View>
-  );
   return (
     <Pressable
       // In the route view the card doesn't close on a stray tap; "‹ Routes" does that.
@@ -452,7 +460,6 @@ export const ResultRow = memo(function ResultRow({
             <View style={styles.headlineRow}>
               <View style={[styles.line, styles.headlineMain]} testID="headline-row">
                 {headline ? <Headline headline={headline} /> : seatSummary(true)}
-                {badge}
               </View>
               {topAction ? (
                 <View style={styles.topAction} testID="route-card-action">
@@ -475,12 +482,12 @@ export const ResultRow = memo(function ResultRow({
           </>
         ) : (
           <>
-            <View style={styles.line}>
+            {/* The seat chip stays beside the times on every row, struck or moved (John, 2026-11-02); at big
+                text the times take the line and the seats go under them. */}
+            <View style={[styles.line, !stacked && styles.lineKeep]} testID="top-line">
               {times}
-              {/* At big text the times take the line; seats and the delay badge go under them. */}
-              <View style={[styles.topRight, stacked && styles.topRightStacked]} testID="top-right">
+              <View style={[styles.topRight, stacked ? styles.topRightStacked : styles.topRightKeep]} testID="top-right">
                 {seatSummary(false)}
-                {badge}
               </View>
             </View>
             <View style={styles.line}>
@@ -499,8 +506,9 @@ export const ResultRow = memo(function ResultRow({
                 {slimStops(it)} · {formatDuration(it.totalMin)}
               </Text>
             </View>
-            // Slim row: who flies it and anything live; seats per leg live in the route card. // One line of flights and at most
-            one tag, which names the flight it means // ("PHX → LAX delayed 40m"), so the row never stacks (John, 2026-10-31).
+            {/* Slim row: who flies it and anything live; seats per leg live in the route card. One line of
+                flights and at most one tag, which names the flight it means ("PHX → LAX delayed 40m"), so the
+                row never stacks (John, 2026-10-31). */}
             <View style={styles.legLine} testID="flights-line">
               {it.legs.map((leg) => (
                 <View key={leg.flight.id} style={styles.flight} testID="flight-item">
@@ -554,6 +562,7 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: spacing.group,
   },
+  lineKeep: { flexWrap: 'nowrap' },
   headlineRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.group },
   headlineMain: { flex: 1 },
   // A 44pt tap target that doesn't make the headline line taller: it overhangs into the card's padding.
@@ -566,6 +575,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     gap: spacing.group,
   },
+  topRightKeep: { flexShrink: 0 },
   topRightStacked: {
     flexBasis: '100%',
     justifyContent: 'flex-start',
@@ -581,12 +591,6 @@ const styles = StyleSheet.create({
   // The route card's headline chip: bigger, so it reads first.
   summaryLead: { paddingHorizontal: 10, paddingVertical: 4 },
   headline: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1 },
-  badgeSlot: {
-    flexShrink: 1,
-    flexDirection: 'row',
-    gap: 4,
-    minHeight: 20,
-  },
   legLine: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -602,7 +606,16 @@ const styles = StyleSheet.create({
   // Timeline (design round 56; boxes since round 80): the line runs unbroken from dot to dot.
   leg: { flexDirection: 'row', gap: spacing.group },
   railCol: { width: DOT, alignItems: 'center' },
-  dot: { width: DOT, height: DOT, borderRadius: DOT / 2 },
+  dot: {
+    width: DOT,
+    height: DOT,
+    borderRadius: DOT / 2,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 3,
+  },
+  dotText: { fontFamily: fonts.bodySemiBold, fontSize: 11, fontVariant: ['tabular-nums'], letterSpacing: -0.2 },
   railLine: { flex: 1, width: 2, minHeight: 4 },
   railHalf: { flex: 1, width: 2 },
   // One flight: a tinted box you tap to open the flight (John, 2026-11-01).
