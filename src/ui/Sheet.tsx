@@ -66,6 +66,25 @@ export function growFit(prev: FitHeight, key: string, height: number): FitHeight
 }
 
 /** Height of the handle strip at the top of the panel. */
+export interface SheetMode {
+  /** Snap the panel rests at: 0 peek, 1 half, 2 full. */
+  index: number;
+  locked: boolean;
+  /** Fills the whole screen with a square top (no globe above it). */
+  flush: boolean;
+}
+
+/**
+ * How the home panel sits. A picked route holds it at the route's size; the results list before a
+ * route is picked fills the whole screen, square and fixed, with no sliver of globe above it (John,
+ * 2026-11-02); the search panel moves freely.
+ */
+export function sheetMode(p: { showResults: boolean; routeOpen: boolean; tallRoute: boolean; index: number }): SheetMode {
+  if (p.routeOpen) return { index: p.tallRoute ? 2 : 1, locked: true, flush: false };
+  if (p.showResults) return { index: 2, locked: true, flush: true };
+  return { index: p.index, locked: false, flush: false };
+}
+
 export const SHEET_HANDLE_H = minTapTarget;
 /** Top strip of a locked panel: no handle, just room under the rounded corners. */
 export const SHEET_LOCKED_TOP = 12;
@@ -76,6 +95,8 @@ export interface SheetProps {
    * picked the panel should stay put).
    */
   locked?: boolean;
+  /** Square top edge, for a panel that fills the whole screen (the results list, John 2026-11-02). */
+  flush?: boolean;
   /** Visible heights in pt, ascending: peek, half, full. */
   snaps: readonly number[];
   index: number;
@@ -94,7 +115,7 @@ export interface SheetProps {
  * the panel has stopped, so the map's re-framing never runs under the moving panel. Core Animated
  * and gesture handler only, both in Expo Go.
  */
-export function Sheet({ snaps, index, onIndexChange, children, locked = false }: SheetProps) {
+export function Sheet({ snaps, index, onIndexChange, children, locked = false, flush = false }: SheetProps) {
   const c = useColors();
   const reduceMotion = useReducedMotion();
   const full = snaps[snaps.length - 1];
@@ -209,6 +230,7 @@ export function Sheet({ snaps, index, onIndexChange, children, locked = false }:
             borderColor: c.line,
             shadowColor: c.text,
           },
+          flush && styles.flush,
         ]}>
         {locked ? (
           <View style={{ height: SHEET_LOCKED_TOP }} testID="sheet-locked-top" />
@@ -240,6 +262,7 @@ export function Sheet({ snaps, index, onIndexChange, children, locked = false }:
 }
 
 const styles = StyleSheet.create({
+  flush: { borderTopLeftRadius: 0, borderTopRightRadius: 0, borderLeftWidth: 0, borderRightWidth: 0 },
   clip: {
     position: 'absolute',
     top: 0,

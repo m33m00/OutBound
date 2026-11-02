@@ -1,4 +1,4 @@
-import { FLICK_SPEED, growFit, halfSnap, pickSnap, SNAP_SPRING } from '../Sheet';
+import { FLICK_SPEED, growFit, halfSnap, pickSnap, sheetMode, SNAP_SPRING } from '../Sheet';
 
 // Peek, half, full (pt), like the home screen.
 const SNAPS = [120, 380, 700];
@@ -53,5 +53,38 @@ describe('drawer fit holds still (John, 2026-11-01: the globe re-zoomed on a swa
     expect(f.height).toBe(380);
     // The location card going away is a new layout: measure afresh.
     expect(growFit({ key: 'card', height: 520 }, 'plain', 360)).toEqual({ key: 'plain', height: 360 });
+  });
+});
+
+describe('home panel mode (John, 2026-11-02: the results list should be the screen until a route is picked)', () => {
+  it('the results list fills the screen, fixed and square, whatever size the panel was', () => {
+    for (const index of [0, 1, 2]) {
+      expect(sheetMode({ showResults: true, routeOpen: false, tallRoute: false, index })).toEqual({
+        index: 2,
+        locked: true,
+        flush: true,
+      });
+    }
+  });
+
+  it('a picked route brings the globe back: the route size, locked, rounded', () => {
+    expect(sheetMode({ showResults: true, routeOpen: true, tallRoute: false, index: 2 })).toEqual({
+      index: 1,
+      locked: true,
+      flush: false,
+    });
+    expect(sheetMode({ showResults: true, routeOpen: true, tallRoute: true, index: 0 })).toEqual({
+      index: 2,
+      locked: true,
+      flush: false,
+    });
+  });
+
+  it('the search panel moves freely at the size it was left', () => {
+    expect(sheetMode({ showResults: false, routeOpen: false, tallRoute: false, index: 0 })).toEqual({
+      index: 0,
+      locked: false,
+      flush: false,
+    });
   });
 });

@@ -35,7 +35,7 @@ import { ResultsBanner } from '@/ui/ResultsBanner';
 import { neighborDays } from '@/ui/DayStepper';
 import { ResultsPanel } from '@/ui/ResultsPanel';
 import { SearchPanel } from '@/ui/SearchPanel';
-import { growFit, halfSnap, Sheet, SHEET_HANDLE_H, SHEET_LOCKED_TOP, type FitHeight } from '@/ui/Sheet';
+import { growFit, halfSnap, Sheet, SHEET_HANDLE_H, SHEET_LOCKED_TOP, sheetMode, type FitHeight } from '@/ui/Sheet';
 import { useRadarLayers } from '@/ui/useRadarLayers';
 import { useSheetContent } from '@/ui/useSheetContent';
 import { selectionTick } from '@/ui/haptics';
@@ -139,12 +139,20 @@ export default function HomeScreen() {
   // swap doesn't move the drawer or re-zoom the globe (John, 2026-11-01).
   const [fit, setFit] = useState<FitHeight>({ key: '', height: 0 });
   const searchFit = fit.height;
+  const emptyBanner = state.status === 'done' ? resultsBanner(state) : null;
+  const [showHidden, setShowHidden] = useState(false);
+  useEffect(() => setShowHidden(false), [state]);
+  const showResults = state.status !== 'idle' && (!emptyBanner || showHidden);
+  // The results list is the whole screen until a route is picked: no sliver of globe on top, no
+  // drag (John, 2026-11-02). The globe comes back with the route.
+  const mode = sheetMode({ showResults, routeOpen, tallRoute, index: sheetIndex });
+  const sheetAt = mode.index;
   const snaps = useMemo(() => {
     const h = sheetFull + spacing.group;
     const route = routeHeight > 0 ? routeHeight + LOCKED_CHROME : Math.round(h * ROUTE_VIEW_SHARE);
     const half = halfSnap(h, searchFit > 0 ? searchFit + SEARCH_CHROME : 0, sheetFull);
-    return [peek, routeOpen && !tallRoute ? Math.max(peek + 1, route) : half, sheetFull];
-  }, [sheetFull, routeOpen, routeHeight, tallRoute, peek, searchFit]);
+    return [peek, routeOpen && !tallRoute ? Math.max(peek + 1, route) : half, mode.flush ? bodyHeight : sheetFull];
+  }, [sheetFull, routeOpen, routeHeight, tallRoute, peek, searchFit, mode.flush, bodyHeight]);
   useEffect(() => {
     if (tallRoute) setSheetIndex(SHEET.full);
   }, [tallRoute]);
@@ -171,11 +179,7 @@ export default function HomeScreen() {
     state.request.date === date &&
     state.request.origin === origin &&
     state.request.destination === destination;
-  const emptyBanner = state.status === 'done' ? resultsBanner(state) : null;
   const banner = bannerCurrent ? emptyBanner : null;
-  const [showHidden, setShowHidden] = useState(false);
-  useEffect(() => setShowHidden(false), [state]);
-  const showResults = state.status !== 'idle' && (!emptyBanner || showHidden);
   // First launch: the location card plus the search fields don't fit at half height, so
   // the panel opens full while the card shows and drops to half once it's answered.
   const [locationCardSeen, setLocationCardSeen] = useState(false);
@@ -471,16 +475,12 @@ export default function HomeScreen() {
               select(id);
             } else if (selectedId) closeRoute(selectedId);
           }}
-          insets={{ bottom: snaps[routeOpen ? (tallRoute ? SHEET.full : SHEET.half) : sheetIndex] }}
+          insets={{ bottom: snaps[sheetAt] }}
         />
         {/* Rain radar is switched in Settings > Map, not on the map (John, 2026-11-01). */}
         {/* A picked route holds the panel at its size: no drag, no handle (John, 2026-11-01). */}
         {bodyHeight > 0 ? (
-          <Sheet
-            snaps={snaps}
-            index={routeOpen ? (tallRoute ? SHEET.full : SHEET.half) : sheetIndex}
-            onIndexChange={setSheetIndex}
-            locked={routeOpen}>
+          <Sheet snaps={snaps} index={sheetAt} onIndexChange={setSheetIndex} locked={mode.locked} flush={mode.flush}>
             {/* Search and results cross-fade as they swap (design round 29). */}
             <Appear key={showResults ? 'results' : 'search'}>
               {!showResults ? (
@@ -575,7 +575,6 @@ export default function HomeScreen() {
                   }}
                   onRouteHeight={onRouteHeight}
                   onRouteBarHeight={setRouteBar}
-                  onPullDown={routeOpen ? undefined : () => setSheetIndex((i) => Math.max(SHEET.peek, i - 1))}
                   onFilters={openFilters}
                   filtersChanged={filtersChanged}
                   note={missingNote}
