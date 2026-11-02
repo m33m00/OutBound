@@ -12,6 +12,16 @@ export const STATE_WORD: Record<FlightState, string> = {
   diverted: 'Diverted',
 };
 
+/**
+ * The sheet's state word. A diversion names where it landed when the data gives an airport other
+ * than the planned one (John, 2026-11-01: "it doesn't show where it diverted").
+ */
+export function stateWord(status: { state: FlightState; arrival: { airport: string | null } }, plannedTo: string): string {
+  const landed = status.arrival.airport?.toUpperCase();
+  if (status.state === 'diverted' && landed && landed !== plannedTo.toUpperCase()) return `Diverted to ${landed}`;
+  return STATE_WORD[status.state];
+}
+
 /** "50 min late", "4 min early", "On time"; null when unknown. */
 export function delayText(min: number | null): string | null {
   if (min == null) return null;
@@ -40,12 +50,21 @@ export function movementTimes(m: Movement, tz: string): string {
  * The time that matters now and the one it replaced (John, 2026-10-30: lead with now, not with the schedule).
  * `was` is the scheduled time only when the shown time differs from it by a minute or more.
  */
-export function movementLead(m: Movement, tz: string): { time: string; label: string; was: string | null } | null {
+export function movementLead(
+  m: Movement,
+  tz: string,
+): { time: string; label: string; was: string | null; shiftMin: number | null } | null {
   const b = bestTime(m);
   if (!b) return null;
   const sched = m.scheduledUtc ? Date.parse(m.scheduledUtc) : NaN;
   const moved = b.label !== 'Scheduled' && Number.isFinite(sched) && Math.abs(b.ms - sched) >= 60_000;
-  return { time: formatTime(b.ms, tz), label: b.label, was: moved ? formatTime(sched, tz) : null };
+  return {
+    time: formatTime(b.ms, tz),
+    label: b.label,
+    was: moved ? formatTime(sched, tz) : null,
+    // Minutes later (positive) or earlier than scheduled, for the time's tint (John, 2026-11-02).
+    shiftMin: moved ? Math.round((b.ms - sched) / 60_000) : null,
+  };
 }
 
 /** For VoiceOver, in the order the card shows it: "Estimated 2:40 PM, scheduled 2:15 PM". */

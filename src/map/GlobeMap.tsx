@@ -26,55 +26,37 @@
  * tap (no movement) selects a route or clears the selection. Camera targets
  * fly (flyTo.ts) unless Reduce Motion is on, then they jump.
  */
-import { Canvas, Picture } from '@shopify/react-native-skia';
+import { Canvas, Group, Picture } from '@shopify/react-native-skia';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import {
-  AppState,
-  StyleSheet,
-  View,
-  type AccessibilityActionEvent,
-  type LayoutChangeEvent,
-} from 'react-native';
+import { AppState, StyleSheet, View, type AccessibilityActionEvent, type LayoutChangeEvent } from 'react-native';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { useColors, useColorSchemeName } from '@/theme';
 
-import {
-  cameraForTarget,
-  normalizeInsets,
-  panCamera,
-  pinchCamera,
-  type GlobeCamera,
-  type Viewport,
-} from './camera';
+import { cameraForTarget, normalizeInsets, panCamera, pinchCamera, type GlobeCamera, type Viewport } from './camera';
 import { easeCubicInOut, interpolateCamera, planRetarget, sameCamera, type RunningFlight } from './flyTo';
-import {
-  DRIFT_HOME,
-  momentumStep,
-  planSettle,
-  releaseVelocity,
-  settleAt,
-  shouldDriftHome,
-  type Velocity,
-} from './momentum';
-import { routeFrameTarget } from './framing';
+import { DRIFT_HOME, momentumStep, planSettle, releaseVelocity, settleAt, shouldDriftHome, type Velocity } from './momentum';
+import { legendReserve, routeFrameTarget } from './framing';
 import { globeColors } from './globeColors';
 import { hitTestRoutes } from './hitTest';
 import { RouteLegend } from './RouteLegend';
 import { recordRouteLayer, type RouteLayer } from './routeLayer';
+import { RoutePulses } from './RoutePulses';
+import { HomeRipple, PreviewArc } from './HomeMotion';
+import { SWAY, swayOffset } from './homeMotionTiming';
 import { drawnRoutes, nextSelection, routeSpokenName } from './routeModel';
 import { recordBaseLayer, recordRimLayer } from './staticLayer';
 import { canvasLayerOrder, RADAR, radarKey, radarSummary, type CanvasLayerName } from './radar';
 import { makeRadarImageCache, recordRadarLayer } from './radarLayer';
-import type { CameraTarget, GlobeMapProps, RouteLine } from './types';
+import type { CameraTarget, GlobeMapProps, LonLat, RouteLine } from './types';
 import { useReduceMotionStatus } from './useReduceMotion';
 import { recordNightLayer } from './nightLayer';
 import { markSpinInDone, shouldSpinIn, SPIN_IN, spinStartCamera } from './spinIn';
 import { NIGHT_THEME, SKY_IDLE_TICK_MS, sunFromKey, sunKey, sunPosition } from './sun';
-import { makeLiftedProjector } from './arcs';
+import { arcSamples, makeLiftedProjector, projectSamples } from './arcs';
 import { useLegTimeFont, useMarkFonts } from './markFonts';
 import { legTimeColors, legTimeSpecs, legTimesSummary } from './legTimes';
-import { markColors, marksSummary, markSet } from './marks';
+import { markColors, markExtent, marksSummary, markSet } from './marks';
 import { recordMarksLayer } from './marksLayer';
 import type { Box } from './marks';
 import { statusColors, statusSet, statusSummary } from './status';
@@ -98,6 +80,8 @@ export function GlobeMap({
   radar,
   cameraTarget,
   home,
+  preview,
+  homeMotion = false,
   insets,
   interactive = true,
   showLegend = true,
@@ -126,11 +110,12 @@ export function GlobeMap({
   const [flying, setFlying] = useState(false);
 
   const normInsets = normalizeInsets(insets);
-  const insetKey = JSON.stringify(normInsets);
-  const viewport = useMemo<Viewport | null>(
-    () => (size ? { ...size, insets: JSON.parse(insetKey) } : null),
-    [size, insetKey],
-  );
+  // The legend sits top-left, away from the drawer, and the route is framed below it so it never
+  // covers a line (John, 2026-11-01).
+  const [legendHeight, setLegendHeight] = useState(0);
+  const legendRoom = legendReserve(showLegend && selectedId != null, legendHeight, LEGEND_GAP);
+  const insetKey = JSON.stringify({ ...normInsets, top: normInsets.top + legendRoom });
+  const viewport = useMemo<Viewport | null>(() => (size ? { ...size, insets: JSON.parse(insetKey) } : null), [size, insetKey]);
 
   // Latest camera for gesture math; React state follows at most once per frame.
   const cameraRef = useRef<GlobeCamera | null>(null);
@@ -178,12 +163,24 @@ export function GlobeMap({
     clearTimeout(driftTimer.current);
     driftTimer.current = null;
   }, []);
+  // Idle sway (homeMotionTiming.ts): the wait before it starts, and its frame loop.
+  const swayTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const swayFrame = useRef<number | null>(null);
+  const [swayEpoch, setSwayEpoch] = useState(0);
+  const stopSway = useCallback(() => {
+    if (swayTimer.current != null) clearTimeout(swayTimer.current);
+    if (swayFrame.current != null) cancelAnimationFrame(swayFrame.current);
+    swayTimer.current = null;
+    swayFrame.current = null;
+  }, []);
   useEffect(
     () => () => {
       if (frameRef.current != null) cancelAnimationFrame(frameRef.current);
       if (flightRef.current != null) cancelAnimationFrame(flightRef.current);
       if (coastRef.current != null) cancelAnimationFrame(coastRef.current);
       if (driftTimer.current != null) clearTimeout(driftTimer.current);
+      if (swayTimer.current != null) clearTimeout(swayTimer.current);
+      if (swayFrame.current != null) cancelAnimationFrame(swayFrame.current);
     },
     [],
   );
@@ -240,6 +237,7 @@ export function GlobeMap({
     // no coasting or pending drift from before.
     stopCoast();
     cancelDrift();
+    stopSway();
 
     // First camera: launch spin-in (once per app launch, item 11).
     if (!cameraRef.current) {
@@ -275,7 +273,35 @@ export function GlobeMap({
     } else {
       flyTo(next, plan.durationMs, plan.spin);
     }
-  }, [targetKey, viewport, reduceKnown, flyTo, stopFlight, stopCoast, cancelDrift]);
+  }, [targetKey, viewport, reduceKnown, flyTo, stopFlight, stopCoast, cancelDrift, stopSway]);
+
+  // Idle sway (John, 2026-11-01): on the home globe with nothing drawn, once it has been left
+  // alone a few seconds, it turns gently east and west of where it sits. Any touch, a new
+  // target, a route or Reduce Motion stops it where it is, with no jump.
+  const swayAllowed = homeMotion && !reduceMotion && reduceKnown && routes.length === 0 && selectedId == null;
+  const hasCamera = camera != null;
+  useEffect(() => {
+    stopSway();
+    if (!swayAllowed || !hasCamera || moving || flying) return;
+    swayTimer.current = setTimeout(() => {
+      swayTimer.current = null;
+      const base = cameraRef.current;
+      if (!base) return;
+      const t0 = performance.now();
+      let last = 0;
+      const step = (now: number) => {
+        if (now - last >= SWAY.frameMs) {
+          last = now;
+          const next = { ...base, center: [base.center[0] + swayOffset(now - t0), base.center[1]] as LonLat };
+          cameraRef.current = next;
+          setCamera(next);
+        }
+        swayFrame.current = requestAnimationFrame(step);
+      };
+      swayFrame.current = requestAnimationFrame(step);
+    }, SWAY.startAfterMs);
+    return stopSway;
+  }, [swayAllowed, hasCamera, moving, flying, targetKey, viewport, swayEpoch, stopSway]);
 
   // After a pinch (or any release under Reduce Motion), once the globe has
   // been still for a while, glide it slowly back home; never with a route
@@ -369,9 +395,7 @@ export function GlobeMap({
   const onLayout = useCallback((e: LayoutChangeEvent) => {
     const { width, height } = e.nativeEvent.layout;
     if (width <= 0 || height <= 0) return;
-    setSize((prev) =>
-      prev && prev.width === width && prev.height === height ? prev : { width, height },
-    );
+    setSize((prev) => (prev && prev.width === width && prev.height === height ? prev : { width, height }));
   }, []);
 
   const select = useCallback(
@@ -437,6 +461,7 @@ export function GlobeMap({
   const [legendBox, setLegendBox] = useState<Box | null>(null);
   const onLegendLayout = useCallback((e: LayoutChangeEvent) => {
     const { x, y, width: w, height: h } = e.nativeEvent.layout;
+    setLegendHeight(Math.round(h));
     setLegendBox((prev) =>
       prev && prev.x0 === x && prev.y0 === y && prev.x1 === x + w && prev.y1 === y + h
         ? prev
@@ -511,6 +536,26 @@ export function GlobeMap({
   ]);
   const radarSpoken = radarSummary(radarImages.length);
 
+  // Preview arc between From and To before a search (John, 2026-11-01), re-projected with the camera.
+  const previewKey = preview ? JSON.stringify([preview.from, preview.to]) : '';
+  const previewSamples = useMemo(() => {
+    if (!previewKey) return null;
+    const [a, b] = JSON.parse(previewKey) as [LonLat, LonLat];
+    return arcSamples(a, b);
+  }, [previewKey]);
+  const previewRuns = useMemo(() => {
+    if (!previewSamples || !viewport || !camera || drawn.length > 0) return null;
+    const runs = projectSamples(previewSamples, makeLiftedProjector(camera, viewport));
+    return runs.length ? runs : null;
+  }, [previewSamples, viewport, camera, drawn.length]);
+  // Ripple off the home pin: only with home motion on, nothing selected, and the globe still.
+  const homeMark = marks.find((m) => m.kind === 'home');
+  const ripple = useMemo(() => {
+    if (!homeMotion || reduceMotion || fast || selectedId != null || !homeMark || !viewport || !camera) return null;
+    const p = makeLiftedProjector(camera, viewport)(homeMark.coord, 1);
+    return p.visible ? { x: p.x, y: p.y, r: markExtent('home') } : null;
+  }, [homeMotion, reduceMotion, fast, selectedId, homeMark, viewport, camera]);
+
   // Day/night (item 11): real time, ticking at most once a minute (and on
   // return to the foreground).
   const [clockMs, setClockMs] = useState(() => Date.now());
@@ -538,7 +583,10 @@ export function GlobeMap({
     if (flightTargetRef.current?.spin) stopFlight(true);
     stopCoast();
     cancelDrift();
-  }, [stopFlight, stopCoast, cancelDrift]);
+    // Any touch stops the idle sway at once and starts its wait over (John, 2026-11-01).
+    stopSway();
+    setSwayEpoch((n) => n + 1);
+  }, [stopFlight, stopCoast, cancelDrift, stopSway]);
   const touchRef = useRef(onTouchDown);
   useEffect(() => {
     touchRef.current = onTouchDown;
@@ -714,7 +762,29 @@ export function GlobeMap({
                   rim: layers.rim,
                   marks: marksPicture,
                 }[name];
-                return picture ? <Picture key={name} picture={picture} /> : null;
+                if (!picture) return null;
+                // Home motion (John, 2026-11-01) sits under the marks: the preview arc and the home ripple.
+                if (name === 'marks' && (previewRuns || ripple)) {
+                  return (
+                    <Group key={name}>
+                      {previewRuns ? (
+                        <PreviewArc runs={previewRuns} pairKey={previewKey} color={markColorSet.accent} animate={!reduceMotion} />
+                      ) : null}
+                      {ripple ? <HomeRipple x={ripple.x} y={ripple.y} r={ripple.r} color={markColorSet.you} /> : null}
+                      <Picture picture={picture} />
+                    </Group>
+                  );
+                }
+                // The slow pulse rides just over the route lines; still with Reduce Motion or while the globe moves.
+                if (name === 'routes' && routeLayer && !reduceMotion && !fast) {
+                  return (
+                    <Group key={name}>
+                      <Picture picture={picture} />
+                      <RoutePulses pulses={routeLayer.pulses} width={viewport!.width} height={viewport!.height} />
+                    </Group>
+                  );
+                }
+                return <Picture key={name} picture={picture} />;
               })}
             </Canvas>
           ) : null}
@@ -724,10 +794,7 @@ export function GlobeMap({
         <View
           onLayout={onLegendLayout}
           pointerEvents="none"
-          style={[
-            styles.legend,
-            { left: normInsets.left + LEGEND_GAP, bottom: normInsets.bottom + LEGEND_GAP },
-          ]}>
+          style={[styles.legend, { left: normInsets.left + LEGEND_GAP, top: normInsets.top + LEGEND_GAP }]}>
           <RouteLegend route={selectedRoute!} />
         </View>
       ) : null}

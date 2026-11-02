@@ -37,6 +37,10 @@ const textPairs: [ColorToken, ColorToken][] = [
   ['likelyDelays', 'likelyDelaysBg'],
   // Row status tags (Q-050): canceled red is provisional, pending John.
   ['canceledFg', 'canceledBg'],
+  // Moved times (John, 2026-11-02), on every surface they sit on.
+  ...(['timeEarly', 'timeSlight', 'timeLate', 'timeVeryLate'] as const).flatMap((fg) =>
+    (['bg', 'surface', 'surface2'] as const).map((bg): [ColorToken, ColorToken] => [fg, bg]),
+  ),
 ];
 
 describe('Ice Mix colors', () => {

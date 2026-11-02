@@ -109,9 +109,7 @@ export interface MapInsets {
  *   with padding. Use `routeFrameTarget` to build one from routes.
  * Target changes fly (about 0.9 s) unless Reduce Motion is on, then jump.
  */
-export type CameraTarget =
-  | { kind: 'center'; center: LonLat; zoom?: number }
-  | { kind: 'fit'; points: readonly LonLat[] };
+export type CameraTarget = { kind: 'center'; center: LonLat; zoom?: number } | { kind: 'fit'; points: readonly LonLat[] };
 
 export interface GlobeMapProps {
   /**
@@ -173,6 +171,17 @@ export interface GlobeMapProps {
    * Also where it drifts back to after a spin. Default: continental US.
    */
   home?: LonLat | null;
+  /**
+   * From and To before a search: a faint arc draws itself between them (John, 2026-11-01).
+   * Only while no routes are drawn.
+   */
+  preview?: { from: LonLat; to: LonLat } | null;
+  /**
+   * Home motion on (John, 2026-11-01): a slow idle sway of the globe once it's left alone, and a
+   * soft ripple off the home pin. The screen turns it off while results are up or the tab is
+   * away. Reduce Motion turns it off whatever this says.
+   */
+  homeMotion?: boolean;
   /** UI covering the map; the camera frames inside what is left. */
   insets?: Partial<MapInsets>;
   /** Drag/pinch enabled. Default true. */

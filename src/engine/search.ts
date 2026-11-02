@@ -1,15 +1,7 @@
 import { endAirports } from './airports';
 import { legSeats, routeTier, tierRank } from './seats';
 import { addDays, daysBetween, localDate, minutes, zonedToUtc } from './time';
-import type {
-  Flight,
-  FlightDataProvider,
-  Itinerary,
-  LegSeats,
-  SearchOptions,
-  SearchOutcome,
-  SearchRequest,
-} from './types';
+import type { Flight, FlightDataProvider, Itinerary, LegSeats, SearchOptions, SearchOutcome, SearchRequest } from './types';
 
 const MIN = 60_000;
 
@@ -56,7 +48,29 @@ export function pickResults(sorted: Itinerary[], now: number, limit: number): It
   const ahead = sorted.filter((it) => it.departUtc >= now);
   const aheadCount = Math.min(ahead.length, Math.max(limit - KEEP_LEFT, limit - left.length));
   const leftCount = Math.min(left.length, limit - aheadCount);
-  return [...left.slice(left.length - leftCount), ...ahead.slice(0, aheadCount)];
+  const picked = [...left.slice(left.length - leftCount), ...ahead.slice(0, aheadCount)];
+  return withNonstops(sorted, picked, now);
+}
+
+/**
+ * Every nonstop still to leave always makes the list (John, 2026-11-02: "Always show nonstops"), so a
+ * crowd of 2 and 3 stop routes can't push one out. Each one that was cut takes the place of a
+ * connecting route: the one with the most stops, latest first. The list never grows past the limit;
+ * departure order is kept.
+ */
+function withNonstops(sorted: Itinerary[], picked: Itinerary[], now: number): Itinerary[] {
+  const chosen = new Set(picked.map((it) => it.id));
+  const missing = sorted.filter((it) => it.stops === 0 && it.departUtc >= now && !chosen.has(it.id));
+  if (!missing.length) return picked;
+  const droppable = picked.filter((it) => it.stops > 0).sort((a, b) => b.stops - a.stops || b.departUtc - a.departUtc);
+  for (const nonstop of missing) {
+    // Nonstops only push out connections; when nonstops alone fill the list it stays at the limit.
+    const out = droppable.shift();
+    if (!out) break;
+    chosen.delete(out.id);
+    chosen.add(nonstop.id);
+  }
+  return sorted.filter((it) => chosen.has(it.id));
 }
 
 /**
@@ -142,8 +156,7 @@ async function findAll(
     if (path.length > opt.maxStops) return;
     for (const next of await departuresFrom(last.to)) {
       const layover = (next.departUtc - last.arriveUtc) / MIN;
-      const minConnect =
-        next.airline === last.airline ? opt.minConnectSameAirlineMin : opt.minConnectSwitchMin;
+      const minConnect = next.airline === last.airline ? opt.minConnectSameAirlineMin : opt.minConnectSwitchMin;
       if (layover < minConnect || layover > opt.maxLayoverMin) continue;
       if (visited.has(next.to)) continue;
       if (ends.has(next.to) && !destinations.has(next.to)) continue;

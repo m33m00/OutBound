@@ -3,9 +3,12 @@
  * functions: rows, their VoiceOver labels and tests read the same data.
  *
  * Tags per leg: Scheduled = none; Delayed (violet, old time struck);
- * Departed / Arrived (gray, row dimmed); Canceled / Diverted (canceled red,
- * time struck). "Connection at risk" sits at the connecting airport when the
- * live times leave less than the minimum connection.
+ * Departed / Arrived (gray, row dimmed); Canceled (canceled red, time
+ * struck). Diverted (violet caution, never struck, John 2026-11-01): a
+ * diverted flight still goes on to its destination late, so it names where it
+ * diverted when the data says, keeps its times, and puts the onward
+ * connection at risk. "Connection at risk" sits at the connecting airport
+ * when the live times leave less than the minimum connection.
  */
 import { AIRPORTS, localDate, type Flight, type Itinerary } from '@/engine';
 import { flightLookupKey, type FlightLookup, type FlightStatus, type Movement } from '@/live';
@@ -28,8 +31,10 @@ export interface LegTag {
 
 export interface LegStatusView {
   tag: LegTag | null;
-  /** Scheduled departure is struck through (delayed with a new time, canceled, diverted). */
+  /** Scheduled departure is struck through (delayed with a new time, canceled). */
   struck: boolean;
+  /** Where a diverted flight landed instead, when the live data says (it differs from the planned arrival). */
+  divertedTo?: string | null;
   /** Scheduled departure (UTC ms) and its local text at the leg's origin. */
   scheduledUtc: number;
   scheduledText: string;
@@ -42,6 +47,8 @@ export interface ConnectionRisk {
   /** Index into Itinerary.connections (between legs i and i+1). */
   index: number;
   airport: string;
+  /** The inbound flight diverted: its new arrival isn't known yet, so layoverMin is a guess-free NaN. */
+  diverted?: boolean;
   /** Expected minutes on the ground with the live times. */
   layoverMin: number;
   minConnectMin: number;
@@ -52,8 +59,10 @@ export interface RowStatus {
   risks: ConnectionRisk[];
   /** First leg departed or arrived: the route can't be caught from the origin. */
   dimmed: boolean;
-  /** Any leg canceled or diverted. */
+  /** Any leg canceled (a diversion isn't a cancellation, John 2026-11-01). */
   canceled: boolean;
+  /** A leg diverted: the route's arrival time is pending until the flight goes on. */
+  arrivalPending?: boolean;
   /** Spoken parts for the row label, in leg order. */
   spoken: string[];
   /** Expected arrival at the end of the route when live status moves it 5+ min (design round 25). */
@@ -77,6 +86,7 @@ export function legLookup(f: Flight): FlightLookup {
     date: localDate(f.departUtc, tz(f.from)),
     from: f.from,
     departUtc: f.departUtc,
+    arriveUtc: f.arriveUtc,
   };
 }
 
@@ -126,12 +136,17 @@ export function legStatus(f: Flight, status: FlightStatus | undefined): LegStatu
         struck: true,
         tag: { kind: 'canceled', label: 'Canceled', spoken: `Canceled, was ${scheduledText}` },
       };
-    case 'diverted':
+    case 'diverted': {
+      // The arrival side names the airport it landed at when the provider moved it (John, 2026-11-01).
+      const landed = status.arrival.airport?.toUpperCase() ?? null;
+      const divertedTo = landed && landed !== f.to ? landed : null;
+      const label = divertedTo ? `Diverted to ${divertedTo}` : 'Diverted';
       return {
         ...base,
-        struck: true,
-        tag: { kind: 'diverted', label: 'Diverted', spoken: `Diverted, was ${scheduledText}` },
+        divertedTo,
+        tag: { kind: 'diverted', label, spoken: `${label}, continuing to ${f.to}, new arrival time pending` },
       };
+    }
     case 'delayed': {
       const d = delayedDeparture(f, status.departure);
       if (!d) return { ...base, tag: { kind: 'delayed', label: 'Delayed', spoken: 'Delayed' } };
@@ -154,6 +169,8 @@ export function legStatus(f: Flight, status: FlightStatus | undefined): LegStatu
 /** Expected arrival of the inbound leg: actual, else estimated, else scheduled shifted by the departure delay. */
 function expectedArrival(f: Flight, status: FlightStatus | undefined, view: LegStatusView): number {
   if (!status) return f.arriveUtc;
+  // A diverted flight's arrival times are for where it landed, not where it's going: unknown.
+  if (status.state === 'diverted') return NaN;
   const a = firstValid(ms(status.arrival.actualUtc), ms(status.arrival.estimatedUtc));
   if (Number.isFinite(a)) return a;
   return view.newUtc != null ? f.arriveUtc + (view.newUtc - f.departUtc) : f.arriveUtc;
@@ -169,7 +186,7 @@ function expectedDeparture(f: Flight, status: FlightStatus | undefined, view: Le
 const ARRIVAL_SHIFT_MIN = 5;
 
 const GONE: ReadonlySet<LegTagKind> = new Set(['departed', 'arrived']);
-const BROKEN: ReadonlySet<LegTagKind> = new Set(['canceled', 'diverted']);
+const BROKEN: ReadonlySet<LegTagKind> = new Set(['canceled']);
 
 /**
  * Tags for a whole row. A connection is at risk when the live times leave
@@ -177,11 +194,7 @@ const BROKEN: ReadonlySet<LegTagKind> = new Set(['canceled', 'diverted']);
  * the schedule did, so it only ever comes from real live times. Checked only while the onward leg hasn't departed; a
  * canceled or diverted leg on either side shows that tag only.
  */
-export function rowStatus(
-  it: Itinerary,
-  byKey: Readonly<Record<string, FlightStatus>>,
-  mins: ConnectionMins,
-): RowStatus {
+export function rowStatus(it: Itinerary, byKey: Readonly<Record<string, FlightStatus>>, mins: ConnectionMins): RowStatus {
   const statuses = it.legs.map((l) => byKey[flightLookupKey(legLookup(l.flight))]);
   const legs = it.legs.map((l, i) => legStatus(l.flight, statuses[i]));
   const risks: ConnectionRisk[] = [];
@@ -190,7 +203,13 @@ export function rowStatus(
     const onward = legs[i + 1];
     if (!onward) return;
     if ((inbound.tag && BROKEN.has(inbound.tag.kind)) || (onward.tag && BROKEN.has(onward.tag.kind))) return;
-    if (onward.tag && GONE.has(onward.tag.kind)) return;
+    if (onward.tag && (GONE.has(onward.tag.kind) || onward.tag.kind === 'diverted')) return;
+    const minFor = c.sameAirline ? mins.minConnectSameAirlineMin : mins.minConnectSwitchMin;
+    // The inbound diverted: it gets in late at a time nobody knows yet, so the connection is at risk.
+    if (inbound.tag?.kind === 'diverted') {
+      risks.push({ index: i, airport: c.airport, layoverMin: NaN, minConnectMin: minFor, diverted: true });
+      return;
+    }
     const inFlight = it.legs[i].flight;
     const outFlight = it.legs[i + 1].flight;
     const layoverMin = Math.round(
@@ -203,9 +222,7 @@ export function rowStatus(
   });
   const first = legs[0]?.tag;
   const spoken = [
-    ...legs.flatMap((l, i) =>
-      l.tag ? [`${it.legs[i].flight.airline} ${it.legs[i].flight.flightNumber}: ${l.tag.spoken}`] : [],
-    ),
+    ...legs.flatMap((l, i) => (l.tag ? [`${it.legs[i].flight.airline} ${it.legs[i].flight.flightNumber}: ${l.tag.spoken}`] : [])),
     ...risks.map((r) => `Connection at risk at ${r.airport}`),
   ];
   const last = it.legs[it.legs.length - 1]?.flight;
@@ -221,6 +238,7 @@ export function rowStatus(
     ...(arrival ? { arrival } : {}),
     dimmed: first != null && GONE.has(first.kind),
     canceled: legs.some((l) => l.tag != null && BROKEN.has(l.tag.kind)),
+    ...(legs.some((l) => l.tag?.kind === 'diverted') ? { arrivalPending: true } : {}),
     spoken,
   };
 }
@@ -239,9 +257,7 @@ export function departedFirst<T extends { id: string }>(results: T[], statuses?:
 
 // ---------------------------------------------------------------- empty results (Q-047)
 
-export type ResultsBanner =
-  | { kind: 'noFlights'; text: string }
-  | { kind: 'hidden'; text: string; action: string; count: number };
+export type ResultsBanner = { kind: 'noFlights'; text: string } | { kind: 'hidden'; text: string; action: string; count: number };
 
 /**
  * Banner for a finished search with no routes: "No Flights Found on Selected

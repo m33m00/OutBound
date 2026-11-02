@@ -71,3 +71,5 @@ export {
   type ScheduleProviderOptions,
   type ScheduleSource,
 } from './schedules';
+export { useDriveTime, clearDriveTimeMemo, DRIVE_REFRESH_MS, type LiveDrive, type UseDriveTimeOptions } from './useDriveTime';
+export { buildDriveTimeUrl, fetchDriveTime, type LatLon, type LiveDriveTimeResponse } from './driveTime';

@@ -8,8 +8,18 @@ import { parseFlightStatus } from '../../../supabase/functions/_shared/flightSta
 import { ADB_DELAYED } from '@/live/fixtures/flight-status-samples';
 
 import { FlightStatusSheet, type FlightLoadActions } from '../FlightStatusSheet';
-import { ageText, delayText, movementLead, movementSpoken, movementTimes, placeText, sampleResponse } from '../flightStatusText';
+import {
+  ageText,
+  delayText,
+  movementLead,
+  movementSpoken,
+  movementTimes,
+  placeText,
+  sampleResponse,
+  stateWord,
+} from '../flightStatusText';
 import { ResultRow } from '../ResultRow';
+import { outermost, restingStyle } from '@/testing/pressables';
 
 // The sheet's Add to Logbook link reads the logbook module (round 63).
 let mockFontScale = 1;
@@ -36,6 +46,13 @@ async function itinerary() {
 }
 
 describe('flight status text', () => {
+  it('a diversion names where it landed when the data says (John, 2026-11-01)', () => {
+    expect(stateWord({ state: 'diverted', arrival: { airport: 'cos' } }, 'DEN')).toBe('Diverted to COS');
+    expect(stateWord({ state: 'diverted', arrival: { airport: 'DEN' } }, 'DEN')).toBe('Diverted');
+    expect(stateWord({ state: 'diverted', arrival: { airport: null } }, 'DEN')).toBe('Diverted');
+    expect(stateWord({ state: 'delayed', arrival: { airport: 'COS' } }, 'DEN')).toBe('Delayed');
+  });
+
   const status = parseFlightStatus(ADB_DELAYED, { flightNumber: 'DL2210', date: '2026-10-22', from: null, departMs: null })!;
   it('delay words', () => {
     expect(delayText(50)).toBe('50 min late');
@@ -49,13 +66,25 @@ describe('flight status text', () => {
     const lead = movementLead(status.departure, 'America/New_York')!;
     expect(lead.label).toBe('Estimated');
     expect(lead.was).not.toBeNull();
+    // How far it moved, for the time's tint (John, 2026-11-02).
+    expect(lead.shiftMin).toBe(
+      Math.round((Date.parse(status.departure.estimatedUtc!) - Date.parse(status.departure.scheduledUtc!)) / 60_000),
+    );
     expect(movementSpoken(status.departure, 'America/New_York')).toBe(`Estimated ${lead.time}, scheduled ${lead.was}`);
     expect(placeText(status.departure)).toBe('Terminal S · Gate B22');
     expect(placeText(status.arrival)).toBe('Terminal A');
     expect(placeText({ ...status.arrival, terminal: null })).toBe('Gate not posted yet');
   });
   it('age line always present, with the stale reason and never a spend-cap pause (Q-049)', () => {
-    const r: FlightStatusResponse = { flightNumber: 'DL2210', date: '2026-10-22', state: 'ok', stale: false, paused: false, fetchedAt: new Date(NOW - 4 * 60_000).toISOString(), status };
+    const r: FlightStatusResponse = {
+      flightNumber: 'DL2210',
+      date: '2026-10-22',
+      state: 'ok',
+      stale: false,
+      paused: false,
+      fetchedAt: new Date(NOW - 4 * 60_000).toISOString(),
+      status,
+    };
     expect(ageText(r, NOW)).toBe('Updated 4m ago');
     expect(ageText({ ...r, stale: true }, NOW)).toBe('Updated 4m ago · may be out of date');
     expect(ageText({ ...r, stale: true, paused: true }, NOW)).toBe('Updated 4m ago · may be out of date');
@@ -78,7 +107,9 @@ describe('leg tap and sheet', () => {
       // Leg buttons live in the route card, i.e. the selected row (Q-062).
       r = create(<ResultRow itinerary={it} selected now={NOW} onPress={onPress} onLegPress={onLegPress} />);
     });
-    const leg = r!.root.findAll((n) => typeof n.props.accessibilityLabel === 'string' && n.props.accessibilityLabel.startsWith('Flight status,'))[0];
+    const leg = r!.root.findAll(
+      (n) => typeof n.props.accessibilityLabel === 'string' && n.props.accessibilityLabel.startsWith('Flight status,'),
+    )[0];
     expect(leg.props.accessibilityRole).toBe('button');
     act(() => leg.props.onPress());
     expect(onLegPress).toHaveBeenCalledWith(it.legs[0].flight);
@@ -96,11 +127,24 @@ describe('leg tap and sheet', () => {
   it('sheet shows state, times, gates and age', async () => {
     const it = await itinerary();
     const status = parseFlightStatus(ADB_DELAYED, { flightNumber: 'DL2210', date: '2026-10-22', from: null, departMs: null });
-    const body: FlightStatusResponse = { flightNumber: 'DL2210', date: '2026-10-22', state: 'ok', stale: true, paused: false, fetchedAt: new Date(NOW - 7 * 60_000).toISOString(), status };
+    const body: FlightStatusResponse = {
+      flightNumber: 'DL2210',
+      date: '2026-10-22',
+      state: 'ok',
+      stale: true,
+      paused: false,
+      fetchedAt: new Date(NOW - 7 * 60_000).toISOString(),
+      status,
+    };
     const fetcher = jest.fn(async () => ({ ok: true, status: 200, json: async () => body }));
     await act(async () => {
       r = create(
-        <FlightStatusSheet flight={it.legs[0].flight} now={NOW} onClose={jest.fn()} liveOptions={{ fetcher, config: { baseUrl: 'https://x.supabase.co', anonKey: 'a' } }} />,
+        <FlightStatusSheet
+          flight={it.legs[0].flight}
+          now={NOW}
+          onClose={jest.fn()}
+          liveOptions={{ fetcher, config: { baseUrl: 'https://x.supabase.co', anonKey: 'a' } }}
+        />,
       );
     });
     const texts = r!.root.findAll((n) => typeof n.props.children === 'string').map((n) => n.props.children);
@@ -114,7 +158,14 @@ describe('leg tap and sheet', () => {
   it('makes no request while closed', async () => {
     const fetcher = jest.fn();
     await act(async () => {
-      r = create(<FlightStatusSheet flight={null} now={NOW} onClose={jest.fn()} liveOptions={{ fetcher, config: { baseUrl: 'https://x', anonKey: 'a' } }} />);
+      r = create(
+        <FlightStatusSheet
+          flight={null}
+          now={NOW}
+          onClose={jest.fn()}
+          liveOptions={{ fetcher, config: { baseUrl: 'https://x', anonKey: 'a' } }}
+        />,
+      );
     });
     expect(fetcher).not.toHaveBeenCalled();
   });
@@ -130,8 +181,24 @@ describe('sample status in the sheet (design round 4)', () => {
   const delayedEntry = (departUtc: number, arriveGuess: number): FlightStatusEntry => ({
     flightNumber: 'DL2210',
     state: 'delayed',
-    departure: { airport: 'BNA', scheduledUtc: new Date(departUtc).toISOString(), estimatedUtc: new Date(departUtc + 25 * 60_000).toISOString(), actualUtc: null, delayMin: 25, terminal: null, gate: null },
-    arrival: { airport: null, scheduledUtc: new Date(arriveGuess).toISOString(), estimatedUtc: new Date(arriveGuess + 25 * 60_000).toISOString(), actualUtc: null, delayMin: 25, terminal: null, gate: null },
+    departure: {
+      airport: 'BNA',
+      scheduledUtc: new Date(departUtc).toISOString(),
+      estimatedUtc: new Date(departUtc + 25 * 60_000).toISOString(),
+      actualUtc: null,
+      delayMin: 25,
+      terminal: null,
+      gate: null,
+    },
+    arrival: {
+      airport: null,
+      scheduledUtc: new Date(arriveGuess).toISOString(),
+      estimatedUtc: new Date(arriveGuess + 25 * 60_000).toISOString(),
+      actualUtc: null,
+      delayMin: 25,
+      terminal: null,
+      gate: null,
+    },
     providerUpdatedAt: null,
     asOf: new Date(NOW - 2 * 60_000).toISOString(),
     stale: false,
@@ -180,25 +247,65 @@ describe('seats card in the flight sheet (design round 32)', () => {
     clearFlightStatusMemo();
   });
   const btn = (label: string) =>
-    r!.root.find((n) => typeof n.type !== 'string' && n.props.accessibilityLabel === label && n.props.onPress);
-  const texts = () => r!.root.findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string').map((n) => n.props.children as string);
+    outermost(r!.root.findAll((n) => typeof n.type !== 'string' && n.props.accessibilityLabel === label && n.props.onPress))[0];
+  const texts = () =>
+    r!.root
+      .findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string')
+      .map((n) => n.props.children as string);
 
   const render = async (load: Partial<FlightLoadActions>) => {
     const f = (await itinerary()).legs[0].flight;
-    const full: FlightLoadActions = { reportWindow: 'open', askState: 'ready', yourReport: null, onAsk: jest.fn(), onReport: jest.fn(), ...load };
+    const full: FlightLoadActions = {
+      reportWindow: 'open',
+      askState: 'ready',
+      yourReport: null,
+      onAsk: jest.fn(),
+      onReport: jest.fn(),
+      ...load,
+    };
     await act(async () => {
-      r = create(<FlightStatusSheet flight={f} now={NOW} onClose={jest.fn()} sample={null} liveOptions={{ fetcher: jest.fn(), config: null }} load={full} />);
+      r = create(
+        <FlightStatusSheet
+          flight={f}
+          now={NOW}
+          onClose={jest.fn()}
+          sample={null}
+          liveOptions={{ fetcher: jest.fn(), config: null }}
+          load={full}
+        />,
+      );
     });
     return full;
   };
 
-  it('shows the flight\'s chance word with both numbers and their age, which the route card no longer does (round 66)', async () => {
+  it("shows the flight's chance word with both numbers and their age, which the route card no longer does (round 66)", async () => {
     const f = (await itinerary()).legs[0].flight;
-    const load: FlightLoadActions = { reportWindow: 'open', askState: 'ready', yourReport: null, onAsk: jest.fn(), onReport: jest.fn() };
-    const seats = { source: 'reported' as const, tier: 'good' as const, netSeats: 13, openSeats: 20, listed: 7, asOf: NOW - 5 * 60_000 };
+    const load: FlightLoadActions = {
+      reportWindow: 'open',
+      askState: 'ready',
+      yourReport: null,
+      onAsk: jest.fn(),
+      onReport: jest.fn(),
+    };
+    const seats = {
+      source: 'reported' as const,
+      tier: 'good' as const,
+      netSeats: 13,
+      openSeats: 20,
+      listed: 7,
+      asOf: NOW - 5 * 60_000,
+    };
     await act(async () => {
       r = create(
-        <FlightStatusSheet flight={f} now={NOW} onClose={jest.fn()} sample={null} liveOptions={{ fetcher: jest.fn(), config: null }} load={load} seats={seats} />,
+        <FlightStatusSheet
+          flight={f}
+          now={NOW}
+          onClose={jest.fn()}
+          sample={null}
+          liveOptions={{ fetcher: jest.fn(), config: null }}
+          load={load}
+          seats={seats}
+        />,
       );
     });
     const box = r!.root.findAll((n) => n.props.testID === 'search-seats' && typeof n.type === 'string')[0];
@@ -211,7 +318,8 @@ describe('seats card in the flight sheet (design round 32)', () => {
     const row = () => btn('Report Load').parent!;
     const rowOf = () => {
       let n = btn('Report Load').parent;
-      while (n && !(typeof n.type === 'string' && n.findAll((x) => x.props.accessibilityLabel === 'Ask for Load').length)) n = n.parent;
+      while (n && !(typeof n.type === 'string' && n.findAll((x) => x.props.accessibilityLabel === 'Ask for Load').length))
+        n = n.parent;
       return n!;
     };
     await render({});
@@ -273,7 +381,7 @@ describe('seats card in the flight sheet (design round 32)', () => {
   it('Asked stays full strength: a confirmation, not a dead button', async () => {
     await render({ askState: 'asked' });
     const asked = btn('Asked');
-    const flat = Object.assign({}, ...[asked.props.style({ pressed: false })].flat(Infinity).filter(Boolean));
+    const flat = restingStyle(asked);
     expect(flat.opacity).toBe(1);
   });
 });
@@ -286,9 +394,25 @@ describe('ask answered or taken back (round 34)', () => {
   });
   const render = async (load: Partial<FlightLoadActions>) => {
     const f = (await itinerary()).legs[0].flight;
-    const full: FlightLoadActions = { reportWindow: 'open', askState: 'asked', yourReport: null, onAsk: jest.fn(), onReport: jest.fn(), ...load };
+    const full: FlightLoadActions = {
+      reportWindow: 'open',
+      askState: 'asked',
+      yourReport: null,
+      onAsk: jest.fn(),
+      onReport: jest.fn(),
+      ...load,
+    };
     await act(async () => {
-      r = create(<FlightStatusSheet flight={f} now={NOW} onClose={jest.fn()} sample={null} liveOptions={{ fetcher: jest.fn(), config: null }} load={full} />);
+      r = create(
+        <FlightStatusSheet
+          flight={f}
+          now={NOW}
+          onClose={jest.fn()}
+          sample={null}
+          liveOptions={{ fetcher: jest.fn(), config: null }}
+          load={full}
+        />,
+      );
     });
     return full;
   };
@@ -304,7 +428,9 @@ describe('ask answered or taken back (round 34)', () => {
     await render({ onCancelAsk: jest.fn(), askAnswer: { open: 12, listed: 4, at: NOW - 9 * 60_000 } });
     expect(r!.root.findAll((n) => n.props.accessibilityLabel === 'Asked')).toHaveLength(0);
     expect(r!.root.findAll((n) => n.props.accessibilityLabel === 'Cancel Request')).toHaveLength(0);
-    const line = r!.root.find((n) => typeof n.type === 'string' && String(n.props.accessibilityLabel).startsWith('Your request was answered'));
+    const line = r!.root.find(
+      (n) => typeof n.type === 'string' && String(n.props.accessibilityLabel).startsWith('Your request was answered'),
+    );
     expect(line.props.accessibilityLabel).toBe('Your request was answered: Maybe, 12 open, 4 listed, 9 minutes ago');
   });
 });
@@ -317,11 +443,29 @@ describe('ask note from My Trips (round 34 review)', () => {
   });
   it('a waiting ask opened from My Trips says it is waiting, not "shows in My Trips"', async () => {
     const f = (await itinerary()).legs[0].flight;
-    const load: FlightLoadActions = { reportWindow: 'open', askState: 'asked', yourReport: null, onAsk: jest.fn(), onReport: jest.fn(), fromTrips: true };
+    const load: FlightLoadActions = {
+      reportWindow: 'open',
+      askState: 'asked',
+      yourReport: null,
+      onAsk: jest.fn(),
+      onReport: jest.fn(),
+      fromTrips: true,
+    };
     await act(async () => {
-      r = create(<FlightStatusSheet flight={f} now={NOW} onClose={jest.fn()} sample={null} liveOptions={{ fetcher: jest.fn(), config: null }} load={load} />);
+      r = create(
+        <FlightStatusSheet
+          flight={f}
+          now={NOW}
+          onClose={jest.fn()}
+          sample={null}
+          liveOptions={{ fetcher: jest.fn(), config: null }}
+          load={load}
+        />,
+      );
     });
-    const texts = r!.root.findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string').map((n) => n.props.children);
+    const texts = r!.root
+      .findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string')
+      .map((n) => n.props.children);
     expect(texts).toContain('Waiting for an answer.');
     expect(texts).not.toContain('Asked. The answer shows in My Trips.');
   });

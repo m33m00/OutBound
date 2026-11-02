@@ -37,24 +37,28 @@ describe('SheetHeader', () => {
       r!.root.findAll((n) => n.props.testID === 'sheet-action' && typeof n.type === 'string')[0].findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string')[0].props.style,
     );
 
-  it('shows the title and a bold blue Done text button', () => {
+  it('shows the title and a filled blue Done button (round 79)', () => {
     const onAction = jest.fn();
     act(() => {
       r = create(<SheetHeader title="Filters" action="Done" onAction={onAction} />);
     });
     const header = r!.root.findAll((n) => n.props.accessibilityRole === 'header' && typeof n.type === 'string')[0];
     expect(header.props.children).toBe('Filters');
-    expect(actionText().color).toBe(colors.light.accent);
-    expect(actionText().fontFamily).toBe(fonts.bodyBold);
+    expect(actionText().color).toBe(colors.light.onAccent);
+    const pill = r!.root.findAll((n) => n.props.testID === 'sheet-action' && typeof n.type === 'string')[0];
+    expect(StyleSheet.flatten(pill.props.style).backgroundColor).toBe(colors.light.accent);
     const done = r!.root.findAll((n) => n.props.accessibilityLabel === 'Done' && n.props.onPress)[0];
     act(() => done.props.onPress());
     expect(onAction).toHaveBeenCalled();
   });
 
-  it('sets Cancel in regular weight, like iOS', () => {
+  it('sets Cancel as a soft button in regular weight, like iOS', () => {
     act(() => {
       r = create(<SheetHeader title="From" action="Cancel" onAction={jest.fn()} />);
     });
     expect(actionText().fontFamily).toBe(fonts.bodyMedium);
+    expect(actionText().color).toBe(colors.light.accent);
+    const pill = r!.root.findAll((n) => n.props.testID === 'sheet-action' && typeof n.type === 'string')[0];
+    expect(StyleSheet.flatten(pill.props.style).backgroundColor).toBe(colors.light.accentSoft);
   });
 });

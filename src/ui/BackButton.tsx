@@ -1,39 +1,19 @@
-import { Pressable, StyleSheet, Text } from 'react-native';
+import { PillButton } from './Buttons';
 
-import { minTapTarget, spacing, textStyles, useColors } from '@/theme';
-
-import { Icon } from './Icon';
-import { pressStyle } from './press';
-
-/** iOS-style back link: chevron + word, 44pt tall (design round 5). */
+/**
+ * Back: a soft capsule with a chevron and the word (design round 5; a real button shape since
+ * round 79, John 2026-11-01). With no word (tight widths) it's a round chevron button.
+ */
 export function BackButton({ label, onPress, accessibilityLabel }: { label: string; onPress: () => void; accessibilityLabel?: string }) {
-  const c = useColors();
   return (
-    <Pressable
+    <PillButton
+      label={label}
+      leading="chevron.left"
+      fallback="‹"
       onPress={onPress}
-      accessibilityRole="button"
       accessibilityLabel={accessibilityLabel ?? label}
-      hitSlop={{ left: spacing.page }}
-      style={pressStyle(styles.back, 'link')}>
-      <Icon
-        name="chevron.left"
-        size={17}
-        weight="semibold"
-        tintColor={c.accent}
-        fallback={<Text style={[textStyles.heading, { color: c.accent }]}>‹</Text>}
-      />
-      {label ? <Text lineBreakStrategyIOS="push-out" style={[textStyles.heading, { color: c.accent }]}>{label}</Text> : null}
-    </Pressable>
+      hitSlop={{ left: 8 }}
+      style={{ alignSelf: 'flex-start' }}
+    />
   );
 }
-
-const styles = StyleSheet.create({
-  back: {
-    minHeight: minTapTarget,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    alignSelf: 'flex-start',
-    paddingRight: spacing.page,
-  },
-});

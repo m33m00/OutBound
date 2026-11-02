@@ -30,9 +30,21 @@ describe('route card headline (round 66, John picked A)', () => {
     expect(statusHeadline(one, status([canceled]))).toEqual({ label: 'Canceled', tone: 'canceled' });
   });
 
+  it('a diverted flight leads after a cancellation, as a delay, naming where it went (John, 2026-11-01)', () => {
+    const diverted = view({ kind: 'diverted', label: 'Diverted to COS', spoken: '' });
+    expect(statusHeadline(one, status([diverted], { arrivalPending: true }))).toEqual({
+      label: 'Diverted to COS',
+      tone: 'delayed',
+    });
+    expect(statusHeadline(two, status([diverted, canceled]))).toEqual({ label: 'PHX → LAX canceled', tone: 'canceled' });
+  });
+
   it('then a connection at risk, then a departed first flight', () => {
     const risks = [{ index: 0, airport: 'PHX', layoverMin: 20, minConnectMin: 60 }];
-    expect(statusHeadline(two, status([delayed(40), view()], { risks }))).toEqual({ label: 'Connection at risk at PHX', tone: 'delayed' });
+    expect(statusHeadline(two, status([delayed(40), view()], { risks }))).toEqual({
+      label: 'Connection at risk at PHX',
+      tone: 'delayed',
+    });
     const gone = view({ kind: 'departed', label: 'Departed', spoken: '' });
     expect(statusHeadline(two, status([gone, view()], { dimmed: true }))).toEqual({ label: 'Departed', tone: 'gone' });
   });

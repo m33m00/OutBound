@@ -1,7 +1,7 @@
-import { memo, useState } from 'react';
+import { memo, type ReactNode, useState } from 'react';
 import { Pressable, StyleSheet, Text, type TextStyle, useWindowDimensions, View } from 'react-native';
 
-import { AIRPORTS, type Flight, type Itinerary } from '@/engine';
+import { AIRPORTS, type Flight, type Itinerary, type LegSeats } from '@/engine';
 import type { RouteImpact } from '@/live';
 import {
   forSpeech,
@@ -23,11 +23,11 @@ import { fonts, radius, spacing, textStyles, useBoldText, useColors } from '@/th
 
 import { AirlinePill } from './AirlinePill';
 import { Icon } from './Icon';
-import { ImpactBadge } from './ImpactBadge';
 import { pressStyle } from './press';
 import { StatusTag, TAG_TONE } from './StatusTag';
 import { TONE_BG, TONE_FG } from './statusTone';
 import { withTick } from './haptics';
+import { shiftMinutes, shiftToken } from './timeShift';
 import { TIER_BG, TIER_FG } from './tierColors';
 
 export interface ResultRowProps {
@@ -48,6 +48,8 @@ export interface ResultRowProps {
   large?: boolean;
   /** In My Trips (Q-043): a small bookmark before the route line in the list. */
   saved?: boolean;
+  /** Route card only: a control pinned top right, beside the headline (Save, John 2026-11-01). */
+  topAction?: ReactNode;
 }
 
 /** From this text size the seat chip and delay badge sit left-aligned under the times. */
@@ -59,10 +61,19 @@ const keep = (time: string) => time.replace(/ /g, '\u00a0');
 /** A leg's scheduled departure at its origin, e.g. "8:00 AM". */
 const legDepartText = (leg: Flight) => formatTime(leg.departUtc, AIRPORTS[leg.from]?.tz ?? 'UTC');
 
-/** Size of the dot that marks each leg on the route card's timeline. */
-const DOT = 10;
-/** Space above and below each leg's text on the timeline. */
-const LEG_PAD = 4;
+/** Size of the dot that marks each leg on the route card's timeline: big enough to hold "60/19" (John, 2026-11-02). */
+const DOT = 40;
+
+/**
+ * The seats inside a leg's dot (John, 2026-11-02): open/listed, "10/3"; the net count when only that's
+ * known; "~20" for a typical load; a dash when there's no data.
+ */
+export function dotSeats(seats: LegSeats): string {
+  if (seats.source === 'unknown' || seats.netSeats == null) return '–';
+  if (seats.source === 'typical') return `~${Math.max(0, seats.netSeats)}`;
+  if (seats.openSeats != null && seats.listed != null) return `${seats.openSeats}/${seats.listed}`;
+  return `${Math.max(0, seats.netSeats)}`;
+}
 /** Space above and below a connection label, before any extra that centers it on the line. */
 const CONNECTION_PAD = 6;
 
@@ -74,20 +85,39 @@ function LegClock({ leg, view, text, dimmed }: { leg: Flight; view?: LegStatusVi
   const c = useColors();
   const time = legClockText(leg, view);
   if (!time) return null;
-  return <Text style={[text, { fontFamily: fonts.bodySemiBold, color: dimmed ? c.muted : c.text }]}>{keep(time)}</Text>;
+  // A moved departure is tinted by how far it moved (John, 2026-11-02).
+  const token = !dimmed && view?.newUtc != null ? shiftToken(shiftMinutes(view.newUtc, view.scheduledUtc)) : null;
+  const color = dimmed ? c.muted : token ? c[token] : c.text;
+  return (
+    <Text style={[text, { fontFamily: fonts.bodySemiBold, color }]} testID="leg-clock">
+      {keep(time)}
+    </Text>
+  );
 }
 
-/** The time a leg line shows: the new time when it moved, none when canceled or diverted, else the schedule. */
+/** The time a leg line shows: the new time when it moved, none when canceled, else the schedule (a diversion keeps it). */
+/**
+ * Width every leg's status tag is widened to, so the flight chips that follow line up: the widest
+ * measured tag, once all `tagged` legs have reported. Undefined until then (tags show at their own size).
+ */
+export function tagColumnWidth(widths: Record<number, number>, tagged: number): number | undefined {
+  const measured = Object.values(widths);
+  if (tagged < 2 || measured.length < tagged) return undefined;
+  return Math.ceil(Math.max(...measured));
+}
+
 export function legClockText(leg: Flight, view?: LegStatusView): string | null {
   if (!view?.struck) return legDepartText(leg);
   return view.newText;
 }
 
 /**
- * The route card's legs (design round 56; slimmed in round 66, John picked A on 2026-10-31):
- * a thin line down the left with a dot per leg in that leg's seat color. Each leg is one
- * line and one tap target: departure time, airports, at most one live tag, and the flight.
- * Its seats open with the flight's sheet. Each connection is a short line between legs.
+ * The route card's legs (design round 56; slimmed in round 66, John picked A on 2026-10-31).
+ * Since round 80 (John, 2026-11-01) each flight is its own box, so it's plain that you tap it
+ * to open the flight: no caret. A thin line runs down the left with a dot per flight, centered
+ * on its box, in that flight's seat color. Inside the box: the first flight's tag and flight
+ * chip above its time and airports, every later flight's below (round 76). Between boxes, the
+ * connection sits beside the line at its middle (round 75).
  */
 function LegTimeline({
   itinerary: it,
@@ -105,16 +135,24 @@ function LegTimeline({
   onLegPress?: (flight: Flight) => void;
 }) {
   const c = useColors();
-  const { fontScale } = useWindowDimensions();
   const text = large ? textStyles.body : textStyles.small;
-  // Centers the dot on the first line, whatever the text size: that line is as tall as the
-  // taller of its text and the flight pill (small text plus 2pt padding top and bottom).
-  const firstLine = Math.max((text.lineHeight ?? 20) * fontScale, (textStyles.small.lineHeight ?? 16) * fontScale + 4);
-  const dotTop = LEG_PAD + Math.max(0, (firstLine - DOT) / 2);
   const rail = { backgroundColor: c.line2 };
-  // Each leg's measured height, so a connection label can sit at the middle of the line
-  // between the two dots even when the leg above wraps to a second line (John, 2026-11-01).
+  // Each box's measured height. Its dot sits at its middle, so the line between two dots runs
+  // half of one box, the connection, and half of the next; the label is placed at its middle.
   const [legHeights, setLegHeights] = useState<Record<number, number>>({});
+  // Each leg's status tag is widened to the widest one so the flight chips after them line up
+  // (John, 2026-11-02). Widths are kept per set of labels, so a tag that gets shorter re-measures.
+  const tagKey = it.legs.map((_, i) => status?.legs[i]?.tag?.label ?? '').join('|');
+  const [tagWidths, setTagWidths] = useState<{ key: string; widths: Record<number, number> }>({ key: tagKey, widths: {} });
+  const widths = tagWidths.key === tagKey ? tagWidths.widths : {};
+  const tagColumn = tagColumnWidth(widths, it.legs.filter((_, i) => status?.legs[i]?.tag).length);
+  const measureTag = (i: number) => (e: { nativeEvent: { layout: { width: number } } }) => {
+    const w = e.nativeEvent.layout.width;
+    setTagWidths((prev) => {
+      const base = prev.key === tagKey ? prev.widths : {};
+      return base[i] === w && prev.key === tagKey ? prev : { key: tagKey, widths: { ...base, [i]: w } };
+    });
+  };
   const measure = (i: number) => (e: { nativeEvent: { layout: { height: number } } }) => {
     const h = e.nativeEvent.layout.height;
     setLegHeights((prev) => (prev[i] === h ? prev : { ...prev, [i]: h }));
@@ -128,79 +166,84 @@ function LegTimeline({
         const last = i === it.legs.length - 1;
         const typical = leg.seats.source === 'typical' || leg.seats.source === 'unknown';
         // The dot carries the leg's tier color; the route's chance word is in the headline.
-        const dotColor = dimmed || typical ? c.unknown : c[leg.seats.tier];
-        // The first flight's tag and flight sit above its time; every later flight's sit below
-        // it, so the connection between them stays clear (John, 2026-11-01).
+        const dotTier = dimmed || typical ? 'unknown' : leg.seats.tier;
         const above = i === 0;
         const pills = (
-          <View style={[styles.legMeta, above ? styles.legMetaAbove : styles.legMetaBelow]} testID="leg-flight">
-            {view?.tag ? <StatusTag label={view.tag.label} tone={TAG_TONE[view.tag.kind]} /> : null}
-            {/* The chevron follows the flight chip right away (John, 2026-11-01). */}
-            <View style={styles.legChip}>
-              <AirlinePill airline={leg.flight.airline} flightNumber={leg.flight.flightNumber} />
-              {onLegPress ? <Icon name="chevron.right" size={12} tintColor={c.muted} fallback={null} /> : null}
-            </View>
+          <View style={styles.legMeta} testID="leg-flight">
+            {view?.tag ? (
+              <StatusTag
+                label={view.tag.label}
+                tone={TAG_TONE[view.tag.kind]}
+                minWidth={tagColumn}
+                onLayout={tagColumn ? undefined : measureTag(i)}
+              />
+            ) : null}
+            <AirlinePill airline={leg.flight.airline} flightNumber={leg.flight.flightNumber} />
           </View>
         );
-        // Lined up with the dots' left edge (John, 2026-11-01). Under a middle leg the line runs on
-        // down to the next connection, so there the pills keep clear of it.
-        const meta =
-          above || last ? (
-            pills
-          ) : (
-            <View style={styles.leg}>
-              <View style={styles.railCol}>
-                <View style={[styles.railLine, rail]} />
-              </View>
-              {pills}
-            </View>
-          );
-        const body = (
+        const content = (
           <>
-            {above ? meta : null}
-            {/* Measured from the dot's line down, so the connection label can sit at the middle
-                of the line between this dot and the next. */}
-            <View onLayout={measure(i)}>
-              <View style={styles.leg}>
-                <View style={styles.railCol}>
-                  {/* After the first leg the line runs right up to the dot, so it joins dot to dot. */}
-                  {i > 0 ? <View style={[styles.railHead, rail, { height: dotTop }]} /> : null}
-                  <View style={[styles.dot, { marginTop: i > 0 ? 0 : dotTop, backgroundColor: dotColor }]} testID="leg-dot" />
-                  {last ? null : <View style={[styles.railLine, rail]} />}
-                </View>
-                <View style={styles.legText}>
-                  <Text style={[text, styles.shrink, { color: c.muted }]}>
-                    <LegClock leg={leg.flight} view={view} text={text} dimmed={dimmed} />
-                    {`${legClockText(leg.flight, view) ? '  ' : ''}${leg.flight.from}\u00a0→\u00a0${leg.flight.to}`}
-                  </Text>
-                </View>
-              </View>
-              {above ? null : meta}
-            </View>
+            {above ? pills : null}
+            <Text style={[text, { color: c.muted }]}>
+              <LegClock leg={leg.flight} view={view} text={text} dimmed={dimmed} />
+              {`${legClockText(leg.flight, view) ? '  ' : ''}${leg.flight.from}\u00a0→\u00a0${leg.flight.to}`}
+            </Text>
+            {/* A diversion goes on to the planned airport, late (John, 2026-11-01). */}
+            {view?.tag?.kind === 'diverted' ? (
+              <Text style={[textStyles.small, { color: c.muted }]} testID="leg-diverted-note">
+                {`Continuing to ${leg.flight.to} · new arrival time pending`}
+              </Text>
+            ) : null}
+            {above ? null : pills}
           </>
         );
+        const boxStyle = [styles.legBox, { backgroundColor: c.surface2 }];
+        // Half the line runs through this box, half through the next; the label goes where they meet.
+        const half = (h?: number) => Math.max(0, ((h ?? 0) - DOT) / 2);
+        const tail = half(legHeights[i]);
+        const head = half(legHeights[i + 1]);
         return (
           <View key={leg.flight.id}>
-            {onLegPress ? (
-              <Pressable
-                onPress={() => onLegPress(leg.flight)}
-                accessibilityRole="button"
-                // The label replaces what's inside, so it says the leg's time and seats too.
-                accessibilityLabel={[
-                  `Flight status, ${leg.flight.airline} ${leg.flight.flightNumber}, ${leg.flight.from} to ${leg.flight.to}`,
-                  // A canceled leg's tag already says "Canceled, was 10:40 AM".
-                  legClockText(leg.flight, view) ? `departs ${legClockText(leg.flight, view)}` : null,
-                  view?.tag?.spoken,
-                  forSpeech(seatText(leg.seats, now)),
-                ]
-                  .filter(Boolean)
-                  .join(', ')}
-                style={pressStyle(styles.legTap, 'link')}>
-                {body}
-              </Pressable>
-            ) : (
-              <View>{body}</View>
-            )}
+            <View style={styles.leg} onLayout={measure(i)}>
+              <View style={styles.railCol}>
+                <View style={[styles.railHalf, i > 0 && rail]} />
+                <View style={[styles.dot, { backgroundColor: c[TIER_BG[dotTier]], borderColor: c[dotTier] }]} testID="leg-dot">
+                  <Text
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.7}
+                    maxFontSizeMultiplier={1.2}
+                    style={[styles.dotText, { color: c[TIER_FG[dotTier]] }]}
+                    testID="leg-dot-seats">
+                    {dotSeats(leg.seats)}
+                  </Text>
+                </View>
+                <View style={[styles.railHalf, !last && rail]} />
+              </View>
+              {onLegPress ? (
+                <Pressable
+                  onPress={() => onLegPress(leg.flight)}
+                  accessibilityRole="button"
+                  // The label replaces what's inside, so it says the leg's time and seats too.
+                  accessibilityLabel={[
+                    `Flight status, ${leg.flight.airline} ${leg.flight.flightNumber}, ${leg.flight.from} to ${leg.flight.to}`,
+                    // A canceled leg's tag already says "Canceled, was 10:40 AM".
+                    legClockText(leg.flight, view) ? `departs ${legClockText(leg.flight, view)}` : null,
+                    view?.tag?.spoken,
+                    forSpeech(seatText(leg.seats, now)),
+                  ]
+                    .filter(Boolean)
+                    .join(', ')}
+                  testID="leg-box"
+                  style={pressStyle(boxStyle)}>
+                  {content}
+                </Pressable>
+              ) : (
+                <View style={boxStyle} testID="leg-box">
+                  {content}
+                </View>
+              )}
+            </View>
             {/* At the connecting airport, i.e. after the inbound leg (Q-050), named as a
                 connection (John, 2026-11-01). */}
             {last ? null : (
@@ -208,15 +251,14 @@ function LegTimeline({
                 <View style={styles.railCol}>
                   <View style={[styles.railLine, rail]} />
                 </View>
-                {/* The line runs from this leg's dot to the next one's. The label sits beside it at
-                    its middle: when this leg wraps, the extra length below its dot is matched
-                    under the label. */}
                 <View
                   testID="leg-connection"
                   style={[
-                    styles.legText,
                     styles.connection,
-                    { paddingBottom: CONNECTION_PAD + Math.max(0, (legHeights[i] ?? 0) - 2 * dotTop - DOT) },
+                    {
+                      paddingTop: CONNECTION_PAD + Math.max(0, head - tail),
+                      paddingBottom: CONNECTION_PAD + Math.max(0, tail - head),
+                    },
                   ]}>
                   {connection ? (
                     <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, styles.shrink, { color: c.muted }]}>
@@ -245,7 +287,10 @@ function Headline({ headline }: { headline: StatusHeadline }) {
         styles.summary,
         styles.summaryLead,
         styles.headline,
-        { backgroundColor: c[TONE_BG[headline.tone]], borderColor: headline.tone === 'gone' ? c.line2 : c[TONE_BG[headline.tone]] },
+        {
+          backgroundColor: c[TONE_BG[headline.tone]],
+          borderColor: headline.tone === 'gone' ? c.line2 : c[TONE_BG[headline.tone]],
+        },
       ]}
       testID="headline">
       {headline.tone === 'canceled' ? (
@@ -264,12 +309,12 @@ export const ResultRow = memo(function ResultRow({
   now,
   onPress,
   impact,
-  impactLoading,
   onImpactPress,
   onLegPress,
   status,
   large,
   saved,
+  topAction,
 }: ResultRowProps) {
   const c = useColors();
   // A memo row redraws when Bold Text changes.
@@ -304,6 +349,14 @@ export const ResultRow = memo(function ResultRow({
   // Departed rows are dimmed with a gray fill and edge; text keeps 4.5:1.
   const dimmed = !!status?.dimmed;
   const timeColor = dimmed ? c.muted : c.text;
+  // A time that moved is tinted by how far: early green, then yellow, orange, red (John, 2026-11-02).
+  const tint = (min: number | null) => {
+    const token = dimmed ? null : shiftToken(min);
+    return token ? { color: c[token] } : null;
+  };
+  const departTint = first?.newUtc != null ? tint(shiftMinutes(first.newUtc, first.scheduledUtc)) : null;
+  const lastLeg = it.legs[it.legs.length - 1]?.flight;
+  const arriveTint = status?.arrival && lastLeg ? tint(shiftMinutes(status.arrival.newUtc, lastLeg.arriveUtc)) : null;
   const highlight = selected && !large;
   // Every value shows its age: the summary's comes from the leg that sets it.
   const summaryAge = summary ? routeSeatAge(it, now) : null;
@@ -313,7 +366,7 @@ export const ResultRow = memo(function ResultRow({
   const ageWords = summaryAge ? summaryAge[0].toLowerCase() + summaryAge.slice(1) : null;
   const cardAge = !ageWords ? null : headline ? `Seats: ${summary} · ${ageWords}` : `Seats ${ageWords}`;
   const times = (
-    <Text style={[textStyles.number, { color: timeColor }]} testID="row-times">
+    <Text style={[textStyles.number, styles.shrink, { color: timeColor }]} testID="row-times">
       {status?.canceled ? (
         <Text style={styles.struck}>
           {t.depart} – {t.arrive}
@@ -323,7 +376,11 @@ export const ResultRow = memo(function ResultRow({
           {/* The new time is full size; the old one sits small and struck before it (John, 2026-10-30). */}
           {first?.struck && first.newText ? (
             <>
-              <Text style={[styles.was, styles.struck, { color: c.muted }]}>{keep(t.depart)}</Text>{'\u00a0'}{keep(first.newText)}
+              <Text style={[styles.was, styles.struck, { color: c.muted }]}>{keep(t.depart)}</Text>
+              {'\u00a0'}
+              <Text style={departTint} testID="row-new-depart">
+                {keep(first.newText)}
+              </Text>
             </>
           ) : (
             t.depart
@@ -332,7 +389,11 @@ export const ResultRow = memo(function ResultRow({
           {/* A late arrival shows like a late departure: old time small and struck, then the new time. */}
           {status?.arrival ? (
             <>
-              <Text style={[styles.was, styles.struck, { color: c.muted }]}>{keep(t.arrive)}</Text>{'\u00a0'}{keep(status.arrival.newText)}
+              <Text style={[styles.was, styles.struck, { color: c.muted }]}>{keep(t.arrive)}</Text>
+              {'\u00a0'}
+              <Text style={arriveTint} testID="row-new-arrive">
+                {keep(status.arrival.newText)}
+              </Text>
             </>
           ) : (
             t.arrive
@@ -360,15 +421,6 @@ export const ResultRow = memo(function ResultRow({
         {neutralSeatText(it, now)}
       </Text>
     );
-  const badge = (
-    <View style={styles.badgeSlot} testID="badge-slot">
-      {hasImpact ? (
-        <ImpactBadge impact={impact} onPress={() => onImpactPress?.(it.id)} />
-      ) : impactLoading ? (
-        <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>Checking…</Text>
-      ) : null}
-    </View>
-  );
   return (
     <Pressable
       // In the route view the card doesn't close on a stray tap; "‹ Routes" does that.
@@ -404,9 +456,16 @@ export const ResultRow = memo(function ResultRow({
         {selected ? (
           // Route card A (John, 2026-10-31): one headline up top, the times, then one line per flight.
           <>
-            <View style={styles.line} testID="headline-row">
-              {headline ? <Headline headline={headline} /> : seatSummary(true)}
-              {badge}
+            {/* Save sits top right of the card, outside the headline's wrapping line (John, 2026-11-01). */}
+            <View style={styles.headlineRow}>
+              <View style={[styles.line, styles.headlineMain]} testID="headline-row">
+                {headline ? <Headline headline={headline} /> : seatSummary(true)}
+              </View>
+              {topAction ? (
+                <View style={styles.topAction} testID="route-card-action">
+                  {topAction}
+                </View>
+              ) : null}
             </View>
             <View style={styles.line}>
               {times}
@@ -423,12 +482,12 @@ export const ResultRow = memo(function ResultRow({
           </>
         ) : (
           <>
-            <View style={styles.line}>
+            {/* The seat chip stays beside the times on every row, struck or moved (John, 2026-11-02); at big
+                text the times take the line and the seats go under them. */}
+            <View style={[styles.line, !stacked && styles.lineKeep]} testID="top-line">
               {times}
-              {/* At big text the times take the line; seats and the delay badge go under them. */}
-              <View style={[styles.topRight, stacked && styles.topRightStacked]} testID="top-right">
+              <View style={[styles.topRight, stacked ? styles.topRightStacked : styles.topRightKeep]} testID="top-right">
                 {seatSummary(false)}
-                {badge}
               </View>
             </View>
             <View style={styles.line}>
@@ -447,9 +506,9 @@ export const ResultRow = memo(function ResultRow({
                 {slimStops(it)} · {formatDuration(it.totalMin)}
               </Text>
             </View>
-            // Slim row: who flies it and anything live; seats per leg live in the route card.
-            // One line of flights and at most one tag, which names the flight it means
-            // ("PHX → LAX delayed 40m"), so the row never stacks (John, 2026-10-31).
+            {/* Slim row: who flies it and anything live; seats per leg live in the route card. One line of
+                flights and at most one tag, which names the flight it means ("PHX → LAX delayed 40m"), so the
+                row never stacks (John, 2026-10-31). */}
             <View style={styles.legLine} testID="flights-line">
               {it.legs.map((leg) => (
                 <View key={leg.flight.id} style={styles.flight} testID="flight-item">
@@ -503,6 +562,11 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: spacing.group,
   },
+  lineKeep: { flexWrap: 'nowrap' },
+  headlineRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.group },
+  headlineMain: { flex: 1 },
+  // A 44pt tap target that doesn't make the headline line taller: it overhangs into the card's padding.
+  topAction: { marginVertical: -8, marginRight: -10 },
   topRight: {
     flexShrink: 1,
     flexDirection: 'row',
@@ -511,6 +575,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     gap: spacing.group,
   },
+  topRightKeep: { flexShrink: 0 },
   topRightStacked: {
     flexBasis: '100%',
     justifyContent: 'flex-start',
@@ -526,12 +591,6 @@ const styles = StyleSheet.create({
   // The route card's headline chip: bigger, so it reads first.
   summaryLead: { paddingHorizontal: 10, paddingVertical: 4 },
   headline: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1 },
-  badgeSlot: {
-    flexShrink: 1,
-    flexDirection: 'row',
-    gap: 4,
-    minHeight: 20,
-  },
   legLine: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -544,26 +603,34 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 4,
   },
-  // Timeline (design round 56): rows touch so the line runs unbroken from leg to leg.
-  leg: { flexDirection: 'row', gap: spacing.section },
-  legTap: { minHeight: 44 },
+  // Timeline (design round 56; boxes since round 80): the line runs unbroken from dot to dot.
+  leg: { flexDirection: 'row', gap: spacing.group },
   railCol: { width: DOT, alignItems: 'center' },
-  dot: { width: DOT, height: DOT, borderRadius: DOT / 2 },
-  railLine: { flex: 1, width: 2, minHeight: 4 },
-  legText: { flex: 1, gap: 2, paddingVertical: LEG_PAD },
-  // A leg's tag and flight, on their own line above (first leg) or below (later legs) its time.
-  legMeta: { flexShrink: 1, flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', columnGap: spacing.group, rowGap: 2 },
-  legMetaAbove: { paddingTop: LEG_PAD },
-  legMetaBelow: { paddingBottom: LEG_PAD },
-  legChip: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  connection: {
-    flexDirection: 'row',
+  dot: {
+    width: DOT,
+    height: DOT,
+    borderRadius: DOT / 2,
+    borderWidth: 2,
     alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: spacing.group,
-    paddingTop: CONNECTION_PAD,
+    justifyContent: 'center',
+    paddingHorizontal: 3,
   },
-  railHead: { width: 2 },
+  dotText: { fontFamily: fonts.bodySemiBold, fontSize: 11, fontVariant: ['tabular-nums'], letterSpacing: -0.2 },
+  railLine: { flex: 1, width: 2, minHeight: 4 },
+  railHalf: { flex: 1, width: 2 },
+  // One flight: a tinted box you tap to open the flight (John, 2026-11-01).
+  legBox: {
+    flex: 1,
+    minHeight: 44,
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: radius.sm,
+  },
+  // A leg's tag and flight chip, above (first flight) or below (later flights) its time.
+  legMeta: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', columnGap: spacing.group, rowGap: 2 },
+  connection: { flex: 1, flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: spacing.group },
   struck: { textDecorationLine: 'line-through' },
   // The replaced time inside the big time line: small, so the new time carries the weight.
   was: { fontFamily: textStyles.small.fontFamily, fontSize: textStyles.small.fontSize },

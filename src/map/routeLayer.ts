@@ -15,6 +15,7 @@ import {
   Skia,
   StrokeCap,
   StrokeJoin,
+  type SkPath,
   type SkPicture,
 } from '@shopify/react-native-skia';
 
@@ -41,9 +42,21 @@ export interface RouteLayerInput {
   selectedId: string | null;
 }
 
+/** One leg's slow pulse (pulse.ts), drawn live over the recorded picture. */
+export interface RoutePulse {
+  key: string;
+  path: SkPath;
+  width: number;
+  /** Place in its route, so a connection pulses leg by leg. */
+  legIndex: number;
+  legCount: number;
+  selected: boolean;
+}
+
 export interface RouteLayer {
   picture: SkPicture;
   hitLines: HitLine[];
+  pulses: RoutePulse[];
 }
 
 function stroke(color: string, width: number) {
@@ -73,6 +86,7 @@ export function recordRouteLayer(input: RouteLayerInput): RouteLayer {
     }
   }
 
+  const pulses: RoutePulse[] = [];
   const recorder = Skia.PictureRecorder();
   const canvas = recorder.beginRecording(Skia.XYWHRect(0, 0, viewport.width, viewport.height));
 
@@ -104,6 +118,16 @@ export function recordRouteLayer(input: RouteLayerInput): RouteLayer {
       if (effect) line.setPathEffect(effect);
     }
     canvas.drawPath(path, line);
+    const route = routes.find((r) => r.id === d.routeId);
+    const legIndex = route ? route.legs.indexOf(d.leg) : 0;
+    pulses.push({
+      key: `${d.routeId}:${legIndex}:${d.role}`,
+      path,
+      width: style.width,
+      legIndex: Math.max(0, legIndex),
+      legCount: route?.legs.length ?? 1,
+      selected: d.role === 'selected',
+    });
 
     // Direction chevrons: selected route only, always solid, tier color.
     if (d.role === 'selected') {
@@ -122,5 +146,5 @@ export function recordRouteLayer(input: RouteLayerInput): RouteLayer {
     }
   }
 
-  return { picture: recorder.finishRecordingAsPicture(), hitLines };
+  return { picture: recorder.finishRecordingAsPicture(), hitLines, pulses };
 }

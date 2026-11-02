@@ -17,18 +17,24 @@ export interface StatusHeadline {
 const leg = (it: Itinerary, i: number) => `${it.legs[i].flight.from} → ${it.legs[i].flight.to}`;
 
 /**
- * A live problem worth leading with, worst first: a canceled or diverted
- * flight, a connection at risk, the first flight gone, then delays. Null when
+ * A live problem worth leading with, worst first: a canceled flight, a
+ * diverted one, a connection at risk, the first flight gone, then delays. Null when
  * nothing live is wrong, so the chance word leads. On a route with more than
  * one flight the label names which one.
  */
 export function statusHeadline(it: Itinerary, status: RowStatus | undefined): StatusHeadline | null {
   if (!status) return null;
   const many = it.legs.length > 1;
-  const broken = status.legs.findIndex((l) => l.tag?.kind === 'canceled' || l.tag?.kind === 'diverted');
+  const broken = status.legs.findIndex((l) => l.tag?.kind === 'canceled');
   if (broken >= 0) {
     const word = status.legs[broken].tag!.label;
     return { label: many ? `${leg(it, broken)} ${word.toLowerCase()}` : word, tone: 'canceled' };
+  }
+  // A diversion is a caution, not a cancellation: the flight goes on late (John, 2026-11-01).
+  const diverted = status.legs.findIndex((l) => l.tag?.kind === 'diverted');
+  if (diverted >= 0) {
+    const word = status.legs[diverted].tag!.label;
+    return { label: many ? `${leg(it, diverted)} ${word[0].toLowerCase()}${word.slice(1)}` : word, tone: 'delayed' };
   }
   const risk = status.risks[0];
   if (risk) return { label: `Connection at risk at ${risk.airport}`, tone: 'delayed' };

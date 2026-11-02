@@ -1,7 +1,7 @@
 import { createMemoryProvider, searchItineraries, zonedToUtc, type Flight } from '@/engine';
 import { homeAirports } from '@/settings/settings';
 
-import { searchRequest } from '../areas';
+import { searchRequest, showGetHome } from '../areas';
 
 const DATE = '2026-10-20';
 const NOW = Date.UTC(2026, 9, 19, 12);
@@ -27,5 +27,18 @@ describe('searchRequest (Q-048)', () => {
     expect(results.map((r) => r.id).sort()).toEqual(['dal', 'dfw']);
     // Same airports as the home list adds automatically.
     expect(homeAirports({ main: 'DFW', extras: [] }).map((h) => h.code)).toEqual(['DFW', 'DAL']);
+  });
+
+  it('Get Home shows away from home, but not once To is already home (John, 2026-11-01)', () => {
+    const homes = homeAirports({ main: 'DAL', extras: [] });
+    expect(showGetHome(homes, 'LAX', null)).toBe(true);
+    expect(showGetHome(homes, 'LAX', 'DEN')).toBe(true);
+    // To already home, its own code or another airport in the home area: Find Routes is the one button.
+    expect(showGetHome(homes, 'LAX', 'DAL')).toBe(false);
+    expect(showGetHome(homes, 'LAX', 'DFW')).toBe(false);
+    // At home, or no home set.
+    expect(showGetHome(homes, 'DFW', null)).toBe(false);
+    expect(showGetHome([], 'LAX', null)).toBe(false);
+    expect(showGetHome(homes, null, null)).toBe(false);
   });
 });

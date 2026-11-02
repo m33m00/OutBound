@@ -1,10 +1,11 @@
-import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
 import { forSpeech } from '@/search/format';
-import { boldTextOn, fonts, minTapTarget, spacing, textStyles, useColors } from '@/theme';
+import { spacing, textStyles, useColors } from '@/theme';
+
+import { PillButton } from './Buttons';
 
 import { useFocusOnMount } from './focusOnMount';
-import { pressStyle } from './press';
 
 /** Titles stop growing here so long words don't break mid-word. */
 export const TITLE_MAX_SCALE = 1.6;
@@ -22,8 +23,8 @@ export interface SheetHeaderProps {
 }
 
 /**
- * Header for every page sheet (design round 24): title on the left, an iOS-style text
- * button on the right, so Done/Cancel never competes with the sheet's own buttons.
+ * Header for every page sheet (design round 24): title on the left, Done or Cancel as a small
+ * capsule on the right (round 79), so it never competes with the sheet's own buttons.
  */
 export function SheetHeader({ title, subtitle, action, onAction, focusTitle = false }: SheetHeaderProps) {
   const c = useColors();
@@ -44,16 +45,16 @@ export function SheetHeader({ title, subtitle, action, onAction, focusTitle = fa
           </Text>
         ) : null}
       </View>
-      <Pressable
+      {/* A real button (round 79): Done filled since it finishes, Cancel soft and lighter. */}
+      <PillButton
+        label={action}
+        tone={action === 'Done' ? 'filled' : 'soft'}
+        quiet={action === 'Cancel'}
         onPress={onAction}
-        accessibilityRole="button"
-        accessibilityLabel={action}
         hitSlop={{ right: spacing.page }}
-        style={pressStyle([styles.action, stacked && styles.actionStacked], 'link')}
-        testID="sheet-action">
-        {/* iOS sets Done bold and Cancel regular weight (a step lighter under Bold Text too). */}
-        <Text lineBreakStrategyIOS="push-out" style={[textStyles.heading, action === 'Cancel' && { fontFamily: boldTextOn() ? fonts.body : fonts.bodyMedium }, { color: c.accent }]}>{action}</Text>
-      </Pressable>
+        style={stacked ? styles.actionStacked : undefined}
+        testID="sheet-action"
+      />
     </View>
   );
 }
@@ -70,5 +71,4 @@ const styles = StyleSheet.create({
   title: { flex: 1, gap: 2 },
   titleStacked: { flex: 0 },
   actionStacked: { alignSelf: 'flex-end' },
-  action: { minHeight: minTapTarget, justifyContent: 'center', paddingLeft: spacing.group },
 });

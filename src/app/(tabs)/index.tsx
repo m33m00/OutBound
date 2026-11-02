@@ -4,12 +4,13 @@ import { BackHandler, FlatList, StyleSheet, Text, View, type LayoutChangeEvent }
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AIRPORTS, areaFor, localDate, toRouteLine, type Flight, type Itinerary } from '@/engine';
-import { flightLookupKey, sampleRouteImpacts, useFlightStatuses, useRouteImpacts } from '@/live';
+import { flightLookupKey, sampleRouteImpacts, useDriveTime, useFlightStatuses, useRouteImpacts } from '@/live';
 import { GlobeMap, type LonLat, type MapAirport } from '@/map';
 import { nearestAirport } from '@/search/airports';
-import { searchRequest } from '@/search/areas';
+import { searchRequest, showGetHome } from '@/search/areas';
 import { dateChips } from '@/search/dates';
-import { chooseOrigin, showLocationCard } from '@/search/origin';
+import { driveQuery } from '@/search/leaveBy';
+import { chooseOrigin, restSpot, showLocationCard, type RestSpot } from '@/search/origin';
 import { departedFirst, legLookup, resultsBanner, rowStatus, statusLookups } from '@/search/statusTags';
 import { SAMPLE_TZ, SCHEDULE_SOURCE, useRouteSearch } from '@/search/useRouteSearch';
 import { minTapTarget, spacing, textStyles, useColors } from '@/theme';
@@ -34,8 +35,7 @@ import { ResultsBanner } from '@/ui/ResultsBanner';
 import { neighborDays } from '@/ui/DayStepper';
 import { ResultsPanel } from '@/ui/ResultsPanel';
 import { SearchPanel } from '@/ui/SearchPanel';
-import { RadarButton } from '@/ui/RadarButton';
-import { Sheet } from '@/ui/Sheet';
+import { growFit, halfSnap, Sheet, SHEET_HANDLE_H, SHEET_LOCKED_TOP, sheetMode, type FitHeight } from '@/ui/Sheet';
 import { useRadarLayers } from '@/ui/useRadarLayers';
 import { useSheetContent } from '@/ui/useSheetContent';
 import { selectionTick } from '@/ui/haptics';
@@ -46,7 +46,11 @@ const SHEET = { peek: 0, half: 1, full: 2 } as const;
 /** Share of the screen body the panel takes while a route is open, until its content is measured. */
 const ROUTE_VIEW_SHARE = 0.56;
 /** The panel's drag handle (44pt) and top edge sit above the route view's own content. */
-const SHEET_CHROME = minTapTarget + 1;
+const SHEET_CHROME = SHEET_HANDLE_H + 1;
+/** A picked route's panel is locked: no handle strip, just a little room at the top. */
+const LOCKED_CHROME = SHEET_LOCKED_TOP + 1;
+/** The search panel's handle strip plus the panel's top edge. */
+const SEARCH_CHROME = SHEET_HANDLE_H + 1;
 /** A route this close to full height (pt) opens full instead of a middle stop that would barely differ. */
 const TALL_ROUTE_SLACK = 24;
 
@@ -69,12 +73,7 @@ export default function HomeScreen() {
   const [filters, setFilters] = useState<SearchFilters>(DEFAULT_FILTERS);
   // Each search starts from the saved defaults (Settings).
   useEffect(() => setFilters(settings.search), [settings.search]);
-  const {
-    location,
-    status: locationStatus,
-    permission: locationPermission,
-    request: requestLocation,
-  } = useSharedLocation();
+  const { location, status: locationStatus, permission: locationPermission, request: requestLocation } = useSharedLocation();
   const homes = useMemo(() => homeAirports(settings.homes), [settings.homes]);
   const mainHome = settings.homes.main;
   // From (Q-051): a hand pick (picker, swap) wins for the rest of the session,
@@ -87,10 +86,11 @@ export default function HomeScreen() {
     [settings.useLocation, location],
   );
   const origin = chooseOrigin({ picked: pickedOrigin, nearest, mainHome, lastOrigin: settings.lastOrigin });
-  const homeCenter = useMemo<LonLat | null>(
-    () => (origin ? [AIRPORTS[origin].lon, AIRPORTS[origin].lat] : null),
-    [origin],
-  );
+  const restRef = useRef<RestSpot<LonLat> | null>(null);
+  const homeCenter = useMemo<LonLat | null>(() => {
+    restRef.current = restSpot(restRef.current, origin, destination, (code) => [AIRPORTS[code].lon, AIRPORTS[code].lat]);
+    return restRef.current.spot;
+  }, [origin, destination]);
   const locationCard = showLocationCard({
     settingsLoaded,
     locationAsked: settings.locationAsked,
@@ -126,14 +126,33 @@ export default function HomeScreen() {
     if (!routeOpen) setRouteHeight(0);
   }, [routeOpen]);
   const sheetFull = Math.max(bodyHeight, PEEK * 3) - spacing.group;
+  // Collapsed with a route open, the panel shows its handle and title bar and nothing cut in half
+  // (John, 2026-11-01: it looked squished).
+  const [routeBar, setRouteBar] = useState(0);
+  const peek = routeOpen && routeBar > 0 ? LOCKED_CHROME + routeBar : PEEK;
   // A route that needs (nearly) the whole height opens full; the middle stop stays a real half
   // so the handle still does something.
-  const tallRoute = routeOpen && routeHeight > 0 && routeHeight + SHEET_CHROME >= sheetFull - TALL_ROUTE_SLACK;
+  const tallRoute = routeOpen && routeHeight > 0 && routeHeight + LOCKED_CHROME >= sheetFull - TALL_ROUTE_SLACK;
+  // The search panel's middle stop opens down to Find Routes, so nothing sits under the fold
+  // (John, 2026-11-01: "you have to scroll down just a bit").
+  // Grows only, per layout (location card, banner or plain), so Get Home coming and going on a
+  // swap doesn't move the drawer or re-zoom the globe (John, 2026-11-01).
+  const [fit, setFit] = useState<FitHeight>({ key: '', height: 0 });
+  const searchFit = fit.height;
+  const emptyBanner = state.status === 'done' ? resultsBanner(state) : null;
+  const [showHidden, setShowHidden] = useState(false);
+  useEffect(() => setShowHidden(false), [state]);
+  const showResults = state.status !== 'idle' && (!emptyBanner || showHidden);
+  // The results list is the whole screen until a route is picked: no sliver of globe on top, no
+  // drag (John, 2026-11-02). The globe comes back with the route.
+  const mode = sheetMode({ showResults, routeOpen, tallRoute, index: sheetIndex });
+  const sheetAt = mode.index;
   const snaps = useMemo(() => {
     const h = sheetFull + spacing.group;
-    const route = routeHeight > 0 ? routeHeight + SHEET_CHROME : Math.round(h * ROUTE_VIEW_SHARE);
-    return [PEEK, routeOpen && !tallRoute ? Math.max(PEEK + 1, route) : Math.round(h * 0.48), sheetFull];
-  }, [sheetFull, routeOpen, routeHeight, tallRoute]);
+    const route = routeHeight > 0 ? routeHeight + LOCKED_CHROME : Math.round(h * ROUTE_VIEW_SHARE);
+    const half = halfSnap(h, searchFit > 0 ? searchFit + SEARCH_CHROME : 0, sheetFull);
+    return [peek, routeOpen && !tallRoute ? Math.max(peek + 1, route) : half, mode.flush ? bodyHeight : sheetFull];
+  }, [sheetFull, routeOpen, routeHeight, tallRoute, peek, searchFit, mode.flush, bodyHeight]);
   useEffect(() => {
     if (tallRoute) setSheetIndex(SHEET.full);
   }, [tallRoute]);
@@ -147,10 +166,7 @@ export default function HomeScreen() {
 
   // At-airport shortcut (round 33): within 4 km of an airport, report from its departures board.
   const atAirport = settings.useLocation ? airportYouAreAt(location, now) : null;
-  const departures = useMemo(
-    () => (atAirport && !LIVE_FLIGHTS ? sampleDepartures(atAirport, now) : []),
-    [atAirport, now],
-  );
+  const departures = useMemo(() => (atAirport && !LIVE_FLIGHTS ? sampleDepartures(atAirport, now) : []), [atAirport, now]);
   const [departuresFor, setDeparturesFor] = useState<string | null>(null);
   const departuresSheet = useSheetContent(departuresFor);
 
@@ -163,11 +179,7 @@ export default function HomeScreen() {
     state.request.date === date &&
     state.request.origin === origin &&
     state.request.destination === destination;
-  const emptyBanner = state.status === 'done' ? resultsBanner(state) : null;
   const banner = bannerCurrent ? emptyBanner : null;
-  const [showHidden, setShowHidden] = useState(false);
-  useEffect(() => setShowHidden(false), [state]);
-  const showResults = state.status !== 'idle' && (!emptyBanner || showHidden);
   // First launch: the location card plus the search fields don't fit at half height, so
   // the panel opens full while the card shows and drops to half once it's answered.
   const [locationCardSeen, setLocationCardSeen] = useState(false);
@@ -195,10 +207,7 @@ export default function HomeScreen() {
   // hook reports 'off'; dev builds then show sample impacts so the screens look finished (round 30: no labels).
   const live = useRouteImpacts(results);
   const sampleImpacts = __DEV__ && live.state === 'off';
-  const impacts = useMemo(
-    () => (sampleImpacts ? sampleRouteImpacts(results) : live),
-    [sampleImpacts, results, live],
-  );
+  const impacts = useMemo(() => (sampleImpacts ? sampleRouteImpacts(results) : live), [sampleImpacts, results, live]);
   // Live status tags on every row (Q-047, Q-050): one lookup per distinct flight.
   const lookups = useMemo(() => statusLookups(results), [results]);
   // Sample flights get sample statuses; real flights from the schedule DB get live ones.
@@ -225,10 +234,7 @@ export default function HomeScreen() {
 
   // Radar overlay (items 13-14): on by default, remembered (Q-032).
   const radar = useRadarLayers(settings.radarOn, now);
-  const statusMarks = useMemo(
-    () => impacts.airports.map((a) => ({ ...mark(a.code), level: a.level })),
-    [impacts.airports],
-  );
+  const statusMarks = useMemo(() => impacts.airports.map((a) => ({ ...mark(a.code), level: a.level })), [impacts.airports]);
 
   // Area toggles (Q-048): remembered per airport code; off = exactly that airport.
   const areaOn = settings.areaOn;
@@ -263,8 +269,8 @@ export default function HomeScreen() {
       }
     : null;
 
-  // Get Home: shown when away from every home (Q-026).
-  const awayFromHome = mainHome != null && origin != null && !homes.some((h) => h.code === origin);
+  // Get Home: away from every home, and not once To is already home (Q-026, John 2026-11-01).
+  const getHomeShown = mainHome != null && showGetHome(homes, origin, destination);
   const getHome = () => {
     if (!mainHome) return;
     setDestination(mainHome);
@@ -282,17 +288,17 @@ export default function HomeScreen() {
     const to = searched?.destination ?? destination;
     const codes = new Set(to ? [to] : []);
     for (const r of results) codes.add(r.destination);
+    // Where the picked route's flight diverted to, when the live data says (John, 2026-11-01).
+    const picked = selectedId ? rowStatuses?.[selectedId] : undefined;
+    for (const l of picked?.legs ?? []) if (l.divertedTo && AIRPORTS[l.divertedTo]) codes.add(l.divertedTo);
     return [...codes].map(mark);
-  }, [searched, destination, results]);
+  }, [searched, destination, results, selectedId, rowStatuses]);
 
-  const select = useCallback(
-    (id: string | null) => {
-      setSelectedId(id);
-      // Picking a route drops the panel to its route-view height so the globe shows it.
-      if (id) setSheetIndex(SHEET.half);
-    },
-    [],
-  );
+  const select = useCallback((id: string | null) => {
+    setSelectedId(id);
+    // Picking a route drops the panel to its route-view height so the globe shows it.
+    if (id) setSheetIndex(SHEET.half);
+  }, []);
 
   // Opening a saved route from My Trips (Q-043): run its day's search again (today once
   // that day has passed), then open the same flights if they're still in the results.
@@ -326,8 +332,7 @@ export default function HomeScreen() {
     if (outcome.hidden) setShowHidden(true);
     select(outcome.id);
   }, [reopening, reopenPast, state, select]);
-  const missingNote =
-    state.status === 'done' && reopenNote?.at === state.searchedAt ? reopenNote.text : undefined;
+  const missingNote = state.status === 'done' && reopenNote?.at === state.searchedAt ? reopenNote.text : undefined;
 
   // Closing the route view goes back to the tall list, at the route you had open.
   const closeRoute = useCallback(
@@ -336,9 +341,7 @@ export default function HomeScreen() {
       setSheetIndex(SHEET.full);
       const index = departedFirst(results, rowStatuses).findIndex((r) => r.id === id);
       if (index >= 0) {
-        requestAnimationFrame(() =>
-          listRef.current?.scrollToIndex({ index, viewPosition: 0.3, animated: false }),
-        );
+        requestAnimationFrame(() => listRef.current?.scrollToIndex({ index, viewPosition: 0.3, animated: false }));
       }
     },
     [select, results, rowStatuses],
@@ -363,6 +366,24 @@ export default function HomeScreen() {
     }
     return false;
   }, [selectedId, showResults, closeRoute, backToSearch]);
+  // Whether Search is the tab on screen: the globe's idle motion stops on other tabs.
+  const [focused, setFocused] = useState(true);
+  useFocusEffect(
+    useCallback(() => {
+      setFocused(true);
+      return () => setFocused(false);
+    }, []),
+  );
+  const previewPair = useMemo(
+    () =>
+      origin && destination && origin !== destination && AIRPORTS[origin] && AIRPORTS[destination]
+        ? {
+            from: [AIRPORTS[origin].lon, AIRPORTS[origin].lat] as LonLat,
+            to: [AIRPORTS[destination].lon, AIRPORTS[destination].lat] as LonLat,
+          }
+        : null,
+    [origin, destination],
+  );
   // Only while Search is the tab on screen, so back on another tab isn't taken here.
   useFocusEffect(
     useCallback(() => {
@@ -408,6 +429,18 @@ export default function HomeScreen() {
   const filtersChanged = changedFilters(filters, settings.search);
   const selected = results.find((r) => r.id === selectedId);
   const firstLeg = selected?.legs[0].flight;
+  // Real drive time with traffic for the Leave By card (John, 2026-11-01); the rough guess until it answers.
+  const trip = firstLeg
+    ? driveQuery({
+        airport: AIRPORTS[firstLeg.from],
+        departUtc: firstLeg.departUtc,
+        bufferMin: settings.bufferMin,
+        now,
+        location,
+        departed: !!(selected && rowStatuses?.[selected.id]?.dimmed),
+      })
+    : null;
+  const liveDrive = useDriveTime(trip?.from ?? null, trip?.to ?? null, trip?.departMs ?? null);
   const impactIt = impactSheet.shown ? results.find((r) => r.id === impactSheet.shown) : undefined;
   const impactRoute = impactIt ? [impactIt.origin, ...impactIt.legs.map((l) => l.flight.to)].join(' → ') : null;
 
@@ -430,6 +463,10 @@ export default function HomeScreen() {
           selectedRouteId={selectedId}
           // Rests on your From airport (your location when it's on) and drifts back there after a spin.
           home={homeCenter}
+          // Before a search: a faint arc draws itself between From and To (John, 2026-11-01).
+          preview={previewPair}
+          // Idle sway and the home pin ripple, only on the search page while this tab is in view.
+          homeMotion={focused && !showResults && !routeOpen}
           // A tap on a route picks it (with the same tick as a row); a tap on empty globe
           // closes the open route the same way "‹ Routes" does.
           onSelectRoute={(id) => {
@@ -438,18 +475,12 @@ export default function HomeScreen() {
               select(id);
             } else if (selectedId) closeRoute(selectedId);
           }}
-          insets={{ bottom: snaps[sheetIndex] }}
+          insets={{ bottom: snaps[sheetAt] }}
         />
-        {radar.available ? (
-          <RadarButton
-            on={settings.radarOn}
-            caption={radar.caption}
-            showing={radar.showing}
-            onToggle={() => updateSettings({ radarOn: !settings.radarOn })}
-          />
-        ) : null}
+        {/* Rain radar is switched in Settings > Map, not on the map (John, 2026-11-01). */}
+        {/* A picked route holds the panel at its size: no drag, no handle (John, 2026-11-01). */}
         {bodyHeight > 0 ? (
-          <Sheet snaps={snaps} index={sheetIndex} onIndexChange={setSheetIndex}>
+          <Sheet snaps={snaps} index={sheetAt} onIndexChange={setSheetIndex} locked={mode.locked} flush={mode.flush}>
             {/* Search and results cross-fade as they swap (design round 29). */}
             <Appear key={showResults ? 'results' : 'search'}>
               {!showResults ? (
@@ -479,7 +510,10 @@ export default function HomeScreen() {
                   onFilters={openFilters}
                   filtersChanged={filtersChanged}
                   onFind={() => runSearch()}
-                  onGetHome={awayFromHome ? getHome : undefined}
+                  onGetHome={getHomeShown ? getHome : undefined}
+                  onFitHeight={(h) =>
+                    setFit((prev) => growFit(prev, `${locationCard ? 'card' : ''}${banner ? 'banner' : ''}`, h))
+                  }
                   homeName={mainHome ? (areaFor(mainHome)?.city ?? mainHome) : undefined}
                   onSetHome={mainHome ? undefined : () => router.push({ pathname: '/settings', params: { section: 'homes' } })}
                   locationCard={
@@ -540,7 +574,7 @@ export default function HomeScreen() {
                     rerun(d);
                   }}
                   onRouteHeight={onRouteHeight}
-                  onPullDown={() => setSheetIndex((i) => Math.max(SHEET.peek, i - 1))}
+                  onRouteBarHeight={setRouteBar}
                   onFilters={openFilters}
                   filtersChanged={filtersChanged}
                   note={missingNote}
@@ -562,6 +596,7 @@ export default function HomeScreen() {
                         location={location}
                         locationStatus={locationStatus}
                         mapsApp={settings.mapsApp}
+                        liveDriveMin={liveDrive?.minutes ?? null}
                         onUseLocation={async () => {
                           if (await requestLocation()) updateSettings({ useLocation: true });
                         }}

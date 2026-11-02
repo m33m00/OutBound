@@ -117,13 +117,10 @@ describe('draw legs', () => {
     expect(legs.map((l) => legPairKey(l.leg))).toEqual(['DFW-LGA', 'DFW-ORD', 'LGA-ORD', 'ATL-DFW', 'ATL-LGA']);
   });
 
-  it('selected: its legs last, in order; others are ghosts without its pairs', () => {
+  it('selected: only its legs, in order; the other options are hidden (John, 2026-11-01)', () => {
     const legs = drawLegs(list, 'r4');
-    const sel = legs.filter((l) => l.role === 'selected');
-    expect(sel.map((l) => l.leg)).toEqual(r4.legs);
-    expect(legs.slice(-2)).toEqual(sel);
-    const ghosts = legs.filter((l) => l.role === 'ghost');
-    expect(ghosts.map((l) => legPairKey(l.leg))).toEqual(['DFW-LGA', 'ATL-DFW', 'ATL-LGA']);
+    expect(legs.every((l) => l.role === 'selected' && l.routeId === 'r4')).toBe(true);
+    expect(legs.map((l) => l.leg)).toEqual(r4.legs);
   });
 
   it('draws no arc for a zero-length leg', () => {

@@ -118,6 +118,19 @@ export default function SettingsScreen() {
           </SectionFooter>
         </View>
 
+        {/* Moved here from a button on the map (John, 2026-11-01: "That should just be in the settings"). */}
+        <View style={styles.section}>
+          <SectionHeader title="Map" />
+          <View style={[styles.group, { backgroundColor: c.surface, borderColor: c.line }]}>
+            <SwitchRow
+              label="Rain radar"
+              caption="Live rain on the globe, from NOAA"
+              value={settings.radarOn}
+              onChange={(radarOn) => update({ radarOn })}
+            />
+          </View>
+        </View>
+
         <View style={styles.section} onLayout={sectionLayout('notify')}>
           <SectionHeader title="Notifications" />
           <View style={[styles.group, { backgroundColor: c.surface, borderColor: c.line }]}>
@@ -154,11 +167,8 @@ export default function SettingsScreen() {
               <MapsChoice value={settings.mapsApp} onChange={(mapsApp) => update({ mapsApp })} />
             ) : null}
           </View>
-          <SectionFooter>
-            {Platform.OS === 'ios'
-              ? 'Time to list and clear security. Tap the leave-by card for directions to the airport.'
-              : 'Time to list and clear security. The leave-by card counts back from your first departure.'}
-          </SectionFooter>
+          {/* The Leave By card's chevron already shows it opens directions (round 78). */}
+          <SectionFooter>Time to list and clear security.</SectionFooter>
         </View>
 
         <View style={styles.section} onLayout={sectionLayout('search')}>

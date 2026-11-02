@@ -6,7 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { parseBoardingPass, type PassLeg } from '@/logbook/bcbp';
 import { minTapTarget, radius, spacing, textStyles, useColors } from '@/theme';
 
-import { Button } from './Buttons';
+import { Button, PillButton } from './Buttons';
 import { pressStyle } from './press';
 
 /** Every barcode kind boarding passes use. */
@@ -96,14 +96,14 @@ export function PassScanner({ visible, now, onScanned, onClose }: PassScannerPro
     <Modal visible={visible} animationType="slide" presentationStyle="fullScreen" onRequestClose={close}>
       <SafeAreaView style={[styles.screen, { backgroundColor: permission?.granted ? '#000000' : c.bg }]} edges={['top', 'bottom']}>
         <View style={styles.top}>
-          <Pressable
+          <PillButton
+            label="Cancel"
+            tone={permission?.granted ? 'onDark' : 'soft'}
+            quiet
             onPress={close}
-            accessibilityRole="button"
-            accessibilityLabel="Cancel"
             testID="scanner-cancel"
-            style={pressStyle(styles.cancel, 'link')}>
-            <Text style={[textStyles.heading, { color: permission?.granted ? '#ffffff' : c.accent }]}>Cancel</Text>
-          </Pressable>
+            style={styles.cancel}
+          />
           <Text
             style={[textStyles.heading, styles.title, { color: permission?.granted ? '#ffffff' : c.text }]}
             accessibilityRole="header">
@@ -119,7 +119,7 @@ export function PassScanner({ visible, now, onScanned, onClose }: PassScannerPro
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   top: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.page, minHeight: minTapTarget },
-  cancel: { minHeight: minTapTarget, justifyContent: 'center', zIndex: 1 },
+  cancel: { zIndex: 1 },
   title: { position: 'absolute', left: 0, right: 0, textAlign: 'center' },
   ask: { flex: 1, justifyContent: 'center', gap: spacing.section, padding: spacing.page * 2 },
   center: { textAlign: 'center' },

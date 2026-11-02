@@ -46,6 +46,8 @@ export function DayStepper({
       accessibilityLabel={`${dir === 'prev' ? 'Previous day' : 'Next day'}${to ? `, ${to.long}` : ''}`}
       accessibilityState={{ disabled: !to }}
       style={pressStyle([styles.arrow, { opacity: to ? 1 : 0.35 }])}>
+      {/* A round soft button inside the 44pt target (round 79), so stepping days reads as a button. */}
+      <View style={[styles.arrowDisc, { backgroundColor: c.surface }]}>
       <Icon
         name={dir === 'prev' ? 'chevron.left' : 'chevron.right'}
         size={16}
@@ -53,6 +55,7 @@ export function DayStepper({
         tintColor={c.accent}
         fallback={<Text style={[textStyles.heading, { color: c.accent }]}>{dir === 'prev' ? '‹' : '›'}</Text>}
       />
+      </View>
     </Pressable>
   );
   return (
@@ -88,6 +91,7 @@ export function DayStepper({
 
 const styles = StyleSheet.create({
   box: { flexDirection: 'row', alignItems: 'center', borderRadius: radius.sm, alignSelf: 'stretch' },
+  arrowDisc: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
   arrow: { width: minTapTarget, minHeight: minTapTarget, alignSelf: 'stretch', alignItems: 'center', justifyContent: 'center' },
   middle: { flex: 1, alignItems: 'center', paddingVertical: 4 },
   label: { textAlign: 'center' },

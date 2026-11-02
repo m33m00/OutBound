@@ -1,14 +1,23 @@
 import { arcSamples, makeLiftedProjector } from '../arcs';
 import { DEFAULT_CENTER, cameraForTarget, normalizeInsets, type Viewport } from '../camera';
 import { devSampleRoutes } from '../devSampleRoutes';
-import { routeFramePoints, routeFrameTarget } from '../framing';
+import { HOME_ZOOM, legendReserve, routeFramePoints, routeFrameTarget } from '../framing';
 
 describe('routeFrameTarget (auto camera)', () => {
   it('no routes: the default view', () => {
-    expect(routeFrameTarget([], null)).toEqual({ kind: 'center', center: DEFAULT_CENTER });
+    expect(routeFrameTarget([], null)).toEqual({ kind: 'center', center: DEFAULT_CENTER, zoom: HOME_ZOOM });
     // Design round 30: with no routes it rests on your location when known.
-    expect(routeFrameTarget([], null, [-97.04, 32.9])).toEqual({ kind: 'center', center: [-97.04, 32.9] });
-    expect(routeFrameTarget([], null, null)).toEqual({ kind: 'center', center: DEFAULT_CENTER });
+    expect(routeFrameTarget([], null, [-97.04, 32.9])).toEqual({ kind: 'center', center: [-97.04, 32.9], zoom: HOME_ZOOM });
+    expect(routeFrameTarget([], null, null)).toEqual({ kind: 'center', center: DEFAULT_CENTER, zoom: HOME_ZOOM });
+  });
+
+  it('home view sits closer than the whole-globe fit and the round 98 1.3 (John, 2026-11-02)', () => {
+    expect(HOME_ZOOM).toBeGreaterThan(1.3);
+    expect(HOME_ZOOM).toBeLessThanOrEqual(2.5);
+    const vp: Viewport = { width: 390, height: 760, insets: normalizeInsets({ top: 8, right: 56, bottom: 380 }) };
+    const home = cameraForTarget(routeFrameTarget([], null), vp, null);
+    const whole = cameraForTarget({ kind: 'center', center: DEFAULT_CENTER }, vp, null);
+    expect(home.radius).toBeCloseTo(whole.radius * HOME_ZOOM, 5);
   });
 
   it('nothing selected: fits every drawn route (top 10 only)', () => {
@@ -61,4 +70,14 @@ describe('fitted arcs stay above the panel', () => {
       }
     });
   }
+});
+
+describe('legend reserve', () => {
+  it('frames a picked route clear of the measured legend', () => {
+    expect(legendReserve(true, 24, 12)).toBe(36);
+  });
+  it('reserves nothing before it is measured or when hidden', () => {
+    expect(legendReserve(true, 0, 12)).toBe(0);
+    expect(legendReserve(false, 24, 12)).toBe(0);
+  });
 });

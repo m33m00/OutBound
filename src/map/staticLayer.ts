@@ -119,10 +119,10 @@ export function recordBaseLayer({ camera, viewport, colors, fast }: LayerInput):
     const land = skPath(projection, geo.land);
     if (land) canvas.drawPath(land, fillPaint(colors.land));
 
-    if (!fast) {
-      const states = skPath(projection, getStateLines());
-      if (states) canvas.drawPath(states, strokePaint(hi ? colors.stateLineHi : colors.stateLine, hi ? 0.9 : 0.75));
-    }
+    // Drawn every frame, moving or not: leaving them out while the globe moved made them blink off
+    // and back on with every From or To change (John, 2026-11-01). They're about 2,800 points.
+    const states = skPath(projection, getStateLines());
+    if (states) canvas.drawPath(states, strokePaint(hi ? colors.stateLineHi : colors.stateLine, hi ? 0.9 : 0.75));
 
     const borders = skPath(projection, geo.borders);
     if (borders) canvas.drawPath(borders, strokePaint(colors.landEdge, hi ? 0.7 : 0.6));

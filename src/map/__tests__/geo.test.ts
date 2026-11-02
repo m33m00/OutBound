@@ -19,9 +19,12 @@ describe('bundled geography', () => {
   it('lazily decodes 50m and caches it', () => {
     const hi = getBaseGeo('high');
     expect(hi).toBe(getBaseGeo('high'));
-    expect(hi.borders.coordinates.length).toBeGreaterThan(
-      getBaseGeo('low').borders.coordinates.length,
-    );
+    expect(hi.borders.coordinates.length).toBeGreaterThan(getBaseGeo('low').borders.coordinates.length);
+  });
+
+  it('state lines are light enough to draw on every frame, so they never blink off while the globe moves (John, 2026-11-01)', () => {
+    const points = getStateLines().coordinates.reduce((n, line) => n + line.length, 0);
+    expect(points).toBeLessThan(4000);
   });
 
   it('state lines are inner borders inside the US', () => {
@@ -49,7 +52,15 @@ describe('svgPath', () => {
     // A tiny polygon on the far side of the globe (clockwise = d3 exterior ring).
     const far = {
       type: 'Polygon' as const,
-      coordinates: [[[83, -38], [83, -37], [84, -37], [84, -38], [83, -38]]],
+      coordinates: [
+        [
+          [83, -38],
+          [83, -37],
+          [84, -37],
+          [84, -38],
+          [83, -38],
+        ],
+      ],
     };
     expect(svgPath(proj, far)).toBeNull();
   });

@@ -88,10 +88,7 @@ describe('searchItineraries: stops and connections', () => {
   });
 
   it('stops at the destination instead of flying through it', async () => {
-    const through = [
-      flight('a', 'AA', 'BNA', 'DFW', '06:00', 120),
-      flight('b', 'AA', 'DFW', 'LAX', '10:00', 200),
-    ];
+    const through = [flight('a', 'AA', 'BNA', 'DFW', '06:00', 120), flight('b', 'AA', 'DFW', 'LAX', '10:00', 200)];
     expect(ids(await search(through, 'BNA', 'DFW'))).toEqual(['a']);
   });
 
@@ -109,10 +106,7 @@ describe('searchItineraries: dates', () => {
   });
 
   it('allows later legs on the next day (overnight connection)', async () => {
-    const overnight = [
-      flight('a', 'AA', 'SEA', 'LAX', '21:00', 165),
-      flight('b', 'AA', 'LAX', 'PHX', '01:00', 80, '2026-10-21'),
-    ];
+    const overnight = [flight('a', 'AA', 'SEA', 'LAX', '21:00', 165), flight('b', 'AA', 'LAX', 'PHX', '01:00', 80, '2026-10-21')];
     expect(ids(await search(overnight, 'SEA', 'PHX'))).toEqual(['a+b']);
   });
 
@@ -172,10 +166,7 @@ describe('searchItineraries: airport areas (Dallas: DAL, DFW)', () => {
   });
 
   it('never connects through an origin/destination area airport', async () => {
-    const viaDal = [
-      flight('a', 'WN', 'DFW', 'DAL', '06:00', 30),
-      flight('b', 'WN', 'DAL', 'LAX', '08:00', 200),
-    ];
+    const viaDal = [flight('a', 'WN', 'DFW', 'DAL', '06:00', 30), flight('b', 'WN', 'DAL', 'LAX', '08:00', 200)];
     expect(ids(await search(viaDal, 'DFW', 'LAX', {}, {}, DATE, wholeFrom))).toEqual(['b']);
   });
 });
@@ -196,18 +187,12 @@ describe('searchItineraries: sort and limit', () => {
   });
 
   it('lists an earlier departure first even when it arrives later', async () => {
-    const flights = [
-      flight('fast', 'AA', 'BNA', 'LAX', '09:00', 200),
-      flight('early', 'AA', 'BNA', 'LAX', '08:00', 400),
-    ];
+    const flights = [flight('fast', 'AA', 'BNA', 'LAX', '09:00', 200), flight('early', 'AA', 'BNA', 'LAX', '08:00', 400)];
     expect(ids(await search(flights, 'BNA', 'LAX'))).toEqual(['early', 'fast']);
   });
 
   it('keeps full routes in time order and marks them', async () => {
-    const flights = [
-      flight('full', 'AA', 'BNA', 'LAX', '07:00', 260),
-      flight('open', 'AA', 'BNA', 'LAX', '09:00', 260),
-    ];
+    const flights = [flight('full', 'AA', 'BNA', 'LAX', '07:00', 260), flight('open', 'AA', 'BNA', 'LAX', '09:00', 260)];
     const result = await search(flights, 'BNA', 'LAX', {}, { full: seats('reported', 0), open: seats('reported', 60) });
     expect(ids(result)).toEqual(['full', 'open']);
     expect(result.map((r) => [r.tier, r.isFull])).toEqual([
@@ -237,7 +222,12 @@ describe('searchItineraries: sort and limit', () => {
 
 describe('searchRoutes: empty-result reasons (Q-047)', () => {
   const run = (flights: Flight[], options: Partial<SearchOptions>, loose: Partial<SearchOptions> = {}) =>
-    searchRoutes(createMemoryProvider(flights, {}), { origin: 'BNA', destination: 'LAX', date: DATE }, { now: NOW, ...options }, loose);
+    searchRoutes(
+      createMemoryProvider(flights, {}),
+      { origin: 'BNA', destination: 'LAX', date: DATE },
+      { now: NOW, ...options },
+      loose,
+    );
   const oneStop = [flight('a', 'AA', 'BNA', 'DFW', '08:00', 120), flight('b', 'AA', 'DFW', 'LAX', '11:00', 180)];
 
   it('returns results and nothing hidden when the filters leave routes', async () => {
@@ -266,7 +256,10 @@ describe('searchRoutes: empty-result reasons (Q-047)', () => {
   });
 
   it('caps hidden results at the limit but counts them all', async () => {
-    const many = [flight('a', 'AA', 'BNA', 'DFW', '08:00', 120), ...[0, 1, 2].map((i) => flight(`b${i}`, 'AA', 'DFW', 'LAX', `1${1 + i}:00`, 180))];
+    const many = [
+      flight('a', 'AA', 'BNA', 'DFW', '08:00', 120),
+      ...[0, 1, 2].map((i) => flight(`b${i}`, 'AA', 'DFW', 'LAX', `1${1 + i}:00`, 180)),
+    ];
     const out = await run(many, { maxStops: 0, limit: 2 }, { maxStops: 3 });
     expect(out.hiddenCount).toBe(3);
     expect(out.hiddenResults).toHaveLength(2);
@@ -298,14 +291,36 @@ describe('toRouteLine', () => {
 });
 
 describe('sample provider', () => {
-  it('returns sorted BNA->LAX options with mixed sources', async () => {
+  it('BNA->LAX keeps its nonstop among many connections (John, 2026-11-02)', async () => {
     const provider = createSampleProvider(DATE, 8, NOW);
     const result = await searchItineraries(provider, { origin: 'BNA', destination: 'LAX', date: DATE }, { now: NOW });
+    expect(result.filter((r) => r.stops === 0).map((r) => `${r.legs[0].flight.airline}${r.legs[0].flight.flightNumber}`)).toEqual(
+      ['WN890'],
+    );
+    expect(result.length).toBe(10);
+  });
+
+  it('returns sorted DFW->LAX options, nonstops and connections', async () => {
+    const provider = createSampleProvider(DATE, 8, NOW);
+    const result = await searchItineraries(provider, { origin: 'DFW', destination: 'LAX', date: DATE }, { now: NOW });
     expect(result.length).toBeGreaterThan(3);
     expect(result.length).toBeLessThanOrEqual(10);
     for (let i = 1; i < result.length; i++) expect(result[i].departUtc).toBeGreaterThanOrEqual(result[i - 1].departUtc);
     expect(result.some((r) => r.stops === 0)).toBe(true);
     expect(result.some((r) => r.stops > 0)).toBe(true);
+  });
+
+  it('most routes out of Dallas have flights, both ways (John, 2026-11-02)', async () => {
+    const provider = createSampleProvider(DATE, 8, NOW);
+    const others = ['ATL', 'BNA', 'CLT', 'DEN', 'LAX', 'LGA', 'MIA', 'ORD', 'PHX', 'SEA'];
+    for (const dallas of ['DFW', 'DAL']) {
+      for (const city of others) {
+        const out = await searchItineraries(provider, { origin: dallas, destination: city, date: DATE }, { now: NOW });
+        expect(out.length).toBeGreaterThan(0);
+        const back = await searchItineraries(provider, { origin: city, destination: dallas, date: DATE }, { now: NOW });
+        expect(back.length).toBeGreaterThan(0);
+      }
+    }
   });
 });
 
@@ -324,7 +339,16 @@ describe('pickResults: which 10 to show in departure order', () => {
   it('keeps the 3 routes that left most recently, then fills with routes still to leave', () => {
     const list = day(20, -8); // 8 already left, 12 still to leave
     expect(pickResults(list, NOW_MS, 10).map((r) => r.id)).toEqual([
-      'r-3', 'r-2', 'r-1', 'r0', 'r1', 'r2', 'r3', 'r4', 'r5', 'r6',
+      'r-3',
+      'r-2',
+      'r-1',
+      'r0',
+      'r1',
+      'r2',
+      'r3',
+      'r4',
+      'r5',
+      'r6',
     ]);
   });
 
@@ -344,5 +368,41 @@ describe('pickResults: which 10 to show in departure order', () => {
   it('never keeps more than KEEP_LEFT routes that left when enough are still to leave', () => {
     const picked = pickResults(day(30, -15), NOW_MS, 10);
     expect(picked.filter((r) => r.departUtc < NOW_MS)).toHaveLength(KEEP_LEFT);
+  });
+
+  describe('every nonstop still to leave makes the list (John, 2026-11-02: "Always show nonstops")', () => {
+    const at = (id: string, hour: number, stops: number) => ({ id, departUtc: NOW_MS + hour * H, stops }) as unknown as Itinerary;
+
+    it('a late nonstop takes the place of the latest route with the most stops', () => {
+      const list = [
+        ...Array.from({ length: 10 }, (_, i) => at(`c${i}`, i + 1, i % 2 ? 3 : 1)),
+        at('n1', 12, 0),
+        at('c11', 13, 2),
+      ];
+      const picked = pickResults(list, NOW_MS, 10).map((r) => r.id);
+      expect(picked).toHaveLength(10);
+      expect(picked).toContain('n1');
+      // c9 (3 stops, latest) made way; departure order kept.
+      expect(picked).not.toContain('c9');
+      expect(picked).toEqual(['c0', 'c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8', 'n1']);
+    });
+
+    it('when nonstops alone fill the list, connections give way and it stays at the limit', () => {
+      const list = [at('c0', 1, 1), ...Array.from({ length: 12 }, (_, i) => at(`n${i}`, i + 2, 0))];
+      const picked = pickResults(list, NOW_MS, 10);
+      expect(picked).toHaveLength(10);
+      expect(picked.every((r) => r.stops === 0)).toBe(true);
+    });
+
+    it('a nonstop that already left follows the usual rule', () => {
+      const list = [at('n-old', -10, 0), ...Array.from({ length: 12 }, (_, i) => at(`c${i}`, i + 1, 1))];
+      expect(pickResults(list, NOW_MS, 10).some((r) => r.id === 'n-old')).toBe(true); // within KEEP_LEFT
+      const crowded = [
+        at('n-old', -10, 0),
+        ...Array.from({ length: 4 }, (_, i) => at(`l${i}`, -4 + i, 1)),
+        ...Array.from({ length: 12 }, (_, i) => at(`c${i}`, i + 1, 1)),
+      ];
+      expect(pickResults(crowded, NOW_MS, 10).some((r) => r.id === 'n-old')).toBe(false);
+    });
   });
 });

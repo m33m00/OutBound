@@ -19,7 +19,7 @@ import { afterListText, answerTier, clampReport, departsText, MAX_LISTED, MAX_OP
 import { forSpeech, TIER_WORD } from '@/search/format';
 import { fonts, minTapTarget, radius, spacing, textStyles, useColors, useColorSchemeName } from '@/theme';
 
-import { Button } from './Buttons';
+import { Button, PillButton } from './Buttons';
 import { selectionTick } from './haptics';
 import { pressStyle } from './press';
 import { SheetHeader } from './SheetHeader';
@@ -170,13 +170,7 @@ export function ReportForm({ flight, now, onCancel, onSubmit, focusTitle }: Repo
       {Platform.OS === 'ios' ? (
         <InputAccessoryView nativeID={KEYBOARD_BAR_ID}>
           <View style={[styles.keyboardBar, { backgroundColor: c.surface2, borderTopColor: c.line }]}>
-            <Pressable
-              onPress={Keyboard.dismiss}
-              accessibilityRole="button"
-              accessibilityLabel="Done"
-              style={pressStyle(styles.keyboardDone, 'link')}>
-              <Text lineBreakStrategyIOS="push-out" style={[textStyles.heading, { color: c.accent }]}>Done</Text>
-            </Pressable>
+            <PillButton label="Done" tone="filled" onPress={Keyboard.dismiss} style={styles.keyboardDone} />
           </View>
         </InputAccessoryView>
       ) : null}
@@ -329,11 +323,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.page,
     borderTopWidth: StyleSheet.hairlineWidth,
   },
-  keyboardDone: {
-    minHeight: minTapTarget,
-    minWidth: minTapTarget,
-    paddingHorizontal: spacing.group,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  keyboardDone: { marginVertical: 4 },
 });

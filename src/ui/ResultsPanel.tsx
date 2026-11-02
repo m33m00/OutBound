@@ -23,6 +23,7 @@ import { fonts, radius, spacing, textStyles, useColors } from '@/theme';
 
 import { Appear } from './Appear';
 import { BackButton } from './BackButton';
+import { CenteredTitleRow } from './CenteredTitleRow';
 import { Button } from './Buttons';
 import { DayStepper } from './DayStepper';
 import { withTick } from './haptics';
@@ -66,6 +67,8 @@ export interface ResultsPanelProps {
   note?: string;
   /** Height the open route needs (title bar plus everything under it), so the panel can fit it without scrolling (round 56). */
   onRouteHeight?: (height: number) => void;
+  /** Height of the open route's title bar, so the collapsed panel shows exactly that row (round 90). */
+  onRouteBarHeight?: (height: number) => void;
   /** A hard pull down on the route or list while it's at its top: the panel steps down a size (round 58). */
   onPullDown?: () => void;
 }
@@ -144,27 +147,31 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
   // the day and count under it.
   const topRow = (
     <View style={[styles.bar, styles.pad, { borderBottomColor: c.line }]} testID="results-bar">
-      <View style={styles.titleRow}>
-        <BackButton label={tight ? '' : 'Search'} onPress={p.onBack} accessibilityLabel="Back to search" />
-        <Text
-          ref={listTitleRef}
-          style={[textStyles.heading, styles.title, { color: c.text }]}
-          accessibilityRole="header"
-          accessibilityLabel={routeSpoken}
-          numberOfLines={2}>
-          {routeTitle}
-        </Text>
-        {p.onFilters ? (
-          <Button
-            label={tight ? (p.filtersChanged ? String(p.filtersChanged) : '') : p.filtersChanged ? `Filters (${p.filtersChanged})` : 'Filters'}
-            accessibilityLabel={p.filtersChanged ? `Filters, ${p.filtersChanged} changed` : 'Filters'}
-            icon="line.3.horizontal.decrease.circle"
-            kind="secondary"
-            onPress={p.onFilters}
-            style={styles.filters}
-          />
-        ) : null}
-      </View>
+      <CenteredTitleRow
+        left={<BackButton label={tight ? '' : 'Search'} onPress={p.onBack} accessibilityLabel="Back to search" />}
+        title={
+          <Text
+            ref={listTitleRef}
+            style={[textStyles.heading, styles.title, { color: c.text }]}
+            accessibilityRole="header"
+            accessibilityLabel={routeSpoken}
+            numberOfLines={2}>
+            {routeTitle}
+          </Text>
+        }
+        right={
+          p.onFilters ? (
+            <Button
+              label={tight ? (p.filtersChanged ? String(p.filtersChanged) : '') : p.filtersChanged ? `Filters (${p.filtersChanged})` : 'Filters'}
+              accessibilityLabel={p.filtersChanged ? `Filters, ${p.filtersChanged} changed` : 'Filters'}
+              icon="line.3.horizontal.decrease.circle"
+              kind="secondary"
+              onPress={p.onFilters}
+              style={styles.filters}
+            />
+          ) : null
+        }
+      />
       {stepsDays && p.days && p.onDay ? (
         // Full width: arrows at the panel edges, the day and route count centered (John, 2026-10-30).
         <DayStepper
@@ -204,6 +211,11 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
   const focusIndex = p.selectedId ? results.findIndex((r) => r.id === p.selectedId) : -1;
   const focused = focusIndex >= 0 ? results[focusIndex] : undefined;
   const focusedId = focused?.id;
+  // A picked route is titled by its own airports: a DAL/DFW search that flies from DFW reads
+  // "DFW → LAX", matching the flight boxes and the globe (round 90).
+  const ends = focused ? routeEnds(focused) : null;
+  const focusTitle = ends ? `${ends.from} → ${ends.to}` : routeTitle;
+  const focusSpoken = ends ? `${ends.from} to ${ends.to}` : routeSpoken;
   // The open route's bar and content heights, reported together once both are known (round 56).
   // Content starts over when the route view closes, so a reopened route reports its own height.
   const [barH, setBarH] = useState(0);
@@ -215,6 +227,10 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
   useEffect(() => {
     if (focusedId && barH > 0 && contentH > 0) onRouteHeight?.(Math.ceil(barH + contentH));
   }, [focusedId, barH, contentH, onRouteHeight]);
+  const { onRouteBarHeight } = p;
+  useEffect(() => {
+    if (focusedId && barH > 0) onRouteBarHeight?.(Math.ceil(barH));
+  }, [focusedId, barH, onRouteBarHeight]);
 
   if (p.state.status === 'loading') {
     return (
@@ -288,41 +304,45 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
         // A picked route slides in a little from the right, like a push (design round 29).
         <Appear kind="push">
           <View style={styles.fill} testID="route-view">
-            <View
-              style={[styles.bar, styles.pad, styles.titleRow, { borderBottomColor: c.line }]}
-              onLayout={(e) => setBarH(e.nativeEvent.layout.height)}>
-              <BackButton
-                label={tight ? '' : 'Routes'}
-                onPress={() => p.onSelect(focused.id)}
-                accessibilityLabel="Back to all routes"
-              />
-              <Text
-                ref={routeTitleRef}
-                style={[textStyles.heading, styles.title, { color: c.text }]}
-                accessibilityRole="header"
-                accessibilityLabel={routeSpoken}
-                numberOfLines={2}>
-                {routeTitle}
-              </Text>
-              {p.onToggleSave ? (
-                <SaveRouteButton saved={!!p.isSaved?.(focused)} onPress={() => p.onToggleSave?.(focused)} />
-              ) : null}
-              <View style={styles.pager}>
-                <StepArrow dir="prev" onPress={step(focusIndex - 1)} />
-                {/* VoiceOver: swipe up or down here to flip routes (the arrows stay for Voice Control). */}
+            <CenteredTitleRow
+              style={[styles.bar, styles.pad, { borderBottomColor: c.line }]}
+              onLayout={(e) => setBarH(e.nativeEvent.layout.height)}
+              left={
+                <BackButton
+                  label={tight ? '' : 'Routes'}
+                  onPress={() => p.onSelect(focused.id)}
+                  accessibilityLabel="Back to all routes"
+                />
+              }
+              title={
                 <Text
-                  style={[textStyles.body, { color: c.muted }]}
-                  testID="route-count"
-                  accessible
-                  accessibilityRole="adjustable"
-                  accessibilityLabel={`Route ${focusIndex + 1} of ${results.length}`}
-                  accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
-                  onAccessibilityAction={(e) => step(focusIndex + (e.nativeEvent.actionName === 'increment' ? 1 : -1))?.()}>
-                  {focusIndex + 1} of {results.length}
+                  ref={routeTitleRef}
+                  style={[textStyles.heading, styles.title, { color: c.text }]}
+                  accessibilityRole="header"
+                  accessibilityLabel={focusSpoken}
+                  numberOfLines={2}>
+                  {focusTitle}
                 </Text>
-                <StepArrow dir="next" onPress={step(focusIndex + 1)} />
-              </View>
-            </View>
+              }
+              right={
+                <View style={styles.pager}>
+                  <StepArrow dir="prev" onPress={step(focusIndex - 1)} />
+                  {/* VoiceOver: swipe up or down here to flip routes (the arrows stay for Voice Control). */}
+                  <Text
+                    style={[textStyles.body, styles.count, { color: c.muted }]}
+                    numberOfLines={1}
+                    testID="route-count"
+                    accessible
+                    accessibilityRole="adjustable"
+                    accessibilityLabel={`Route ${focusIndex + 1} of ${results.length}`}
+                    accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
+                    onAccessibilityAction={(e) => step(focusIndex + (e.nativeEvent.actionName === 'increment' ? 1 : -1))?.()}>
+                    {focusIndex + 1} of {results.length}
+                  </Text>
+                  <StepArrow dir="next" onPress={step(focusIndex + 1)} />
+                </View>
+              }
+            />
             {/* Flipping to another route fades the card in so the change registers. */}
             <Appear trigger={focused.id}>
               {/* Keyed by route so each one opens at its top. */}
@@ -348,6 +368,11 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
                   onImpactPress={p.onImpactPress}
                   onLegPress={p.onLegPress}
                   status={p.statuses?.[focused.id]}
+                  topAction={
+                    p.onToggleSave ? (
+                      <SaveRouteButton saved={!!p.isSaved?.(focused)} onPress={() => p.onToggleSave?.(focused)} />
+                    ) : undefined
+                  }
                 />
               </ScrollView>
             </Appear>
@@ -433,12 +458,12 @@ function StepArrow({ dir, onPress }: { dir: 'prev' | 'next'; onPress?: () => voi
     <Pressable
       testID={`route-${dir}`}
       onPress={onPress}
-      hitSlop={{ left: 4, right: 4 }}
+      hitSlop={{ left: 6, right: 6, top: 6, bottom: 6 }}
       disabled={!onPress}
       accessibilityRole="button"
       accessibilityLabel={dir === 'prev' ? 'Previous route' : 'Next route'}
       accessibilityState={{ disabled: !onPress }}
-      style={pressStyle([styles.stepArrow, { opacity: onPress ? 1 : 0.35 }])}>
+      style={pressStyle([styles.stepArrow, { backgroundColor: c.accentSoft, opacity: onPress ? 1 : 0.35 }])}>
       <Icon
         name={dir === 'prev' ? 'chevron.left' : 'chevron.right'}
         size={16}
@@ -496,16 +521,18 @@ const styles = StyleSheet.create({
   selectedBlock: { gap: spacing.group },
   hidden: { display: 'none' },
   focus: { padding: spacing.page, paddingTop: spacing.section, gap: spacing.section },
-  pager: { flexDirection: 'row', alignItems: 'center' },
-  stepArrow: { width: 36, height: 44, alignItems: 'center', justifyContent: 'center' },
+  // Room between the arrows and the count so nothing touches (John, 2026-11-01).
+  pager: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  count: { textAlign: 'center', fontVariant: ['tabular-nums'] },
+  // Round soft buttons (round 79), so flipping routes reads as a button, not a bare chevron.
+  stepArrow: { width: 32, height: 32, borderRadius: 16, marginVertical: 6, alignItems: 'center', justifyContent: 'center' },
   pad: { paddingHorizontal: spacing.page },
   list: { paddingHorizontal: spacing.page, paddingBottom: spacing.page * 2 },
   header: { gap: 2, paddingTop: spacing.group, paddingBottom: spacing.section },
   headerGap: { height: spacing.group },
   bar: { gap: 4, paddingBottom: spacing.group, borderBottomWidth: StyleSheet.hairlineWidth },
-  title: { flex: 1, textAlign: 'center' },
+  title: { textAlign: 'center' },
   filters: { paddingHorizontal: spacing.section },
-  titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.group },
   sep: { height: spacing.group },
   state: { paddingVertical: spacing.page, gap: spacing.section, alignItems: 'flex-start' },
   loading: { flexDirection: 'row', alignItems: 'center', gap: spacing.group },
@@ -543,4 +570,10 @@ function PlaceholderRow() {
       </View>
     </View>
   );
+}
+
+/** First departure and last arrival airports of a route. */
+export function routeEnds(it: { legs: readonly { flight: { from: string; to: string } }[] }): { from: string; to: string } | null {
+  if (it.legs.length === 0) return null;
+  return { from: it.legs[0].flight.from, to: it.legs[it.legs.length - 1].flight.to };
 }

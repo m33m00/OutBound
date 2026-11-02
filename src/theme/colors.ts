@@ -64,6 +64,13 @@ export const colors = {
     canceled: '#c8102e',
     canceledBg: '#fde0e3',
     canceledFg: '#9e0d24',
+
+    // A time that moved, tinted by how far (John, 2026-11-02): early green; late yellow, orange, red.
+    // Text colors, kept soft so they tint the number rather than shout.
+    timeEarly: '#14744a',
+    timeSlight: '#7d6400',
+    timeLate: '#b0510a',
+    timeVeryLate: '#c0262b',
   },
   dark: {
     bg: '#0b1119',
@@ -112,6 +119,11 @@ export const colors = {
     canceled: '#ff4d5e',
     canceledBg: '#3a1018',
     canceledFg: '#ffa3ad',
+
+    timeEarly: '#7fdca6',
+    timeSlight: '#e8d27a',
+    timeLate: '#f3a868',
+    timeVeryLate: '#ff9090',
   },
 } as const;
 

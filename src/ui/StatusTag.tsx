@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { type LayoutChangeEvent, StyleSheet, Text, View } from 'react-native';
 
 import type { LegTagKind } from '@/search/statusTags';
 import { fonts, radius, textStyles, useColors } from '@/theme';
@@ -12,20 +12,38 @@ export const TAG_TONE: Record<LegTagKind, Tone> = {
   departed: 'gone',
   arrived: 'gone',
   canceled: 'canceled',
-  diverted: 'canceled',
+  diverted: 'delayed',
 };
 
 /** A live-status word on a row ("Delayed 25m", "Departed", "Canceled"), shared by results and requests. */
-export function StatusTag({ label, tone }: { label: string; tone: Tone }) {
+export function StatusTag({
+  label,
+  tone,
+  minWidth,
+  onLayout,
+}: {
+  label: string;
+  tone: Tone;
+  /** Widen to this so tags stacked in a column line up (text stays centered). */
+  minWidth?: number;
+  onLayout?: (e: LayoutChangeEvent) => void;
+}) {
   const c = useColors();
   return (
     <View
-      style={[styles.statusTag, { backgroundColor: c[TONE_BG[tone]], borderColor: tone === 'gone' ? c.line2 : c[TONE_BG[tone]] }]}>
+      onLayout={onLayout}
+      style={[
+        styles.statusTag,
+        { backgroundColor: c[TONE_BG[tone]], borderColor: tone === 'gone' ? c.line2 : c[TONE_BG[tone]] },
+        minWidth ? { minWidth } : null,
+      ]}>
       {/* Icon keeps Canceled / Diverted from reading as a Full-tier red edge; the word stays. */}
-      {tone === 'canceled' ? (
-        <Icon name="xmark.circle" size={12} tintColor={c[TONE_FG[tone]]} fallback={null} />
-      ) : null}
-      <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, styles.shrink, { fontFamily: fonts.bodySemiBold, color: c[TONE_FG[tone]] }]}>{label}</Text>
+      {tone === 'canceled' ? <Icon name="xmark.circle" size={12} tintColor={c[TONE_FG[tone]]} fallback={null} /> : null}
+      <Text
+        lineBreakStrategyIOS="push-out"
+        style={[textStyles.small, styles.shrink, { fontFamily: fonts.bodySemiBold, color: c[TONE_FG[tone]] }]}>
+        {label}
+      </Text>
     </View>
   );
 }
@@ -36,6 +54,7 @@ const styles = StyleSheet.create({
     flexShrink: 1,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 4,
     paddingHorizontal: 8,
     paddingVertical: 2,

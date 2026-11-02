@@ -4,7 +4,7 @@ import { AccessibilityInfo, Linking, Pressable, StyleSheet, Text, useWindowDimen
 import type { Airport } from '@/engine';
 import { forSpeech } from '@/search/format';
 import { MAPS_APP_NAME, type MapsApp } from '@/search/directions';
-import { computeLeaveBy, leaveByText, LOCATION_FRESH_MS, type PhoneLocation } from '@/search/leaveBy';
+import { computeLeaveBy, leaveByShort, leaveByText, LOCATION_FRESH_MS, type PhoneLocation } from '@/search/leaveBy';
 import { radius, spacing, textStyles, useColors } from '@/theme';
 
 import { Button } from './Buttons';
@@ -28,6 +28,8 @@ export interface LeaveByCardProps {
   delayedText?: string | null;
   /** Where a tap on the card opens directions to the airport (Settings, default Apple Maps). */
   mapsApp?: MapsApp;
+  /** Drive minutes with traffic from a maps service; without it the card uses its rough estimate. */
+  liveDriveMin?: number | null;
 }
 
 /** From this text size the location button gets its own row. */
@@ -41,6 +43,7 @@ export function LeaveByCard(p: LeaveByCardProps) {
   const inline = fontScale < INLINE_BUTTON_MAX_SCALE;
   const result = computeLeaveBy(p);
   const text = leaveByText(result, p.airport.tz);
+  const short = leaveByShort(result, p.airport.tz);
   const atAirport = result.kind === 'atAirport';
   const departed = result.kind === 'departed';
   // Tap for directions while there's still a trip to the airport (John, 2026-10-30).
@@ -83,10 +86,10 @@ export function LeaveByCard(p: LeaveByCardProps) {
   // Outlined so it stands out on the tinted card (it used to be gray on light blue).
   const outline = [styles.action, styles.outline, inline && styles.inline, { backgroundColor: c.surface, borderColor: c.accent }];
   const action = departed ? null : p.locationStatus === 'denied' ? (
-      <Button label="Open Settings" kind="secondary" onPress={() => Linking.openSettings()} style={outline} />
-    ) : offerLocation ? (
-      <Button label="Use Location" kind="secondary" onPress={p.onUseLocation} style={outline} />
-    ) : null;
+    <Button label="Open Settings" kind="secondary" onPress={() => Linking.openSettings()} style={outline} />
+  ) : offerLocation ? (
+    <Button label="Use Location" kind="secondary" onPress={p.onUseLocation} style={outline} />
+  ) : null;
 
   return (
     // "You're at DFW" is about you, so amber (amber = you), never a seat-tier green.
@@ -96,7 +99,12 @@ export function LeaveByCard(p: LeaveByCardProps) {
       disabled={!directions}
       onPress={go}
       testID="leave-by-card"
-      style={pressStyle([styles.card, { backgroundColor: atAirport ? c.youBg : departed ? c.surface2 : c.accentSoft }])}>
+      style={pressStyle([
+        styles.card,
+        {
+          backgroundColor: atAirport ? c.youBg : departed ? c.surface2 : c.accentSoft,
+        },
+      ])}>
       <View style={styles.top} testID="leave-by-top">
         {/* One VoiceOver element for the text (the lines below are read with the title); buttons stay separately reachable. */}
         <View
@@ -109,36 +117,56 @@ export function LeaveByCard(p: LeaveByCardProps) {
           accessibilityActions={directions ? [{ name: 'activate' }] : undefined}
           onAccessibilityAction={directions ? go : undefined}
           accessibilityLabel={forSpeech([text.title, text.sub, delayLine, note].filter(Boolean).join('. '))}>
-          <Text style={[textStyles.heading, { color: atAirport ? c.youText : c.text }]} lineBreakStrategyIOS="push-out">
+          {/* One slim row: the time, then the one detail that matters (John, 2026-11-01). */}
+          <Text
+            style={[textStyles.bodyStrong, { color: atAirport ? c.youText : c.text }]}
+            lineBreakStrategyIOS="push-out"
+            testID="leave-by-line">
             {keepTimes(text.title)}
+            <Text
+              style={[
+                textStyles.small,
+                { color: c.muted, fontFamily: textStyles.body.fontFamily },
+              ]}>{`  ·  ${keepTimes(short)}`}</Text>
           </Text>
         </View>
         {action && inline ? action : null}
         {/* The chevron is the card's only sign that it opens directions, so it always shows. */}
         {directions ? (
           <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-            <Icon name="chevron.right" size={13} weight="semibold" tintColor={c.muted} fallback={<Text style={{ color: c.muted }}>›</Text>} />
+            <Icon
+              name="chevron.right"
+              size={13}
+              weight="semibold"
+              tintColor={c.muted}
+              fallback={<Text style={{ color: c.muted }}>›</Text>}
+            />
           </View>
         ) : null}
       </View>
       {/* The small lines use the card's full width, so they don't squeeze beside the button and drop one word (John, 2026-10-30). */}
-      <View style={styles.details} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-        <Text style={[textStyles.small, { color: c.muted }]} lineBreakStrategyIOS="push-out">
-          {keepTimes(text.sub)}
-        </Text>
-        {delayLine ? (
-          <Text
-            style={[textStyles.small, { color: c.caution, fontFamily: textStyles.bodyStrong.fontFamily }]}
-            lineBreakStrategyIOS="push-out">
-            {delayLine}
-          </Text>
-        ) : null}
-        {note ? (
-          <Text style={[textStyles.small, { color: c.muted }]} lineBreakStrategyIOS="push-out">
-            {note}
-          </Text>
-        ) : null}
-      </View>
+      {delayLine || note ? (
+        <View style={styles.details} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+          {delayLine ? (
+            <Text
+              style={[
+                textStyles.small,
+                {
+                  color: c.caution,
+                  fontFamily: textStyles.bodyStrong.fontFamily,
+                },
+              ]}
+              lineBreakStrategyIOS="push-out">
+              {delayLine}
+            </Text>
+          ) : null}
+          {note ? (
+            <Text style={[textStyles.small, { color: c.muted }]} lineBreakStrategyIOS="push-out">
+              {note}
+            </Text>
+          ) : null}
+        </View>
+      ) : null}
       {/* Own row at large text sizes so the time is never squeezed. */}
       {action && !inline ? action : null}
     </Pressable>
@@ -146,17 +174,21 @@ export function LeaveByCard(p: LeaveByCardProps) {
 }
 
 const styles = StyleSheet.create({
+  // Slim: one row about 44pt tall, so the map keeps the room (John, 2026-11-01).
   card: {
-    gap: spacing.group,
-    padding: spacing.rowX,
-    borderRadius: radius.md,
+    gap: 4,
+    minHeight: 44,
+    justifyContent: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: spacing.rowX,
+    borderRadius: radius.sm,
   },
-  top: { flexDirection: 'row', alignItems: 'center', gap: spacing.section },
+  top: { flexDirection: 'row', alignItems: 'center', gap: spacing.group },
   action: { alignSelf: 'flex-start', paddingHorizontal: spacing.section },
   outline: { borderWidth: 1 },
   inline: { alignSelf: 'center' },
   text: { flex: 1 },
   // Pulled up under the title so it reads as the title's caption. No icon tile (design audit,
   // round 69): the chevron says it opens directions, and the lines get the card's full width.
-  details: { gap: 2, marginTop: -6 },
+  details: { gap: 2 },
 });

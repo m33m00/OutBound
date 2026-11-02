@@ -5,7 +5,7 @@ import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import { createMemoryProvider, searchItineraries, zonedToUtc } from '@/engine';
 import { dateChips } from '@/search/dates';
 
-import { areaLines, isHardPullDown, nowLineIndex, ResultsPanel } from '../ResultsPanel';
+import { areaLines, isHardPullDown, nowLineIndex, ResultsPanel, routeEnds } from '../ResultsPanel';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -36,6 +36,23 @@ async function results() {
 describe('ResultsPanel', () => {
   let r: ReactTestRenderer | undefined;
   afterEach(() => act(() => r?.unmount()));
+
+  it("titles a picked route by its own airports, not the search's (round 90)", async () => {
+    const { list } = await results();
+    // An area search from DAL whose route flies from another airport (BNA here).
+    const request = { origin: 'DAL', destination: 'LAX', date: '2026-10-20', originArea: true };
+    const state = { status: 'done' as const, request, results: list, hiddenCount: 0, hiddenResults: [], searchedAt: NOW };
+    const raf = jest.spyOn(globalThis, 'requestAnimationFrame').mockImplementation(() => 0);
+    await act(async () => {
+      r = create(<ResultsPanel state={state} selectedId={list[0].id} now={NOW} onSelect={jest.fn()} onBack={jest.fn()} onRetry={jest.fn()} />);
+    });
+    const view = r!.root.findAll((n) => n.props.testID === 'route-view' && typeof n.type === 'string')[0];
+    const header = view.find((n) => n.props.accessibilityRole === 'header' && typeof n.type === 'string');
+    expect(header.props.children).toBe('BNA → LAX');
+    expect(header.props.accessibilityLabel).toBe('BNA to LAX');
+    expect(routeEnds({ legs: [] })).toBeNull();
+    raf.mockRestore();
+  });
 
   it('goes from loading to results without changing its hooks (round 56 review)', async () => {
     const { request, list } = await results();
@@ -335,9 +352,12 @@ describe('results bar at big text sizes', () => {
     });
     const button = () => r!.root.findAll((n) => n.props.testID === 'save-route' && n.props.accessibilityRole === 'button')[0];
     expect(button().props.accessibilityLabel).toBe('Save Route');
-    // In the route header, so it's in view at any panel height and text size.
+    // Top right of the route card, not crowding the header (John, 2026-11-01).
+    const slot = r!.root.findAll((n) => n.props.testID === 'route-card-action' && typeof n.type === 'string');
+    expect(slot).toHaveLength(1);
+    expect(slot[0].findAll((n) => n.props.testID === 'save-route').length).toBeGreaterThan(0);
     const header = r!.root.findAll((n) => n.props.testID === 'route-view' && typeof n.type === 'string')[0].children[0];
-    expect(typeof header !== 'string' && header.findAll((n) => n.props.testID === 'save-route').length).toBeGreaterThan(0);
+    expect(typeof header !== 'string' && header.findAll((n) => n.props.testID === 'save-route').length).toBe(0);
     expect(button().props.accessibilityHint).toBe('Keeps it in My Trips');
     const announce = jest.spyOn(AccessibilityInfo, 'announceForAccessibility').mockImplementation(() => {});
     act(() => button().props.onPress());

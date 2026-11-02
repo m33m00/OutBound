@@ -1,16 +1,102 @@
-import { useCallback, useEffect, useRef, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Animated, Pressable, StyleSheet, View } from 'react-native';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { GestureDetector, usePanGesture } from 'react-native-gesture-handler';
 
 import { minTapTarget, radius, useColors } from '@/theme';
 
 import { useReducedMotion } from './useReducedMotion';
 
 const SNAP_NAMES = ['Peek', 'Half', 'Full'];
-/** Critically damped, no bounce: the panel settles like an iOS sheet. */
-export const SNAP_SPRING = { useNativeDriver: false, bounciness: 0, speed: 16 } as const;
+/**
+ * Critically damped, no bounce, never past the snap: the panel settles like an iOS sheet. It
+ * starts at the finger's release speed, so a hard flick carries on instead of stopping and
+ * restarting (John, 2026-11-01).
+ */
+export const SNAP_SPRING = {
+  useNativeDriver: true,
+  stiffness: 420,
+  damping: 42,
+  mass: 1,
+  overshootClamping: true,
+} as const;
+/** Release speed (pt/s) from which a drag counts as a flick. */
+export const FLICK_SPEED = 500;
+
+/**
+ * Where a drag lands. A flick goes to the next size in its direction, never back and never two
+ * sizes at once; a slow drag lands on the size nearest where it would coast to.
+ */
+export function pickSnap(snaps: readonly number[], visible: number, velocityY: number): number {
+  if (Math.abs(velocityY) >= FLICK_SPEED) {
+    const up = velocityY < 0;
+    const order = snaps.map((s, i) => ({ s, i }));
+    const next = up ? order.find((o) => o.s > visible + 1) : [...order].reverse().find((o) => o.s < visible - 1);
+    if (next) return next.i;
+    return up ? snaps.length - 1 : 0;
+  }
+  const projected = visible - velocityY * 0.12;
+  let best = 0;
+  snaps.forEach((s, i) => {
+    if (Math.abs(s - projected) < Math.abs(snaps[best] - projected)) best = i;
+  });
+  return best;
+}
+
+/**
+ * The middle stop: about half the height (48%), or taller when the content needs it to show
+ * in full (John, 2026-11-01), never as tall as the full stop. `need` 0 means not measured yet.
+ */
+export function halfSnap(height: number, need: number, full: number): number {
+  return Math.min(full - 1, Math.max(Math.round(height * 0.48), Math.ceil(need)));
+}
+
+/** A measured content height, kept per layout (`key`) so the drawer's stop doesn't move back and forth. */
+export interface FitHeight {
+  key: string;
+  height: number;
+}
+
+/**
+ * Only grows while the layout key stays the same, so a row that comes and goes (Get Home after a
+ * swap) doesn't move the drawer and re-zoom the globe (John, 2026-11-01). A new key starts over.
+ */
+export function growFit(prev: FitHeight, key: string, height: number): FitHeight {
+  if (prev.key !== key) return { key, height };
+  return height > prev.height ? { key, height } : prev;
+}
+
+/** Height of the handle strip at the top of the panel. */
+export interface SheetMode {
+  /** Snap the panel rests at: 0 peek, 1 half, 2 full. */
+  index: number;
+  locked: boolean;
+  /** Fills the whole screen with a square top (no globe above it). */
+  flush: boolean;
+}
+
+/**
+ * How the home panel sits. A picked route holds it at the route's size; the results list before a
+ * route is picked fills the whole screen, square and fixed, with no sliver of globe above it (John,
+ * 2026-11-02); the search panel moves freely.
+ */
+export function sheetMode(p: { showResults: boolean; routeOpen: boolean; tallRoute: boolean; index: number }): SheetMode {
+  if (p.routeOpen) return { index: p.tallRoute ? 2 : 1, locked: true, flush: false };
+  if (p.showResults) return { index: 2, locked: true, flush: true };
+  return { index: p.index, locked: false, flush: false };
+}
+
+export const SHEET_HANDLE_H = minTapTarget;
+/** Top strip of a locked panel: no handle, just room under the rounded corners. */
+export const SHEET_LOCKED_TOP = 12;
 
 export interface SheetProps {
+  /**
+   * Fixed at its size: no handle, no drag, no tap to resize (John, 2026-11-01: once a route is
+   * picked the panel should stay put).
+   */
+  locked?: boolean;
+  /** Square top edge, for a panel that fills the whole screen (the results list, John 2026-11-02). */
+  flush?: boolean;
   /** Visible heights in pt, ascending: peek, half, full. */
   snaps: readonly number[];
   index: number;
@@ -21,83 +107,170 @@ export interface SheetProps {
 /**
  * Bottom panel over the globe (prototype layout). Drag the handle to resize;
  * tapping the handle steps through sizes so it works without a gesture.
+ *
+ * The panel is always laid out at full height and slid down to show the size you're at (round 88).
+ * Round 89 (John, 2026-11-01: still clunky on a hard drag): the finger's travel is mapped straight
+ * to the slide on the native side (gesture handler's Animated event), so a drag never waits on the
+ * JS thread; a flick settles from its release speed; and the screen hears the new size only once
+ * the panel has stopped, so the map's re-framing never runs under the moving panel. Core Animated
+ * and gesture handler only, both in Expo Go.
  */
-export function Sheet({ snaps, index, onIndexChange, children }: SheetProps) {
+export function Sheet({ snaps, index, onIndexChange, children, locked = false, flush = false }: SheetProps) {
   const c = useColors();
   const reduceMotion = useReducedMotion();
-  const height = useRef(new Animated.Value(snaps[index])).current;
-  const current = useRef(snaps[index]);
-  const dragStart = useRef(0);
-
-  useEffect(() => {
-    const id = height.addListener(({ value }) => (current.current = value));
-    return () => height.removeListener(id);
-  }, [height]);
-
-  // One motion for every snap, from a tap, a drag or the app (design round 29); Reduce Motion jumps.
-  const snapTo = useCallback(
-    (to: number) => {
-      if (reduceMotion) return height.setValue(to);
-      Animated.spring(height, { toValue: to, ...SNAP_SPRING }).start();
-    },
-    [height, reduceMotion],
+  const full = snaps[snaps.length - 1];
+  const fullRef = useRef(full);
+  fullRef.current = full;
+  const maxOffset = full - snaps[0];
+  // Where the panel rests (offset down from full height), moved by settles; and the finger's
+  // travel, written straight from the gesture on the native side so a drag never waits on JS.
+  const base = useRef(new Animated.Value(full - snaps[index])).current;
+  const dragY = useRef(new Animated.Value(0)).current;
+  const baseNow = useRef(full - snaps[index]);
+  // The visible height a running settle is heading to.
+  const heading = useRef<number | null>(null);
+  const lastFull = useRef(full);
+  // Content keeps the settled height; it grows to full when a settle heads up.
+  const [restHeight, setRestHeight] = useState(snaps[index]);
+  const translateY = useMemo(
+    () =>
+      Animated.add(base, dragY).interpolate({
+        inputRange: [0, Math.max(1, maxOffset)],
+        outputRange: [0, Math.max(1, maxOffset)],
+        extrapolate: 'clamp',
+      }),
+    [base, dragY, maxOffset],
   );
 
-  useEffect(() => {
-    snapTo(snaps[index]);
-  }, [index, snaps, snapTo]);
-
-  const pan = Gesture.Pan()
-    .runOnJS(true)
-    .onStart(() => {
-      height.stopAnimation();
-      dragStart.current = current.current;
-    })
-    .onUpdate((e) => {
-      const h = dragStart.current - e.translationY;
-      height.setValue(Math.max(snaps[0], Math.min(snaps[snaps.length - 1], h)));
-    })
-    .onEnd((e) => {
-      // Fling-aware: project a little along the release velocity.
-      const projected = current.current - e.velocityY * 0.12;
-      let best = 0;
-      snaps.forEach((s, i) => {
-        if (Math.abs(s - projected) < Math.abs(snaps[best] - projected)) best = i;
+  const settle = useCallback(
+    (to: number, velocityY = 0, then?: () => void) => {
+      heading.current = to;
+      if (fullRef.current - to < baseNow.current) setRestHeight(fullRef.current);
+      const target = fullRef.current - to;
+      const done = () => {
+        baseNow.current = target;
+        heading.current = null;
+        setRestHeight(to);
+        then?.();
+      };
+      if (reduceMotion) {
+        base.setValue(target);
+        return done();
+      }
+      Animated.spring(base, { toValue: target, velocity: velocityY, ...SNAP_SPRING }).start(({ finished }) => {
+        if (finished) done();
       });
-      // Same size as before: settle back here (a new size animates from the effect above).
-      if (best === index) snapTo(snaps[best]);
-      else onIndexChange(best);
-    });
+    },
+    [base, reduceMotion],
+  );
+
+  // One motion for every snap, from a tap or the app (design round 29). A size the panel is
+  // already at or heading to is left alone, so a flick's settle never restarts from a stop.
+  useEffect(() => {
+    const to = snaps[index];
+    // The panel's full height changed (layout): keep the same visible height under the new frame.
+    if (lastFull.current !== full) {
+      baseNow.current += full - lastFull.current;
+      lastFull.current = full;
+      base.setValue(baseNow.current);
+    }
+    if (heading.current === to) return;
+    if (heading.current == null && Math.abs(baseNow.current - (full - to)) < 0.5) {
+      setRestHeight(to);
+      return;
+    }
+    settle(to);
+  }, [index, snaps, full, base, settle]);
+
+  const indexRef = useRef(index);
+  indexRef.current = index;
+  const snapsRef = useRef(snaps);
+  snapsRef.current = snaps;
+  const pan = usePanGesture({
+    enabled: !locked,
+    useAnimated: true,
+    activeOffsetY: [-4, 4],
+    onUpdate: Animated.event([{ nativeEvent: { handlerData: { translationY: dragY } } }], { useNativeDriver: true }),
+    onBegin: () => {
+      // Catch a settle mid-way: the panel holds where it is and the drag carries on from there.
+      if (heading.current == null) return;
+      heading.current = null;
+      base.stopAnimation((v) => {
+        baseNow.current = v;
+      });
+    },
+    onDeactivate: (e) => {
+      const f = fullRef.current;
+      const list = snapsRef.current;
+      const offsetNow = Math.max(0, Math.min(f - list[0], baseNow.current + e.translationY));
+      // Hand the finger's travel over to the resting position in one step, then settle from there.
+      base.setValue(offsetNow);
+      dragY.setValue(0);
+      baseNow.current = offsetNow;
+      const best = pickSnap(list, f - offsetNow, e.velocityY);
+      // The screen hears the new size once the panel has stopped, so the map's re-framing and the
+      // screen's re-render never run under the moving panel (John, 2026-11-01).
+      settle(list[best], e.velocityY, () => {
+        if (best !== indexRef.current) onIndexChange(best);
+      });
+    },
+  });
 
   return (
-    <Animated.View
-      style={[
-        styles.sheet,
-        { height, backgroundColor: c.surface, borderColor: c.line, shadowColor: c.text },
-      ]}>
-      <GestureDetector gesture={pan}>
-        <Pressable
-          accessibilityRole="adjustable"
-          accessibilityLabel="Results panel size"
-          accessibilityValue={{ text: SNAP_NAMES[index] }}
-          accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
-          onAccessibilityAction={(e) => {
-            const step = e.nativeEvent.actionName === 'increment' ? 1 : -1;
-            onIndexChange(Math.max(0, Math.min(snaps.length - 1, index + step)));
-          }}
-          // Tap grows the panel a size; at full it steps back one size instead of
-          // jumping to the smallest (drag or VoiceOver still reach it).
-          onPress={() => onIndexChange(index >= snaps.length - 1 ? Math.max(0, snaps.length - 2) : index + 1)}
-          style={styles.handleArea}>
-          <View style={[styles.handle, { backgroundColor: c.line2 }]} />
-        </Pressable>
-      </GestureDetector>
-      <View style={styles.body}>{children}</View>
-    </Animated.View>
+    // Clips the slid-down part so it never draws over the tab bar.
+    <View style={styles.clip} pointerEvents="box-none">
+      <Animated.View
+        testID="sheet"
+        style={[
+          styles.sheet,
+          {
+            height: full,
+            transform: [{ translateY }],
+            backgroundColor: c.surface,
+            borderColor: c.line,
+            shadowColor: c.text,
+          },
+          flush && styles.flush,
+        ]}>
+        {locked ? (
+          <View style={{ height: SHEET_LOCKED_TOP }} testID="sheet-locked-top" />
+        ) : (
+          <GestureDetector gesture={pan}>
+            <Pressable
+              accessibilityRole="adjustable"
+              accessibilityLabel="Results panel size"
+              accessibilityValue={{ text: SNAP_NAMES[index] }}
+              accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
+              onAccessibilityAction={(e) => {
+                const step = e.nativeEvent.actionName === 'increment' ? 1 : -1;
+                onIndexChange(Math.max(0, Math.min(snaps.length - 1, index + step)));
+              }}
+              // Tap grows the panel a size; at full it steps back one size instead of
+              // jumping to the smallest (drag or VoiceOver still reach it).
+              onPress={() => onIndexChange(index >= snaps.length - 1 ? Math.max(0, snaps.length - 2) : index + 1)}
+              style={styles.handleArea}>
+              <View style={[styles.handle, { backgroundColor: c.line2 }]} />
+            </Pressable>
+          </GestureDetector>
+        )}
+        <View style={[styles.body, { paddingBottom: Math.max(0, full - restHeight) }]} testID="sheet-body">
+          {children}
+        </View>
+      </Animated.View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  flush: { borderTopLeftRadius: 0, borderTopRightRadius: 0, borderLeftWidth: 0, borderRightWidth: 0 },
+  clip: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    overflow: 'hidden',
+  },
   sheet: {
     position: 'absolute',
     left: 0,

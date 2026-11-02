@@ -1,7 +1,7 @@
 import { AIRPORTS } from '@/engine';
 
 import { nearestAirport } from '../airports';
-import { chooseOrigin, showLocationCard } from '../origin';
+import { chooseOrigin, restSpot, showLocationCard } from '../origin';
 
 describe('nearestAirport (Q-051)', () => {
   it('picks the closest airport', () => {
@@ -62,5 +62,26 @@ describe('showLocationCard (Q-051)', () => {
 
   it('never shows once location is on (Allow, Profile toggle or leave-by)', () => {
     expect(showLocationCard({ ...fresh, useLocation: true })).toBe(false);
+  });
+});
+
+describe('where the globe rests (John, 2026-11-01: it moved on a swap)', () => {
+  const at = (code: string) => code.toLowerCase();
+  it('rests on From, and holds its spot when From and To swap', () => {
+    const first = restSpot<string>(null, 'LAX', 'DAL', at);
+    expect(first.spot).toBe('lax');
+    const swapped = restSpot(first, 'DAL', 'LAX', at);
+    expect(swapped).toEqual({ from: 'DAL', to: 'LAX', spot: 'lax' });
+    // Swapping back keeps it too.
+    expect(restSpot(swapped, 'LAX', 'DAL', at).spot).toBe('lax');
+    // A new airport moves it to From.
+    expect(restSpot(swapped, 'DAL', 'DEN', at).spot).toBe('dal');
+  });
+
+  it('holds still on a swap with one side empty, and is the same object when nothing changed', () => {
+    const one = restSpot<string>(null, 'LAX', null, at);
+    expect(restSpot(one, null, 'LAX', at).spot).toBe('lax');
+    expect(restSpot(one, 'LAX', null, at)).toBe(one);
+    expect(restSpot<string>(null, null, null, at).spot).toBeNull();
   });
 });

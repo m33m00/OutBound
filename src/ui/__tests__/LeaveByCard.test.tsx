@@ -18,6 +18,15 @@ jest.mock('react-native/Libraries/Utilities/useWindowDimensions', () => ({
 
 const NOW = Date.UTC(2026, 9, 30, 15);
 
+
+/** The slim row's whole text: the title and its one detail (round 87). */
+function lineText(r: ReactTestRenderer): string {
+  const line = r.root.find((n) => n.props.testID === 'leave-by-line' && typeof n.type === 'string');
+  const flat = (c: unknown): string =>
+    typeof c === 'string' ? c : Array.isArray(c) ? c.map(flat).join('') : c && typeof c === 'object' && 'props' in c ? flat((c as { props: { children?: unknown } }).props.children) : '';
+  return flat(line.props.children);
+}
+
 describe('LeaveByCard location button', () => {
   let r: ReactTestRenderer | undefined;
   afterEach(() => act(() => r?.unmount()));
@@ -79,7 +88,7 @@ describe('LeaveByCard location button', () => {
       );
     });
     const texts = r!.root.findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string').map((n) => n.props.children as string);
-    expect(texts).toContain('Departed');
+    expect(lineText(r!)).toMatch(/^Departed/);
     expect(r!.root.findAll((n) => /Use Location|Open Settings/.test(String(n.props.accessibilityLabel)))).toHaveLength(0);
     expect(texts.some((t) => t.startsWith('Location is off'))).toBe(false);
     // Once it has left, the delay line goes too.
@@ -105,7 +114,7 @@ describe('LeaveByCard location button', () => {
     const texts = r!.root.findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string').map((n) => n.props.children as string);
     expect(texts).toContain('Flight delayed to 2:40 PM');
     // The title still counts back from the schedule: 4 h out minus the 60 min buffer.
-    expect(texts.some((t) => t.startsWith('Be at DFW by '))).toBe(true);
+    expect(lineText(r!)).toMatch(/^Be at DFW by /);
     const label = r!.root.find((n) => n.props.accessible && typeof n.props.accessibilityLabel === 'string' && n.props.accessibilityLabel.startsWith('Be at')).props
       .accessibilityLabel as string;
     expect(label).toContain('Flight delayed to 2:40 PM');
@@ -157,5 +166,28 @@ describe('LeaveByCard location button', () => {
     });
     expect(r!.root.findAll((n) => n.props.accessibilityRole === 'button' && n.props.onAccessibilityTap)).toHaveLength(0);
     expect(r!.root.find((n) => n.props.testID === 'leave-by-card' && 'disabled' in n.props).props.disabled).toBe(true);
+  });
+
+  it('is one slim row: the time and the drive, no second line (John, 2026-11-01)', () => {
+    mockFontScale = 1;
+    act(() => {
+      r = create(
+        <LeaveByCard
+          airport={AIRPORTS.DFW}
+          departUtc={NOW + 4 * 3600_000}
+          bufferMin={60}
+          now={NOW}
+          location={{ lat: 32.85, lon: -96.85, at: NOW }}
+          locationStatus="idle"
+          onUseLocation={jest.fn()}
+          liveDriveMin={32}
+        />,
+      );
+    });
+    expect(lineText(r!)).toMatch(/^Leave by .+ · {2}32 min drive$/);
+    const texts = r!.root.findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string').map((n) => n.props.children as string);
+    expect(texts.some((t) => t.includes('at DFW by'))).toBe(false);
+    const label = r!.root.find((n) => n.props.accessible && String(n.props.accessibilityLabel).startsWith('Leave by')).props.accessibilityLabel as string;
+    expect(label).toContain('at DFW by');
   });
 });

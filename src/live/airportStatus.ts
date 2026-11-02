@@ -14,8 +14,19 @@ export interface LiveConfig {
   anonKey: string;
 }
 
+/**
+ * The app's public env. Expo bakes EXPO_PUBLIC_* values into the bundle only where the code says
+ * process.env.EXPO_PUBLIC_NAME directly, so each one is read by name here; passing process.env
+ * around as an object reads an empty object in a published build.
+ */
+export const PUBLIC_ENV: Record<string, string | undefined> = {
+  EXPO_PUBLIC_SUPABASE_URL: process.env.EXPO_PUBLIC_SUPABASE_URL,
+  EXPO_PUBLIC_SUPABASE_ANON_KEY: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
+  EXPO_PUBLIC_SCHEDULES: process.env.EXPO_PUBLIC_SCHEDULES,
+};
+
 /** Reads the public Supabase config; null when not set up yet. */
-export function readLiveConfig(env: Record<string, string | undefined> = process.env): LiveConfig | null {
+export function readLiveConfig(env: Record<string, string | undefined> = PUBLIC_ENV): LiveConfig | null {
   const baseUrl = env.EXPO_PUBLIC_SUPABASE_URL;
   const anonKey = env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
   return baseUrl && anonKey ? { baseUrl: baseUrl.replace(/\/+$/, ''), anonKey } : null;

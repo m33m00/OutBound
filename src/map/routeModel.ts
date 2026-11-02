@@ -7,8 +7,8 @@
  * - Overview (nothing selected): thin neutral gray.
  * - Selected route: tier color per leg; solid = reported, dashed = the rest.
  *   Typical loads are neutral, so typical/unknown sources draw unknown gray.
- * - Other routes while one is selected: faint ghosts.
- * - Tap a ghost: earliest-arriving option on that path (see types.ts).
+ * - Other routes while one is selected: hidden, so the preview shows only the
+ *   picked route (John, 2026-11-01; they were faint ghosts before).
  * - Never amber (amber = "you" only); colors come from theme tokens.
  */
 import type { ColorScheme, Palette } from '@/theme';
@@ -180,29 +180,25 @@ export interface DrawLeg {
 }
 
 /**
- * Legs to draw, back to front. Neutral lines are deduped by airport pair (so
- * shared legs do not stack alpha) and skip pairs the selected route draws.
- * The selected route's legs come last, in order.
+ * Legs to draw, back to front. With a route picked, only its legs, in order:
+ * the preview shows that route alone (John, 2026-11-01). Otherwise every
+ * option in neutral gray, deduped by airport pair so shared legs do not stack
+ * alpha.
  */
 export function drawLegs(drawn: readonly RouteLine[], selectedId: string | null): DrawLeg[] {
   const selected = selectedId ? drawn.find((r) => r.id === selectedId) : undefined;
-  const role: LineRole = selected ? 'ghost' : 'overview';
+  if (selected) {
+    return selected.legs.filter(isDrawableLeg).map((leg) => ({ routeId: selected.id, leg, role: 'selected' as const }));
+  }
   const seen = new Set<string>();
-  if (selected) for (const l of selected.legs) seen.add(legPairKey(l));
   const out: DrawLeg[] = [];
   for (const r of drawn) {
-    if (r === selected) continue;
     for (const leg of r.legs) {
       if (!isDrawableLeg(leg)) continue;
       const key = legPairKey(leg);
       if (seen.has(key)) continue;
       seen.add(key);
-      out.push({ routeId: r.id, leg, role });
-    }
-  }
-  if (selected) {
-    for (const leg of selected.legs) {
-      if (isDrawableLeg(leg)) out.push({ routeId: selected.id, leg, role: 'selected' });
+      out.push({ routeId: r.id, leg, role: 'overview' });
     }
   }
   return out;

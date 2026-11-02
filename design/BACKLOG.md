@@ -110,3 +110,31 @@ Each item names its owner. One item per work session. spec-keeper runs a pre-fli
 | 103 | Design round 75: connection label beside the middle of the timeline line, which now runs dot to dot (John) | main | P1 | Built (design round 75, branch claude/project-thread-fzqwou) |
 | 104 | Design round 76: route card tag and flight above the first flight's time, below later flights' (John) | main | P1 | Built (design round 76, branch claude/project-thread-fzqwou) |
 | 105 | Design round 77: route card tag and flight lines start at the dots' left edge; chevron right after the chip (John) | main | P1 | Built (design round 77, branch claude/project-thread-fzqwou) |
+| 106 | Design round 78: Settings Leave-by footer down to one line | main | P3 | Built (design round 78, branch claude/project-thread-fzqwou) |
+| 107 | Design round 79: Back, Done, Cancel, banner actions, Refresh, Cancel Request and route/day arrows look like buttons (capsules), not bare words (John) | main | P1 | Built (design round 79, branch claude/project-thread-fzqwou) |
+| 108 | Design round 80: each flight in the route card is its own tappable box, no caret (John) | main | P1 | Built (design round 80, branch claude/project-thread-fzqwou) |
+| 109 | Design round 81: Save moves into the route card top right; route title truly centered in both result headers (John) | main | P1 | Built (design round 81, branch claude/project-thread-fzqwou) |
+| 110 | Design round 82: Leave By drive time from Apple Maps with traffic (live-drive-time function), rough guess as fallback (John) | main | P1 | Built (design round 82, branch claude/project-thread-fzqwou); on once John adds the Apple key and deploys |
+| 111 | Design round 83: rain radar switch moves from the map into Settings > Map (John) | main | P2 | Built (design round 83, branch claude/project-thread-fzqwou) |
+| 112 | Design round 84: date chips all read the same, weekday over date, fixed sizes (John) | main | P1 | Built (design round 84, branch claude/project-thread-fzqwou) |
+| 113 | Design round 85: route arcs on the globe pulse slowly toward the destination (John) | main | P2 | Built (design round 85, branch claude/project-thread-fzqwou) |
+| 114 | Design round 86: picked route shows alone on the globe, no ghost lines of the other options (John) | main | P1 | Built (design round 86, branch claude/project-thread-fzqwou) |
+| 115 | Design round 87: legend chip never covers the route; Leave By slimmed to one row so the map gets more room (John) | main | P1 | Built (design round 87, branch claude/project-thread-fzqwou) |
+| 116 | Design round 88: drawer follows the finger and a hard flick glides to the next size, no stutter or bounce (John) | main | P1 | Built (design round 88, branch claude/project-thread-fzqwou) |
+| 117 | Design round 89: drawer drag runs natively, map re-frames after the drawer stops (John: still clunky) | main | P1 | Built (design round 89, branch claude/project-thread-fzqwou) |
+| 118 | Design round 90: legend hugs its text top-left; clean collapsed drawer; pager spacing; route title uses its own airports (John) | main | P1 | Built (design round 90, branch claude/project-thread-fzqwou) |
+| 119 | Design round 91: drawer locked at the route's size once a route is picked (John) | main | P1 | Built (design round 91, branch claude/project-thread-fzqwou) |
+| 120 | Design round 92: diversions name where they went, keep their times, continue to the destination, flag the connection (John) | main | P1 | Built (design round 92, branch claude/project-thread-fzqwou) |
+| 121 | Design round 93: one main button when To is home; swap with To empty; search panel fits without scrolling (John) | main | P1 | Built (design round 93, branch claude/project-thread-fzqwou) |
+| 122 | Design round 94: globe holds still on a swap; state lines never blink while the globe moves (John) | main | P1 | Built (design round 94, branch claude/project-thread-fzqwou) |
+| 123 | Design round 95: press shrink on buttons, swap spin with sliding codes, sliding date highlight (John) | main | P2 | Built (design round 95, branch claude/project-thread-fzqwou) |
+| 124 | Design round 96: home pin ripple, From to To preview arc, idle globe sway (John) | main | P2 | Built (design round 96, branch claude/project-thread-fzqwou) |
+| 125 | Design round 97: idle globe sway toned down to a barely-there drift (John) | main | P2 | Built (design round 97, branch claude/project-thread-fzqwou) |
+| 126 | Design round 98: home globe zoomed in a bit; typical seats read "~N open seats estimated" (John) | main | P2 | Built (design round 98, branch claude/project-thread-fzqwou) |
+| 127 | Design round 99: home globe zoomed in further, 1.8x (John) | main | P2 | Built (design round 99, branch claude/project-thread-fzqwou) |
+| 128 | Design round 100: status pills share one width so flight number chips line up across legs (John) | main | P2 | Built (design round 100, branch claude/project-thread-fzqwou) |
+| 129 | Design round 101: results list fills the screen until a route is picked, no globe sliver (John) | main | P2 | Built (design round 101, branch claude/project-thread-fzqwou) |
+| 130 | Design round 102: moved times tinted green to red by how far they moved (John) | main | P2 | Built (design round 102, branch claude/project-thread-fzqwou) |
+| 131 | Design round 103: sample flights for every route out of Dallas, varied delays and early arrivals (John) | main | P2 | Built (design round 103, branch claude/project-thread-fzqwou) |
+| 132 | Design round 104: seats inside leg dots, no Likely delays pill, seat chip stays beside the times (John) | main | P2 | Built (design round 104, branch claude/project-thread-fzqwou) |
+| 133 | Design round 105: nonstops always make the routes shown (John) | main | P2 | Built (design round 105, branch claude/project-thread-fzqwou) |

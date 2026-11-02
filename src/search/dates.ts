@@ -6,8 +6,10 @@ const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
 export interface DateChip {
   /** "YYYY-MM-DD", local at the origin. */
   date: string;
-  /** "Today", "Tomorrow", "Fri 16". */
+  /** Top line of the chip: "Today", "Tomorrow" or the weekday ("Fri"). */
   label: string;
+  /** Bottom line of the chip, same format on every one: "Oct 16" (John, 2026-11-01). */
+  day: string;
   /** "Wednesday, October 14" style for VoiceOver and headers. */
   long: string;
 }
@@ -36,8 +38,8 @@ export function dateChips(today: string): DateChip[] {
   return Array.from({ length: MAX_DAYS_OUT + 1 }, (_, i) => {
     const date = new Date(start + i * 86_400_000).toISOString().slice(0, 10);
     const p = parts(date);
-    const label = i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : `${WEEKDAYS[p.dow]} ${p.day}`;
-    return { date, label, long: `${LONG_DAYS[p.dow]}, ${LONG_MONTHS[p.month]} ${p.day}` };
+    const label = i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : WEEKDAYS[p.dow];
+    return { date, label, day: `${MONTHS[p.month]} ${p.day}`, long: `${LONG_DAYS[p.dow]}, ${LONG_MONTHS[p.month]} ${p.day}` };
   });
 }
 
