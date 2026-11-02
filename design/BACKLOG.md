@@ -147,3 +147,4 @@ Each item names its owner. One item per work session. spec-keeper runs a pre-fli
 | 140 | Design round 112: no Find Routes on My Trips, your requests only for flights still to leave, area pill checked on To (John) | main | P2 | Built (design round 112, branch claude/project-thread-fzqwou) |
 | 141 | Design round 113: premium pass, Inter type scale, tabular times, soft card shadows, staggered results, spring press, impact and success haptics (John) | main | P2 | Built (design round 113, branch claude/project-thread-fzqwou) |
 | 142 | Design round 114: Boarding pass look (serif titles, DM Sans, DM Mono times, navy ticket stub and torn edge on the route card) (John picked C) | main | P2 | Built (design round 114, branch claude/project-thread-fzqwou) |
+| 143 | Design round 115: saved routes in My Trips as boarding passes (navy stub, torn edge, mono flight numbers) (John) | main | P2 | Built (design round 115, branch claude/project-thread-fzqwou) |

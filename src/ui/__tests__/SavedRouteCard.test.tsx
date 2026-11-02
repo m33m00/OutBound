@@ -25,7 +25,11 @@ describe('SavedRouteCard', () => {
   let r: ReactTestRenderer | undefined;
   afterEach(() => act(() => r?.unmount()));
 
-  const buttons = () => r!.root.findAll((n) => n.props.accessibilityRole === 'button' && typeof n.type !== 'string' && n.props.onPress);
+  // One per control: the card's press wrapper and the pressable inside it share a label.
+  const buttons = () => {
+    const all = r!.root.findAll((n) => n.props.accessibilityRole === 'button' && typeof n.type !== 'string' && n.props.onPress);
+    return all.filter((n, i) => all.findIndex((m) => m.props.accessibilityLabel === n.props.accessibilityLabel) === i);
+  };
 
   it('shows path, day, times and flights, and reads them as words', async () => {
     const onOpen = jest.fn();
@@ -38,6 +42,14 @@ describe('SavedRouteCard', () => {
       .map((n) => n.props.children as string);
     expect(texts).toEqual(expect.arrayContaining(['DFW → ORD → LAX', 'Tue, Oct 20 · 7:05 AM – 1:20 PM', 'AA 1234, AA 88']));
     expect(texts).not.toContain('Passed');
+    // A boarding pass (round 114): the path and day on the navy stub, a torn edge, the flights below.
+    const host = (id: string) => r!.root.findAll((n) => n.props.testID === id && typeof n.type === 'string');
+    expect(host('saved-route-stub')).toHaveLength(1);
+    expect(host('ticket-tear')).toHaveLength(1);
+    const stubTexts = host('saved-route-stub')[0]
+      .findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string')
+      .map((n) => n.props.children as string);
+    expect(stubTexts).toEqual(['DFW → ORD → LAX', 'Tue, Oct 20 · 7:05 AM – 1:20 PM']);
     const [open, remove] = buttons();
     expect(open.props.accessibilityLabel).toBe('DFW to ORD to LAX. Tue, Oct 20, 7:05 AM – 1:20 PM. Flights AA 1234, AA 88');
     expect(open.props.accessibilityHint).toBe('Searches this day again');

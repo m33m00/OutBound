@@ -36,6 +36,7 @@ import { AirlinePill } from './AirlinePill';
 import { Icon } from './Icon';
 import { pressStyle } from './press';
 import { ScalePressable } from './ScalePressable';
+import { TicketTear } from './TicketTear';
 import { StatusTag, TAG_TONE } from './StatusTag';
 import { withTick } from './haptics';
 import { shiftMinutes, shiftToken } from './timeShift';
@@ -655,24 +656,6 @@ export const ResultRow = memo(function ResultRow({
   );
 });
 
-/** Half the height of the bite at each end of the tear. */
-const TEAR_NOTCH = 10;
-
-/**
- * A boarding pass's torn edge (round 114): a dashed rule with a half-circle bite at each end, filled
- * with the page behind the card so it reads as cut out.
- */
-function TicketTear({ notch, line }: { notch: string; line: string }) {
-  const bite = { width: TEAR_NOTCH, height: TEAR_NOTCH * 2, backgroundColor: notch, borderColor: line };
-  return (
-    <View style={styles.tear} testID="ticket-tear" importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
-      <View style={[bite, styles.biteLeft]} />
-      <View style={[styles.tearLine, { borderColor: line }]} />
-      <View style={[bite, styles.biteRight]} />
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   // No overflow clip, so the soft shadow shows; the edge rounds its own corners instead.
   row: {
@@ -684,20 +667,6 @@ const styles = StyleSheet.create({
   shrink: { flexShrink: 1 },
   strongBorder: {
     borderWidth: 2,
-  },
-  biteLeft: {
-    marginLeft: -StyleSheet.hairlineWidth,
-    borderTopRightRadius: TEAR_NOTCH,
-    borderBottomRightRadius: TEAR_NOTCH,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderLeftWidth: 0,
-  },
-  biteRight: {
-    marginRight: -StyleSheet.hairlineWidth,
-    borderTopLeftRadius: TEAR_NOTCH,
-    borderBottomLeftRadius: TEAR_NOTCH,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRightWidth: 0,
   },
   edge: {
     width: 5,
@@ -728,8 +697,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.rowX,
     gap: spacing.group,
   },
-  tear: { flexDirection: 'row', alignItems: 'center', height: TEAR_NOTCH * 2 },
-  tearLine: { flex: 1, borderTopWidth: 1.5, borderStyle: 'dashed', marginHorizontal: 6 },
   path: { flexDirection: 'row', alignItems: 'center', gap: 4, flexShrink: 1 },
   line: {
     flexDirection: 'row',

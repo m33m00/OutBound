@@ -1,12 +1,25 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { forSpeech } from '@/search/format';
-import { elevation, minTapTarget, radius, spacing, textStyles, useColors } from '@/theme';
+import {
+  elevation,
+  fonts,
+  InkContext,
+  inkColors,
+  minTapTarget,
+  radius,
+  spacing,
+  textStyles,
+  useColors,
+  useColorSchemeName,
+} from '@/theme';
 import { savedRouteFlights, savedRouteTitle, savedRouteWhen, type SavedRoute } from '@/trips/savedRoutes';
 
 import { Icon } from './Icon';
 import { pressStyle } from './press';
+import { ScalePressable } from './ScalePressable';
 import { StatusTag } from './StatusTag';
+import { TicketTear } from './TicketTear';
 
 export interface SavedRouteCardProps {
   route: SavedRoute;
@@ -27,43 +40,56 @@ export interface SavedRouteCardProps {
  */
 export function SavedRouteCard({ route, past, now, onOpen, onRemove }: SavedRouteCardProps) {
   const c = useColors();
+  const scheme = useColorSchemeName();
   const title = savedRouteTitle(route);
   const when = savedRouteWhen(route, now);
   const flights = savedRouteFlights(route);
   const shortWhen = when.split(' · ')[0];
   const pastNote = 'Day passed. Opens today’s search.';
+  const ink = inkColors[scheme];
   return (
+    // A saved route is a boarding pass, like the route card (round 114, John 2026-11-02): a navy stub
+    // with the path and the day, a torn edge, then the flights.
     <View
       style={[styles.card, elevation.card, { backgroundColor: c.surface, borderColor: c.line, shadowColor: c.text }]}
       testID="saved-route">
-      <Pressable
+      <ScalePressable
         onPress={onOpen}
+        scaleTo={0.985}
+        pressedOpacity={0.92}
         accessibilityRole="button"
         accessibilityLabel={forSpeech([title, when, `Flights ${flights}`, past ? pastNote : null].filter(Boolean).join('. '))}
-        accessibilityHint={past ? 'Searches today' : 'Searches this day again'}
-        style={pressStyle(styles.main)}>
-        <Text lineBreakStrategyIOS="push-out" style={[textStyles.heading, { color: past ? c.muted : c.text }]}>
-          {title}
-        </Text>
-        <View style={styles.whenLine}>
-          <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, styles.shrink, { color: c.muted }]}>
-            {when}
+        accessibilityHint={past ? 'Searches today' : 'Searches this day again'}>
+        <InkContext.Provider value>
+          <View style={[styles.stub, { backgroundColor: c.ink }]} testID="saved-route-stub">
+            <Text lineBreakStrategyIOS="push-out" style={[textStyles.routeTitle, { color: past ? ink.muted : ink.text }]}>
+              {title}
+            </Text>
+            <View style={styles.whenLine}>
+              <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, styles.shrink, { color: ink.muted }]}>
+                {when}
+              </Text>
+              {past ? <StatusTag label="Passed" tone="gone" /> : null}
+            </View>
+          </View>
+        </InkContext.Provider>
+        <TicketTear notch={c.bg} line={c.line2} />
+        <View style={styles.body}>
+          <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, styles.flights, { color: c.muted }]}>
+            {flights}
           </Text>
-          {past ? <StatusTag label="Passed" tone="gone" /> : null}
+          <View importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
+            <Icon
+              name="chevron.right"
+              size={13}
+              weight="semibold"
+              tintColor={c.faint}
+              fallback={<Text style={[textStyles.heading, { color: c.faint }]}>›</Text>}
+            />
+          </View>
         </View>
-        <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>
-          {flights}
-        </Text>
-      </Pressable>
-      <View style={styles.chevron} importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
-        <Icon
-          name="chevron.right"
-          size={13}
-          weight="semibold"
-          tintColor={c.faint}
-          fallback={<Text style={[textStyles.heading, { color: c.faint }]}>›</Text>}
-        />
-      </View>
+      </ScalePressable>
+      {/* Its own button, apart from the card, so VoiceOver reaches it alone; it sits on the stub. */}
       <Pressable
         onPress={onRemove}
         accessibilityRole="button"
@@ -74,8 +100,8 @@ export function SavedRouteCard({ route, past, now, onOpen, onRemove }: SavedRout
         <Icon
           name="trash"
           size={18}
-          tintColor={c.muted}
-          fallback={<Text style={[textStyles.small, { color: c.muted }]}>Remove</Text>}
+          tintColor={ink.muted}
+          fallback={<Text style={[textStyles.small, { color: ink.muted }]}>Remove</Text>}
         />
       </Pressable>
     </View>
@@ -84,21 +110,37 @@ export function SavedRouteCard({ route, past, now, onOpen, onRemove }: SavedRout
 
 const styles = StyleSheet.create({
   card: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
     borderRadius: radius.md,
     borderWidth: StyleSheet.hairlineWidth,
   },
-  main: { flex: 1, gap: 2, padding: spacing.page, paddingRight: spacing.group },
+  stub: {
+    gap: 4,
+    paddingTop: spacing.page,
+    paddingBottom: spacing.page,
+    paddingLeft: spacing.page,
+    // Room for the trash button in the stub's top-right corner.
+    paddingRight: minTapTarget + spacing.group,
+    borderTopLeftRadius: radius.md - 1,
+    borderTopRightRadius: radius.md - 1,
+  },
   whenLine: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: 8, rowGap: 4 },
   shrink: { flexShrink: 1 },
-  chevron: { alignSelf: 'center' },
+  body: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.group,
+    paddingTop: 4,
+    paddingBottom: spacing.page - 2,
+    paddingHorizontal: spacing.page,
+  },
+  flights: { flex: 1, fontFamily: fonts.mono },
   remove: {
+    position: 'absolute',
+    top: spacing.page - (minTapTarget - 28) / 2,
+    right: 4,
     minWidth: minTapTarget,
     minHeight: minTapTarget,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: spacing.page - (minTapTarget - 22) / 2,
-    marginRight: 4,
   },
 });
