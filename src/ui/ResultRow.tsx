@@ -16,7 +16,7 @@ import {
   slimStops,
   stopCount,
 } from '@/search/format';
-import { statusHeadline, type StatusHeadline } from '@/search/headline';
+import { statusHeadline } from '@/search/headline';
 import { impactSummary } from '@/search/impactText';
 import type { LegStatusView, RowStatus } from '@/search/statusTags';
 import { fonts, radius, spacing, textStyles, useBoldText, useColors } from '@/theme';
@@ -25,7 +25,6 @@ import { AirlinePill } from './AirlinePill';
 import { Icon } from './Icon';
 import { pressStyle } from './press';
 import { StatusTag, TAG_TONE } from './StatusTag';
-import { TONE_BG, TONE_FG } from './statusTone';
 import { withTick } from './haptics';
 import { shiftMinutes, shiftToken } from './timeShift';
 import { TIER_BG, TIER_FG } from './tierColors';
@@ -278,31 +277,6 @@ function LegTimeline({
   );
 }
 
-/** The route card's live-problem headline: big, in the tag's colors (canceled, delayed or gone). */
-function Headline({ headline }: { headline: StatusHeadline }) {
-  const c = useColors();
-  return (
-    <View
-      style={[
-        styles.summary,
-        styles.summaryLead,
-        styles.headline,
-        {
-          backgroundColor: c[TONE_BG[headline.tone]],
-          borderColor: headline.tone === 'gone' ? c.line2 : c[TONE_BG[headline.tone]],
-        },
-      ]}
-      testID="headline">
-      {headline.tone === 'canceled' ? (
-        <Icon name="xmark.circle" size={18} tintColor={c[TONE_FG[headline.tone]]} fallback={null} />
-      ) : null}
-      <Text lineBreakStrategyIOS="push-out" style={[textStyles.heading, styles.shrink, { color: c[TONE_FG[headline.tone]] }]}>
-        {headline.label}
-      </Text>
-    </View>
-  );
-}
-
 export const ResultRow = memo(function ResultRow({
   itinerary: it,
   selected,
@@ -360,48 +334,54 @@ export const ResultRow = memo(function ResultRow({
   const highlight = selected && !large;
   // Every value shows its age: the summary's comes from the leg that sets it.
   const summaryAge = summary ? routeSeatAge(it, now) : null;
-  // Route card: a live problem leads; then the seats line at the bottom says the chance word too.
-  // The worst live thing on the route: the card's headline, and the slim row's one tag.
+  // The worst live thing on the route: the slim row's one tag. The route card has no banner for it; each
+  // leg's own pill says it (John, 2026-11-02).
   const headline = statusHeadline(it, status);
   const ageWords = summaryAge ? summaryAge[0].toLowerCase() + summaryAge.slice(1) : null;
-  const cardAge = !ageWords ? null : headline ? `Seats: ${summary} · ${ageWords}` : `Seats ${ageWords}`;
+  const cardAge = ageWords ? `Seats ${ageWords}` : null;
+  // A moved time (John, 2026-11-02): the schedule sits small and struck on its own line above, and the big
+  // line keeps the times now, tinted, so the times never wrap onto two lines.
+  const departMoved = !status?.canceled && !!(first?.struck && first.newText);
+  const arriveMoved = !status?.canceled && !!status?.arrival;
   const times = (
-    <Text style={[textStyles.number, styles.shrink, { color: timeColor }]} testID="row-times">
-      {status?.canceled ? (
-        <Text style={styles.struck}>
+    <View style={styles.shrink} testID="row-times-block">
+      {departMoved || arriveMoved ? (
+        <Text style={[textStyles.small, styles.struck, { color: c.muted }]} numberOfLines={1} testID="row-was">
           {t.depart} – {t.arrive}
         </Text>
-      ) : (
-        <>
-          {/* The new time is full size; the old one sits small and struck before it (John, 2026-10-30). */}
-          {first?.struck && first.newText ? (
-            <>
-              <Text style={[styles.was, styles.struck, { color: c.muted }]}>{keep(t.depart)}</Text>
-              {'\u00a0'}
+      ) : null}
+      <Text
+        style={[textStyles.number, { color: timeColor }]}
+        numberOfLines={stacked ? undefined : 1}
+        adjustsFontSizeToFit={!stacked}
+        minimumFontScale={0.7}
+        testID="row-times">
+        {status?.canceled ? (
+          <Text style={styles.struck}>
+            {t.depart} – {t.arrive}
+          </Text>
+        ) : (
+          <>
+            {departMoved ? (
               <Text style={departTint} testID="row-new-depart">
-                {keep(first.newText)}
+                {keep(first!.newText!)}
               </Text>
-            </>
-          ) : (
-            t.depart
-          )}
-          {' – '}
-          {/* A late arrival shows like a late departure: old time small and struck, then the new time. */}
-          {status?.arrival ? (
-            <>
-              <Text style={[styles.was, styles.struck, { color: c.muted }]}>{keep(t.arrive)}</Text>
-              {'\u00a0'}
+            ) : (
+              t.depart
+            )}
+            {' – '}
+            {arriveMoved ? (
               <Text style={arriveTint} testID="row-new-arrive">
-                {keep(status.arrival.newText)}
+                {keep(status!.arrival!.newText)}
               </Text>
-            </>
-          ) : (
-            t.arrive
-          )}
-        </>
-      )}
-      {t.plusDays ? <Text style={[textStyles.small, { color: c.muted }]}> {t.plusDays}</Text> : null}
-    </Text>
+            ) : (
+              t.arrive
+            )}
+          </>
+        )}
+        {t.plusDays ? <Text style={[textStyles.small, { color: c.muted }]}> {t.plusDays}</Text> : null}
+      </Text>
+    </View>
   );
   // The chance word in its tier color; on the route card it's the headline, so it's bigger.
   const seatSummary = (lead: boolean) =>
@@ -454,12 +434,12 @@ export const ResultRow = memo(function ResultRow({
       <View style={[styles.edge, { backgroundColor: dimmed ? c.unknown : c[it.tier] }]} />
       <View style={styles.content}>
         {selected ? (
-          // Route card A (John, 2026-10-31): one headline up top, the times, then one line per flight.
+          // Route card A (John, 2026-10-31): the seat chip up top, the times, then one box per flight.
           <>
             {/* Save sits top right of the card, outside the headline's wrapping line (John, 2026-11-01). */}
             <View style={styles.headlineRow}>
               <View style={[styles.line, styles.headlineMain]} testID="headline-row">
-                {headline ? <Headline headline={headline} /> : seatSummary(true)}
+                {seatSummary(true)}
               </View>
               {topAction ? (
                 <View style={styles.topAction} testID="route-card-action">
@@ -590,7 +570,6 @@ const styles = StyleSheet.create({
   },
   // The route card's headline chip: bigger, so it reads first.
   summaryLead: { paddingHorizontal: 10, paddingVertical: 4 },
-  headline: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1 },
   legLine: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -632,6 +611,4 @@ const styles = StyleSheet.create({
   legMeta: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', columnGap: spacing.group, rowGap: 2 },
   connection: { flex: 1, flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: spacing.group },
   struck: { textDecorationLine: 'line-through' },
-  // The replaced time inside the big time line: small, so the new time carries the weight.
-  was: { fontFamily: textStyles.small.fontFamily, fontSize: textStyles.small.fontSize },
 });

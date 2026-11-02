@@ -352,9 +352,10 @@ describe('ResultRow', () => {
           .flat(3)
           .some((st: { textDecorationLine?: string } | undefined) => st?.textDecorationLine === 'line-through'),
     );
-    // In the top time line only (not again on the leg line): the old departure, and the old
-    // arrival, since a 25-minute late departure lands about 25 minutes late (design round 25).
-    expect(struck).toHaveLength(2);
+    // One small struck line above the times (not again on the leg line): the schedule, since a
+    // 25-minute late departure lands about 25 minutes late too (John, 2026-11-02).
+    expect(struck).toHaveLength(1);
+    expect(struck[0].props.testID).toBe('row-was');
     const times = root.findAll((n) => n.props.testID === 'row-times' && typeof n.type === 'string')[0];
     const flat = (n: unknown): string =>
       typeof n === 'string'
@@ -365,8 +366,9 @@ describe('ResultRow', () => {
             ? flat((n as { props: { children?: unknown } }).props.children)
             : '';
     // Each time keeps its number and AM/PM together (non-breaking space, design round 26).
-    // The old time small and struck on the left, then the new time (John, 2026-10-30, round 58).
-    expect(flat(times.props.children)).toBe('9:00\u00a0AM\u00a09:25\u00a0AM – 11:20\u00a0AM\u00a011:45\u00a0AM');
+    // The big line keeps only the times now, on one line, so a moved row never wraps (John, 2026-11-02).
+    expect(flat(times.props.children)).toBe('9:25\u00a0AM – 11:45\u00a0AM');
+    expect(flat(struck[0].props.children)).toBe('9:00\u00a0AM – 11:20\u00a0AM');
     // The flights stay on one line with one tag after them (John, 2026-10-31).
     const line = root.findAll((n) => n.props.testID === 'flights-line' && typeof n.type === 'string')[0];
     expect(line.props.style).toMatchObject({ flexDirection: 'row' });
@@ -396,6 +398,22 @@ describe('ResultRow', () => {
       expect(flat.flexWrap).toBe('nowrap');
       const right = top.findAll((n) => n.props.testID === 'top-right' && typeof n.type === 'string')[0];
       expect(Object.assign({}, ...[right.props.style].flat(3).filter(Boolean)).flexShrink).toBe(0);
+      // A moved row's big times stay on one line and shrink to fit rather than wrap (John, 2026-11-02).
+      await act(async () => {
+        r!.update(
+          <ResultRow
+            itinerary={it}
+            selected={false}
+            now={NOW}
+            onPress={jest.fn()}
+            status={statusFor(it, live(it, 'delayed', 25))}
+          />,
+        );
+      });
+      const times = r!.root.findAll((n) => n.props.testID === 'row-times' && typeof n.type === 'string')[0];
+      expect(times.props.numberOfLines).toBe(1);
+      expect(times.props.adjustsFontSizeToFit).toBe(true);
+      expect(r!.root.findAll((n) => n.props.testID === 'row-was' && typeof n.type === 'string')).toHaveLength(1);
     } finally {
       spy.mockRestore();
     }
@@ -461,8 +479,8 @@ describe('ResultRow', () => {
         <ResultRow itinerary={it} selected large now={NOW} onPress={jest.fn()} status={statusFor(it, live(it, 'delayed', 25))} />,
       );
     });
-    // Old departure and old arrival in the top line, none on the leg.
-    expect(struckTexts()).toHaveLength(2);
+    // The schedule struck once above the top line, none on the leg.
+    expect(struckTexts()).toHaveLength(1);
     const timeline = r!.root.findAll((n) => n.props.testID === 'leg-timeline' && typeof n.type === 'string')[0];
     const legWords = timeline.findAll((n) => typeof n.props.children === 'string').map((n) => n.props.children as string);
     expect(legWords).toContain('9:25\u00a0AM');
@@ -669,7 +687,7 @@ describe('ResultRow', () => {
     expect(tags().map((t) => t.props.minWidth)).toEqual([104, 104]);
   });
 
-  it('route card A: a canceled leg is the headline; the seats step down to the bottom line (round 66)', async () => {
+  it('route card: no banner for a canceled leg; its own pill says it and the seat chip stays up top (John, 2026-11-02)', async () => {
     const at = (hhmm: string) => zonedToUtc('2026-10-20', hhmm, 'America/Chicago');
     const provider = createMemoryProvider(
       [
@@ -716,10 +734,11 @@ describe('ResultRow', () => {
     });
     const row = r!.root.findAll((n) => n.props.testID === 'headline-row' && typeof n.type === 'string')[0];
     const head = row.findAll((n) => typeof n.props.children === 'string').map((n) => n.props.children);
-    expect(head).toContain('DEN → LAX canceled');
-    expect(row.findAll((n) => n.props.testID === 'seat-summary').length).toBe(0);
+    expect(head).not.toContain('DEN → LAX canceled');
+    expect(r!.root.findAll((n) => n.props.testID === 'headline')).toHaveLength(0);
+    expect(row.findAll((n) => n.props.testID === 'seat-summary').length).toBeGreaterThan(0);
     const age = r!.root.findAll((n) => n.props.testID === 'seat-age' && typeof n.type === 'string')[0];
-    expect(age.props.children).toBe(`Seats: ${it.tier === 'wide' ? 'Easy' : 'Likely'} · reported just now`);
+    expect(age.props.children).toBe('Seats reported just now');
     // The canceled leg keeps its one tag on its own line; no seat text per leg.
     const timeline = r!.root.findAll((n) => n.props.testID === 'leg-timeline' && typeof n.type === 'string')[0];
     const words = timeline.findAll((n) => typeof n.props.children === 'string').map((n) => n.props.children as string);
