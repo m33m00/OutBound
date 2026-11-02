@@ -139,3 +139,4 @@ Each item names its owner. One item per work session. spec-keeper runs a pre-fli
 | 132 | Design round 104: seats inside leg dots, no Likely delays pill, seat chip stays beside the times (John) | main | P2 | Built (design round 104, branch claude/project-thread-fzqwou) |
 | 133 | Design round 105: nonstops always make the routes shown (John) | main | P2 | Built (design round 105, branch claude/project-thread-fzqwou) |
 | 134 | Design round 106: moved times stay on one line, no status banner on the route card (John) | main | P2 | Built (design round 106, branch claude/project-thread-fzqwou) |
+| 135 | Design round 107: home drawer fits with no scroll, Report a load card slimmer, globe zoomed in to 2.4 (John) | main | P2 | Built (design round 107, branch claude/project-thread-fzqwou) |

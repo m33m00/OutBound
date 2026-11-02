@@ -52,7 +52,7 @@ export interface SearchPanelProps {
   banner?: ReactNode;
   /** "At DAL? Report a load" (round 33), under the search buttons: searching stays the main job. */
   airportCard?: ReactNode;
-  /** How tall the panel is down to the bottom of Find Routes, so the drawer can open that far. */
+  /** How tall the whole panel is, so the drawer can open that far with nothing under the fold. */
   onFitHeight?: (height: number) => void;
 }
 
@@ -283,7 +283,13 @@ export function SearchPanel(p: SearchPanelProps) {
   };
   const { hx, hw, litAt } = useChipHighlight(slider ? boxes[selectedKey] : undefined, boxes, reduce);
   return (
-    <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
+    <ScrollView
+      contentContainerStyle={styles.body}
+      keyboardShouldPersistTaps="handled"
+      testID="search-scroll"
+      // The drawer's middle stop opens down to the bottom of everything here, the "At DAL? Report a
+      // load" card included, so nothing on the home page needs a scroll (John, 2026-11-02).
+      onContentSizeChange={p.onFitHeight ? (_w, h) => p.onFitHeight!(Math.ceil(h)) : undefined}>
       {p.locationCard}
       {/* At the top, not under Find Routes: away from home the Get Home row pushed it out of view. */}
       {p.banner}
@@ -431,16 +437,8 @@ export function SearchPanel(p: SearchPanelProps) {
           From and To are the same airport. Change one to find routes.
         </Text>
       ) : null}
-      {/* The main action sits right under From/To so it's in view at half height; the drawer opens
-          down to here, so Filters and Find Routes are never under the fold (John, 2026-11-01). */}
-      <View
-        style={styles.actions}
-        testID="search-actions"
-        onLayout={
-          p.onFitHeight
-            ? (e) => p.onFitHeight!(Math.ceil(e.nativeEvent.layout.y + e.nativeEvent.layout.height + spacing.page))
-            : undefined
-        }>
+      {/* The main action sits right under From/To (John, 2026-11-01). */}
+      <View style={styles.actions} testID="search-actions">
         <Button
           label={p.filtersChanged ? `Filters (${p.filtersChanged})` : 'Filters'}
           icon="line.3.horizontal.decrease.circle"

@@ -133,8 +133,9 @@ export default function HomeScreen() {
   // A route that needs (nearly) the whole height opens full; the middle stop stays a real half
   // so the handle still does something.
   const tallRoute = routeOpen && routeHeight > 0 && routeHeight + LOCKED_CHROME >= sheetFull - TALL_ROUTE_SLACK;
-  // The search panel's middle stop opens down to Find Routes, so nothing sits under the fold
-  // (John, 2026-11-01: "you have to scroll down just a bit").
+  // The search panel's middle stop opens down to the bottom of the panel, Find Routes and the
+  // "At DAL? Report a load" card included, so nothing sits under the fold (John, 2026-11-01 and
+  // 2026-11-02: "requires scrolling down to see it").
   // Grows only, per layout (location card, banner or plain), so Get Home coming and going on a
   // swap doesn't move the drawer or re-zoom the globe (John, 2026-11-01).
   const [fit, setFit] = useState<FitHeight>({ key: '', height: 0 });
@@ -512,7 +513,13 @@ export default function HomeScreen() {
                   onFind={() => runSearch()}
                   onGetHome={getHomeShown ? getHome : undefined}
                   onFitHeight={(h) =>
-                    setFit((prev) => growFit(prev, `${locationCard ? 'card' : ''}${banner ? 'banner' : ''}`, h))
+                    setFit((prev) =>
+                      growFit(
+                        prev,
+                        `${locationCard ? 'card' : ''}${banner ? 'banner' : ''}${atAirport && !LIVE_FLIGHTS ? 'airport' : ''}${mainHome ? '' : 'sethome'}`,
+                        h,
+                      ),
+                    )
                   }
                   homeName={mainHome ? (areaFor(mainHome)?.city ?? mainHome) : undefined}
                   onSetHome={mainHome ? undefined : () => router.push({ pathname: '/settings', params: { section: 'homes' } })}

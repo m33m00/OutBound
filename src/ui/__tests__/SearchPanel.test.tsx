@@ -176,12 +176,12 @@ describe('SearchPanel first run (design round 39)', () => {
     expect(swapButton().props.accessibilityHint).toBe('Choose an airport first');
   });
 
-  it('tells the screen how tall it is down to Find Routes, so the drawer opens that far', () => {
+  it('tells the screen how tall the whole panel is, airport card included, so the drawer opens that far (John, 2026-11-02)', () => {
     const onFitHeight = jest.fn();
     r = render(1, { onFitHeight });
-    const row = r.root.findAll((n) => n.props.testID === 'search-actions' && typeof n.type === 'string')[0];
-    act(() => row.props.onLayout({ nativeEvent: { layout: { x: 0, y: 300.4, width: 360, height: 52 } } }));
-    expect(onFitHeight).toHaveBeenCalledWith(369);
+    const scroll = r.root.findAll((n) => n.props.testID === 'search-scroll' && typeof n.type === 'string')[0];
+    act(() => scroll.props.onContentSizeChange(360, 452.4));
+    expect(onFitHeight).toHaveBeenCalledWith(453);
   });
 
   it('shows what the empty From card is waiting on', () => {
