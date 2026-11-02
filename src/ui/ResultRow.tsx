@@ -78,6 +78,16 @@ function LegClock({ leg, view, text, dimmed }: { leg: Flight; view?: LegStatusVi
 }
 
 /** The time a leg line shows: the new time when it moved, none when canceled, else the schedule (a diversion keeps it). */
+/**
+ * Width every leg's status tag is widened to, so the flight chips that follow line up: the widest
+ * measured tag, once all `tagged` legs have reported. Undefined until then (tags show at their own size).
+ */
+export function tagColumnWidth(widths: Record<number, number>, tagged: number): number | undefined {
+  const measured = Object.values(widths);
+  if (tagged < 2 || measured.length < tagged) return undefined;
+  return Math.ceil(Math.max(...measured));
+}
+
 export function legClockText(leg: Flight, view?: LegStatusView): string | null {
   if (!view?.struck) return legDepartText(leg);
   return view.newText;
@@ -112,6 +122,19 @@ function LegTimeline({
   // Each box's measured height. Its dot sits at its middle, so the line between two dots runs
   // half of one box, the connection, and half of the next; the label is placed at its middle.
   const [legHeights, setLegHeights] = useState<Record<number, number>>({});
+  // Each leg's status tag is widened to the widest one so the flight chips after them line up
+  // (John, 2026-11-02). Widths are kept per set of labels, so a tag that gets shorter re-measures.
+  const tagKey = it.legs.map((_, i) => status?.legs[i]?.tag?.label ?? '').join('|');
+  const [tagWidths, setTagWidths] = useState<{ key: string; widths: Record<number, number> }>({ key: tagKey, widths: {} });
+  const widths = tagWidths.key === tagKey ? tagWidths.widths : {};
+  const tagColumn = tagColumnWidth(widths, it.legs.filter((_, i) => status?.legs[i]?.tag).length);
+  const measureTag = (i: number) => (e: { nativeEvent: { layout: { width: number } } }) => {
+    const w = e.nativeEvent.layout.width;
+    setTagWidths((prev) => {
+      const base = prev.key === tagKey ? prev.widths : {};
+      return base[i] === w && prev.key === tagKey ? prev : { key: tagKey, widths: { ...base, [i]: w } };
+    });
+  };
   const measure = (i: number) => (e: { nativeEvent: { layout: { height: number } } }) => {
     const h = e.nativeEvent.layout.height;
     setLegHeights((prev) => (prev[i] === h ? prev : { ...prev, [i]: h }));
@@ -129,7 +152,14 @@ function LegTimeline({
         const above = i === 0;
         const pills = (
           <View style={styles.legMeta} testID="leg-flight">
-            {view?.tag ? <StatusTag label={view.tag.label} tone={TAG_TONE[view.tag.kind]} /> : null}
+            {view?.tag ? (
+              <StatusTag
+                label={view.tag.label}
+                tone={TAG_TONE[view.tag.kind]}
+                minWidth={tagColumn}
+                onLayout={tagColumn ? undefined : measureTag(i)}
+              />
+            ) : null}
             <AirlinePill airline={leg.flight.airline} flightNumber={leg.flight.flightNumber} />
           </View>
         );

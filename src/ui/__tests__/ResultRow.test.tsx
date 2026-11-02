@@ -6,7 +6,8 @@ import { flightLookupKey, type FlightStatus } from '@/live';
 import { legLookup, rowStatus } from '@/search/statusTags';
 import { colors } from '@/theme';
 
-import { ResultRow } from '../ResultRow';
+import { ResultRow, tagColumnWidth } from '../ResultRow';
+import { StatusTag } from '../StatusTag';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -547,6 +548,61 @@ describe('ResultRow', () => {
       (n) => typeof n.type === 'string' && JSON.stringify(n.props.style ?? '').includes('line-through'),
     );
     expect(struck).toHaveLength(0);
+  });
+
+  it('status tags widen to the widest so the flight chips line up (John, 2026-11-02)', async () => {
+    expect(tagColumnWidth({}, 2)).toBeUndefined();
+    expect(tagColumnWidth({ 0: 80 }, 2)).toBeUndefined(); // waits for every tagged leg
+    expect(tagColumnWidth({ 0: 80 }, 1)).toBeUndefined(); // one tag has nothing to line up with
+    expect(tagColumnWidth({ 0: 80, 1: 109.4 }, 2)).toBe(110);
+
+    const at = (hhmm: string) => zonedToUtc('2026-10-20', hhmm, 'America/Chicago');
+    const provider = createMemoryProvider(
+      [
+        { id: 'A', airline: 'WN', flightNumber: '10', from: 'BNA', to: 'DEN', departUtc: at('08:00'), arriveUtc: at('10:00') },
+        { id: 'B', airline: 'WN', flightNumber: '20', from: 'DEN', to: 'LAX', departUtc: at('11:30'), arriveUtc: at('13:30') },
+      ],
+      {
+        A: [{ source: 'reported', openSeats: 30, listed: 5, asOf: NOW }],
+        B: [{ source: 'reported', openSeats: 20, listed: 4, asOf: NOW }],
+      },
+    );
+    const [it] = await searchItineraries(provider, { origin: 'BNA', destination: 'LAX', date: '2026-10-20' }, { now: NOW });
+    const point = (airport: string, iso: string | null) => ({
+      airport,
+      scheduledUtc: iso,
+      estimatedUtc: null,
+      actualUtc: null,
+      delayMin: null,
+      terminal: null,
+      gate: null,
+    });
+    const diverted = (f: (typeof it.legs)[number]['flight'], to: string): FlightStatus => ({
+      flightNumber: `WN${f.flightNumber}`,
+      state: 'diverted',
+      departure: point(f.from, new Date(f.departUtc).toISOString()),
+      arrival: point(to, null),
+      providerUpdatedAt: null,
+    });
+    const [a, b] = it.legs.map((l) => l.flight);
+    const status = rowStatus(
+      it,
+      { [flightLookupKey(legLookup(a))]: diverted(a, 'COS'), [flightLookupKey(legLookup(b))]: diverted(b, 'ONT') },
+      { minConnectSameAirlineMin: 60, minConnectSwitchMin: 90 },
+    );
+    await act(async () => {
+      r = create(<ResultRow itinerary={it} selected now={NOW} onPress={jest.fn()} status={status} />);
+    });
+    const tags = () =>
+      r!.root.findAll((n) => n.props.testID === 'leg-flight' && typeof n.type === 'string').map((g) => g.findByType(StatusTag));
+    expect(tags()).toHaveLength(2);
+    expect(tags().map((t) => t.props.minWidth)).toEqual([undefined, undefined]);
+    const layout = (width: number) => ({ nativeEvent: { layout: { x: 0, y: 0, width, height: 22 } } });
+    await act(async () => {
+      tags()[0].props.onLayout(layout(80));
+      tags()[1].props.onLayout(layout(104));
+    });
+    expect(tags().map((t) => t.props.minWidth)).toEqual([104, 104]);
   });
 
   it('route card A: a canceled leg is the headline; the seats step down to the bottom line (round 66)', async () => {
