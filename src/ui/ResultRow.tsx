@@ -59,6 +59,7 @@ const keep = (time: string) => time.replace(/ /g, '\u00a0');
 
 /** A leg's scheduled departure at its origin, e.g. "8:00 AM". */
 const legDepartText = (leg: Flight) => formatTime(leg.departUtc, AIRPORTS[leg.from]?.tz ?? 'UTC');
+const legArriveText = (leg: Flight) => formatTime(leg.arriveUtc, AIRPORTS[leg.to]?.tz ?? 'UTC');
 
 /** Size of the dot that marks each leg on the route card's timeline: big enough to hold "60/19" (John, 2026-11-02). */
 const DOT = 40;
@@ -77,24 +78,38 @@ export function dotSeats(seats: LegSeats): string {
 const CONNECTION_PAD = 6;
 
 /**
- * A leg's departure on the timeline. The struck original lives only in the card's top time
- * line (John, 2026-10-30), so a delayed leg shows just its new time and a canceled one none.
+ * A leg's times on the timeline: departure and arrival (John, 2026-11-02). A moved time shows the
+ * new one, tinted by how far it moved; a canceled leg shows its schedule struck through, muted;
+ * a diverted one keeps its departure only (the new arrival isn't known yet).
  */
-function LegClock({ leg, view, text, dimmed }: { leg: Flight; view?: LegStatusView; text: TextStyle; dimmed: boolean }) {
+function LegTimes({ leg, view, text, dimmed }: { leg: Flight; view?: LegStatusView; text: TextStyle; dimmed: boolean }) {
   const c = useColors();
-  const time = legClockText(leg, view);
-  if (!time) return null;
-  // A moved departure is tinted by how far it moved (John, 2026-11-02).
-  const token = !dimmed && view?.newUtc != null ? shiftToken(shiftMinutes(view.newUtc, view.scheduledUtc)) : null;
-  const color = dimmed ? c.muted : token ? c[token] : c.text;
+  const t = legTimesText(leg, view);
+  const canceled = view?.tag?.kind === 'canceled';
+  const tint = (min: number | null) => {
+    const token = dimmed || canceled ? null : shiftToken(min);
+    return dimmed || canceled ? c.muted : token ? c[token] : c.text;
+  };
+  const departColor = tint(view?.newUtc != null ? shiftMinutes(view.newUtc, view.scheduledUtc) : null);
+  const arriveColor = tint(view?.arrival ? shiftMinutes(view.arrival.newUtc, leg.arriveUtc) : null);
+  const strong = { fontFamily: fonts.bodySemiBold };
   return (
-    <Text style={[text, { fontFamily: fonts.bodySemiBold, color }]} testID="leg-clock">
-      {keep(time)}
+    <Text style={[text, strong, canceled && styles.struck]} testID="leg-times">
+      <Text style={{ color: departColor }} testID="leg-clock">
+        {keep(t.depart)}
+      </Text>
+      {t.arrive ? (
+        <>
+          <Text style={{ color: canceled || dimmed ? c.muted : c.text }}>{' – '}</Text>
+          <Text style={{ color: arriveColor }} testID="leg-arrive">
+            {keep(t.arrive)}
+          </Text>
+        </>
+      ) : null}
     </Text>
   );
 }
 
-/** The time a leg line shows: the new time when it moved, none when canceled, else the schedule (a diversion keeps it). */
 /**
  * Width every leg's status tag is widened to, so the flight chips that follow line up: the widest
  * measured tag, once all `tagged` legs have reported. Undefined until then (tags show at their own size).
@@ -105,9 +120,16 @@ export function tagColumnWidth(widths: Record<number, number>, tagged: number): 
   return Math.ceil(Math.max(...measured));
 }
 
-export function legClockText(leg: Flight, view?: LegStatusView): string | null {
-  if (!view?.struck) return legDepartText(leg);
-  return view.newText;
+function legSpokenTimes(leg: Flight, view?: LegStatusView): string {
+  const t = legTimesText(leg, view);
+  return t.arrive ? `departs ${t.depart}, arrives ${t.arrive}` : `departs ${t.depart}`;
+}
+
+/** A leg's two times: the new ones when they moved, the schedule otherwise (canceled shows it struck). */
+export function legTimesText(leg: Flight, view?: LegStatusView): { depart: string; arrive: string | null } {
+  const depart = view?.newText ?? legDepartText(leg);
+  if (view?.tag?.kind === 'diverted') return { depart, arrive: null };
+  return { depart, arrive: view?.arrival?.newText ?? legArriveText(leg) };
 }
 
 /**
@@ -134,6 +156,7 @@ function LegTimeline({
   onLegPress?: (flight: Flight) => void;
 }) {
   const c = useColors();
+  const stacked = useWindowDimensions().fontScale >= STACK_TOP_LINE_SCALE;
   const text = large ? textStyles.body : textStyles.small;
   const rail = { backgroundColor: c.line2 };
   // Each box's measured height. Its dot sits at its middle, so the line between two dots runs
@@ -183,9 +206,15 @@ function LegTimeline({
         const content = (
           <>
             {above ? pills : null}
-            <Text style={[text, { color: c.muted }]}>
-              <LegClock leg={leg.flight} view={view} text={text} dimmed={dimmed} />
-              {`${legClockText(leg.flight, view) ? '  ' : ''}${leg.flight.from}\u00a0→\u00a0${leg.flight.to}`}
+            {/* Both times and the airports on one line; it shrinks a little to fit rather than wrap. */}
+            <Text
+              style={[text, { color: c.muted }]}
+              numberOfLines={stacked ? undefined : 1}
+              adjustsFontSizeToFit={!stacked}
+              minimumFontScale={0.8}
+              testID="leg-line">
+              <LegTimes leg={leg.flight} view={view} text={text} dimmed={dimmed} />
+              {`  ${leg.flight.from}\u00a0→\u00a0${leg.flight.to}`}
             </Text>
             {/* A diversion goes on to the planned airport, late (John, 2026-11-01). */}
             {view?.tag?.kind === 'diverted' ? (
@@ -227,7 +256,7 @@ function LegTimeline({
                   accessibilityLabel={[
                     `Flight status, ${leg.flight.airline} ${leg.flight.flightNumber}, ${leg.flight.from} to ${leg.flight.to}`,
                     // A canceled leg's tag already says "Canceled, was 10:40 AM".
-                    legClockText(leg.flight, view) ? `departs ${legClockText(leg.flight, view)}` : null,
+                    view?.tag?.kind === 'canceled' ? null : legSpokenTimes(leg.flight, view),
                     view?.tag?.spoken,
                     forSpeech(seatText(leg.seats, now)),
                   ]
@@ -357,7 +386,9 @@ export const ResultRow = memo(function ResultRow({
         minimumFontScale={0.7}
         testID="row-times">
         {status?.canceled ? (
-          <Text style={styles.struck}>
+          // A canceled leg: the top times go grey, not struck; the leg's pill and struck times say it
+          // (John, 2026-11-02).
+          <Text style={{ color: c.muted }} testID="row-times-canceled">
             {t.depart} – {t.arrive}
           </Text>
         ) : (

@@ -464,7 +464,7 @@ describe('ResultRow', () => {
     expect(strings(r!.root)).toContain('Departed');
   });
 
-  it('route card: the struck original shows only in the top line; legs show the new time or nothing (round 59)', async () => {
+  it('route card legs show both times: new ones when moved, a canceled leg keeps its schedule, struck (John, 2026-11-02)', async () => {
     const it = await fullItinerary();
     const struckTexts = () =>
       r!.root.findAll(
@@ -484,21 +484,28 @@ describe('ResultRow', () => {
     const timeline = r!.root.findAll((n) => n.props.testID === 'leg-timeline' && typeof n.type === 'string')[0];
     const legWords = timeline.findAll((n) => typeof n.props.children === 'string').map((n) => n.props.children as string);
     expect(legWords).toContain('9:25\u00a0AM');
+    // The leg's new arrival too, not only its new departure.
+    expect(legWords).toContain('11:45\u00a0AM');
     expect(legWords).not.toContain('9:00\u00a0AM');
     await act(async () => {
       r!.update(
         <ResultRow itinerary={it} selected large now={NOW} onPress={jest.fn()} status={statusFor(it, live(it, 'canceled'))} />,
       );
     });
-    // Only the top line is struck; the leg says Canceled with no time.
-    expect(struckTexts()).toHaveLength(1);
+    // The leg keeps its scheduled times, struck; the top times go grey, not struck.
+    const struck = struckTexts();
+    expect(struck).toHaveLength(1);
+    expect(struck[0].props.testID).toBe('leg-times');
+    const top = r!.root.findAll((n) => n.props.testID === 'row-times-canceled' && typeof n.type === 'string')[0];
+    expect(top.props.style).toEqual({ color: colors.light.muted });
     const after = r!.root.findAll((n) => n.props.testID === 'leg-timeline' && typeof n.type === 'string')[0];
     const words = after
       .findAll((n) => typeof n.type === 'string')
       .flatMap((n) => [n.props.children].flat().filter((x): x is string => typeof x === 'string'));
     expect(words).toContain('Canceled');
-    // No time before the airports (no leading gap either).
-    expect(words).toContain('BNA\u00a0→\u00a0LAX');
+    expect(words).toContain('9:00\u00a0AM');
+    expect(words).toContain('11:20\u00a0AM');
+    expect(words).toContain('  BNA\u00a0→\u00a0LAX');
   });
 
   it('a canceled second leg: flights on one line, one tag that names that flight (round 68, John)', async () => {
