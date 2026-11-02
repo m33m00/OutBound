@@ -67,8 +67,6 @@ export function formatAge(asOf: number, now: number): string {
   return `${Math.floor(h / 24)}d ago`;
 }
 
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
 /** Seat labels say your chances of getting on (Q-074, John 2026-10-30). */
 export const TIER_WORD: Record<SeatTier, string> = {
   wide: 'Easy',
@@ -86,9 +84,8 @@ export const TIER_WORD: Record<SeatTier, string> = {
 export function seatText(seats: LegSeats, now: number): string {
   if (seats.source === 'unknown' || seats.netSeats == null) return 'No data yet';
   if (seats.source === 'typical') {
-    // Typical loads are monthly averages: their age is the data month.
-    const month = seats.asOf == null ? '' : ` · ${MONTHS[new Date(seats.asOf).getUTCMonth()]} avg`;
-    return `Usually ~${Math.max(0, seats.netSeats)} open${month}`;
+    // Typical loads are monthly averages; the month isn't worth the space (John, 2026-11-02).
+    return `~${Math.max(0, seats.netSeats)} open seats estimated`;
   }
   const open = seatCounts(seats);
   const age = seats.asOf == null ? '' : ` · ${seats.source === 'reported' ? 'reported' : 'est.'} ${formatAge(seats.asOf, now)}`;
@@ -131,7 +128,7 @@ export function routeSeatAge(it: Itinerary, now: number): string | null {
 
 /**
  * Neutral seat line when a route has no counted tier (only typical loads or no
- * data): the tightest typical leg, e.g. "Usually ~51 open · Jul avg", else "No data yet".
+ * data): the tightest typical leg, e.g. "~51 open seats estimated", else "No data yet".
  */
 export function neutralSeatText(it: Itinerary, now: number): string {
   const typical = it.legs.filter((l) => l.seats.source === 'typical' && l.seats.netSeats != null);

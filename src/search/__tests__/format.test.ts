@@ -81,7 +81,7 @@ describe('seatText', () => {
     expect(seatText(seats({ tier: 'full', netSeats: -3 }), NOW)).toBe('Full · no open seats · reported just now');
   });
   it('keeps typical loads neutral (no tier word)', () => {
-    expect(seatText(seats({ source: 'typical', tier: 'unknown', netSeats: 30 }), NOW)).toBe('Usually ~30 open · Oct avg');
+    expect(seatText(seats({ source: 'typical', tier: 'unknown', netSeats: 30 }), NOW)).toBe('~30 open seats estimated');
   });
   it('handles no data', () => {
     expect(seatText({ source: 'unknown', tier: 'unknown', netSeats: null, asOf: null }, NOW)).toBe('No data yet');
@@ -95,7 +95,9 @@ describe('seat summary (Q-059)', () => {
     ({ tier, legs: legs.map((s) => ({ seats: s })) }) as unknown as Parameters<typeof routeSeatSummary>[0];
 
   it('is just the route chance word; the numbers live in the flight sheet (John, 2026-10-31)', () => {
-    expect(routeSeatSummary(route([seats({ tier: 'good', netSeats: 9 }), seats({ tier: 'tight', netSeats: 2 })], 'tight'))).toBe('Long\u00a0shot');
+    expect(routeSeatSummary(route([seats({ tier: 'good', netSeats: 9 }), seats({ tier: 'tight', netSeats: 2 })], 'tight'))).toBe(
+      'Long\u00a0shot',
+    );
     expect(routeSeatSummary(route([seats({ tier: 'full', netSeats: -3 })], 'full'))).toBe('Full');
   });
 
@@ -119,18 +121,26 @@ describe('slim row seat and stop text (design round 22)', () => {
     >[0];
 
   it('gives the summary the age of the leg that sets it', () => {
-    const r = route([seats({ tier: 'good', netSeats: 20 }), seats({ tier: 'tight', netSeats: 2, source: 'estimate', asOf: NOW - 3_600_000 })], 'tight');
+    const r = route(
+      [seats({ tier: 'good', netSeats: 20 }), seats({ tier: 'tight', netSeats: 2, source: 'estimate', asOf: NOW - 3_600_000 })],
+      'tight',
+    );
     expect(routeSeatAge(r, NOW)).toBe('Est. 1h ago');
     expect(routeSeatAge(route([seats({ source: 'typical', tier: 'unknown' })], 'unknown'), NOW)).toBeNull();
   });
 
   it('keeps typical-only routes neutral but says what is known', () => {
     const r = route(
-      [seats({ source: 'typical', tier: 'unknown', netSeats: 40, asOf: Date.UTC(2026, 6, 1) }), seats({ source: 'typical', tier: 'unknown', netSeats: 12, asOf: Date.UTC(2026, 6, 1) })],
+      [
+        seats({ source: 'typical', tier: 'unknown', netSeats: 40, asOf: Date.UTC(2026, 6, 1) }),
+        seats({ source: 'typical', tier: 'unknown', netSeats: 12, asOf: Date.UTC(2026, 6, 1) }),
+      ],
       'unknown',
     );
-    expect(neutralSeatText(r, NOW)).toBe('Usually ~12 open · Jul avg');
-    expect(neutralSeatText(route([seats({ source: 'unknown', tier: 'unknown', netSeats: null, asOf: null })], 'unknown'), NOW)).toBe('No data yet');
+    expect(neutralSeatText(r, NOW)).toBe('~12 open seats estimated');
+    expect(
+      neutralSeatText(route([seats({ source: 'unknown', tier: 'unknown', netSeats: null, asOf: null })], 'unknown'), NOW),
+    ).toBe('No data yet');
   });
 
   it('adds short connections to the stop count', () => {
@@ -186,7 +196,7 @@ describe('seatCounts (Q-065)', () => {
 
 describe('forSpeech (design round 26)', () => {
   it('turns visible shorthand into words', () => {
-    expect(forSpeech('Usually ~12 open · Jul avg')).toBe('Usually about 12 open, Jul avg');
+    expect(forSpeech('~12 open seats estimated')).toBe('about 12 open seats estimated');
     expect(forSpeech('Long\u00a0shot · 3 open · est. 1m ago')).toBe('Long\u00a0shot, 3 open, estimated 1 minute ago');
     expect(forSpeech('Est. 2h ago')).toBe('Estimated 2 hours ago');
     expect(forSpeech('DAL → PHX → LAX')).toBe('DAL to PHX to LAX');

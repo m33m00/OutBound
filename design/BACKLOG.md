@@ -130,3 +130,4 @@ Each item names its owner. One item per work session. spec-keeper runs a pre-fli
 | 123 | Design round 95: press shrink on buttons, swap spin with sliding codes, sliding date highlight (John) | main | P2 | Built (design round 95, branch claude/project-thread-fzqwou) |
 | 124 | Design round 96: home pin ripple, From to To preview arc, idle globe sway (John) | main | P2 | Built (design round 96, branch claude/project-thread-fzqwou) |
 | 125 | Design round 97: idle globe sway toned down to a barely-there drift (John) | main | P2 | Built (design round 97, branch claude/project-thread-fzqwou) |
+| 126 | Design round 98: home globe zoomed in a bit; typical seats read "~N open seats estimated" (John) | main | P2 | Built (design round 98, branch claude/project-thread-fzqwou) |

@@ -23,17 +23,19 @@ export function routeFramePoints(routes: readonly RouteLine[]): LonLat[] {
  * - A route is selected: fit that route.
  * - Otherwise: fit every drawn route (the top 10 overview).
  * - No routes: centered on `home` (your location, design round 30), else
- *   the default view (continental US), zoom 1.
+ *   the default view (continental US), at HOME_ZOOM.
  */
-export function routeFrameTarget(
-  routes: readonly RouteLine[],
-  selectedId: string | null,
-  home?: LonLat | null,
-): CameraTarget {
+/**
+ * Home view zoom: a bit closer than the whole-globe fit so your region fills the view
+ * (John, 2026-11-02: "a little too zoomed out by default").
+ */
+export const HOME_ZOOM = 1.3;
+
+export function routeFrameTarget(routes: readonly RouteLine[], selectedId: string | null, home?: LonLat | null): CameraTarget {
   const selected = selectedId ? routes.find((r) => r.id === selectedId) : undefined;
   const framed = selected ? [selected] : drawnRoutes(routes, null);
   const points = routeFramePoints(framed);
-  if (points.length === 0) return { kind: 'center', center: home ?? DEFAULT_CENTER };
+  if (points.length === 0) return { kind: 'center', center: home ?? DEFAULT_CENTER, zoom: HOME_ZOOM };
   return { kind: 'fit', points };
 }
 
