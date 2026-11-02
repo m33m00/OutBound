@@ -13,6 +13,23 @@ import { StatusTag } from '../StatusTag';
 
 const NOW = Date.UTC(2026, 9, 19, 12);
 
+/** BNA 9:00 AM -> DEN on AA 1, then DEN -> LAX on AA 2: two legs, so each box shows its times. */
+async function twoLegItinerary() {
+  const at = (hhmm: string) => zonedToUtc('2026-10-20', hhmm, 'America/Chicago');
+  const provider = createMemoryProvider(
+    [
+      { id: 'F1', airline: 'AA', flightNumber: '1', from: 'BNA', to: 'DEN', departUtc: at('09:00'), arriveUtc: at('11:00') },
+      { id: 'F2', airline: 'AA', flightNumber: '2', from: 'DEN', to: 'LAX', departUtc: at('12:30'), arriveUtc: at('15:00') },
+    ],
+    {
+      F1: [{ source: 'reported', openSeats: 4, listed: 9, asOf: NOW }],
+      F2: [{ source: 'reported', openSeats: 6, listed: 2, asOf: NOW }],
+    },
+  );
+  const [it] = await searchItineraries(provider, { origin: 'BNA', destination: 'LAX', date: '2026-10-20' }, { now: NOW });
+  return it;
+}
+
 async function fullItinerary() {
   const departUtc = zonedToUtc('2026-10-20', '09:00', 'America/Chicago');
   const provider = createMemoryProvider(
@@ -134,7 +151,7 @@ describe('ResultRow', () => {
     act(() => row.props.onAccessibilityAction({ nativeEvent: { actionName: 'leg-0' } }));
     expect(onLeg).toHaveBeenCalledWith(it.legs[0].flight);
     const texts = r!.root.findAll((n) => n.props.children != null).flatMap((n) => [n.props.children].flat());
-    expect(texts).toContain('Nonstop');
+    expect(texts.some((t) => typeof t === 'string' && t.startsWith('Nonstop · '))).toBe(true);
   });
 
   it("connections: the headline is the weakest leg's chance word; legs are one line each (round 66)", async () => {
@@ -324,8 +341,8 @@ describe('ResultRow', () => {
       });
       expect(colorOf('row-new-depart')).toBe(colors.light[token]);
       expect(colorOf('row-new-arrive')).toBe(colors.light[token]);
-      // The leg's new time carries the same tint.
-      expect(colorOf('leg-clock')).toBe(colors.light[token]);
+      // A nonstop's box doesn't repeat the times (John, 2026-11-02).
+      expect(colorOf('leg-clock')).toBeUndefined();
       await act(async () => r!.unmount());
       r = undefined;
     }
@@ -420,7 +437,7 @@ describe('ResultRow', () => {
     }
   });
 
-  it("route card: a leg's tag sits just left of its flight, in one piece (John, 2026-11-01)", async () => {
+  it("route card: a leg's tag sits just right of its flight, in one piece (John, 2026-11-02)", async () => {
     const it = await fullItinerary();
     await act(async () => {
       r = create(
@@ -438,12 +455,13 @@ describe('ResultRow', () => {
     const words = group.findAll((n) => typeof n.props.children === 'string').map((n) => n.props.children as string);
     const tagAt = words.indexOf('Delayed 25m');
     expect(tagAt).toBeGreaterThanOrEqual(0);
-    // The flight chip's text comes after the tag, inside the same group.
+    // The flight chip comes first and the tag after it, inside the same group (John, 2026-11-02).
     const flat = group
       .findAll((n) => typeof n.type === 'string' && n.props.children != null)
       .map((n) => [n.props.children].flat().join(''));
     const flightAt = flat.findIndex((t) => /AA\s?1/.test(t));
-    expect(flightAt).toBeGreaterThan(flat.indexOf('Delayed 25m'));
+    expect(flightAt).toBeGreaterThanOrEqual(0);
+    expect(flightAt).toBeLessThan(flat.indexOf('Delayed 25m'));
   });
 
   it('canceled: tag word and spoken text; departed: gray tag', async () => {
@@ -466,7 +484,7 @@ describe('ResultRow', () => {
   });
 
   it('route card legs show both times: new ones when moved, a canceled leg keeps its schedule, struck (John, 2026-11-02)', async () => {
-    const it = await fullItinerary();
+    const it = await twoLegItinerary();
     const struckTexts = () =>
       r!.root.findAll(
         (n) =>
@@ -485,8 +503,8 @@ describe('ResultRow', () => {
     const timeline = r!.root.findAll((n) => n.props.testID === 'leg-timeline' && typeof n.type === 'string')[0];
     const legWords = timeline.findAll((n) => typeof n.props.children === 'string').map((n) => n.props.children as string);
     expect(legWords).toContain('9:25\u00a0AM');
-    // The leg's new arrival too, not only its new departure.
-    expect(legWords).toContain('11:45\u00a0AM');
+    // The leg's new arrival too, not only its new departure (10:00 AM at DEN, 25m late).
+    expect(legWords).toContain('10:25\u00a0AM');
     expect(legWords).not.toContain('9:00\u00a0AM');
     await act(async () => {
       r!.update(
@@ -505,8 +523,12 @@ describe('ResultRow', () => {
       .flatMap((n) => [n.props.children].flat().filter((x): x is string => typeof x === 'string'));
     expect(words).toContain('Canceled');
     expect(words).toContain('9:00\u00a0AM');
-    expect(words).toContain('11:20\u00a0AM');
-    expect(words).toContain('BNA\u00a0→\u00a0LAX');
+    expect(words).toContain('10:00\u00a0AM');
+    expect(words).toContain('BNA\u00a0→\u00a0DEN');
+    // A canceled leg: the route chip says it can't be flown, not a seat chance (John, 2026-11-02).
+    const chip = r!.root.findAll((n) => n.props.testID === 'seat-summary' && typeof n.type === 'string')[0];
+    const chipWords = chip.findAll((n) => typeof n.props.children === 'string').map((n) => n.props.children as string);
+    expect(chipWords).toContain('Not flyable');
   });
 
   it('a canceled second leg: flights on one line, one tag that names that flight (round 68, John)', async () => {
@@ -614,7 +636,10 @@ describe('ResultRow', () => {
       n.findAll((x) => typeof x.props.children === 'string').map((x) => x.props.children as string);
     const notes = r!.root.findAll((n) => n.props.testID === 'leg-diverted-note' && typeof n.type === 'string');
     expect(notes).toHaveLength(1);
-    expect(strings(notes[0]).join('')).toBe('Continuing to DEN \u00b7 new arrival time pending');
+    expect(strings(notes[0]).join('')).toBe('Continuing to DEN');
+    // Its arrival slot reads TBD, in the same place as every other leg's arrival (John, 2026-11-02).
+    const arrives = r!.root.findAll((n) => n.props.testID === 'leg-arrive' && typeof n.type === 'string');
+    expect(arrives.map((n) => [n.props.children].flat().join(''))).toContain('TBD');
     const all = strings(r!.root);
     expect(all).toContain('Diverted to COS');
     // No strike through for a diversion: only a canceled flight's time is crossed out.
@@ -640,7 +665,7 @@ describe('ResultRow', () => {
     expect(dots.map((d) => d.props.children)).toEqual(['4/9']);
   });
 
-  it('status tags widen to the widest so the flight chips line up (John, 2026-11-02)', async () => {
+  it('flight chips widen to the widest so the status pills after them line up (John, 2026-11-02)', async () => {
     expect(tagColumnWidth({}, 2)).toBeUndefined();
     expect(tagColumnWidth({ 0: 80 }, 2)).toBeUndefined(); // waits for every tagged leg
     expect(tagColumnWidth({ 0: 80 }, 1)).toBeUndefined(); // one tag has nothing to line up with
@@ -683,16 +708,17 @@ describe('ResultRow', () => {
     await act(async () => {
       r = create(<ResultRow itinerary={it} selected now={NOW} onPress={jest.fn()} status={status} />);
     });
-    const tags = () =>
-      r!.root.findAll((n) => n.props.testID === 'leg-flight' && typeof n.type === 'string').map((g) => g.findByType(StatusTag));
-    expect(tags()).toHaveLength(2);
-    expect(tags().map((t) => t.props.minWidth)).toEqual([undefined, undefined]);
+    const chips = () => r!.root.findAll((n) => n.props.testID === 'leg-chip-col' && typeof n.type === 'string');
+    const minWidths = () =>
+      chips().map((n) => [n.props.style].flat(3).find((st: { minWidth?: number } | null) => st?.minWidth)?.minWidth);
+    expect(chips()).toHaveLength(2);
+    expect(minWidths()).toEqual([undefined, undefined]);
     const layout = (width: number) => ({ nativeEvent: { layout: { x: 0, y: 0, width, height: 22 } } });
     await act(async () => {
-      tags()[0].props.onLayout(layout(80));
-      tags()[1].props.onLayout(layout(104));
+      chips()[0].props.onLayout(layout(80));
+      chips()[1].props.onLayout(layout(104));
     });
-    expect(tags().map((t) => t.props.minWidth)).toEqual([104, 104]);
+    expect(minWidths()).toEqual([104, 104]);
   });
 
   it('route card: no banner for a canceled leg; its own pill says it and the seat chip stays up top (John, 2026-11-02)', async () => {

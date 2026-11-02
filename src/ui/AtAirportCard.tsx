@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
 import { atAirportNote } from '@/requests/atAirport';
-import { minTapTarget, radius, spacing, textStyles, useColors } from '@/theme';
+import { radius, spacing, textStyles, useColors } from '@/theme';
 
 import { Button } from './Buttons';
 import { Icon } from './Icon';
@@ -54,25 +54,29 @@ export function AtAirportCard({ code, upcoming, onBoard, onReport, onDismiss }: 
         />
       ) : null}
       {onDismiss ? (
+        // A small round X on the card's top-right corner, like a notification's (John, 2026-11-02:
+        // the X on its own row looked out of place). Swiping the banner up does the same.
         <Pressable
           onPress={onDismiss}
           accessibilityRole="button"
           accessibilityLabel="Dismiss"
-          hitSlop={4}
-          style={pressStyle(styles.close, 'link')}
+          hitSlop={10}
+          style={pressStyle([styles.close, { backgroundColor: c.surface, borderColor: c.line, shadowColor: c.text }], 'link')}
           testID="at-airport-dismiss">
           <Icon
             name="xmark"
-            size={14}
-            weight="semibold"
+            size={10}
+            weight="bold"
             tintColor={c.muted}
-            fallback={<Text style={[textStyles.bodyStrong, { color: c.muted }]}>×</Text>}
+            fallback={<Text style={[textStyles.small, { color: c.muted }]}>×</Text>}
           />
         </Pressable>
       ) : null}
     </View>
   );
 }
+
+const CLOSE = 24;
 
 const styles = StyleSheet.create({
   card: {
@@ -92,12 +96,20 @@ const styles = StyleSheet.create({
   button: { paddingHorizontal: spacing.section },
   buttonStacked: { flexBasis: '100%' },
   // Tight to the card's right edge; the tap target still meets the minimum.
+  // 24 pt to look at, on the card's top-right corner; hitSlop takes the tap target past 44 pt.
   close: {
-    width: minTapTarget,
-    height: minTapTarget,
-    marginVertical: -8,
-    marginRight: -10,
+    position: 'absolute',
+    top: -CLOSE / 4,
+    right: -CLOSE / 4,
+    width: CLOSE,
+    height: CLOSE,
+    borderRadius: CLOSE / 2,
+    borderWidth: StyleSheet.hairlineWidth,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowOpacity: 0.12,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 2,
   },
 });

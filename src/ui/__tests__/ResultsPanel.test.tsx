@@ -276,6 +276,20 @@ describe('Now line', () => {
     const lines = r!.root.findAll((n) => n.props.testID === 'now-line' && typeof n.type === 'string');
     expect(lines.length).toBe(1);
     expect(lines[0].props.accessibilityLabel).toBe('Now, 12:00 PM. Flights below haven’t left yet.');
+    // Another day's flights get no Now line, even with some routes above (John, 2026-11-02).
+    await act(async () => {
+      r!.update(
+        <ResultsPanel
+          state={{ ...state, request: { ...request, date: '2026-10-21' } }}
+          selectedId={null}
+          now={between}
+          onSelect={jest.fn()}
+          onBack={jest.fn()}
+          onRetry={jest.fn()}
+        />,
+      );
+    });
+    expect(r!.root.findAll((n) => n.props.testID === 'now-line' && typeof n.type === 'string')).toHaveLength(0);
   });
 
   it('opens the list at the Now line, with routes that left a scroll up (John, 2026-10-30)', async () => {

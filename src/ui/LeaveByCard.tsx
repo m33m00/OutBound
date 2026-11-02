@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo, Linking, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
 import type { Airport } from '@/engine';
@@ -75,6 +75,10 @@ export function LeaveByCard(p: LeaveByCardProps) {
     if (delayLine && delayLine !== lastDelay.current) AccessibilityInfo.announceForAccessibility?.(delayLine);
     lastDelay.current = delayLine;
   }, [delayLine]);
+  // Which line wrapped; a new line gets a fresh try at one row.
+  const lineKey = `${text.title}|${short}|${fontScale}`;
+  const [wrapped, setWrapped] = useState<string | null>(null);
+  const twoLines = wrapped === lineKey;
   const note = departed
     ? null
     : p.locationStatus === 'denied'
@@ -117,18 +121,36 @@ export function LeaveByCard(p: LeaveByCardProps) {
           accessibilityActions={directions ? [{ name: 'activate' }] : undefined}
           onAccessibilityAction={directions ? go : undefined}
           accessibilityLabel={forSpeech([text.title, text.sub, delayLine, note].filter(Boolean).join('. '))}>
-          {/* One slim row: the time, then the one detail that matters (John, 2026-11-01). */}
-          <Text
-            style={[textStyles.bodyStrong, { color: atAirport ? c.youText : c.text }]}
-            lineBreakStrategyIOS="push-out"
-            testID="leave-by-line">
-            {keepTimes(text.title)}
+          {/* One slim row: the time, then the one detail that matters (John, 2026-11-01). When that
+              doesn't fit on one line, the detail gets its own line, with no dot (John, 2026-11-02). */}
+          {twoLines ? (
+            <>
+              <Text
+                style={[textStyles.bodyStrong, { color: atAirport ? c.youText : c.text }]}
+                lineBreakStrategyIOS="push-out"
+                testID="leave-by-line">
+                {keepTimes(text.title)}
+              </Text>
+              <Text style={[textStyles.small, { color: c.muted }]} lineBreakStrategyIOS="push-out" testID="leave-by-detail">
+                {keepTimes(short)}
+              </Text>
+            </>
+          ) : (
             <Text
-              style={[
-                textStyles.small,
-                { color: c.muted, fontFamily: textStyles.body.fontFamily },
-              ]}>{`  ·  ${keepTimes(short)}`}</Text>
-          </Text>
+              style={[textStyles.bodyStrong, { color: atAirport ? c.youText : c.text }]}
+              lineBreakStrategyIOS="push-out"
+              onTextLayout={(e) => {
+                if (e.nativeEvent.lines.length > 1) setWrapped(lineKey);
+              }}
+              testID="leave-by-line">
+              {keepTimes(text.title)}
+              <Text
+                style={[
+                  textStyles.small,
+                  { color: c.muted, fontFamily: textStyles.body.fontFamily },
+                ]}>{`  ·  ${keepTimes(short)}`}</Text>
+            </Text>
+          )}
         </View>
         {action && inline ? action : null}
         {/* The chevron is the card's only sign that it opens directions, so it always shows. */}

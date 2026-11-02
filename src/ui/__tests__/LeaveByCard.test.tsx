@@ -204,4 +204,27 @@ describe('LeaveByCard location button', () => {
       .accessibilityLabel as string;
     expect(label).toContain('at DFW by');
   });
+
+  it('puts the detail on its own line, with no dot, when the row would wrap (John, 2026-11-02)', () => {
+    mockFontScale = 1;
+    act(() => {
+      r = create(
+        <LeaveByCard
+          airport={AIRPORTS.DAL}
+          departUtc={NOW + 2 * 3600_000}
+          bufferMin={60}
+          now={NOW}
+          location={{ lat: AIRPORTS.DAL.lat, lon: AIRPORTS.DAL.lon, at: NOW }}
+          locationStatus="idle"
+          onUseLocation={jest.fn()}
+        />,
+      );
+    });
+    expect(lineText(r!)).toMatch(/^You’re at DAL \(Dallas Love Field\) {2}· {2}Flight departs at /);
+    const line = r!.root.find((n) => n.props.testID === 'leave-by-line' && typeof n.type === 'string');
+    act(() => line.props.onTextLayout({ nativeEvent: { lines: [{}, {}] } }));
+    expect(lineText(r!)).toBe('You’re at DAL (Dallas Love Field)');
+    const detail = r!.root.find((n) => n.props.testID === 'leave-by-detail' && typeof n.type === 'string');
+    expect([detail.props.children].flat().join('')).toMatch(/^Flight departs at /);
+  });
 });

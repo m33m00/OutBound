@@ -80,7 +80,7 @@ const CONNECTION_PAD = 6;
 /**
  * A leg's times on the timeline: departure and arrival (John, 2026-11-02). A moved time shows the
  * new one, tinted by how far it moved; a canceled leg shows its schedule struck through, muted;
- * a diverted one keeps its departure only (the new arrival isn't known yet).
+ * a diverted one shows "TBD" for its arrival, muted, until the new time is known.
  */
 function LegTimes({ leg, view, text, dimmed }: { leg: Flight; view?: LegStatusView; text: TextStyle; dimmed: boolean }) {
   const c = useColors();
@@ -98,14 +98,10 @@ function LegTimes({ leg, view, text, dimmed }: { leg: Flight; view?: LegStatusVi
       <Text style={{ color: departColor }} testID="leg-clock">
         {keep(t.depart)}
       </Text>
-      {t.arrive ? (
-        <>
-          <Text style={{ color: canceled || dimmed ? c.muted : c.text }}>{' – '}</Text>
-          <Text style={{ color: arriveColor }} testID="leg-arrive">
-            {keep(t.arrive)}
-          </Text>
-        </>
-      ) : null}
+      <Text style={{ color: canceled || dimmed ? c.muted : c.text }}>{' – '}</Text>
+      <Text style={{ color: t.pending ? c.muted : arriveColor }} testID="leg-arrive">
+        {keep(t.arrive)}
+      </Text>
     </Text>
   );
 }
@@ -129,22 +125,37 @@ export function tagColumnWidth(widths: Record<number, number>, tagged: number): 
 
 function legSpokenTimes(leg: Flight, view?: LegStatusView): string {
   const t = legTimesText(leg, view);
-  return t.arrive ? `departs ${t.depart}, arrives ${t.arrive}` : `departs ${t.depart}`;
+  return t.pending ? `departs ${t.depart}, arrival time not known yet` : `departs ${t.depart}, arrives ${t.arrive}`;
 }
 
-/** A leg's two times: the new ones when they moved, the schedule otherwise (canceled shows it struck). */
-export function legTimesText(leg: Flight, view?: LegStatusView): { depart: string; arrive: string | null } {
+/**
+ * A leg's two times: the new ones when they moved, the schedule otherwise (canceled shows it struck).
+ * A diverted leg keeps an arrival slot that reads "TBD" until a new time is known (John, 2026-11-02).
+ */
+export function legTimesText(leg: Flight, view?: LegStatusView): { depart: string; arrive: string; pending: boolean } {
   const depart = view?.newText ?? legDepartText(leg);
-  if (view?.tag?.kind === 'diverted') return { depart, arrive: null };
-  return { depart, arrive: view?.arrival?.newText ?? legArriveText(leg) };
+  if (view?.tag?.kind === 'diverted') return { depart, arrive: ARRIVAL_TBD, pending: true };
+  return { depart, arrive: view?.arrival?.newText ?? legArriveText(leg), pending: false };
 }
+
+/** The trip's length with the live times; left off while a diverted leg's arrival is unknown. */
+export function tripLength(it: Itinerary, status: RowStatus | undefined): string | null {
+  return status?.arrivalPending && !status.canceled ? null : formatDuration(liveTotalMin(it, status));
+}
+
+/** The route's chip when a leg is canceled, in place of its chance word. */
+export const NOT_FLYABLE = 'Not flyable';
+
+/** What a diverted leg's arrival slot reads. */
+export const ARRIVAL_TBD = 'TBD';
 
 /**
  * The route card's legs (design round 56; slimmed in round 66, John picked A on 2026-10-31).
  * Since round 80 (John, 2026-11-01) each flight is its own box, so it's plain that you tap it
  * to open the flight: no caret. A thin line runs down the left with a dot per flight, centered
- * on its box, in that flight's seat color. Inside the box: the first flight's tag and flight
- * chip above its time and airports, every later flight's below (round 76). Between boxes, the
+ * on its box, in that flight's seat color. Inside each box (round 111): the times, the airports in one
+ * column across boxes, then the flight chip with any status pill to its right; a nonstop's box skips
+ * the times, which the header already shows. Between boxes, the
  * connection sits beside the line at its middle (round 75).
  */
 function LegTimeline({
@@ -171,10 +182,13 @@ function LegTimeline({
   const [legHeights, setLegHeights] = useState<Record<number, number>>({});
   // Each leg's status tag is widened to the widest one so the flight chips after them line up
   // (John, 2026-11-02). Widths are kept per set of labels, so a tag that gets shorter re-measures.
-  const tagKey = it.legs.map((_, i) => status?.legs[i]?.tag?.label ?? '').join('|');
+  // Flight chips first, in one column wide enough for the widest, so the status pills after them
+  // line up top to bottom (John, 2026-11-02: "aligned looking top to bottom").
+  const tagKey = it.legs.map((l) => `${l.flight.airline}${l.flight.flightNumber}`).join('|');
   const [tagWidths, setTagWidths] = useState<{ key: string; widths: Record<number, number> }>({ key: tagKey, widths: {} });
   const widths = tagWidths.key === tagKey ? tagWidths.widths : {};
-  const tagColumn = tagColumnWidth(widths, it.legs.filter((_, i) => status?.legs[i]?.tag).length);
+  const anyTag = it.legs.some((_, i) => status?.legs[i]?.tag);
+  const tagColumn = anyTag ? tagColumnWidth(widths, it.legs.length) : undefined;
   const measureTag = (i: number) => (e: { nativeEvent: { layout: { width: number } } }) => {
     const w = e.nativeEvent.layout.width;
     setTagWidths((prev) => {
@@ -194,6 +208,7 @@ function LegTimeline({
       return base[i] === w && prev.key === timesKey ? prev : { key: timesKey, widths: { ...base, [i]: w } };
     });
   };
+  const nonstop = it.legs.length === 1;
   const measure = (i: number) => (e: { nativeEvent: { layout: { height: number } } }) => {
     const h = e.nativeEvent.layout.height;
     setLegHeights((prev) => (prev[i] === h ? prev : { ...prev, [i]: h }));
@@ -209,20 +224,18 @@ function LegTimeline({
         const last = i === it.legs.length - 1;
         const typical = leg.seats.source === 'typical' || leg.seats.source === 'unknown';
         // The dot carries the leg's tier color; the route's chance word is in the headline.
-        const dotTier = dimmed || typical ? 'unknown' : leg.seats.tier;
+        const dotTier = dimmed || typical || view?.tag?.kind === 'canceled' ? 'unknown' : leg.seats.tier;
         // Every box has one layout (John, 2026-11-02): times and airports first, then the flight
         // chip with its status pill after it.
         const pills = (
           <View style={styles.legMeta} testID="leg-flight">
-            {view?.tag ? (
-              <StatusTag
-                label={view.tag.label}
-                tone={TAG_TONE[view.tag.kind]}
-                minWidth={tagColumn}
-                onLayout={tagColumn ? undefined : measureTag(i)}
-              />
-            ) : null}
-            <AirlinePill airline={leg.flight.airline} flightNumber={leg.flight.flightNumber} />
+            <View
+              style={[styles.chipCol, tagColumn ? { minWidth: tagColumn } : null]}
+              onLayout={tagColumn || !anyTag ? undefined : measureTag(i)}
+              testID="leg-chip-col">
+              <AirlinePill airline={leg.flight.airline} flightNumber={leg.flight.flightNumber} />
+            </View>
+            {view?.tag ? <StatusTag label={view.tag.label} tone={TAG_TONE[view.tag.kind]} /> : null}
           </View>
         );
         const content = (
@@ -230,12 +243,15 @@ function LegTimeline({
             {/* Times, then the airports in one column across the boxes; the airports shrink a little
                 to fit rather than wrap. */}
             <View style={[styles.legLineRow, stacked && styles.legLineWrap]} testID="leg-line">
-              <View
-                style={timesColumn ? { minWidth: timesColumn } : null}
-                onLayout={timesColumn || stacked ? undefined : measureTimes(i)}
-                testID="leg-times-col">
-                <LegTimes leg={leg.flight} view={view} text={text} dimmed={dimmed} />
-              </View>
+              {/* A nonstop's times are the header's; the box says only where and which flight (John, 2026-11-02). */}
+              {nonstop ? null : (
+                <View
+                  style={timesColumn ? { minWidth: timesColumn } : null}
+                  onLayout={timesColumn || stacked ? undefined : measureTimes(i)}
+                  testID="leg-times-col">
+                  <LegTimes leg={leg.flight} view={view} text={text} dimmed={dimmed} />
+                </View>
+              )}
               <Text
                 style={[text, styles.shrink, { color: c.muted }]}
                 numberOfLines={stacked ? undefined : 1}
@@ -248,7 +264,7 @@ function LegTimeline({
             {/* A diversion goes on to the planned airport, late (John, 2026-11-01). */}
             {view?.tag?.kind === 'diverted' ? (
               <Text style={[textStyles.small, { color: c.muted }]} testID="leg-diverted-note">
-                {`Continuing to ${leg.flight.to} · new arrival time pending`}
+                {`Continuing to ${leg.flight.to}`}
               </Text>
             ) : null}
             {pills}
@@ -361,6 +377,7 @@ export const ResultRow = memo(function ResultRow({
   const label = forSpeech(
     [
       rowAccessibilityLabel(it, now),
+      status?.canceled ? `${NOT_FLYABLE} as listed` : '',
       ...(status?.spoken ?? []),
       hasImpact ? impactSummary(impact, now) : '',
       saved && !large ? 'Saved to My Trips' : '',
@@ -382,6 +399,7 @@ export const ResultRow = memo(function ResultRow({
   const first = status?.legs[0];
   // Departed rows are dimmed with a gray fill and edge; text keeps 4.5:1.
   const dimmed = !!status?.dimmed;
+  const notFlyable = !!status?.canceled;
   const timeColor = dimmed ? c.muted : c.text;
   // A time that moved is tinted by how far: early green, then yellow, orange, red (John, 2026-11-02).
   const tint = (min: number | null) => {
@@ -402,7 +420,8 @@ export const ResultRow = memo(function ResultRow({
   // A moved time (John, 2026-11-02): the schedule sits small and struck on its own line above, and the big
   // line keeps the times now, tinted, so the times never wrap onto two lines.
   const departMoved = !status?.canceled && !!(first?.struck && first.newText);
-  const arriveMoved = !status?.canceled && !!status?.arrival;
+  const pendingArrival = !status?.canceled && !!status?.arrivalPending;
+  const arriveMoved = !status?.canceled && !pendingArrival && !!status?.arrival;
   const times = (
     <View style={styles.shrink} testID="row-times-block">
       {departMoved || arriveMoved ? (
@@ -432,7 +451,12 @@ export const ResultRow = memo(function ResultRow({
               t.depart
             )}
             {' – '}
-            {arriveMoved ? (
+            {pendingArrival ? (
+              // A diversion on the route: the arrival isn't known yet, like the leg's own TBD (John, 2026-11-02).
+              <Text style={{ color: c.muted }} testID="row-arrive-tbd">
+                {ARRIVAL_TBD}
+              </Text>
+            ) : arriveMoved ? (
               <Text style={arriveTint} testID="row-new-arrive">
                 {keep(status!.arrival!.newText)}
               </Text>
@@ -446,8 +470,16 @@ export const ResultRow = memo(function ResultRow({
     </View>
   );
   // The chance word in its tier color; on the route card it's the headline, so it's bigger.
+  // A canceled leg means the route can't be flown as listed, so it says that in grey instead of a
+  // chance (John, 2026-11-02: it said "Likely" with a canceled first flight).
   const seatSummary = (lead: boolean) =>
-    summary ? (
+    notFlyable ? (
+      <View style={[styles.summary, lead && styles.summaryLead, { backgroundColor: c.surface2 }]} testID="seat-summary">
+        <Text lineBreakStrategyIOS="push-out" style={[lead ? textStyles.heading : textStyles.bodyStrong, { color: c.muted }]}>
+          {NOT_FLYABLE}
+        </Text>
+      </View>
+    ) : summary ? (
       <View
         style={[styles.summary, lead && styles.summaryLead, { backgroundColor: dimmed ? c.surface : c[TIER_BG[it.tier]] }]}
         testID="seat-summary">
@@ -493,7 +525,7 @@ export const ResultRow = memo(function ResultRow({
         (highlight || it.isFull) && styles.strongBorder,
       ])}>
       {/* Route color = weakest leg. */}
-      <View style={[styles.edge, { backgroundColor: dimmed ? c.unknown : c[it.tier] }]} />
+      <View style={[styles.edge, { backgroundColor: dimmed || notFlyable ? c.unknown : c[it.tier] }]} />
       <View style={styles.content}>
         {selected ? (
           // Route card A (John, 2026-10-31): the seat chip up top, the times, then one box per flight.
@@ -512,7 +544,7 @@ export const ResultRow = memo(function ResultRow({
             <View style={styles.line}>
               {times}
               <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, { color: c.muted }]}>
-                {stopCount(it)} · {formatDuration(liveTotalMin(it, status))}
+                {[stopCount(it), tripLength(it, status)].filter(Boolean).join(' · ')}
               </Text>
             </View>
             <LegTimeline itinerary={it} status={status} now={now} large={!!large} dimmed={dimmed} onLegPress={onLegPress} />
@@ -545,11 +577,15 @@ export const ResultRow = memo(function ResultRow({
               </View>
               <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, { color: c.muted }]}>
                 {/* The route line already names the connections; the slim row adds short layovers. */}
-                {slimStops(
-                  it,
-                  it.connections.map((_, i) => liveLayoverMin(it, status, i)),
-                )}{' '}
-                · {formatDuration(liveTotalMin(it, status))}
+                {[
+                  slimStops(
+                    it,
+                    it.connections.map((_, k) => liveLayoverMin(it, status, k)),
+                  ),
+                  tripLength(it, status),
+                ]
+                  .filter(Boolean)
+                  .join(' · ')}
               </Text>
             </View>
             {/* Slim row: who flies it and anything live; seats per leg live in the route card. One line of
@@ -675,6 +711,7 @@ const styles = StyleSheet.create({
   },
   // A leg's tag and flight chip, above (first flight) or below (later flights) its time.
   legMeta: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', columnGap: spacing.group, rowGap: 2 },
+  chipCol: { alignItems: 'flex-start' },
   connection: { flex: 1, flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: spacing.group },
   struck: { textDecorationLine: 'line-through' },
   legLineRow: { flexDirection: 'row', alignItems: 'baseline', columnGap: spacing.group },

@@ -13,7 +13,7 @@ import {
   View,
 } from 'react-native';
 
-import { AIRPORTS, areaFor, type Flight, type Itinerary, type SearchRequest } from '@/engine';
+import { AIRPORTS, areaFor, localDate, type Flight, type Itinerary, type SearchRequest } from '@/engine';
 import type { RouteImpact } from '@/live';
 import { shortDate, type DateChip } from '@/search/dates';
 import { formatTime } from '@/search/format';
@@ -86,7 +86,10 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
     p.statuses,
   );
   const full = results.filter((r) => r.isFull).length;
-  const nowAt = nowLineIndex(results, p.now, p.statuses);
+  // The Now line is for today's flights only (John, 2026-11-02), by the origin's own date.
+  const originTz = AIRPORTS[results[0]?.legs[0]?.flight.from ?? '']?.tz ?? AIRPORTS[request.origin]?.tz;
+  const onToday = !originTz || localDate(p.now, originTz) === request.date;
+  const nowAt = onToday ? nowLineIndex(results, p.now, p.statuses) : -1;
 
   // Today's list opens at the "Now" line (Q-066, John 2026-10-30): routes that already
   // left stay above it, a short scroll up. Once you scroll yourself it leaves you be.
