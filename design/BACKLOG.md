@@ -160,3 +160,4 @@ Each item names its owner. One item per work session. spec-keeper runs a pre-fli
 | 153 | Design round 125: saving a route tears a little ticket off and drops it into My Trips (John) | main | P2 | Built (design round 125, branch claude/project-thread-fzqwou) |
 | 154 | Design round 126: Save tears the route card header off along its perforation into My Trips; plain-language Map key; seat circle hint on the route card (John) | main | P2 | Built (design round 126, branch claude/project-thread-fzqwou) |
 | 155 | Design round 127: the save tear peels the header back and rips it left to right along the perforation (John) | main | P2 | Built (design round 127, branch claude/project-thread-fzqwou) |
+| 156 | Design round 128: the save tear folds the header hard back, holds, then rips along the fold (John) | main | P2 | Built (design round 128, branch claude/project-thread-fzqwou) |

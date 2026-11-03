@@ -45,16 +45,19 @@ export function useTearAway(): Launch | null {
 }
 
 /**
- * The peel back at the perforation, the rip along it from left to right, the flight into My Trips, and
- * the header settling back (round 127, John: "pulling back the card and tearing it horizontally").
- * About a second in all.
+ * The fold back at the perforation, a beat with it creased, the rip along the fold from left to right,
+ * the flight into My Trips, and the header settling back (round 127, John: "pulling back the card and
+ * tearing it horizontally"; round 128: "Bend it more", "Like bend it back and tear"). About 1.3s in all.
  */
-export const PULL_MS = 200;
-export const RIP_MS = 300;
+export const PULL_MS = 280;
+export const HOLD_MS = 120;
+export const RIP_MS = 320;
 export const FLY_MS = 400;
 export const SETTLE_MS = 200;
-/** How far the header bends back toward you at the perforation, and how far its free end lifts. */
-const PEEL_DEG = 26;
+/** How far the header folds back at the perforation (round 128: a real crease), how far it opens again
+ * while it flies so you still see it, and how far its free end lifts as the rip runs. */
+export const FOLD_DEG = 72;
+const FLY_FOLD_DEG = 28;
 const RIP_DEG = 4;
 /** Light ticks along the rip, like paper giving at each hole. */
 const RIP_TICKS = 3;
@@ -153,7 +156,9 @@ function FlyingPiece({ flight, onDone }: { flight: Flight; onDone: () => void })
   useEffect(() => {
     let finished = false;
     const run = Animated.sequence([
-      Animated.timing(pull, { toValue: 1, duration: PULL_MS, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+      Animated.timing(pull, { toValue: 1, duration: PULL_MS, easing: Easing.inOut(Easing.cubic), useNativeDriver: true }),
+      // Held creased for a beat before it gives.
+      Animated.delay(HOLD_MS),
       Animated.timing(rip, { toValue: 1, duration: RIP_MS, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
       Animated.timing(fly, { toValue: 1, duration: FLY_MS, easing: Easing.in(Easing.cubic), useNativeDriver: true }),
     ]);
@@ -162,7 +167,11 @@ function FlyingPiece({ flight, onDone }: { flight: Flight; onDone: () => void })
       onDone();
     });
     // Light ticks as the rip runs along the holes.
-    const ticks = Array.from({ length: RIP_TICKS }, (_, i) => setTimeout(impactTick, PULL_MS + (i * RIP_MS) / RIP_TICKS + 40));
+    // A tick as it creases, then light ticks along the rip.
+    const ticks = [
+      setTimeout(impactTick, PULL_MS - 30),
+      ...Array.from({ length: RIP_TICKS }, (_, i) => setTimeout(impactTick, PULL_MS + HOLD_MS + (i * RIP_MS) / RIP_TICKS + 40)),
+    ];
     return () => {
       ticks.forEach(clearTimeout);
       run.stop();
@@ -185,16 +194,17 @@ function FlyingPiece({ flight, onDone }: { flight: Flight; onDone: () => void })
       { scale: fly.interpolate({ inputRange: [0, 1], outputRange: [1, 0.12] }) },
     ],
   };
-  // The tear, hinged at the bottom right where it's still attached: first the header bends back toward
-  // you along the perforation, then the rip runs left to right, lifting the free left end as it goes.
+  // The tear, hinged at the bottom right where it's still attached: first the header folds hard back along
+  // the perforation and holds there (round 128), then the rip runs left to right along the fold, lifting
+  // the free left end as it goes; in flight it opens part way so the piece still reads as a ticket.
   const tearMotion = {
     transformOrigin: 'right bottom',
     transform: [
       { perspective: 700 },
       {
-        rotateX: Animated.add(pull, Animated.multiply(rip, -0.45)).interpolate({
+        rotateX: Animated.add(pull, Animated.multiply(fly, -(FOLD_DEG - FLY_FOLD_DEG) / FOLD_DEG)).interpolate({
           inputRange: [0, 1],
-          outputRange: ['0deg', `-${PEEL_DEG}deg`],
+          outputRange: ['0deg', `${FOLD_DEG}deg`],
         }),
       },
       { rotate: rip.interpolate({ inputRange: [0, 1], outputRange: ['0deg', `${RIP_DEG}deg`] }) },
@@ -210,6 +220,21 @@ function FlyingPiece({ flight, onDone }: { flight: Flight; onDone: () => void })
           style={[styles.paper, { backgroundColor: source.paper, borderColor: source.edge, borderWidth: source.edgeWidth }]}
           testID="tear-piece">
           <TearCopyContext.Provider value={true}>{flight.piece}</TearCopyContext.Provider>
+          {/* Folded back, the paper turns from the light: a soft shade over it, easing as it flies. */}
+          <Animated.View
+            pointerEvents="none"
+            style={[
+              StyleSheet.absoluteFill,
+              {
+                backgroundColor: '#000',
+                opacity: Animated.subtract(
+                  pull.interpolate({ inputRange: [0, 1], outputRange: [0, 0.24] }),
+                  fly.interpolate({ inputRange: [0, 1], outputRange: [0, 0.16] }),
+                ),
+              },
+            ]}
+            testID="tear-shade"
+          />
         </View>
         {/* The ragged edge shows hole by hole as the rip runs from left to right. */}
         <View style={[styles.teeth, { left: source.edgeWidth, right: source.edgeWidth }]} testID="tear-edge">

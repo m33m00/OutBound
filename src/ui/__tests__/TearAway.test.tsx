@@ -9,7 +9,7 @@ import { createMemoryProvider, searchItineraries, zonedToUtc, type Itinerary } f
 
 import { ResultRow, SEAT_CIRCLE_HINT } from '../ResultRow';
 import { SaveRouteButton } from '../SaveRouteButton';
-import { FLY_MS, PULL_MS, RIP_MS, SETTLE_MS, TearAwayHost } from '../TearAway';
+import { FLY_MS, FOLD_DEG, HOLD_MS, PULL_MS, RIP_MS, SETTLE_MS, TearAwayHost } from '../TearAway';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -77,8 +77,13 @@ describe('TearAway: the route card tears along its perforation when you save (ro
     return typeof o === 'number' ? o : o.__getValue();
   };
 
-  it('stays short: the peel, the rip, the flight and the settle take about a second', () => {
-    expect(PULL_MS + RIP_MS + FLY_MS + SETTLE_MS).toBeLessThanOrEqual(1100);
+  it('stays short: the fold, the beat, the rip, the flight and the settle take well under 1.5s', () => {
+    expect(PULL_MS + HOLD_MS + RIP_MS + FLY_MS + SETTLE_MS).toBeLessThanOrEqual(1400);
+  });
+
+  it('folds hard back at the perforation before it tears (round 128, John: "Bend it more")', () => {
+    expect(FOLD_DEG).toBeGreaterThanOrEqual(60);
+    expect(FOLD_DEG).toBeLessThan(90);
   });
 
   it('tapping Save flies a copy of the card header with a torn edge, and hides the real header meanwhile', async () => {
