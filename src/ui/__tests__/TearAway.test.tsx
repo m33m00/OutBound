@@ -106,36 +106,39 @@ describe('TearAway: the route card tears along its perforation when you save (ro
   });
 
   it('curls on an exponential: flat at the line, bending harder toward the free edge (round 130, John)', () => {
-    const a = curlAngles();
+    // Since round 131 the curl comes toward you, so its turn is negative; its shape is the same.
+    expect(CURL_TOTAL_DEG).toBeLessThan(0);
+    const a = curlAngles().map(Math.abs);
     expect(a).toHaveLength(CURL_SLICES);
     // Each slice bends more than the one below it, and the growth itself grows: a curve, not a hinge.
     for (let i = 1; i < a.length; i++) expect(a[i]).toBeGreaterThan(a[i - 1]);
     for (let i = 2; i < a.length; i++) expect(a[i] - a[i - 1]).toBeGreaterThan(a[i - 1] - a[i - 2]);
     // Almost flat at the perforation, most of the turn near the top, all of it adding up to the total.
     expect(a[0]).toBeLessThan(2);
-    expect(a[a.length - 1]).toBeGreaterThan(15);
-    expect(a.reduce((x, y) => x + y, 0)).toBeCloseTo(CURL_TOTAL_DEG, 6);
-    // Halfway up the stub it has turned only about a sixth of the way.
-    expect(curlTurn(0.5) / CURL_TOTAL_DEG).toBeLessThan(0.2);
+    expect(a[a.length - 1]).toBeGreaterThan(9);
+    expect(a.reduce((x, y) => x + y, 0)).toBeCloseTo(Math.abs(CURL_TOTAL_DEG), 6);
+    // Halfway up the stub it has turned only about a quarter of the way.
+    expect(curlTurn(0.5) / CURL_TOTAL_DEG).toBeLessThan(0.3);
   });
 
-  it('places the slices in one shared 3D space, so the stub really rolls back (round 130)', () => {
+  it('places the slices in one shared 3D space, so the stub really comes up toward you (rounds 130 and 131)', () => {
     const flatPoses = slicePoses(0, 92, 150);
     // Before the curl every slice sits where it is on the card.
     for (const p of flatPoses) {
-      expect(p.turn).toBe(0);
+      expect(p.turn).toBeCloseTo(0, 9);
       expect(p.shift).toBeCloseTo(0, 6);
       expect(p.scale).toBe(1);
     }
     const curled = slicePoses(1, 92, 150);
-    // The bottom slice stays on the line; higher slices sit deeper and look smaller, deeper and deeper.
+    // The bottom slice stays on the line; higher slices come closer to you and look bigger, more and more.
     expect(curled[0].shift).toBeCloseTo(0, 6);
     for (let i = 1; i < curled.length; i++) {
-      expect(curled[i].depth).toBeGreaterThan(curled[i - 1].depth);
-      expect(curled[i].scale).toBeLessThan(curled[i - 1].scale);
+      expect(curled[i].depth).toBeLessThan(curled[i - 1].depth);
+      expect(curled[i].scale).toBeGreaterThan(curled[i - 1].scale);
     }
-    // The free edge rolls over past upright, so its back shows.
-    expect(curled[curled.length - 1].turn).toBeGreaterThan(90);
+    // Pulled up toward you but not over: the face of the ticket still shows.
+    expect(curled[curled.length - 1].turn).toBeLessThan(0);
+    expect(curled[curled.length - 1].turn).toBeGreaterThan(-90);
   });
 
   it('tapping Save flies a copy of the card header with a torn edge, and hides the real header meanwhile', async () => {
@@ -161,13 +164,13 @@ describe('TearAway: the route card tears along its perforation when you save (ro
     expect(piece.findAllByProps({ testID: 'leg-dot-seats' }).length).toBeGreaterThan(0);
   });
 
-  it('curls the stub back in slices and rips from left to right (rounds 127 to 130, John)', async () => {
+  it('pulls the stub toward you in slices and tears it off on a diagonal from the right notch (round 131, John)', async () => {
     jest.spyOn(Animated, 'sequence').mockReturnValue({ start: jest.fn(), stop: jest.fn(), reset: jest.fn() });
     await mount(false, false);
     press();
     const flat = (testID: string) =>
       [r!.root.findAllByProps({ testID })[0].props.style].flat(3).reduce((a, b) => ({ ...a, ...b }), {});
-    // The stub is thin slices, each placed on the curve and turned a little further back than the last.
+    // The stub is thin slices, each placed on the curve and turned a little further toward you than the last.
     const slices = r!.root.findAllByType(Animated.View).filter((n) => n.props.testID === 'curl-slice');
     expect(slices.length).toBe(CURL_SLICES);
     const sliceStyle = (n: (typeof slices)[number]) => [n.props.style].flat(3).reduce((a, b) => ({ ...a, ...b }), {});
@@ -182,7 +185,8 @@ describe('TearAway: the route card tears along its perforation when you save (ro
       const out = sliceStyle(n).transform[3].rotateX._config.outputRange as string[];
       return parseFloat(out[out.length - 1]);
     };
-    expect(turnOf(slices[slices.length - 1])).toBeGreaterThan(turnOf(slices[0]));
+    expect(turnOf(slices[slices.length - 1])).toBeLessThan(turnOf(slices[0]));
+    expect(turnOf(slices[slices.length - 1])).toBeLessThan(0);
     // The whole card is picked up and held at an angle first.
     expect(flat('tear-away').transform.map((t: object) => Object.keys(t)[0])).toEqual([
       'perspective',
@@ -190,15 +194,29 @@ describe('TearAway: the route card tears along its perforation when you save (ro
       'rotateX',
       'rotateY',
     ]);
-    // The rip is hinged where it's still attached, at the bottom right.
-    expect(flat('tear-rip').transformOrigin).toBe('right bottom');
-    // The ragged edge shows hole by hole: the left teeth before the right ones.
+    // The tear is hinged where it's still attached, at the bottom left, and swings up and out to the
+    // right, turning counterclockwise, as it comes free; it grows a little as you pull it toward you.
+    const rip = flat('tear-rip');
+    expect(rip.transformOrigin).toBe('left bottom');
+    const end = (k: string) => {
+      const t = rip.transform.find((x: object) => k in x)[k]._config.outputRange;
+      return t[t.length - 1];
+    };
+    expect(end('translateX')).toBeGreaterThan(0);
+    expect(end('translateY')).toBeLessThan(0);
+    expect(parseFloat(end('rotate'))).toBeLessThanOrEqual(-10);
+    expect(parseFloat(end('rotate'))).toBeGreaterThanOrEqual(-20);
+    expect(end('scale')).toBeGreaterThan(1);
+    // The rest of the card tugs back, and the lifted stub casts a soft shadow on it.
+    expect(flat('tear-bottom').transform.map((t: object) => Object.keys(t)[0])).toEqual(['translateY', 'rotate']);
+    expect(r!.root.findAllByType(Animated.View).filter((n) => n.props.testID === 'tear-shadow').length).toBe(3);
+    // The ragged edge shows hole by hole: the right teeth before the left ones.
     const edge = r!.root.findAllByProps({ testID: 'tear-edge' })[0];
     const teeth = edge.findAllByType(Animated.View);
     const startOf = (n: (typeof teeth)[number]) =>
       ([n.props.style].flat(3).find((x) => x?.opacity)?.opacity as { _config: { inputRange: number[] } })._config.inputRange[1];
     expect(teeth.length).toBeGreaterThan(10);
-    expect(startOf(teeth[0])).toBeLessThan(startOf(teeth[teeth.length - 1]));
+    expect(startOf(teeth[teeth.length - 1])).toBeLessThan(startOf(teeth[0]));
   });
 
   it('once it lands, the copy goes and the real header settles back onto the card', async () => {
