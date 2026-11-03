@@ -80,10 +80,7 @@ describe('mark set', () => {
   });
 
   it('homes in the same metro share one pin and label', () => {
-    expect(groupHomes([ap('JFK'), ap('BNA'), ap('LGA')]).map((g) => g.map((k) => k.code))).toEqual([
-      ['JFK', 'LGA'],
-      ['BNA'],
-    ]);
+    expect(groupHomes([ap('JFK'), ap('BNA'), ap('LGA')]).map((g) => g.map((k) => k.code))).toEqual([['JFK', 'LGA'], ['BNA']]);
     const m = markSet({ homeAirports: [ap('DFW'), ap('DAL')] });
     expect(m).toEqual([{ kind: 'home', code: 'DFW', label: 'DFW/DAL', coord: AP.DFW }]);
   });
@@ -93,7 +90,12 @@ describe('mark set', () => {
   });
 
   it('labels go homes first', () => {
-    const m = markSet({ homeAirports: [ap('BNA'), ap('DEN')], origin: ap('DFW'), destinations: [ap('LAX')], selectedRoute: route });
+    const m = markSet({
+      homeAirports: [ap('BNA'), ap('DEN')],
+      origin: ap('DFW'),
+      destinations: [ap('LAX')],
+      selectedRoute: route,
+    });
     expect(labelOrder(m).map((x) => x.kind)).toEqual(['home', 'altHome', 'origin', 'destination', 'stop', 'stop']);
   });
 });
@@ -107,7 +109,11 @@ describe('far-side culling', () => {
 
   it('drops marks far off screen', () => {
     const zoomed: GlobeCamera = { center: [-73.8, 40.7], radius: 2400 };
-    const shown = visibleMarks([{ kind: 'origin', code: 'LAX', label: 'LAX', coord: AP.LAX }], makeLiftedProjector(zoomed, vp), vp);
+    const shown = visibleMarks(
+      [{ kind: 'origin', code: 'LAX', label: 'LAX', coord: AP.LAX }],
+      makeLiftedProjector(zoomed, vp),
+      vp,
+    );
     expect(shown).toEqual([]);
   });
 });
@@ -124,7 +130,10 @@ describe('label placement', () => {
   });
 
   it('bounds keep a 66pt right margin inside the insets', () => {
-    expect(labelBounds(400, normalizeInsets({ left: 10, right: 20 }))).toEqual({ left: 10, right: 400 - 20 - LABEL_RIGHT_MARGIN });
+    expect(labelBounds(400, normalizeInsets({ left: 10, right: 20 }))).toEqual({
+      left: 10,
+      right: 400 - 20 - LABEL_RIGHT_MARGIN,
+    });
   });
 
   it('puts the label right of the mark, a little above', () => {
@@ -174,6 +183,22 @@ describe('label placement', () => {
     ];
     const [p] = placeLabels([req('A', 100, 200)], bounds, marks);
     expect(p.dy).toBe(9);
+  });
+
+  it('keeps a label above the drawer when it has bounds top and bottom', () => {
+    // A mark right on the drawer's edge (John, 2026-11-03: DAL/DFW was cut off).
+    const [p] = placeLabels([req('DFW', 100, 496)], { ...bounds, top: 0, bottom: 500 });
+    expect(p.box.y1).toBeLessThanOrEqual(500);
+  });
+
+  it('tries above and below the mark once both sides are taken', () => {
+    const marks = [
+      { id: 'A', x: 100, y: 200, r: 4 },
+      { id: 'R', x: 118, y: 200, r: 8 },
+      { id: 'L', x: 82, y: 200, r: 8 },
+    ];
+    const [p] = placeLabels([req('A', 100, 200)], bounds, marks);
+    expect(Math.abs(p.dy)).toBeGreaterThan(9);
   });
 
   it('labels never overlap when there is room', () => {

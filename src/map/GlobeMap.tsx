@@ -420,9 +420,15 @@ export function GlobeMap({
   const legTimeFont = useLegTimeFont();
   const legTimeColorSet = useMemo(() => legTimeColors(palette), [palette]);
   const [legendBox, setLegendBox] = useState<Box | null>(null);
+  // The key starts folded on each new route; opening it lays over the map
+  // without reframing, so only the folded chip's height is reserved.
+  const [legendOpen, setLegendOpen] = useState(false);
+  useEffect(() => setLegendOpen(false), [selectedId]);
+  const legendOpenRef = useRef(legendOpen);
+  legendOpenRef.current = legendOpen;
   const onLegendLayout = useCallback((e: LayoutChangeEvent) => {
     const { x, y, width: w, height: h } = e.nativeEvent.layout;
-    setLegendHeight(Math.round(h));
+    if (!legendOpenRef.current) setLegendHeight(Math.round(h));
     setLegendBox((prev) =>
       prev && prev.x0 === x && prev.y0 === y && prev.x1 === x + w && prev.y1 === y + h
         ? prev
@@ -751,9 +757,9 @@ export function GlobeMap({
       {legendShown ? (
         <View
           onLayout={onLegendLayout}
-          pointerEvents="none"
+          pointerEvents="box-none"
           style={[styles.legend, { left: normInsets.left + LEGEND_GAP, top: normInsets.top + LEGEND_GAP }]}>
-          <RouteLegend route={selectedRoute!} />
+          <RouteLegend route={selectedRoute!} open={legendOpen} onToggle={setLegendOpen} />
         </View>
       ) : null}
     </GestureHandlerRootView>

@@ -11,8 +11,13 @@
  * crowded the drawer). GlobeMap pins it top-left of the map, far from the
  * drawer at every height, and frames the route below it, so it never sits
  * on a line. Screens can pass `showLegend={false}` and place this instead.
+ *
+ * Folded to a small "Key" chip until tapped (John, 2026-11-03: the open card
+ * covered a third of a squished map). The chip shows one swatch per line so it
+ * still hints at the colors; tapping opens the full list, tapping again folds it.
  */
-import { StyleSheet, Text, View } from 'react-native';
+import { useState } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { textStyles, useColors } from '@/theme';
 
@@ -35,10 +40,7 @@ function DashedSwatch({ color }: { color: string }) {
   return (
     <View style={[styles.swatchRow, { width: SWATCH_W }]}>
       {Array.from({ length: n }, (_, i) => (
-        <View
-          key={i}
-          style={{ width: on, height: SWATCH_H, borderRadius: 1.5, backgroundColor: color, marginRight: off }}
-        />
+        <View key={i} style={{ width: on, height: SWATCH_H, borderRadius: 1.5, backgroundColor: color, marginRight: off }} />
       ))}
     </View>
   );
@@ -46,31 +48,62 @@ function DashedSwatch({ color }: { color: string }) {
 
 export interface RouteLegendProps {
   route: RouteLine;
+  /** Open state, when the parent controls it. Uncontrolled (starts folded) without it. */
+  open?: boolean;
+  onToggle?: (open: boolean) => void;
 }
 
-export function RouteLegend({ route }: RouteLegendProps) {
+export function RouteLegend({ route, open: openProp, onToggle }: RouteLegendProps) {
   const c = useColors();
+  const [openState, setOpenState] = useState(false);
+  const open = openProp ?? openState;
+  const toggle = () => {
+    setOpenState(!open);
+    onToggle?.(!open);
+  };
   const rows = legendEntries(route);
   const textStyle = [textStyles.small, styles.label, { color: c.text }];
+  const boxStyle = [styles.box, { backgroundColor: rgba(hexToRgb(c.surface), 0.92), borderColor: c.line }];
+  const swatch = (row: (typeof rows)[number]) =>
+    row.dashed ? <DashedSwatch color={c[row.tier]} /> : <SolidSwatch color={c[row.tier]} />;
+
+  if (!open) {
+    return (
+      <Pressable
+        onPress={toggle}
+        hitSlop={8}
+        style={({ pressed }) => [boxStyle, styles.chip, pressed && styles.pressed]}
+        accessibilityRole="button"
+        accessibilityLabel="Line key"
+        accessibilityHint="Shows what each line style means"
+        accessibilityState={{ expanded: false }}
+        testID="route-legend">
+        <View style={styles.chipSwatches}>
+          {rows.map((row) => (
+            <View key={row.key}>{swatch(row)}</View>
+          ))}
+        </View>
+        <Text style={textStyle}>Key</Text>
+      </Pressable>
+    );
+  }
+
   return (
-    <View
-      style={[
-        styles.box,
-        { backgroundColor: rgba(hexToRgb(c.surface), 0.92), borderColor: c.line },
-      ]}
+    <Pressable
+      onPress={toggle}
+      style={({ pressed }) => [boxStyle, pressed && styles.pressed]}
+      accessibilityRole="button"
+      accessibilityLabel={`Line key. ${rows.map((r) => r.accessibilityLabel).join('. ')}`}
+      accessibilityHint="Folds the key"
+      accessibilityState={{ expanded: true }}
       testID="route-legend">
       {rows.map((row) => (
-        <View
-          key={row.key}
-          style={styles.row}
-          accessible
-          accessibilityRole="text"
-          accessibilityLabel={row.accessibilityLabel}>
-          {row.dashed ? <DashedSwatch color={c[row.tier]} /> : <SolidSwatch color={c[row.tier]} />}
+        <View key={row.key} style={styles.row}>
+          {swatch(row)}
           <Text style={textStyle}>{row.label}</Text>
         </View>
       ))}
-    </View>
+    </Pressable>
   );
 }
 
@@ -84,6 +117,14 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     gap: 3,
   },
+  chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 5,
+  },
+  chipSwatches: { gap: 2 },
+  pressed: { opacity: 0.8 },
   row: {
     flexDirection: 'row',
     alignItems: 'center',

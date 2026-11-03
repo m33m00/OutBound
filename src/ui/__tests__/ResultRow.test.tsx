@@ -786,6 +786,9 @@ describe('connectionText (John, 2026-11-02)', () => {
   it('gives the live minutes, or says the connection is missed', () => {
     expect(connectionText({ airport: 'DEN', sameAirline: true }, 125)).toBe('2h 5m connection at DEN');
     expect(connectionText({ airport: 'DEN', sameAirline: false }, 35)).toBe('35m connection at DEN · change airlines');
+    expect(connectionText({ airport: 'DEN', sameAirline: false }, 35, 'UA')).toBe(
+      '35m connection at DEN · change airlines to UA',
+    );
     expect(connectionText({ airport: 'DEN', sameAirline: true }, -10)).toBe('Misses the connection at DEN');
   });
 });

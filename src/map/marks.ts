@@ -54,9 +54,7 @@ export function groupHomes(homes: readonly MapAirport[]): MapAirport[][] {
     if (seen.has(h.code)) continue;
     const head = h.coord;
     const group = homes.filter(
-      (k) =>
-        !seen.has(k.code) &&
-        geoDistance([head[0], head[1]], [k.coord[0], k.coord[1]]) < HOME_GROUP_RAD,
+      (k) => !seen.has(k.code) && geoDistance([head[0], head[1]], [k.coord[0], k.coord[1]]) < HOME_GROUP_RAD,
     );
     const codes = new Set<string>();
     const unique = group.filter((k) => (codes.has(k.code) ? false : (codes.add(k.code), true)));
@@ -201,9 +199,22 @@ function overlaps(a: Box, b: Box): boolean {
 }
 
 /** Horizontal limits labels must stay inside: visible area minus the button margin. */
-export function labelBounds(width: number, insets: MapInsets): { left: number; right: number } {
-  return { left: insets.left, right: width - insets.right - LABEL_RIGHT_MARGIN };
+export function labelBounds(width: number, insets: MapInsets, height?: number): LabelBounds {
+  const sides = { left: insets.left, right: width - insets.right - LABEL_RIGHT_MARGIN };
+  // With the height, labels also keep clear of what covers the map top and bottom (the drawer),
+  // so DAL/DFW isn't cut off at the panel's edge (John, 2026-11-03).
+  return height == null ? sides : { ...sides, top: insets.top, bottom: height - insets.bottom };
 }
+
+export interface LabelBounds {
+  left: number;
+  right: number;
+  top?: number;
+  bottom?: number;
+}
+
+const overlapArea = (a: Box, b: Box) =>
+  Math.max(0, Math.min(a.x1, b.x1) - Math.max(a.x0, b.x0)) * Math.max(0, Math.min(a.y1, b.y1) - Math.max(a.y0, b.y0));
 
 /** Halo width already pads the box a little; keep labels this far apart too. */
 const LABEL_PAD = 1;
@@ -211,13 +222,15 @@ const LABEL_PAD = 1;
 /**
  * Places labels in the given order (put homes first). Each label tries the
  * right side, then the left when the right would cross `bounds.right` (or
- * the left would fit and the right would not). On each side the dy offsets
- * are tried until one does not overlap a placed label or another mark; if
- * none is free, the first candidate is used.
+ * the left would fit and the right would not), each at its dy offsets, then
+ * centred above and below the mark (round 116: LAX, PHX and DEN piled up).
+ * The first spot that overlaps no placed label or other mark and stays inside
+ * the bounds wins; failing that, a free spot past the top or bottom; failing
+ * that, the spot that covers the least.
  */
 export function placeLabels(
   requests: readonly LabelRequest[],
-  bounds: { left: number; right: number },
+  bounds: LabelBounds,
   marks: readonly { id: string; x: number; y: number; r: number }[] = [],
 ): PlacedLabel[] {
   const placed: PlacedLabel[] = [];
@@ -232,33 +245,47 @@ export function placeLabels(
     const usable = sides.filter((s, i) => i === 0 || (s === 'left' ? leftFits : rightFits));
 
     const candidates: PlacedLabel[] = [];
+    const add = (side: 'right' | 'left', x: number, y: number, dy: number) =>
+      candidates.push({
+        id: q.id,
+        side,
+        x,
+        y,
+        dy,
+        box: {
+          x0: x - LABEL_PAD,
+          y0: y - q.height / 2 - LABEL_PAD,
+          x1: x + q.width + LABEL_PAD,
+          y1: y + q.height / 2 + LABEL_PAD,
+        },
+      });
     for (const side of usable) {
-      for (const dy of LABEL_DY[q.kind]) {
-        const x = side === 'right' ? rightX : leftX;
-        const y = q.y + dy;
-        candidates.push({
-          id: q.id,
-          side,
-          x,
-          y,
-          dy,
-          box: {
-            x0: x - LABEL_PAD,
-            y0: y - q.height / 2 - LABEL_PAD,
-            x1: x + q.width + LABEL_PAD,
-            y1: y + q.height / 2 + LABEL_PAD,
-          },
-        });
-      }
+      for (const dy of LABEL_DY[q.kind]) add(side, side === 'right' ? rightX : leftX, q.y + dy, dy);
     }
-    const free = candidates.find(
-      (c) =>
-        !placed.some((p) => overlaps(p.box, c.box)) &&
-        !marks.some(
-          (m) => m.id !== q.id && overlaps(c.box, { x0: m.x - m.r, y0: m.y - m.r, x1: m.x + m.r, y1: m.y + m.r }),
-        ),
-    );
-    placed.push(free ?? candidates[0]);
+    // Above, then below, centred on the mark, when it fits across.
+    const midX = q.x - q.width / 2;
+    if (midX >= bounds.left && midX + q.width <= bounds.right) {
+      const off = gap + q.height / 2 + 2;
+      add('right', midX, q.y - off, -off);
+      add('right', midX, q.y + off, off);
+    }
+    const hits = (c: PlacedLabel) =>
+      [
+        ...placed.map((p) => p.box),
+        ...marks.filter((m) => m.id !== q.id).map((m) => ({ x0: m.x - m.r, y0: m.y - m.r, x1: m.x + m.r, y1: m.y + m.r })),
+      ].reduce((sum, b) => {
+        const area = overlapArea(c.box, b);
+        // Count each thing covered first, then how much of it.
+        return area > 0 ? sum + 1000 + area : sum;
+      }, 0);
+    const inside = (c: PlacedLabel) =>
+      (bounds.top == null || c.box.y0 >= bounds.top) && (bounds.bottom == null || c.box.y1 <= bounds.bottom);
+    const scored = candidates.map((c) => ({ c, hit: hits(c), inside: inside(c) }));
+    const pick =
+      scored.find((x) => x.hit === 0 && x.inside) ??
+      scored.find((x) => x.hit === 0) ??
+      scored.reduce((best, x) => ((x.inside && !best.inside) || (x.inside === best.inside && x.hit < best.hit) ? x : best));
+    placed.push(pick.c);
   }
   return placed;
 }

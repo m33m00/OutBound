@@ -3,6 +3,9 @@
  * Deterministic from the flight id (flight number + date + origin), so a row never flickers between renders.
  * Mix by hash % 12: 6 on time, then landing early, delayed (10, 25, 50 or 80 min, so every time tint
  * shows up), departed, canceled, arrived, diverted (one each; John, 2026-11-02).
+ * Departed, arrived and diverted only once the clock allows it: a flight that hasn't left yet
+ * reads on time, and one in the air reads departed, never arrived (John, 2026-11-03: an evening
+ * leg showed Arrived while the route was still ahead).
  */
 import { flightLookupKey, type FlightLookup, type FlightStatusEntry, type Movement } from '../flightStatus';
 
@@ -54,17 +57,22 @@ export function sampleFlightStatus(lookup: FlightLookup, nowMs: number): FlightS
     state = 'delayed';
     d = mv(lookup.from || null, dep, dep + late, null);
     a = mv(null, arr, arr + late, null);
-  } else if (bucket === 8) {
+  } else if (bucket === 8 && dep <= nowMs) {
     state = 'departed';
     d = mv(lookup.from || null, dep, null, dep + 5 * MIN);
     a = mv(null, arr, arr + 5 * MIN, null);
   } else if (bucket === 9) {
     state = 'canceled';
-  } else if (bucket === 10) {
+  } else if (bucket === 10 && arr - 3 * MIN <= nowMs) {
     state = 'arrived';
     d = mv(lookup.from || null, dep, null, dep + 2 * MIN);
     a = mv(null, arr, null, arr - 3 * MIN);
-  } else if (bucket === 11) {
+  } else if (bucket === 10 && dep + 2 * MIN <= nowMs) {
+    // Still in the air.
+    state = 'departed';
+    d = mv(lookup.from || null, dep, null, dep + 2 * MIN);
+    a = mv(null, arr, arr - 3 * MIN, null);
+  } else if (bucket === 11 && dep + 4 * MIN <= nowMs) {
     state = 'diverted';
     d = mv(lookup.from || null, dep, null, dep + 4 * MIN);
   }

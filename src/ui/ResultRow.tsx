@@ -120,11 +120,15 @@ function LegTimes({ leg, view, text, dimmed }: { leg: Flight; view?: LegStatusVi
   );
 }
 
-/** "3h 25m connection at DEN · change airlines"; "Misses the connection at DEN" when the onward flight leaves first. */
-export function connectionText(c: { airport: string; sameAirline: boolean }, layoverMin: number): string {
+/**
+ * "3h 25m connection at DEN · change airlines to UA"; "Misses the connection at DEN" when the
+ * onward flight leaves first. The switch names the onward airline (John, 2026-11-03).
+ */
+export function connectionText(c: { airport: string; sameAirline: boolean }, layoverMin: number, nextAirline?: string): string {
   const what =
     layoverMin < 0 ? `Misses the connection at ${c.airport}` : `${formatDuration(layoverMin)} connection at ${c.airport}`;
-  return `${what}${c.sameAirline ? '' : ' · change airlines'}`;
+  if (c.sameAirline) return what;
+  return `${what} · change airlines${nextAirline ? ` to ${nextAirline}` : ''}`;
 }
 
 /**
@@ -358,7 +362,7 @@ function LegTimeline({
                       lineBreakStrategyIOS="push-out"
                       style={[textStyles.small, styles.shrink, { color: c.muted }]}
                       testID="leg-connection-text">
-                      {connectionText(connection, layover)}
+                      {connectionText(connection, layover, it.legs[i + 1]?.flight.airline)}
                     </Text>
                   ) : null}
                   {/* The tag marks a connection the live times squeeze or break. */}

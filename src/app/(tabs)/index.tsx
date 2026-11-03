@@ -46,14 +46,17 @@ const PEEK = 132;
 const SHEET = { peek: 0, half: 1, full: 2 } as const;
 /** Share of the screen body the panel takes while a route is open, until its content is measured. */
 const ROUTE_VIEW_SHARE = 0.56;
+/**
+ * Most of the screen body the route panel may take, so the map above it keeps room for the whole
+ * route (John, 2026-11-03: "cluttered and squished"). A longer card scrolls inside the panel.
+ */
+const ROUTE_VIEW_MAX = 0.6;
 /** The panel's drag handle (44pt) and top edge sit above the route view's own content. */
 const SHEET_CHROME = SHEET_HANDLE_H + 1;
 /** A picked route's panel is locked: no handle strip, just a little room at the top. */
 const LOCKED_CHROME = SHEET_LOCKED_TOP + 1;
 /** The search panel's handle strip plus the panel's top edge. */
 const SEARCH_CHROME = SHEET_HANDLE_H + 1;
-/** A route this close to full height (pt) opens full instead of a middle stop that would barely differ. */
-const TALL_ROUTE_SLACK = 24;
 
 const airport = (code: string) => AIRPORTS[code];
 const SAMPLE_STATUS_OPTIONS = { config: null } as const;
@@ -131,9 +134,6 @@ export default function HomeScreen() {
   // (John, 2026-11-01: it looked squished).
   const [routeBar, setRouteBar] = useState(0);
   const peek = routeOpen && routeBar > 0 ? LOCKED_CHROME + routeBar : PEEK;
-  // A route that needs (nearly) the whole height opens full; the middle stop stays a real half
-  // so the handle still does something.
-  const tallRoute = routeOpen && routeHeight > 0 && routeHeight + LOCKED_CHROME >= sheetFull - TALL_ROUTE_SLACK;
   // The search panel's middle stop opens down to the bottom of the panel, Find Routes and the
   // "At DAL? Report a load" card included, so nothing sits under the fold (John, 2026-11-01 and
   // 2026-11-02: "requires scrolling down to see it").
@@ -147,17 +147,16 @@ export default function HomeScreen() {
   const showResults = state.status !== 'idle' && (!emptyBanner || showHidden);
   // The results list is the whole screen until a route is picked: no sliver of globe on top, no
   // drag (John, 2026-11-02). The globe comes back with the route.
-  const mode = sheetMode({ showResults, routeOpen, tallRoute, index: sheetIndex });
+  // The route panel never opens full any more (it's capped), so a long route no longer takes the map.
+  const mode = sheetMode({ showResults, routeOpen, tallRoute: false, index: sheetIndex });
   const sheetAt = mode.index;
   const snaps = useMemo(() => {
     const h = sheetFull + spacing.group;
-    const route = routeHeight > 0 ? routeHeight + LOCKED_CHROME : Math.round(h * ROUTE_VIEW_SHARE);
+    const cap = Math.round(h * ROUTE_VIEW_MAX);
+    const route = Math.min(cap, routeHeight > 0 ? routeHeight + LOCKED_CHROME : Math.round(h * ROUTE_VIEW_SHARE));
     const half = halfSnap(h, searchFit > 0 ? searchFit + SEARCH_CHROME : 0, sheetFull);
-    return [peek, routeOpen && !tallRoute ? Math.max(peek + 1, route) : half, mode.flush ? bodyHeight : sheetFull];
-  }, [sheetFull, routeOpen, routeHeight, tallRoute, peek, searchFit, mode.flush, bodyHeight]);
-  useEffect(() => {
-    if (tallRoute) setSheetIndex(SHEET.full);
-  }, [tallRoute]);
+    return [peek, routeOpen ? Math.max(peek + 1, route) : half, mode.flush ? bodyHeight : sheetFull];
+  }, [sheetFull, routeOpen, routeHeight, peek, searchFit, mode.flush, bodyHeight]);
 
   // Ages ("12m ago") keep counting while results are open.
   const [now, setNow] = useState(Date.now());
