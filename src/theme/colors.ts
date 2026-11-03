@@ -10,26 +10,26 @@ export type ColorScheme = 'light' | 'dark';
 export const colors = {
   light: {
     // Surfaces
-    bg: '#f6f8fb',
+    // The light Departure board (round 118, John asked for a light version): a cool grey board with
+    // white panels, near-black type and a deep amber that still reads as text.
+    bg: '#eef1f5',
     surface: '#ffffff',
     surface2: '#eef2f7',
-    line: '#dfe5ec',
-    line2: '#cbd4de',
+    line: '#d5dbe3',
+    line2: '#c3cbd6',
 
     // Text
-    text: '#101824',
-    muted: '#56657a',
-    // Darker than the prototype #66758a to meet 4.5:1 (Q-006).
-    faint: '#606f84',
+    text: '#0b1119',
+    muted: '#4d5b6e',
+    faint: '#56657a',
 
-    // Boarding pass navy (round 114): the stub of a picked route's ticket. Text on it comes from
-    // inkColors, through InkSurface.
-    ink: '#13254d',
+    // The board's raised panel: the picked route's header and My Trips' tops.
+    ink: '#ffffff',
 
-    // Primary
-    accent: '#1d3d84',
+    // Departure board amber, deepened so it reads on white (round 118).
+    accent: '#8f5200',
     onAccent: '#ffffff',
-    accentSoft: '#e7ecf6',
+    accentSoft: '#fbefd9',
 
     // "You" only
     you: '#c46a10',
@@ -139,30 +139,11 @@ export type ColorToken = keyof typeof colors.light;
 export type Palette = Record<ColorToken, string>;
 
 /**
- * Colors for things drawn on the navy ink band (round 114): the dark palette's tier, status and
- * time colors already read on deep navy, with the surfaces moved onto the band. The same in
- * light and dark, apart from the band itself.
+ * Colors for the board's raised panel (round 117/118): the palette with the surfaces moved onto the
+ * panel. Kept as its own palette so a panel can be tinted apart from the page later.
  */
-function onInk(ink: string, raised: string): Palette {
-  return {
-    ...colors.dark,
-    bg: ink,
-    surface: ink,
-    surface2: raised,
-    line: '#2d4680',
-    line2: '#3a5590',
-    text: '#ffffff',
-    muted: '#b9c6e2',
-    faint: '#aebcdb',
-    accent: '#cddcff',
-    onAccent: '#0f1e40',
-    accentSoft: raised,
-    ink,
-  };
-}
-
 export const inkColors: Record<ColorScheme, Palette> = {
-  light: onInk(colors.light.ink, '#21386b'),
+  light: { ...colors.light, bg: colors.light.ink, surface: colors.light.ink },
   // On the board the raised panel is just the dark palette lifted a step (round 117).
   dark: { ...colors.dark, bg: colors.dark.ink, surface: colors.dark.ink, surface2: colors.dark.surface2 },
 };
