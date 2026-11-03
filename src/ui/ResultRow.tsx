@@ -575,20 +575,19 @@ export const ResultRow = memo(function ResultRow({
               <View
                 style={large ? [styles.stub, { backgroundColor: c.ink }] : styles.stubSlim}
                 testID={large ? 'ticket-stub' : undefined}>
-                {/* Save sits top right of the card, outside the headline's wrapping line (John, 2026-11-01). */}
+                {/* The times lead, with Save top right (John, 2026-11-01); the chance, stops and trip length
+                    sit under them on one small line, so the header is two rows, not three (round 122). */}
                 <View style={styles.headlineRow}>
-                  <View style={[styles.line, styles.headlineMain]} testID="headline-row">
-                    {seatSummary(true)}
-                  </View>
+                  <View style={styles.headlineMain}>{times}</View>
                   {topAction ? (
                     <View style={styles.topAction} testID="route-card-action">
                       {topAction}
                     </View>
                   ) : null}
                 </View>
-                <View style={styles.line}>
-                  {times}
-                  <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, { color: hc.muted }]}>
+                <View style={[styles.line, styles.subLine]} testID="headline-row">
+                  {seatSummary(false)}
+                  <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, styles.shrink, { color: hc.muted }]}>
                     {[stopCount(it), tripLength(it, status)].filter(Boolean).join(' · ')}
                   </Text>
                 </View>
@@ -715,16 +714,16 @@ const styles = StyleSheet.create({
   ticket: { flex: 1 },
   stub: {
     paddingTop: spacing.rowY,
-    paddingBottom: spacing.rowY + 2,
+    paddingBottom: 4,
     paddingHorizontal: spacing.rowX,
-    gap: spacing.group,
+    gap: 4,
     borderTopLeftRadius: radius.md - 1,
     borderTopRightRadius: radius.md - 1,
   },
   // In the list, the picked row keeps its old stack: the same parts, no stub.
   stubSlim: { gap: spacing.group },
   ticketBody: {
-    paddingTop: spacing.group,
+    paddingTop: 4,
     paddingBottom: spacing.rowY,
     paddingHorizontal: spacing.rowX,
     gap: spacing.group,
@@ -739,7 +738,10 @@ const styles = StyleSheet.create({
   },
   lineKeep: { flexWrap: 'nowrap' },
   headlineRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.group },
-  headlineMain: { flex: 1 },
+  headlineMain: { flex: 1, minWidth: 0 },
+  // The chance word, stops and trip length under the times: one small line, the dot and words
+  // apart by a little more than a space (round 122).
+  subLine: { justifyContent: 'flex-start', columnGap: 10, rowGap: 2 },
   // A 44pt tap target that doesn't make the headline line taller: it overhangs into the card's padding.
   topAction: { marginVertical: -8, marginRight: -10 },
   topRight: {
@@ -803,8 +805,8 @@ const styles = StyleSheet.create({
     flex: 1,
     minHeight: 44,
     justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 10,
+    gap: 4,
+    paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: radius.sm + 2,
   },

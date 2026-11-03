@@ -338,45 +338,41 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
         // A picked route slides in a little from the right, like a push (design round 29).
         <Appear kind="push">
           <View style={styles.fill} testID="route-view">
-            <CenteredTitleRow
-              style={[styles.bar, styles.pad, { borderBottomColor: c.line }]}
+            {/* One slim row (round 122, John: the market wrapped and the top felt squished): a back
+                chevron, the market on one line that shrinks before it would wrap, and a compact pager. */}
+            <View
+              style={[styles.bar, styles.pad, styles.routeBar, { borderBottomColor: c.line }]}
               onLayout={(e) => setBarH(e.nativeEvent.layout.height)}
-              left={
-                <BackButton
-                  label={tight ? '' : 'Routes'}
-                  onPress={() => p.onSelect(focused.id)}
-                  accessibilityLabel="Back to all routes"
-                />
-              }
-              title={
+              testID="route-bar">
+              <BackButton label="" onPress={() => p.onSelect(focused.id)} accessibilityLabel="Back to all routes" />
+              <Text
+                ref={routeTitleRef}
+                style={[textStyles.routeTitle, styles.routeTitle, { color: c.text }]}
+                accessibilityRole="header"
+                accessibilityLabel={focusSpoken}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.6}
+                testID="route-title">
+                {softArrows(focusTitle, c.faint)}
+              </Text>
+              <View style={styles.pager}>
+                <StepArrow dir="prev" onPress={step(focusIndex - 1)} />
+                {/* VoiceOver: swipe up or down here to flip routes (the arrows stay for Voice Control). */}
                 <Text
-                  ref={routeTitleRef}
-                  style={[textStyles.routeTitle, styles.title, { color: c.text }]}
-                  accessibilityRole="header"
-                  accessibilityLabel={focusSpoken}
-                  numberOfLines={2}>
-                  {softArrows(focusTitle, c.faint)}
+                  style={[textStyles.small, styles.count, { color: c.muted }]}
+                  numberOfLines={1}
+                  testID="route-count"
+                  accessible
+                  accessibilityRole="adjustable"
+                  accessibilityLabel={`Route ${focusIndex + 1} of ${results.length}`}
+                  accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
+                  onAccessibilityAction={(e) => step(focusIndex + (e.nativeEvent.actionName === 'increment' ? 1 : -1))?.()}>
+                  {focusIndex + 1} of {results.length}
                 </Text>
-              }
-              right={
-                <View style={styles.pager}>
-                  <StepArrow dir="prev" onPress={step(focusIndex - 1)} />
-                  {/* VoiceOver: swipe up or down here to flip routes (the arrows stay for Voice Control). */}
-                  <Text
-                    style={[textStyles.body, styles.count, { color: c.muted }]}
-                    numberOfLines={1}
-                    testID="route-count"
-                    accessible
-                    accessibilityRole="adjustable"
-                    accessibilityLabel={`Route ${focusIndex + 1} of ${results.length}`}
-                    accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
-                    onAccessibilityAction={(e) => step(focusIndex + (e.nativeEvent.actionName === 'increment' ? 1 : -1))?.()}>
-                    {focusIndex + 1} of {results.length}
-                  </Text>
-                  <StepArrow dir="next" onPress={step(focusIndex + 1)} />
-                </View>
-              }
-            />
+                <StepArrow dir="next" onPress={step(focusIndex + 1)} />
+              </View>
+            </View>
             {/* Flipping to another route fades the card in so the change registers. */}
             <Appear trigger={focused.id}>
               {/* Keyed by route so each one opens at its top. */}
@@ -522,7 +518,7 @@ function StepArrow({ dir, onPress }: { dir: 'prev' | 'next'; onPress?: () => voi
     <Pressable
       testID={`route-${dir}`}
       onPress={onPress}
-      hitSlop={{ left: 6, right: 6, top: 6, bottom: 6 }}
+      hitSlop={{ left: 6, right: 6, top: 8, bottom: 8 }}
       disabled={!onPress}
       accessibilityRole="button"
       accessibilityLabel={dir === 'prev' ? 'Previous route' : 'Next route'}
@@ -589,18 +585,22 @@ const styles = StyleSheet.create({
   fill: { flex: 1 },
   selectedBlock: { gap: spacing.group },
   hidden: { display: 'none' },
-  focus: { padding: spacing.page, paddingTop: spacing.section, gap: spacing.section },
+  // Tighter above and between the Leave By card and the route card so the whole route fits (round 122).
+  focus: { padding: spacing.page, paddingTop: spacing.group + 2, gap: spacing.group + 2 },
   // Room between the arrows and the count so nothing touches (John, 2026-11-01).
-  pager: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  pager: { flexDirection: 'row', alignItems: 'center', gap: 4, flexShrink: 0 },
   count: { textAlign: 'center', fontVariant: ['tabular-nums'] },
   // Round soft buttons (round 79), so flipping routes reads as a button, not a bare chevron.
-  stepArrow: { width: 32, height: 32, borderRadius: 16, marginVertical: 6, alignItems: 'center', justifyContent: 'center' },
+  stepArrow: { width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
   pad: { paddingHorizontal: spacing.page },
   list: { paddingHorizontal: spacing.page, paddingBottom: spacing.page * 2 },
   header: { gap: 2, paddingTop: spacing.group, paddingBottom: spacing.section },
   headerGap: { height: spacing.group },
   bar: { gap: 4, paddingBottom: spacing.group, borderBottomWidth: StyleSheet.hairlineWidth },
   title: { textAlign: 'center' },
+  // The route view's bar: back, the market on the left taking the room, the pager at the end.
+  routeBar: { flexDirection: 'row', alignItems: 'center', gap: spacing.group, paddingTop: 2 },
+  routeTitle: { flex: 1, minWidth: 0 },
   filters: { paddingHorizontal: spacing.section },
   sep: { height: spacing.group },
   state: { paddingVertical: spacing.page, gap: spacing.section, alignItems: 'flex-start' },

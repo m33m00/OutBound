@@ -158,6 +158,13 @@ describe('ResultsPanel', () => {
     expect(onSelect).not.toHaveBeenCalled();
     act(() => count.props.onAccessibilityAction({ nativeEvent: { actionName: 'decrement' } }));
     expect(onSelect).toHaveBeenCalledWith(list[0].id);
+    // The market stays on one line and shrinks rather than wrapping; back is a bare chevron (round 122).
+    const title = r!.root.findAll((n) => n.props.testID === 'route-title' && typeof n.type === 'string')[0];
+    expect(title.props.numberOfLines).toBe(1);
+    expect(title.props.adjustsFontSizeToFit).toBe(true);
+    const bar = r!.root.findAll((n) => n.props.testID === 'route-bar' && typeof n.type === 'string')[0];
+    const barTexts = bar.findAll((n) => typeof n.props.children === 'string').map((n) => n.props.children);
+    expect(barTexts).not.toContain('Routes');
     // Back to all routes closes the view.
     const back = r!.root.findAll((n) => n.props.accessibilityLabel === 'Back to all routes' && n.props.onPress)[0];
     act(() => back.props.onPress());

@@ -28,4 +28,22 @@ describe('MiniRoute (round 119)', () => {
     });
     expect(texts()).toEqual(['DAL', 'LGA']);
   });
+
+  it('spaces stops evenly between the ends, each code centred on its dot (round 122)', () => {
+    const slots = (airports: string[]) => {
+      act(() => {
+        r = create(<MiniRoute airports={airports} />);
+      });
+      return r!.root
+        .findAll((n) => n.props.testID === 'mini-route-stop-slot' && typeof n.type === 'string')
+        .map((n) => {
+          const st = Object.assign({}, ...[n.props.style].flat(3).filter(Boolean));
+          expect(st.marginLeft).toBe(-st.width / 2);
+          return st.left;
+        });
+    };
+    expect(slots(['DFW', 'SEA', 'LAX'])).toEqual(['50%']);
+    const thirds = slots(['DFW', 'PHX', 'SEA', 'LAX']).map((l: string) => Math.round(parseFloat(l)));
+    expect(thirds).toEqual([33, 67]);
+  });
 });

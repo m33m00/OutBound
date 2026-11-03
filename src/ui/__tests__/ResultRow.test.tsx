@@ -80,6 +80,10 @@ describe('ResultRow', () => {
     expect(texts.filter((t) => /reported/i.test(String(t))).length).toBe(2); // the host and the native text: one line
     const headlineRow = r!.root.findAll((n) => n.props.testID === 'headline-row' && typeof n.type === 'string')[0];
     expect(headlineRow.findAll((n) => n.props.testID === 'seat-summary').length).toBeGreaterThan(0);
+    // Round 122: the chance shares one small line with the stops and trip length, under the times.
+    const sub = headlineRow.findAll((n) => typeof n.props.children === 'string').map((n) => String(n.props.children));
+    expect(sub.some((t) => /stop|Nonstop/.test(t))).toBe(true);
+    expect(headlineRow.findAll((n) => n.props.testID === 'row-times')).toHaveLength(0);
     expect(r!.root.findAll((n) => n.props.testID === 'flights-line').length).toBe(0);
     const button = r!.root.findAll((n) => n.props.accessibilityRole === 'button')[0];
     expect(button.props.accessibilityHint).toBe('Closes the route card');

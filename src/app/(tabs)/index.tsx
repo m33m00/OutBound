@@ -49,8 +49,10 @@ const ROUTE_VIEW_SHARE = 0.56;
 /**
  * Most of the screen body the route panel may take, so the map above it keeps room for the whole
  * route (John, 2026-11-03: "cluttered and squished"). A longer card scrolls inside the panel.
+ * Raised a little in round 122 (John: "requires me to scroll down just a bit") so a one-stop route
+ * fits whole; the map still keeps over a third of the screen.
  */
-const ROUTE_VIEW_MAX = 0.6;
+const ROUTE_VIEW_MAX = 0.64;
 /** The panel's drag handle (44pt) and top edge sit above the route view's own content. */
 const SHEET_CHROME = SHEET_HANDLE_H + 1;
 /** A picked route's panel is locked: no handle strip, just a little room at the top. */

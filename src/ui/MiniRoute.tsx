@@ -5,6 +5,8 @@ import { fonts, useColors } from '@/theme';
 /** Room above the line for a stop's code. */
 const LABEL_H = 13;
 const DOT = 8;
+/** Each stop's slot, centred on its dot, wide enough for a three-letter code. */
+const STOP_W = 36;
 
 /**
  * A market at a glance on a result card (round 119, John picked the mini route line on
@@ -26,12 +28,18 @@ export function MiniRoute({ airports, dimmed }: { airports: readonly string[]; d
       <Text style={[styles.code, { color: ends }]} maxFontSizeMultiplier={1.3}>
         {first}
       </Text>
-      <View style={styles.track}>
-        <View style={dot(false)} />
-        {stops.map((code) => (
-          <View key={code} style={styles.stopWrap}>
-            <View style={[styles.line, { backgroundColor: c.line }]} />
-            <View style={styles.stop}>
+      {/* Stops sit at even steps between the end dots (1 stop dead centre, 2 at thirds), each code
+          centred over its own dot, whatever the codes' widths (round 122, John: the dot sat left). */}
+      <View style={[styles.track, { minWidth: 40 + stops.length * STOP_W }]} testID="mini-route-track">
+        <View style={[styles.line, { backgroundColor: c.line }]} />
+        <View style={[dot(false), styles.startDot]} />
+        <View style={[dot(true), styles.endDot]} />
+        <View style={styles.rail}>
+          {stops.map((code, i) => (
+            <View
+              key={`${code}${i}`}
+              style={[styles.stop, { left: `${((i + 1) * 100) / (stops.length + 1)}%` }]}
+              testID="mini-route-stop-slot">
               <Text
                 style={[styles.stopCode, { color: c.muted }]}
                 numberOfLines={1}
@@ -41,10 +49,8 @@ export function MiniRoute({ airports, dimmed }: { airports: readonly string[]; d
               </Text>
               <View style={dot(false)} />
             </View>
-          </View>
-        ))}
-        <View style={[styles.line, { backgroundColor: c.line }]} />
-        <View style={dot(true)} />
+          ))}
+        </View>
       </View>
       <Text style={[styles.code, { color: ends }]} maxFontSizeMultiplier={1.3}>
         {last}
@@ -56,11 +62,16 @@ export function MiniRoute({ airports, dimmed }: { airports: readonly string[]; d
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1, minWidth: 0 },
   code: { fontFamily: fonts.bodySemiBold, fontSize: 17, lineHeight: 22, letterSpacing: -0.3 },
-  // The stop codes sit above the line, so the line drops by half their height to stay centred on the ends.
-  track: { flex: 1, flexDirection: 'row', alignItems: 'center', minWidth: 40, paddingTop: LABEL_H },
-  stopWrap: { flex: 1, flexDirection: 'row', alignItems: 'center' },
-  line: { flex: 1, height: 2, borderRadius: 1, minWidth: 8 },
-  stop: { alignItems: 'center', marginTop: -LABEL_H },
+  // The stop codes sit above the line in room the track pulls up from above the row, so the dots
+  // stay centred on the end codes and the row is no taller than the codes.
+  track: { flex: 1, height: LABEL_H + DOT, marginTop: -LABEL_H },
+  // The line runs from the start dot's centre to the end dot's centre.
+  line: { position: 'absolute', left: DOT / 2, right: DOT / 2, top: LABEL_H + DOT / 2 - 1, height: 2, borderRadius: 1 },
+  startDot: { position: 'absolute', left: 0, top: LABEL_H },
+  endDot: { position: 'absolute', right: 0, top: LABEL_H },
+  // Between the two end dots' centres; a stop's slot is placed by percent along it.
+  rail: { position: 'absolute', left: DOT / 2, right: DOT / 2, top: 0, bottom: 0 },
+  stop: { position: 'absolute', top: 0, width: STOP_W, marginLeft: -STOP_W / 2, alignItems: 'center' },
   stopCode: { fontFamily: fonts.monoMedium, fontSize: 10, lineHeight: LABEL_H, letterSpacing: 0.3 },
   dot: { width: DOT, height: DOT, borderRadius: DOT / 2, borderWidth: 2 },
 });
