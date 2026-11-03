@@ -19,7 +19,7 @@ import { Icon } from './Icon';
 import { pressStyle } from './press';
 import { ScalePressable } from './ScalePressable';
 import { StatusTag } from './StatusTag';
-import { CardDivider } from './CardDivider';
+import { TicketTear } from './TicketTear';
 
 export interface SavedRouteCardProps {
   route: SavedRoute;
@@ -48,8 +48,8 @@ export function SavedRouteCard({ route, past, now, onOpen, onRemove }: SavedRout
   const pastNote = 'Day passed. Opens today’s search.';
   const ink = inkColors[scheme];
   return (
-    // A saved route is a floating card (round 120, the Clean look): the path and the day up top, a
-    // hairline, then the flights in mono.
+    // A saved route is a floating card with a subtle boarding pass tear (rounds 120 and 121): the path
+    // and the day up top, a perforation with notches, then the flights in mono.
     <View
       style={[styles.card, elevation.card, { backgroundColor: c.surface, borderColor: c.line, shadowColor: c.text }]}
       testID="saved-route">
@@ -73,7 +73,7 @@ export function SavedRouteCard({ route, past, now, onOpen, onRemove }: SavedRout
             </View>
           </View>
         </InkContext.Provider>
-        <CardDivider line={c.line} />
+        <TicketTear notch={c.bg} edge={c.line} line={c.line2} />
         <View style={styles.body}>
           <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, styles.flights, { color: c.muted }]}>
             {flights}

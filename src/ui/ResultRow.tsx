@@ -35,6 +35,7 @@ import {
 import { AirlinePill } from './AirlinePill';
 import { Icon } from './Icon';
 import { MiniRoute } from './MiniRoute';
+import { TicketTear } from './TicketTear';
 import { pressStyle } from './press';
 import { ScalePressable } from './ScalePressable';
 import { StatusTag, TAG_TONE } from './StatusTag';
@@ -438,6 +439,8 @@ export const ResultRow = memo(function ResultRow({
   const lastLeg = it.legs[it.legs.length - 1]?.flight;
   const arriveTint = status?.arrival && lastLeg ? tint(shiftMinutes(status.arrival.newUtc, lastLeg.arriveUtc)) : null;
   const highlight = selected && !large;
+  // Picked and full rows draw a thicker edge; the tear's notches match it.
+  const edgeW = highlight || it.isFull ? 2 : StyleSheet.hairlineWidth;
   // Every value shows its age: the summary's comes from the leg that sets it.
   const summaryAge = summary ? routeSeatAge(it, now) : null;
   // The worst live thing on the route: the slim row's one tag. The route card has no banner for it; each
@@ -591,6 +594,19 @@ export const ResultRow = memo(function ResultRow({
                 </View>
               </View>
             </InkContext.Provider>
+            {/* The route card tears like a boarding pass between its header and the flights (round 121). */}
+            {large ? (
+              <TicketTear notch={c.bg} edge={c.line} line={c.line2} />
+            ) : (
+              <TicketTear
+                notch={c.bg}
+                edge={c.line}
+                line={c.line2}
+                left={spacing.rowX + EDGE_W}
+                right={spacing.rowX}
+                edgeWidth={edgeW}
+              />
+            )}
             <View style={large ? styles.ticketBody : styles.stubSlim}>
               <LegTimeline itinerary={it} status={status} now={now} large={!!large} dimmed={dimmed} onLegPress={onLegPress} />
               {cardAge ? (
@@ -610,6 +626,15 @@ export const ResultRow = memo(function ResultRow({
                 {seatSummary(false)}
               </View>
             </View>
+            {/* A boarding pass perforation between the times and the route (round 121, John). */}
+            <TicketTear
+              notch={c.bg}
+              edge={c.line}
+              line={c.line2}
+              left={spacing.rowX + EDGE_W}
+              right={spacing.rowX}
+              edgeWidth={edgeW}
+            />
             <View style={styles.line}>
               <View style={styles.path}>
                 {saved ? (
@@ -660,6 +685,9 @@ export const ResultRow = memo(function ResultRow({
   );
 });
 
+/** The route color strip down a row's left edge. */
+const EDGE_W = 5;
+
 const styles = StyleSheet.create({
   // No overflow clip, so the soft shadow shows; the edge rounds its own corners instead.
   row: {
@@ -673,7 +701,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
   },
   edge: {
-    width: 5,
+    width: EDGE_W,
     borderTopLeftRadius: radius.md - 1,
     borderBottomLeftRadius: radius.md - 1,
   },
