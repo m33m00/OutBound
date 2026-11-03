@@ -8,11 +8,11 @@ export const spacing = {
   rowX: 12,
 } as const;
 
-/** Tighter corners for the Departure board look (round 117; was 12 / 14 / 26). */
+/** Soft, rounder corners for the Clean look (round 120): leg boxes and chips 12, cards 18, sheets 26. */
 export const radius = {
-  sm: 6,
-  md: 10,
-  lg: 22,
+  sm: 12,
+  md: 18,
+  lg: 26,
 } as const;
 
 /** Minimum tap target, in points. */

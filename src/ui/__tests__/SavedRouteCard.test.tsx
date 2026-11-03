@@ -45,7 +45,7 @@ describe('SavedRouteCard', () => {
     // A boarding pass (round 114): the path and day on the navy stub, a torn edge, the flights below.
     const host = (id: string) => r!.root.findAll((n) => n.props.testID === id && typeof n.type === 'string');
     expect(host('saved-route-stub')).toHaveLength(1);
-    expect(host('board-rule')).toHaveLength(1);
+    expect(host('card-divider')).toHaveLength(1);
     const stubTexts = host('saved-route-stub')[0]
       .findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string')
       .map((n) => n.props.children as string);

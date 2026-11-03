@@ -1,14 +1,25 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { forSpeech } from '@/search/format';
-import { fonts, InkContext, inkColors, minTapTarget, radius, spacing, textStyles, useColors, useColorSchemeName } from '@/theme';
+import {
+  elevation,
+  fonts,
+  InkContext,
+  inkColors,
+  minTapTarget,
+  radius,
+  spacing,
+  textStyles,
+  useColors,
+  useColorSchemeName,
+} from '@/theme';
 import { savedRouteFlights, savedRouteTitle, savedRouteWhen, type SavedRoute } from '@/trips/savedRoutes';
 
 import { Icon } from './Icon';
 import { pressStyle } from './press';
 import { ScalePressable } from './ScalePressable';
 import { StatusTag } from './StatusTag';
-import { BoardRule } from './BoardRule';
+import { CardDivider } from './CardDivider';
 
 export interface SavedRouteCardProps {
   route: SavedRoute;
@@ -37,9 +48,11 @@ export function SavedRouteCard({ route, past, now, onOpen, onRemove }: SavedRout
   const pastNote = 'Day passed. Opens today’s search.';
   const ink = inkColors[scheme];
   return (
-    // A saved route is a board panel, like the route card (round 117, was a boarding pass): the path
-    // in the board face and the day up top, a dashed rule, then the flights in mono.
-    <View style={[styles.card, { backgroundColor: c.surface, borderColor: c.line2 }]} testID="saved-route">
+    // A saved route is a floating card (round 120, the Clean look): the path and the day up top, a
+    // hairline, then the flights in mono.
+    <View
+      style={[styles.card, elevation.card, { backgroundColor: c.surface, borderColor: c.line, shadowColor: c.text }]}
+      testID="saved-route">
       <ScalePressable
         onPress={onOpen}
         scaleTo={0.985}
@@ -60,7 +73,7 @@ export function SavedRouteCard({ route, past, now, onOpen, onRemove }: SavedRout
             </View>
           </View>
         </InkContext.Provider>
-        <BoardRule line={c.line2} />
+        <CardDivider line={c.line} />
         <View style={styles.body}>
           <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, styles.flights, { color: c.muted }]}>
             {flights}

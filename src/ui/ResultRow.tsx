@@ -19,14 +19,24 @@ import {
 import { statusHeadline } from '@/search/headline';
 import { impactSummary } from '@/search/impactText';
 import { liveLayoverMin, liveTotalMin, type LegStatusView, type RowStatus } from '@/search/statusTags';
-import { fonts, InkContext, inkColors, radius, spacing, textStyles, useBoldText, useColors, useColorSchemeName } from '@/theme';
+import {
+  elevation,
+  fonts,
+  InkContext,
+  inkColors,
+  radius,
+  spacing,
+  textStyles,
+  useBoldText,
+  useColors,
+  useColorSchemeName,
+} from '@/theme';
 
 import { AirlinePill } from './AirlinePill';
 import { Icon } from './Icon';
 import { MiniRoute } from './MiniRoute';
 import { pressStyle } from './press';
 import { ScalePressable } from './ScalePressable';
-import { BoardRule } from './BoardRule';
 import { StatusTag, TAG_TONE } from './StatusTag';
 import { withTick } from './haptics';
 import { shiftMinutes, shiftToken } from './timeShift';
@@ -282,7 +292,7 @@ function LegTimeline({
             {pills}
           </>
         );
-        const boxStyle = [styles.legBox, { backgroundColor: c.surface2, borderColor: c.line2 }];
+        const boxStyle = [styles.legBox, { backgroundColor: c.surface2 }];
         // Half the line runs through this box, half through the next; the label goes where they meet.
         const half = (h?: number) => Math.max(0, ((h ?? 0) - DOT) / 2);
         const tail = half(legHeights[i]);
@@ -415,8 +425,8 @@ export const ResultRow = memo(function ResultRow({
   // Departed rows are dimmed with a gray fill and edge; text keeps 4.5:1.
   const dimmed = !!status?.dimmed;
   const notFlyable = !!status?.canceled;
-  // The route card's header is the board's raised panel (round 117): what's drawn on it takes the
-  // ink palette.
+  // The route card's header panel (round 114 onward): what's drawn on it takes the ink palette, which
+  // in the Clean look is just the card itself.
   const hc = large ? inkColors[scheme] : c;
   const timeColor = dimmed ? hc.muted : hc.text;
   // A time that moved is tinted by how far: early green, then yellow, orange, red (John, 2026-11-02).
@@ -492,15 +502,15 @@ export const ResultRow = memo(function ResultRow({
   // chance (John, 2026-11-02: it said "Likely" with a canceled first flight).
   const seatSummary = (lead: boolean) =>
     notFlyable ? (
-      <View style={[styles.summary, lead && styles.summaryLead, { backgroundColor: hc.surface2 }]} testID="seat-summary">
+      <View style={[styles.summary, lead && styles.summaryLead]} testID="seat-summary">
+        <View style={[styles.summaryDot, { backgroundColor: hc.unknown }]} />
         <Text lineBreakStrategyIOS="push-out" style={[lead ? styles.badgeLead : styles.badge, { color: hc.muted }]}>
           {NOT_FLYABLE}
         </Text>
       </View>
     ) : summary ? (
-      <View
-        style={[styles.summary, lead && styles.summaryLead, { backgroundColor: dimmed ? hc.surface : hc[TIER_BG[it.tier]] }]}
-        testID="seat-summary">
+      <View style={[styles.summary, lead && styles.summaryLead]} testID="seat-summary">
+        <View style={[styles.summaryDot, { backgroundColor: dimmed ? hc.unknown : hc[it.tier] }]} />
         <Text
           lineBreakStrategyIOS="push-out"
           style={[lead ? styles.badgeLead : styles.badge, { color: dimmed ? hc.muted : hc[TIER_FG[it.tier]] }]}>
@@ -538,10 +548,13 @@ export const ResultRow = memo(function ResultRow({
       }
       style={[
         styles.row,
+        // Floating cards with a soft shadow (round 120, the Clean look).
+        dimmed ? null : elevation.card,
         {
           // Full routes stay in time order, grayed with a red edge; text keeps full contrast.
           // The route view's card drops the selected tint so the Leave By card above it leads.
-          backgroundColor: highlight ? c.accentSoft : it.isFull || dimmed ? c.surface2 : c.surface,
+          // The picked row keeps white and gets an accent outline, as in the Clean look (round 120).
+          backgroundColor: highlight ? c.surface : it.isFull || dimmed ? c.surface2 : c.surface,
           borderColor: highlight ? c.accent : it.isFull ? c.full : c.line,
           shadowColor: c.text,
         },
@@ -552,8 +565,8 @@ export const ResultRow = memo(function ResultRow({
       <View style={large ? styles.ticket : styles.content}>
         {selected ? (
           // Route card A (John, 2026-10-31): the seat chip up top, the times, then one box per flight.
-          // In the route view it's a board panel (round 117, was a boarding pass): the chip, Save and the
-          // times up top, a dashed rule, then the flights.
+          // In the route view (round 120, the Clean look): the chip, Save and the times up top, then the
+          // flights in soft boxes, all on one white card.
           <>
             <InkContext.Provider value={!!large}>
               <View
@@ -578,7 +591,6 @@ export const ResultRow = memo(function ResultRow({
                 </View>
               </View>
             </InkContext.Provider>
-            {large ? <BoardRule line={c.line2} /> : null}
             <View style={large ? styles.ticketBody : styles.stubSlim}>
               <LegTimeline itinerary={it} status={status} now={now} large={!!large} dimmed={dimmed} onLegPress={onLegPress} />
               {cardAge ? (
@@ -671,7 +683,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.rowX,
     gap: spacing.group,
   },
-  // The route view's boarding pass (round 114): no padding of its own; the stub and body pad themselves.
+  // The route view's big card (round 114 onward): no padding of its own; the header and body pad themselves.
   ticket: { flex: 1 },
   stub: {
     paddingTop: spacing.rowY,
@@ -715,21 +727,22 @@ const styles = StyleSheet.create({
     flexBasis: '100%',
     justifyContent: 'flex-start',
   },
-  // Long seat text wraps inside the chip instead of being cut off by the row's rounded edge.
+  // The seat chance as a colored dot and word, no fill (round 120, the Clean look). Long seat text
+  // wraps instead of being cut off by the row's rounded edge.
   summary: {
     flexShrink: 1,
     maxWidth: '100%',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: radius.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
-  // The route card's headline chip: bigger, so it reads first.
-  summaryLead: { paddingHorizontal: 10, paddingVertical: 4 },
-  // Seat chips read like a board's status column: bold mono, upper case (round 117).
-  badge: { fontFamily: fonts.mono, fontSize: 12, lineHeight: 16, letterSpacing: 0.4, textTransform: 'uppercase' },
-  badgeLead: { fontFamily: fonts.mono, fontSize: 15, lineHeight: 20, letterSpacing: 0.4, textTransform: 'uppercase' },
-  // A leg's airports in the board face, like the codes on a departures board (round 117).
-  legCodes: { fontFamily: fonts.board, fontSize: 20, lineHeight: 22, letterSpacing: 0.6 },
+  // The route card's headline: bigger, so it reads first.
+  summaryLead: { gap: 8 },
+  summaryDot: { width: 7, height: 7, borderRadius: 3.5 },
+  badge: { flexShrink: 1, fontFamily: fonts.bodySemiBold, fontSize: 13, lineHeight: 18 },
+  badgeLead: { flexShrink: 1, fontFamily: fonts.bodySemiBold, fontSize: 16, lineHeight: 22 },
+  // A leg's airports, bold and calm (round 120).
+  legCodes: { fontFamily: fonts.bodySemiBold, fontSize: 15, lineHeight: 20 },
   legLine: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -765,8 +778,7 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingVertical: 10,
     paddingHorizontal: 12,
-    borderRadius: radius.sm,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: radius.sm + 2,
   },
   // A leg's tag and flight chip, above (first flight) or below (later flights) its time.
   legMeta: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', columnGap: spacing.group, rowGap: 2 },

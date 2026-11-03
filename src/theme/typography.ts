@@ -3,41 +3,38 @@ import type { TextStyle } from 'react-native';
 import { fonts } from './fonts';
 
 /**
- * Type scale for the Departure board look (round 117, John switched to A on 2026-11-03). Three
- * voices: Big Shoulders Display for titles and airport codes, upper case like a split-flap board;
- * JetBrains Mono for times so digits line up row to row; Manrope for reading. Reading sizes stay
- * where round 112 had them (body 14, heading 16).
+ * Type scale for the Clean look (round 120, John switched to look B on 2026-11-03), closest to
+ * Flighty: Geist throughout, bold and tightly tracked for titles, Geist Mono for times so digits
+ * line up row to row. Reading sizes stay where round 112 had them (body 14, heading 16).
  */
 export const textStyles = {
-  /** Screen and sheet titles: the board face, upper case. */
+  /** Screen and sheet titles. */
   title: {
-    fontFamily: fonts.board,
-    fontSize: 34,
-    lineHeight: 36,
-    letterSpacing: 0.8,
-    textTransform: 'uppercase',
+    fontFamily: fonts.title,
+    fontSize: 30,
+    lineHeight: 34,
+    letterSpacing: -1,
   },
-  /** A route's name in a bar ("DFW → LGA"): the board face, smaller. */
+  /** A route's name in a bar ("DFW → LGA"). */
   routeTitle: {
-    fontFamily: fonts.board,
-    fontSize: 28,
-    lineHeight: 30,
-    letterSpacing: 0.8,
-    textTransform: 'uppercase',
+    fontFamily: fonts.title,
+    fontSize: 22,
+    lineHeight: 26,
+    letterSpacing: -0.6,
   },
-  /** An airport code shown big, as on a departures board. */
+  /** An airport code shown big. */
   code: {
-    fontFamily: fonts.board,
-    fontSize: 26,
+    fontFamily: fonts.display,
+    fontSize: 24,
     lineHeight: 28,
-    letterSpacing: 0.5,
+    letterSpacing: -0.5,
   },
   /** Big numbers: times, seat counts. */
   number: {
     fontFamily: fonts.mono,
     fontSize: 20,
     lineHeight: 26,
-    letterSpacing: -0.3,
+    letterSpacing: -0.6,
     fontVariant: ['tabular-nums'],
   },
   /** Wordmark in the top bar: the brand face, wide tracking. */
@@ -74,13 +71,11 @@ export const textStyles = {
     fontSize: 12,
     lineHeight: 16,
   },
-  /** A small label above a value ("ARRIVES"), tracked out like a board header. */
+  /** A small label beside or above a value ("Arrives"): quiet, sentence case. */
   eyebrow: {
-    fontFamily: fonts.bodySemiBold,
-    fontSize: 12,
-    lineHeight: 16,
-    letterSpacing: 1.2,
-    textTransform: 'uppercase',
+    fontFamily: fonts.bodyMedium,
+    fontSize: 13,
+    lineHeight: 18,
   },
 } as const satisfies Record<string, TextStyle>;
 

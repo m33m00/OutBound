@@ -57,7 +57,7 @@ describe('ResultsPanel', () => {
     });
     const view = r!.root.findAll((n) => n.props.testID === 'route-view' && typeof n.type === 'string')[0];
     const header = view.find((n) => n.props.accessibilityRole === 'header' && typeof n.type === 'string');
-    // The arrow is its own amber run inside the title (round 117).
+    // The arrow is its own soft grey run inside the title (since round 117).
     const flat = (n: unknown): string =>
       typeof n === 'string'
         ? n

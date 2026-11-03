@@ -10,26 +10,27 @@ export type ColorScheme = 'light' | 'dark';
 export const colors = {
   light: {
     // Surfaces
-    // The light Departure board (round 118, John asked for a light version): a cool grey board with
-    // white panels, near-black type and a deep amber that still reads as text.
-    bg: '#eef1f5',
+    // The Clean look (round 120, John picked look B on 2026-11-03): a pale page, white floating
+    // cards, quiet tinted boxes inside them and the Ice Mix navy as the one accent.
+    bg: '#f4f6f9',
     surface: '#ffffff',
-    surface2: '#eef2f7',
-    line: '#d5dbe3',
-    line2: '#c3cbd6',
+    surface2: '#f3f6fa',
+    line: '#dfe5ec',
+    line2: '#cbd4de',
 
     // Text
-    text: '#0b1119',
-    muted: '#4d5b6e',
-    faint: '#56657a',
+    text: '#101824',
+    muted: '#56657a',
+    // Darker than the prototype #66758a to meet 4.5:1 (Q-006).
+    faint: '#5f6e83',
 
-    // The board's raised panel: the picked route's header and My Trips' tops.
+    // A card's header panel: the same white as the card in the Clean look.
     ink: '#ffffff',
 
-    // Departure board amber, deepened so it reads on white (round 118).
-    accent: '#8f5200',
+    // Primary
+    accent: '#1d3d84',
     onAccent: '#ffffff',
-    accentSoft: '#fbefd9',
+    accentSoft: '#e7ecf6',
 
     // "You" only
     you: '#c46a10',
@@ -87,13 +88,12 @@ export const colors = {
     muted: '#9cadc0',
     faint: '#8d9db0',
 
-    // The board's raised panel (round 117): the picked route's header and My Trips' tops.
+    // A card's header panel: the same as the card in the Clean look (round 120).
     ink: '#111a25',
 
-    // Departure board amber (round 117, John picked look A on 2026-11-03).
-    accent: '#f5b544',
-    onAccent: '#0b1119',
-    accentSoft: '#2a2213',
+    accent: '#9bb8ef',
+    onAccent: '#0a1530',
+    accentSoft: '#17233b',
 
     you: '#ffb25a',
     youText: '#ffc27a',
@@ -139,11 +139,10 @@ export type ColorToken = keyof typeof colors.light;
 export type Palette = Record<ColorToken, string>;
 
 /**
- * Colors for the board's raised panel (round 117/118): the palette with the surfaces moved onto the
+ * Colors for a card's header panel (rounds 117 to 120): the palette with the surfaces moved onto the
  * panel. Kept as its own palette so a panel can be tinted apart from the page later.
  */
 export const inkColors: Record<ColorScheme, Palette> = {
   light: { ...colors.light, bg: colors.light.ink, surface: colors.light.ink },
-  // On the board the raised panel is just the dark palette lifted a step (round 117).
   dark: { ...colors.dark, bg: colors.dark.ink, surface: colors.dark.ink, surface2: colors.dark.surface2 },
 };

@@ -45,8 +45,8 @@ const textPairs: [ColorToken, ColorToken][] = [
 
 describe('Ice Mix colors', () => {
   it('keeps the confirmed DECISIONS.md values', () => {
-    expect(colors.light.accent).toBe('#8f5200');
-    expect(colors.dark.accent).toBe('#f5b544');
+    expect(colors.light.accent).toBe('#1d3d84');
+    expect(colors.dark.accent).toBe('#9bb8ef');
     expect(colors.light.youText).toBe('#9a5200');
     expect(colors.dark.youText).toBe('#ffc27a');
   });
@@ -71,7 +71,7 @@ describe('Ice Mix colors', () => {
   });
 });
 
-describe('Raised ink panel (round 114, board panel since round 117)', () => {
+describe('Card header panel (round 114, plain card since round 120)', () => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { inkColors } = require('../colors') as typeof import('../colors');
   it.each(['light', 'dark'] as const)('%s: every text pair reads on the raised panel', (scheme) => {
