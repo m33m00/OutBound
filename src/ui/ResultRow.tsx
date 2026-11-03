@@ -23,6 +23,7 @@ import { fonts, InkContext, inkColors, radius, spacing, textStyles, useBoldText,
 
 import { AirlinePill } from './AirlinePill';
 import { Icon } from './Icon';
+import { MiniRoute } from './MiniRoute';
 import { pressStyle } from './press';
 import { ScalePressable } from './ScalePressable';
 import { BoardRule } from './BoardRule';
@@ -604,9 +605,8 @@ export const ResultRow = memo(function ResultRow({
                     <Icon name="bookmark.fill" size={13} tintColor={c.accent} fallback={null} />
                   </View>
                 ) : null}
-                <Text lineBreakStrategyIOS="push-out" style={[textStyles.bodyStrong, styles.shrink, { color: c.text }]}>
-                  {[it.origin, ...it.legs.map((l) => l.flight.to)].join(' → ')}
-                </Text>
+                {/* The market as a mini route line (round 119, John picked it): ends big, stops above their dots. */}
+                <MiniRoute airports={[it.origin, ...it.legs.map((l) => l.flight.to)]} dimmed={dimmed} />
               </View>
               <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, { color: c.muted }]}>
                 {/* The route line already names the connections; the slim row adds short layovers. */}
@@ -689,7 +689,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.rowX,
     gap: spacing.group,
   },
-  path: { flexDirection: 'row', alignItems: 'center', gap: 4, flexShrink: 1 },
+  path: { flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1, minWidth: 0 },
   line: {
     flexDirection: 'row',
     alignItems: 'center',

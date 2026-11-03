@@ -102,7 +102,7 @@ describe('ResultRow', () => {
             .filter((x: unknown) => typeof x === 'string')
             .join(''),
         );
-      expect(all.some((t) => t.startsWith('BNA →') || t.includes('BNA\u00a0→'))).toBe(true);
+      expect(all.some((t) => t === 'BNA' || t.startsWith('BNA →') || t.includes('BNA\u00a0→'))).toBe(true);
     }
   });
 

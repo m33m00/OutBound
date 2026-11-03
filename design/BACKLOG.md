@@ -151,3 +151,4 @@ Each item names its owner. One item per work session. spec-keeper runs a pre-fli
 | 144 | Design round 116: roomier route map (capped panel, folded Key chip, labels kept clear of the drawer and each other), "change airlines to XX", clock-true sample statuses (John) | main | P2 | Built (design round 116, branch claude/project-thread-fzqwou) |
 | 145 | Design round 117: Departure board look (dark only, amber accent, Big Shoulders codes, JetBrains Mono times, Manrope text, flat board panels) replacing the Boarding pass (John picked A) | main | P2 | Built (design round 117, branch claude/project-thread-fzqwou) |
 | 146 | Design round 118: light Departure board that follows the phone setting (John) | main | P2 | Built (design round 118, branch claude/project-thread-fzqwou) |
+| 147 | Design round 119: mini route line for markets on result cards (DFW ●──●──● LAX, stops above their dots) (John) | main | P2 | Built (design round 119, branch claude/project-thread-fzqwou) |
