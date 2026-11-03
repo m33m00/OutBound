@@ -46,7 +46,7 @@ const textPairs: [ColorToken, ColorToken][] = [
 describe('Ice Mix colors', () => {
   it('keeps the confirmed DECISIONS.md values', () => {
     expect(colors.light.accent).toBe('#1d3d84');
-    expect(colors.dark.accent).toBe('#9bb8ef');
+    expect(colors.dark.accent).toBe('#f5b544');
     expect(colors.light.youText).toBe('#9a5200');
     expect(colors.dark.youText).toBe('#ffc27a');
   });
@@ -71,10 +71,10 @@ describe('Ice Mix colors', () => {
   });
 });
 
-describe('Boarding pass ink band (round 114)', () => {
+describe('Raised ink panel (round 114, board panel since round 117)', () => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { inkColors } = require('../colors') as typeof import('../colors');
-  it.each(['light', 'dark'] as const)('%s: every text pair reads on the navy band', (scheme) => {
+  it.each(['light', 'dark'] as const)('%s: every text pair reads on the raised panel', (scheme) => {
     const p = inkColors[scheme];
     for (const [fg, bg] of textPairs) {
       expect({ pair: `${fg} on ${bg}`, ok: contrast(p[fg], p[bg]) >= 4.5 }).toEqual({ pair: `${fg} on ${bg}`, ok: true });

@@ -23,7 +23,7 @@ import type { MapInsets, RouteLine } from './types';
 export const LEG_TIME_T = 0.5;
 
 /**
- * Pill style (provisional spec-keeper defaults, DECISIONS.md "Map"): DM Mono
+ * Pill style (provisional spec-keeper defaults, DECISIONS.md "Map"): JetBrains Mono
  * 600 12/16, `muted` text on a `surface` pill at 0.85.
  */
 export const LEG_TIME_PILL = {

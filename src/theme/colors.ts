@@ -87,11 +87,13 @@ export const colors = {
     muted: '#9cadc0',
     faint: '#8d9db0',
 
-    ink: '#172b57',
+    // The board's raised panel (round 117): the picked route's header and My Trips' tops.
+    ink: '#111a25',
 
-    accent: '#9bb8ef',
-    onAccent: '#0a1530',
-    accentSoft: '#17233b',
+    // Departure board amber (round 117, John picked look A on 2026-11-03).
+    accent: '#f5b544',
+    onAccent: '#0b1119',
+    accentSoft: '#2a2213',
 
     you: '#ffb25a',
     youText: '#ffc27a',
@@ -161,5 +163,6 @@ function onInk(ink: string, raised: string): Palette {
 
 export const inkColors: Record<ColorScheme, Palette> = {
   light: onInk(colors.light.ink, '#21386b'),
-  dark: onInk(colors.dark.ink, '#233c70'),
+  // On the board the raised panel is just the dark palette lifted a step (round 117).
+  dark: { ...colors.dark, bg: colors.dark.ink, surface: colors.dark.ink, surface2: colors.dark.surface2 },
 };

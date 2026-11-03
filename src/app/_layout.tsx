@@ -3,7 +3,7 @@ import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
-import { AccessibilityInfo } from 'react-native';
+import { AccessibilityInfo, Appearance } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { LogbookProvider } from '@/logbook/LogbookProvider';
@@ -14,6 +14,9 @@ import { SavedRoutesProvider } from '@/trips/SavedRoutesProvider';
 import { LocationProvider } from '@/ui/LocationProvider';
 
 SplashScreen.preventAutoHideAsync();
+// The Departure board look is a dark board (round 117, John picked look A on 2026-11-03), so the
+// app stays dark whatever the phone is set to. app.json says the same for the native chrome.
+Appearance.setColorScheme?.('dark');
 
 export default function RootLayout() {
   const scheme = useColorSchemeName();

@@ -19,24 +19,13 @@ import {
 import { statusHeadline } from '@/search/headline';
 import { impactSummary } from '@/search/impactText';
 import { liveLayoverMin, liveTotalMin, type LegStatusView, type RowStatus } from '@/search/statusTags';
-import {
-  elevation,
-  fonts,
-  InkContext,
-  inkColors,
-  radius,
-  spacing,
-  textStyles,
-  useBoldText,
-  useColors,
-  useColorSchemeName,
-} from '@/theme';
+import { fonts, InkContext, inkColors, radius, spacing, textStyles, useBoldText, useColors, useColorSchemeName } from '@/theme';
 
 import { AirlinePill } from './AirlinePill';
 import { Icon } from './Icon';
 import { pressStyle } from './press';
 import { ScalePressable } from './ScalePressable';
-import { TicketTear } from './TicketTear';
+import { BoardRule } from './BoardRule';
 import { StatusTag, TAG_TONE } from './StatusTag';
 import { withTick } from './haptics';
 import { shiftMinutes, shiftToken } from './timeShift';
@@ -275,7 +264,7 @@ function LegTimeline({
                 </View>
               )}
               <Text
-                style={[text, styles.shrink, { color: c.muted }]}
+                style={[styles.legCodes, styles.shrink, { color: dimmed ? c.muted : c.text }]}
                 numberOfLines={stacked ? undefined : 1}
                 adjustsFontSizeToFit={!stacked}
                 minimumFontScale={0.8}
@@ -292,7 +281,7 @@ function LegTimeline({
             {pills}
           </>
         );
-        const boxStyle = [styles.legBox, { backgroundColor: c.surface2 }];
+        const boxStyle = [styles.legBox, { backgroundColor: c.surface2, borderColor: c.line2 }];
         // Half the line runs through this box, half through the next; the label goes where they meet.
         const half = (h?: number) => Math.max(0, ((h ?? 0) - DOT) / 2);
         const tail = half(legHeights[i]);
@@ -425,8 +414,8 @@ export const ResultRow = memo(function ResultRow({
   // Departed rows are dimmed with a gray fill and edge; text keeps 4.5:1.
   const dimmed = !!status?.dimmed;
   const notFlyable = !!status?.canceled;
-  // The route card's stub is the navy ink band (round 114, Boarding pass): what's drawn on it takes
-  // the ink palette, so the times and seat chip read on navy.
+  // The route card's header is the board's raised panel (round 117): what's drawn on it takes the
+  // ink palette.
   const hc = large ? inkColors[scheme] : c;
   const timeColor = dimmed ? hc.muted : hc.text;
   // A time that moved is tinted by how far: early green, then yellow, orange, red (John, 2026-11-02).
@@ -503,7 +492,7 @@ export const ResultRow = memo(function ResultRow({
   const seatSummary = (lead: boolean) =>
     notFlyable ? (
       <View style={[styles.summary, lead && styles.summaryLead, { backgroundColor: hc.surface2 }]} testID="seat-summary">
-        <Text lineBreakStrategyIOS="push-out" style={[lead ? textStyles.heading : textStyles.bodyStrong, { color: hc.muted }]}>
+        <Text lineBreakStrategyIOS="push-out" style={[lead ? styles.badgeLead : styles.badge, { color: hc.muted }]}>
           {NOT_FLYABLE}
         </Text>
       </View>
@@ -513,7 +502,7 @@ export const ResultRow = memo(function ResultRow({
         testID="seat-summary">
         <Text
           lineBreakStrategyIOS="push-out"
-          style={[lead ? textStyles.heading : textStyles.bodyStrong, { color: dimmed ? hc.muted : hc[TIER_FG[it.tier]] }]}>
+          style={[lead ? styles.badgeLead : styles.badge, { color: dimmed ? hc.muted : hc[TIER_FG[it.tier]] }]}>
           {summary}
         </Text>
       </View>
@@ -548,7 +537,6 @@ export const ResultRow = memo(function ResultRow({
       }
       style={[
         styles.row,
-        dimmed ? null : elevation.card,
         {
           // Full routes stay in time order, grayed with a red edge; text keeps full contrast.
           // The route view's card drops the selected tint so the Leave By card above it leads.
@@ -563,8 +551,8 @@ export const ResultRow = memo(function ResultRow({
       <View style={large ? styles.ticket : styles.content}>
         {selected ? (
           // Route card A (John, 2026-10-31): the seat chip up top, the times, then one box per flight.
-          // In the route view it's a boarding pass (round 114): a navy stub with the chip, Save and the
-          // times, a torn edge, then the flights on white.
+          // In the route view it's a board panel (round 117, was a boarding pass): the chip, Save and the
+          // times up top, a dashed rule, then the flights.
           <>
             <InkContext.Provider value={!!large}>
               <View
@@ -589,7 +577,7 @@ export const ResultRow = memo(function ResultRow({
                 </View>
               </View>
             </InkContext.Provider>
-            {large ? <TicketTear notch={c.bg} line={c.line2} /> : null}
+            {large ? <BoardRule line={c.line2} /> : null}
             <View style={large ? styles.ticketBody : styles.stubSlim}>
               <LegTimeline itinerary={it} status={status} now={now} large={!!large} dimmed={dimmed} onLegPress={onLegPress} />
               {cardAge ? (
@@ -737,6 +725,11 @@ const styles = StyleSheet.create({
   },
   // The route card's headline chip: bigger, so it reads first.
   summaryLead: { paddingHorizontal: 10, paddingVertical: 4 },
+  // Seat chips read like a board's status column: bold mono, upper case (round 117).
+  badge: { fontFamily: fonts.mono, fontSize: 12, lineHeight: 16, letterSpacing: 0.4, textTransform: 'uppercase' },
+  badgeLead: { fontFamily: fonts.mono, fontSize: 15, lineHeight: 20, letterSpacing: 0.4, textTransform: 'uppercase' },
+  // A leg's airports in the board face, like the codes on a departures board (round 117).
+  legCodes: { fontFamily: fonts.board, fontSize: 20, lineHeight: 22, letterSpacing: 0.6 },
   legLine: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -773,6 +766,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 12,
     borderRadius: radius.sm,
+    borderWidth: StyleSheet.hairlineWidth,
   },
   // A leg's tag and flight chip, above (first flight) or below (later flights) its time.
   legMeta: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', columnGap: spacing.group, rowGap: 2 },

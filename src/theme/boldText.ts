@@ -13,14 +13,13 @@ import { textStyles } from './typography';
  * rows, map labels) follow through `useBoldText`.
  */
 const HEAVIER: Record<string, string> = {
-  DMSans_400Regular: 'DMSans_600SemiBold',
-  DMSans_500Medium: 'DMSans_700Bold',
-  DMSans_600SemiBold: 'DMSans_700Bold',
-  DMSans_700Bold: 'DMSans_800ExtraBold',
-  DMSans_800ExtraBold: 'DMSans_800ExtraBold',
-  DMMono_400Regular: 'DMMono_500Medium',
-  DMMono_500Medium: 'DMMono_500Medium',
-  // Instrument Serif has one weight; it stays as drawn.
+  Manrope_400Regular: 'Manrope_600SemiBold',
+  Manrope_500Medium: 'Manrope_700Bold',
+  Manrope_600SemiBold: 'Manrope_700Bold',
+  Manrope_700Bold: 'Manrope_800ExtraBold',
+  Manrope_800ExtraBold: 'Manrope_800ExtraBold',
+  JetBrainsMono_500Medium: 'JetBrainsMono_700Bold',
+  JetBrainsMono_700Bold: 'JetBrainsMono_700Bold',
   BigShouldersDisplay_700Bold: 'BigShouldersDisplay_800ExtraBold',
   BigShouldersDisplay_800ExtraBold: 'BigShouldersDisplay_800ExtraBold',
 };

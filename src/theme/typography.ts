@@ -3,38 +3,41 @@ import type { TextStyle } from 'react-native';
 import { fonts } from './fonts';
 
 /**
- * Type scale for the Boarding pass look (round 114, John picked C on 2026-11-02). Three voices:
- * a serif for titles (Instrument Serif, one weight, sized up because it runs small), DM Sans for
- * reading, DM Mono for times so digits line up row to row. Sizes stay where round 112 had them
- * (body 14, heading 16): John found round 113's bigger, bolder text heavy.
+ * Type scale for the Departure board look (round 117, John switched to A on 2026-11-03). Three
+ * voices: Big Shoulders Display for titles and airport codes, upper case like a split-flap board;
+ * JetBrains Mono for times so digits line up row to row; Manrope for reading. Reading sizes stay
+ * where round 112 had them (body 14, heading 16).
  */
 export const textStyles = {
-  /** Screen and sheet titles: the serif. */
+  /** Screen and sheet titles: the board face, upper case. */
   title: {
-    fontFamily: fonts.serif,
-    fontSize: 32,
+    fontFamily: fonts.board,
+    fontSize: 34,
     lineHeight: 36,
-    letterSpacing: -0.2,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
   },
-  /** A route's name in a bar ("DFW → LGA"): the serif, smaller. */
+  /** A route's name in a bar ("DFW → LGA"): the board face, smaller. */
   routeTitle: {
-    fontFamily: fonts.serif,
-    fontSize: 24,
-    lineHeight: 28,
+    fontFamily: fonts.board,
+    fontSize: 28,
+    lineHeight: 30,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
   },
-  /** An airport code shown big, as on a boarding pass. */
+  /** An airport code shown big, as on a departures board. */
   code: {
-    fontFamily: fonts.display,
-    fontSize: 24,
+    fontFamily: fonts.board,
+    fontSize: 26,
     lineHeight: 28,
-    letterSpacing: -0.3,
+    letterSpacing: 0.5,
   },
   /** Big numbers: times, seat counts. */
   number: {
     fontFamily: fonts.mono,
     fontSize: 20,
     lineHeight: 26,
-    letterSpacing: -0.4,
+    letterSpacing: -0.3,
     fontVariant: ['tabular-nums'],
   },
   /** Wordmark in the top bar: the brand face, wide tracking. */
@@ -71,12 +74,12 @@ export const textStyles = {
     fontSize: 12,
     lineHeight: 16,
   },
-  /** A small label above a value ("ARRIVES"), tracked out like print. */
+  /** A small label above a value ("ARRIVES"), tracked out like a board header. */
   eyebrow: {
-    fontFamily: fonts.bodyBold,
-    fontSize: 11,
-    lineHeight: 14,
-    letterSpacing: 1.4,
+    fontFamily: fonts.bodySemiBold,
+    fontSize: 12,
+    lineHeight: 16,
+    letterSpacing: 1.2,
     textTransform: 'uppercase',
   },
 } as const satisfies Record<string, TextStyle>;

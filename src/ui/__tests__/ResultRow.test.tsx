@@ -824,13 +824,13 @@ describe('Route card as a boarding pass (round 114)', () => {
     // The times on the stub are white; the flights below it are not on the stub.
     expect(stub.findAll((n) => n.props.testID === 'row-times').length).toBeGreaterThan(0);
     expect(stub.findAll((n) => n.props.testID === 'leg-timeline')).toHaveLength(0);
-    expect(host('ticket-tear')).toBeTruthy();
+    expect(host('board-rule')).toBeTruthy();
     await act(async () => {
       r!.update(<ResultRow itinerary={it} selected now={NOW} onPress={jest.fn()} />);
     });
     // In the list, the picked row has no stub or tear.
     expect(r!.root.findAll((n) => n.props.testID === 'ticket-stub')).toHaveLength(0);
-    expect(r!.root.findAll((n) => n.props.testID === 'ticket-tear')).toHaveLength(0);
+    expect(r!.root.findAll((n) => n.props.testID === 'board-rule')).toHaveLength(0);
     r!.unmount();
   });
 });

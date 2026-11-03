@@ -178,7 +178,7 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
             accessibilityRole="header"
             accessibilityLabel={routeSpoken}
             numberOfLines={2}>
-            {routeTitle}
+            {amberArrows(routeTitle, c.accent)}
           </Text>
         }
         right={
@@ -355,7 +355,7 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
                   accessibilityRole="header"
                   accessibilityLabel={focusSpoken}
                   numberOfLines={2}>
-                  {focusTitle}
+                  {amberArrows(focusTitle, c.accent)}
                 </Text>
               }
               right={
@@ -493,6 +493,20 @@ export const PULL_DOWN_VELOCITY = 1;
  * A hard pull down at the top of a list: dragged well past the top (iOS bounce), or
  * flicked down fast while already at the top. A pull further down the list just scrolls.
  */
+/** "DFW → LGA" with the arrows in the board's amber, like a departures board (round 117). */
+function amberArrows(title: string, accent: string) {
+  return title.split(' → ').flatMap((part, i) =>
+    i === 0
+      ? [part]
+      : [
+          <Text key={`a${i}`} style={{ color: accent }}>
+            {' → '}
+          </Text>,
+          part,
+        ],
+  );
+}
+
 export function isHardPullDown(e: Pick<NativeScrollEvent, 'contentOffset'> & { velocity?: { x: number; y: number } }): boolean {
   const y = e.contentOffset.y;
   return y <= -PULL_DOWN_OVERSCROLL || (y <= 0 && (e.velocity?.y ?? 0) <= -PULL_DOWN_VELOCITY);

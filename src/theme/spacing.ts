@@ -8,10 +8,11 @@ export const spacing = {
   rowX: 12,
 } as const;
 
+/** Tighter corners for the Departure board look (round 117; was 12 / 14 / 26). */
 export const radius = {
-  sm: 12,
-  md: 14,
-  lg: 26,
+  sm: 6,
+  md: 10,
+  lg: 22,
 } as const;
 
 /** Minimum tap target, in points. */

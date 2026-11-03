@@ -1,5 +1,5 @@
 /**
- * DM Sans for map labels and DM Mono for leg time pills (round 114, the Boarding pass look), loaded into Skia from the same
+ * Manrope for map labels and JetBrains Mono for leg time pills (round 117, the Departure board look), loaded into Skia from the same
  * bundled font files the app uses (src/theme fontAssets). Skia draws text
  * with its own typefaces, so the expo-font copies cannot be reused directly;
  * `useTypeface` reads the bundled asset (works in Expo Go, no network).
@@ -18,9 +18,9 @@ import { LABEL_FONT, type MarkKind } from './marks';
 export type MarkFonts = Record<MarkKind, SkFont>;
 
 export function useMarkFonts(): MarkFonts | null {
-  const semi = useTypeface(fontAssets.DMSans_600SemiBold);
-  const bold = useTypeface(fontAssets.DMSans_700Bold);
-  const heavy = useTypeface(fontAssets.DMSans_800ExtraBold);
+  const semi = useTypeface(fontAssets.Manrope_600SemiBold);
+  const bold = useTypeface(fontAssets.Manrope_700Bold);
+  const heavy = useTypeface(fontAssets.Manrope_800ExtraBold);
   // Bold Text (round 38): each label a weight heavier.
   const boldText = useBoldText();
   return useMemo(() => {
@@ -36,13 +36,13 @@ export function useMarkFonts(): MarkFonts | null {
 }
 
 /**
- * DM Mono for leg flight-time pills (item 15, 12/16). Null until loaded;
+ * JetBrains Mono for leg flight-time pills (item 15, 12/16). Null until loaded;
  * the pills wait, nothing else does.
  */
 export function useLegTimeFont(): SkFont | null {
-  // DM Mono has no heavier cut than 500, so Bold Text keeps it.
-  const semi = useTypeface(fontAssets.DMMono_500Medium);
-  const bold = useTypeface(fontAssets.DMMono_500Medium);
+  // Medium normally, bold with Bold Text.
+  const semi = useTypeface(fontAssets.JetBrainsMono_500Medium);
+  const bold = useTypeface(fontAssets.JetBrainsMono_700Bold);
   const boldText = useBoldText();
   return useMemo(() => {
     const face = boldText ? bold : semi;
