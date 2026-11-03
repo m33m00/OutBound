@@ -20,6 +20,7 @@ import {
 } from '../flightStatusText';
 import { ResultRow } from '../ResultRow';
 import { outermost, restingStyle } from '@/testing/pressables';
+import { lineTexts } from '@/testing/lineTexts';
 
 // The sheet's Add to Logbook link reads the logbook module (round 63).
 let mockFontScale = 1;
@@ -151,8 +152,8 @@ describe('leg tap and sheet', () => {
     expect(fetcher).toHaveBeenCalledTimes(1);
     expect(texts).toContain('Delayed');
     expect(texts).toContain('50m late');
-    expect(texts).toContain('Terminal S\u2003Gate B22');
-    expect(texts).toContain('Updated 7m ago, may be out of date');
+    expect(lineTexts(r!.root)).toContain('Terminal S | Gate B22');
+    expect(lineTexts(r!.root)).toContain('Updated 7m ago, may be out of date');
   });
 
   it('makes no request while closed', async () => {
@@ -235,7 +236,7 @@ describe('sample status in the sheet (design round 4)', () => {
     expect(texts).not.toContain('Data from AeroDataBox.');
     expect(texts).toContain('Delayed');
     expect(texts).toContain('DL 2210');
-    expect(texts).toContain('Updated 2m ago');
+    expect(lineTexts(r!.root)).toContain('Updated 2m ago');
     expect(r!.root.findAll((n) => n.props.accessibilityLabel === 'Refresh flight status')).toHaveLength(0);
   });
 });
@@ -310,7 +311,8 @@ describe('seats card in the flight sheet (design round 32)', () => {
     });
     const box = r!.root.findAll((n) => n.props.testID === 'search-seats' && typeof n.type === 'string')[0];
     expect(box.props.accessibilityLabel).toBe('Likely, 20 open, 7 listed. Reported 5 minutes ago');
-    expect(texts()).toContain('Reported 5m ago');
+    // The age is spoken but not shown while seat ages are hidden (round 124, John).
+    expect(texts()).not.toContain('Reported 5m ago');
   });
 
   it('Report Load and Ask for Load sit side by side, stacked at big text (round 67)', async () => {

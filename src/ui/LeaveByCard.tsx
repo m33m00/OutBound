@@ -12,6 +12,7 @@ import { Icon } from './Icon';
 import { openDirections } from './openDirections';
 import { pressStyle } from './press';
 import type { LocationStatus } from './useCurrentLocation';
+import { Divided } from './MetaLine';
 
 export interface LeaveByCardProps {
   /** Departure airport of the selected route's first leg. */
@@ -144,11 +145,9 @@ export function LeaveByCard(p: LeaveByCardProps) {
               }}
               testID="leave-by-line">
               {keepTimes(text.title)}
-              <Text
-                style={[
-                  textStyles.small,
-                  { color: c.muted, fontFamily: textStyles.body.fontFamily },
-                ]}>{`\u2003${keepTimes(short)}`}</Text>
+              <Text style={[textStyles.small, { color: c.muted, fontFamily: textStyles.body.fontFamily }]}>
+                <Divided text={` · ${keepTimes(short)}`} />
+              </Text>
             </Text>
           )}
         </View>

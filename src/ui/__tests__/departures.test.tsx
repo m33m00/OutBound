@@ -6,6 +6,7 @@ import type { LoadAnswer } from '@/requests/requests';
 
 import { AtAirportCard } from '../AtAirportCard';
 import { DeparturesSheet } from '../DeparturesSheet';
+import { lineTexts } from '@/testing/lineTexts';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -63,7 +64,7 @@ describe('at-airport card and departures (round 33)', () => {
     expect(rows).toHaveLength(2);
     expect(rows[1].props.accessibilityLabel).toMatch(/^Departed /);
     // Departed shows in words too, not only as a muted time.
-    expect(texts().some((t) => t.startsWith('Departed\u2003'))).toBe(true);
+    expect(lineTexts(r!.root).some((t) => t.startsWith('Departed | '))).toBe(true);
     act(() => rows[0].props.onPress());
     expect(texts()).toContain('Report Load');
     const box = r!.root.find((n) => n.props.accessibilityLabel === 'Open seats, On the departure board' && n.props.onChangeText);

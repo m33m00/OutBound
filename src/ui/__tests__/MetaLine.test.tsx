@@ -1,6 +1,6 @@
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 
-import { MetaLine, metaParts, spaced } from '../MetaLine';
+import { Divided, INLINE_DIVIDER, MetaLine, metaParts } from '../MetaLine';
 
 describe('MetaLine (round 123: no dots between text)', () => {
   it('splits dotted text into separate items with no dot left', () => {
@@ -29,9 +29,26 @@ describe('MetaLine (round 123: no dots between text)', () => {
     act(() => r!.unmount());
   });
 
-  it('turns dots into a wide space when the text has to stay one run', () => {
-    expect(spaced('Departed · Los Angeles')).toBe('Departed Los Angeles');
-    expect(spaced(' · asked 5m ago')).toBe(' asked 5m ago');
+  it('puts a thin divider between items, and after a lead', () => {
+    let r: ReactTestRenderer;
+    act(() => {
+      r = create(<MetaLine text="Likely · 1 stop · 11h 5m" />);
+    });
+    expect(r!.root.findAll((n) => n.props.testID === 'meta-divider' && typeof n.type === 'string')).toHaveLength(2);
+    act(() => r!.update(<MetaLine lead={<></>} parts={['1 stop']} />));
+    expect(r!.root.findAll((n) => n.props.testID === 'meta-divider' && typeof n.type === 'string')).toHaveLength(1);
+    act(() => r!.unmount());
+  });
+
+  it('inline, each dot becomes a faint bar inside the same run of text', () => {
+    let r: ReactTestRenderer;
+    act(() => {
+      r = create(<Divided text=" · asked 5m ago" />);
+    });
+    const bars = r!.root.findAll((n) => n.props.testID === 'inline-divider' && typeof n.type === 'string');
+    expect(bars).toHaveLength(1);
+    expect(bars[0].props.children).toBe(INLINE_DIVIDER);
     expect(metaParts('a · b · c')).toEqual(['a', 'b', 'c']);
+    act(() => r!.unmount());
   });
 });

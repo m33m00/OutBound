@@ -52,7 +52,7 @@ describe('ImpactSheet VoiceOver (design round 26)', () => {
       .findAll((n) => typeof n.type === 'string' && typeof n.props.accessibilityLabel === 'string' && /^(DFW|LAX),/.test(n.props.accessibilityLabel))
       .map((n) => n.props.accessibilityLabel as string);
     expect(labels[0]).toMatch(/^DFW/);
-    expect(labels[1]).toMatch(/^LAX, destination, no data yet/);
+    expect(labels[1]).toMatch(/^LAX, destination, no estimate/);
   });
 
   it('shows a line instead of a blank sheet with no stations', () => {

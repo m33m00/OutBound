@@ -7,7 +7,7 @@ import { minTapTarget, spacing, textStyles, useColors } from '@/theme';
 import { AirlinePill } from './AirlinePill';
 import { Icon } from './Icon';
 import { pressStyle } from './press';
-import { spaced } from './MetaLine';
+import { Divided } from './MetaLine';
 
 export interface LoggedFlightRowProps {
   flight: LoggedFlight;
@@ -55,7 +55,7 @@ export function LoggedFlightRow({ flight: f, now, onRemove, onEdit }: LoggedFlig
         <View style={styles.bottom}>
           <AirlinePill airline={f.airline} flightNumber={f.flightNumber} />
           <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, styles.detail, { color: c.muted }]}>
-            {spaced(detail)}
+            <Divided text={detail} />
           </Text>
         </View>
       </Pressable>

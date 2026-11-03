@@ -6,7 +6,7 @@ import type { LegStatusView } from '@/search/statusTags';
 import { fonts, minTapTarget, radius, spacing, textStyles, useColors } from '@/theme';
 
 import { Icon } from './Icon';
-import { spaced } from './MetaLine';
+import { Divided } from './MetaLine';
 import { pressStyle } from './press';
 import { StatusTag, TAG_TONE } from './StatusTag';
 import { TIER_FG, TIER_MARK } from './tierColors';
@@ -62,7 +62,7 @@ export function RequestRow({ request, now, mine, onAnswer, onOpen, leg }: Reques
         accessible={!onOpen}
         accessibilityLabel={onOpen ? undefined : label}>
         <Text lineBreakStrategyIOS="push-out" style={[textStyles.heading, { color: c.text }]}>
-          {spaced(title)}
+          <Divided text={title} />
         </Text>
         <View style={styles.detailLine}>
           {tier ? <View style={[styles.dot, { backgroundColor: c[TIER_MARK[tier]] }]} /> : null}
@@ -76,10 +76,10 @@ export function RequestRow({ request, now, mine, onAnswer, onOpen, leg }: Reques
                 {live.struck ? <Text style={styles.struck}>{live.struck}</Text> : null}
                 {live.time && live.struck ? '\u00a0' : null}
                 {live.time ? <Text style={{ color: c.text, fontFamily: fonts.bodySemiBold }}>{live.time}</Text> : null}
-                {spaced(live.tail)}
+                <Divided text={live.tail} />
               </>
             ) : (
-              spaced(detail)
+              <Divided text={detail} />
             )}
           </Text>
         </View>

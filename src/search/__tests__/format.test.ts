@@ -84,7 +84,7 @@ describe('seatText', () => {
     expect(seatText(seats({ source: 'typical', tier: 'unknown', netSeats: 30 }), NOW)).toBe('~30 open seats estimated');
   });
   it('handles no data', () => {
-    expect(seatText({ source: 'unknown', tier: 'unknown', netSeats: null, asOf: null }, NOW)).toBe('No data yet');
+    expect(seatText({ source: 'unknown', tier: 'unknown', netSeats: null, asOf: null }, NOW)).toBe('No Estimate');
   });
 });
 
@@ -140,7 +140,7 @@ describe('slim row seat and stop text (design round 22)', () => {
     expect(neutralSeatText(r, NOW)).toBe('~12 open seats estimated');
     expect(
       neutralSeatText(route([seats({ source: 'unknown', tier: 'unknown', netSeats: null, asOf: null })], 'unknown'), NOW),
-    ).toBe('No data yet');
+    ).toBe('No Estimate');
   });
 
   it('adds short connections to the stop count', () => {

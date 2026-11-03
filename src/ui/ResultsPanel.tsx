@@ -574,11 +574,12 @@ function NowLine({ time }: { time: string | null }) {
       accessible
       accessibilityLabel={`Now${time ? `, ${time}` : ''}. Flights below haven’t left yet.`}>
       <View style={[styles.rule, { backgroundColor: c.accent }]} />
-      {/* "Now" and the time set apart by space, not a dot (round 123, John). */}
+      {/* "Now" and the time set apart by a thin divider, not a dot (rounds 123 and 124, John). */}
       <View style={styles.nowWords}>
         <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { fontFamily: fonts.bodySemiBold, color: c.accent }]}>
           Now
         </Text>
+        {time ? <View style={[styles.nowDivider, { backgroundColor: c.accent }]} /> : null}
         {time ? (
           <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { fontFamily: fonts.bodyMedium, color: c.accent }]}>
             {time}
@@ -593,6 +594,8 @@ function NowLine({ time }: { time: string | null }) {
 const styles = StyleSheet.create({
   fill: { flex: 1 },
   nowWords: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  // A thin divider between Now and the time (round 124, John: "Needs dividers").
+  nowDivider: { width: 1, height: 11, opacity: 0.45 },
   selectedBlock: { gap: spacing.group },
   hidden: { display: 'none' },
   // Tighter above and between the Leave By card and the route card so the whole route fits (round 122).

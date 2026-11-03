@@ -9,6 +9,7 @@ import { radius, spacing, textStyles, useColors } from '@/theme';
 import { Icon } from './Icon';
 import { IMPACT_ICON } from './ImpactBadge';
 import { SheetHeader } from './SheetHeader';
+import { Divided } from './MetaLine';
 
 export interface ImpactSheetProps {
   visible: boolean;
@@ -50,7 +51,7 @@ export function ImpactSheet({ visible, title, subtitle, impact, now, onClose }: 
                 : 'No weather forecast'
               : s.asOf
                 ? 'No known disruption'
-                : 'No data yet';
+                : 'No Estimate';
             // The forecast line under the badge, unless the trailing word already says it.
             const forecastLine = s.noForecast && (badge || s.asOf);
             // One spoken line per station, in words (design round 26).
@@ -97,7 +98,7 @@ export function ImpactSheet({ visible, title, subtitle, impact, now, onClose }: 
                 {s.reasons.map((r) => (
                   <Text key={`${r.source}-${r.text}`} style={[textStyles.body, { color: c.text }]}>
                     {r.text}
-                    {'\u2003'}
+                    <Divided text=" · " />
                     <Text style={{ color: c.muted }}>{r.source === 'FAA' ? 'FAA' : 'Weather'}</Text>
                   </Text>
                 ))}

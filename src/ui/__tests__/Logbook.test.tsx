@@ -8,6 +8,7 @@ import { LOGBOOK_KEY, type LoggedFlight } from '@/logbook/logbook';
 import { LogbookProvider } from '@/logbook/LogbookProvider';
 
 import { PHOTO_MISS_IOS } from '../AddFlightSheet';
+import { lineTexts } from '@/testing/lineTexts';
 
 jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
@@ -104,7 +105,8 @@ describe('Logbook tab', () => {
     // One short footer: where the logbook lives (round 65 cut the miles explainer).
     expect(texts()).toContain('Your logbook stays on this phone.');
     expect(texts().some((t: string) => t.includes('straight-line'))).toBe(false);
-    expect(texts()).toEqual(expect.arrayContaining(['DFW → LAX', 'Today\u2003Seat 12A', 'OCTOBER 2026']));
+    expect(texts()).toEqual(expect.arrayContaining(['DFW → LAX', 'OCTOBER 2026']));
+    expect(lineTexts(r!.root)).toContain('Today | Seat 12A');
   });
 
   it('moves through the boxes from the keyboard and adds from the last one', async () => {

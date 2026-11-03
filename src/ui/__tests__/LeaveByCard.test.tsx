@@ -26,10 +26,10 @@ function lineText(r: ReactTestRenderer): string {
       ? c
       : Array.isArray(c)
         ? c.map(flat).join('')
-        : c && typeof c === 'object' && 'props' in c
-          ? flat((c as { props: { children?: unknown } }).props.children)
+        : c && typeof c === 'object' && 'children' in c
+          ? flat((c as { children: unknown }).children)
           : '';
-  return flat(line.props.children);
+  return flat(line.children);
 }
 
 describe('LeaveByCard location button', () => {
@@ -195,7 +195,7 @@ describe('LeaveByCard location button', () => {
         />,
       );
     });
-    expect(lineText(r!)).toMatch(/^Leave by .+\u200332m drive$/);
+    expect(lineText(r!)).toMatch(/^Leave by .+\u2002\|\u200232m drive$/);
     expect(lineText(r!)).not.toContain('·');
     const texts = r!.root
       .findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string')
@@ -221,7 +221,7 @@ describe('LeaveByCard location button', () => {
         />,
       );
     });
-    expect(lineText(r!)).toMatch(/^You’re at DAL \(Dallas Love Field\)\u2003Flight departs at /);
+    expect(lineText(r!)).toMatch(/^You’re at DAL \(Dallas Love Field\)\u2002\|\u2002Flight departs at /);
     const line = r!.root.find((n) => n.props.testID === 'leave-by-line' && typeof n.type === 'string');
     act(() => line.props.onTextLayout({ nativeEvent: { lines: [{}, {}] } }));
     expect(lineText(r!)).toBe('You’re at DAL (Dallas Love Field)');

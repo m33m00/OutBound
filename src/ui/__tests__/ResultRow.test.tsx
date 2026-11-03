@@ -61,9 +61,8 @@ describe('ResultRow', () => {
     // Just the chance word on the row; the numbers are in the flight's sheet (John, 2026-10-31).
     expect(texts).toContain('Full');
     expect(texts.some((t) => / open · \d+ listed/.test(String(t)))).toBe(false);
-    expect(root.findAll((n) => n.props.testID === 'seat-age' && typeof n.type === 'string')[0].props.children).toBe(
-      'Reported just now',
-    );
+    // Seat ages are hidden for now (round 124, John); VoiceOver still hears them.
+    expect(root.findAll((n) => n.props.testID === 'seat-age')).toHaveLength(0);
     expect(root.findAll((n) => n.props.testID === 'flights-line' && typeof n.type === 'string').length).toBe(1);
     expect(root.findAll((n) => n.props.testID === 'seat-summary').length).toBeGreaterThan(0);
     act(() => button.props.onPress());
@@ -76,14 +75,18 @@ describe('ResultRow', () => {
       r = create(<ResultRow itinerary={it} selected now={NOW} onPress={jest.fn()} />);
     });
     const texts = r!.root.findAll((n) => typeof n.props.children === 'string').map((n) => n.props.children);
-    expect(texts).toContain('Seats reported just now');
-    expect(texts.filter((t) => /reported/i.test(String(t))).length).toBe(2); // the host and the native text: one line
+    // No seat age on the card while ages are hidden (round 124, John).
+    expect(texts.filter((t) => /reported/i.test(String(t)))).toHaveLength(0);
     const headlineRow = r!.root.findAll((n) => n.props.testID === 'headline-row' && typeof n.type === 'string')[0];
     expect(headlineRow.findAll((n) => n.props.testID === 'seat-summary').length).toBeGreaterThan(0);
-    // Round 122: the chance shares one small line with the stops and trip length, under the times.
-    const sub = headlineRow.findAll((n) => typeof n.props.children === 'string').map((n) => String(n.props.children));
-    expect(sub.some((t) => /stop|Nonstop/.test(t))).toBe(true);
+    // Round 124: the chance sits under the times; the stop count sits on top of the trip length.
     expect(headlineRow.findAll((n) => n.props.testID === 'row-times')).toHaveLength(0);
+    const stack = r!.root.findAll((n) => n.props.testID === 'row-stops' && typeof n.type === 'string')[0];
+    const stackTexts = stack
+      .findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string')
+      .map((n) => n.props.children);
+    expect(stackTexts[0]).toMatch(/stop|Nonstop/);
+    expect(stack.findAll((n) => n.props.testID === 'row-trip-length' && typeof n.type === 'string')).toHaveLength(1);
     expect(r!.root.findAll((n) => n.props.testID === 'flights-line').length).toBe(0);
     const button = r!.root.findAll((n) => n.props.accessibilityRole === 'button')[0];
     expect(button.props.accessibilityHint).toBe('Closes the route card');
@@ -178,8 +181,8 @@ describe('ResultRow', () => {
     const words = summary.findAll((n) => typeof n.props.children === 'string').map((n) => n.props.children);
     expect(words[0]).toBe('Long\u00a0shot');
     const texts = r!.root.findAll((n) => typeof n.props.children === 'string').map((n) => n.props.children as string);
-    // One age for the card, none per leg.
-    expect(texts.filter((t) => t.includes('reported just now'))).toEqual(['Seats reported just now', 'Seats reported just now']);
+    // No seat age on the card or its legs while ages are hidden (round 124, John).
+    expect(texts.filter((t) => t.includes('reported just now'))).toEqual([]);
     // The route card names the connection between the legs.
     const all = r!.root
       .findAll((n) => typeof n.type === 'string' && n.props.children != null)
@@ -776,8 +779,7 @@ describe('ResultRow', () => {
     expect(head).not.toContain('DEN → LAX canceled');
     expect(r!.root.findAll((n) => n.props.testID === 'headline')).toHaveLength(0);
     expect(row.findAll((n) => n.props.testID === 'seat-summary').length).toBeGreaterThan(0);
-    const age = r!.root.findAll((n) => n.props.testID === 'seat-age' && typeof n.type === 'string')[0];
-    expect(age.props.children).toBe('Seats reported just now');
+    expect(r!.root.findAll((n) => n.props.testID === 'seat-age')).toHaveLength(0);
     // The canceled leg keeps its one tag on its own line; no seat text per leg.
     const timeline = r!.root.findAll((n) => n.props.testID === 'leg-timeline' && typeof n.type === 'string')[0];
     const words = timeline.findAll((n) => typeof n.props.children === 'string').map((n) => n.props.children as string);

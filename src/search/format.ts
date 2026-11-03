@@ -88,7 +88,7 @@ export const TIER_WORD: Record<SeatTier, string> = {
  * never the only signal). Typical loads are neutral: no tier word.
  */
 export function seatText(seats: LegSeats, now: number): string {
-  if (seats.source === 'unknown' || seats.netSeats == null) return 'No data yet';
+  if (seats.source === 'unknown' || seats.netSeats == null) return 'No Estimate';
   if (seats.source === 'typical') {
     // Typical loads are monthly averages; the month isn't worth the space (John, 2026-11-02).
     return `~${Math.max(0, seats.netSeats)} open seats estimated`;
@@ -134,11 +134,11 @@ export function routeSeatAge(it: Itinerary, now: number): string | null {
 
 /**
  * Neutral seat line when a route has no counted tier (only typical loads or no
- * data): the tightest typical leg, e.g. "~51 open seats estimated", else "No data yet".
+ * data): the tightest typical leg, e.g. "~51 open seats estimated", else "No Estimate".
  */
 export function neutralSeatText(it: Itinerary, now: number): string {
   const typical = it.legs.filter((l) => l.seats.source === 'typical' && l.seats.netSeats != null);
-  if (!typical.length) return 'No data yet';
+  if (!typical.length) return 'No Estimate';
   const least = typical.reduce((a, b) => ((b.seats.netSeats as number) < (a.seats.netSeats as number) ? b : a));
   return seatText(least.seats, now);
 }
@@ -156,6 +156,14 @@ export function slimStops(it: Itinerary, layovers?: readonly number[]): string {
     ...short.map((c) => (c.min < 0 ? `missed at ${c.airport}` : `${formatDuration(c.min)} at ${c.airport}`)),
   ].join(' · ');
 }
+
+/**
+ * Whether seat numbers show where they came from and how old they are ("Reported 5m ago",
+ * "Est. 2h ago", "Seats reported just now"). Off for now (John, 2026-11-03: "I also don't need you
+ * to label when a user reported or estimated x time ago at this time"); the data is kept, and
+ * VoiceOver still hears it, so turning this back on brings the labels back.
+ */
+export const SHOW_SEAT_AGE = false;
 
 /** Where a leg's seat number came from and its age: "Reported 5m ago", "Est. 2h ago". */
 export function seatSourceText(seats: LegSeats, now: number): string | null {

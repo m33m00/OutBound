@@ -9,6 +9,7 @@ import {
   formatTime,
   neutralSeatText,
   routeSeatAge,
+  SHOW_SEAT_AGE,
   routeSeatSummary,
   rowAccessibilityLabel,
   rowTimes,
@@ -119,6 +120,30 @@ function LegTimes({ leg, view, text, dimmed }: { leg: Flight; view?: LegStatusVi
         {keep(t.arrive)}
       </Text>
     </Text>
+  );
+}
+
+/**
+ * The stop count on top of the trip length, right-aligned (round 124, John: "Can the number of stops
+ * be listed on top of the time? Even when it says Nonstop?"). A short layover rides on the stops
+ * line after a thin divider.
+ */
+function StopsStack({ stops, length, color, lead }: { stops: string; length: string | null; color: string; lead: string }) {
+  return (
+    <View style={styles.stopsStack} testID="row-stops">
+      <MetaLine
+        text={stops}
+        gap={6}
+        style={styles.stopsTop}
+        textStyle={[textStyles.small, { color: lead, fontFamily: fonts.bodyMedium }]}
+        testID="row-stop-count"
+      />
+      {length ? (
+        <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color }]} testID="row-trip-length">
+          {length}
+        </Text>
+      ) : null}
+    </View>
   );
 }
 
@@ -444,6 +469,8 @@ export const ResultRow = memo(function ResultRow({
   const edgeW = highlight || it.isFull ? 2 : StyleSheet.hairlineWidth;
   // Every value shows its age: the summary's comes from the leg that sets it.
   const summaryAge = summary ? routeSeatAge(it, now) : null;
+  // Shown only while seat ages are on (off since round 124, John).
+  const shownAge = SHOW_SEAT_AGE ? summaryAge : null;
   // The worst live thing on the route: the slim row's one tag. The route card has no banner for it; each
   // leg's own pill says it (John, 2026-11-02).
   const headline = statusHeadline(it, status);
@@ -576,26 +603,21 @@ export const ResultRow = memo(function ResultRow({
               <View
                 style={large ? [styles.stub, { backgroundColor: c.ink }] : styles.stubSlim}
                 testID={large ? 'ticket-stub' : undefined}>
-                {/* The times lead, with Save top right (John, 2026-11-01); the chance, stops and trip length
-                    sit under them on one small line, so the header is two rows, not three (round 122). */}
+                {/* The times lead with the chance under them; the stop count sits on top of the trip length
+                    at the right, Nonstop too (round 124, John: "Doesn't need to be all horizontal on a
+                    line"); Save top right (John, 2026-11-01). */}
                 <View style={styles.headlineRow}>
-                  <View style={styles.headlineMain}>{times}</View>
+                  <View style={[styles.headlineMain, styles.headlineStack]}>
+                    {times}
+                    <View style={[styles.line, styles.subLine]} testID="headline-row">
+                      {seatSummary(false)}
+                    </View>
+                  </View>
+                  <StopsStack stops={stopCount(it)} length={tripLength(it, status)} color={hc.muted} lead={hc.text} />
                   {topAction ? (
                     <View style={styles.topAction} testID="route-card-action">
                       {topAction}
                     </View>
-                  ) : null}
-                </View>
-                <View style={[styles.line, styles.subLine]} testID="headline-row">
-                  {seatSummary(false)}
-                  {/* Each fact its own word group, set apart by space, not dots (round 123, John). */}
-                  <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: hc.muted }]}>
-                    {stopCount(it)}
-                  </Text>
-                  {tripLength(it, status) ? (
-                    <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: hc.muted }]}>
-                      {tripLength(it, status)}
-                    </Text>
                   ) : null}
                 </View>
               </View>
@@ -615,7 +637,7 @@ export const ResultRow = memo(function ResultRow({
             )}
             <View style={large ? styles.ticketBody : styles.stubSlim}>
               <LegTimeline itinerary={it} status={status} now={now} large={!!large} dimmed={dimmed} onLegPress={onLegPress} />
-              {cardAge ? (
+              {cardAge && SHOW_SEAT_AGE ? (
                 <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]} testID="seat-age">
                   {cardAge}
                 </Text>
@@ -651,20 +673,16 @@ export const ResultRow = memo(function ResultRow({
                 {/* The market as a mini route line (round 119, John picked it): ends big, stops above their dots. */}
                 <MiniRoute airports={[it.origin, ...it.legs.map((l) => l.flight.to)]} dimmed={dimmed} />
               </View>
-              {/* The route line already names the connections; the slim row adds short layovers. Items
-                  are set apart by space, not dots (round 123, John). */}
-              <MetaLine
-                parts={[
-                  slimStops(
-                    it,
-                    it.connections.map((_, k) => liveLayoverMin(it, status, k)),
-                  ),
-                  tripLength(it, status),
-                ]}
-                gap={10}
-                style={styles.metaEnd}
-                textStyle={[textStyles.body, { color: c.muted }]}
-                testID="row-stops"
+              {/* The stop count on top of the trip length (round 124, John), Nonstop too; the route line
+                  already names the connections, so the stops line adds only short layovers. */}
+              <StopsStack
+                stops={slimStops(
+                  it,
+                  it.connections.map((_, k) => liveLayoverMin(it, status, k)),
+                )}
+                length={tripLength(it, status)}
+                color={c.muted}
+                lead={dimmed ? c.muted : c.text}
               />
             </View>
             {/* Slim row: who flies it and anything live; seats per leg live in the route card. One line of
@@ -681,9 +699,9 @@ export const ResultRow = memo(function ResultRow({
                   <StatusTag label={headline.label} tone={headline.tone} />
                 </View>
               ) : null}
-              {summaryAge ? (
+              {shownAge ? (
                 <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]} testID="seat-age">
-                  {summaryAge}
+                  {shownAge}
                 </Text>
               ) : null}
             </View>
@@ -751,9 +769,11 @@ const styles = StyleSheet.create({
   headlineMain: { flex: 1, minWidth: 0 },
   // The chance word, stops and trip length under the times: one small line, the dot and words
   // apart by a little more than a space (round 122).
-  subLine: { justifyContent: 'flex-start', columnGap: 12, rowGap: 2 },
-  // The slim row's stops and trip length hug the right end and wrap between items.
-  metaEnd: { justifyContent: 'flex-end', flexShrink: 0 },
+  subLine: { justifyContent: 'flex-start', rowGap: 2 },
+  // The stop count over the trip length, hugging the right end.
+  stopsStack: { alignItems: 'flex-end', flexShrink: 0, maxWidth: '45%' },
+  stopsTop: { justifyContent: 'flex-end' },
+  headlineStack: { gap: 2 },
   // A 44pt tap target that doesn't make the headline line taller: it overhangs into the card's padding.
   topAction: { marginVertical: -8, marginRight: -10 },
   topRight: {

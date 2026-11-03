@@ -6,6 +6,7 @@ import { sampleFeed, sampleMine } from '@/requests/requests';
 
 import { ReportSheet } from '../ReportSheet';
 import { RequestRow } from '../RequestRow';
+import { lineTexts } from '@/testing/lineTexts';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -183,7 +184,7 @@ describe('RequestRow', () => {
     });
     const texts = hostTexts(r!);
     expect(texts).toEqual(expect.arrayContaining(['Answered', 'Waiting']));
-    expect(texts.some((t) => / open\u2003\d+ listed\u2003answered /.test(t))).toBe(true);
+    expect(lineTexts(r!.root).some((t) => / open \| \d+ listed \| answered /.test(t))).toBe(true);
     expect(r!.root.findAll((n) => n.props.testID === 'answer-request')).toHaveLength(0);
     // VoiceOver hears "answered" once (in the detail), and Waiting at the end.
     const labels = r!.root
