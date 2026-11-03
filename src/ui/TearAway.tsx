@@ -53,43 +53,89 @@ export function useTearAway(): Launch | null {
 }
 
 /**
- * The card is picked up, bent back in your hands at the perforation, held creased for a beat, torn down
- * the crease from left to right, and the top flies into My Trips while the rest lies back flat; then the
- * header settles back onto the card (rounds 127 to 129, John: "bending back the whole card as if it's in
- * your hand and you're tearing it down the line"). About 1.4s in all.
+ * The card is picked up and held at an angle, the stub above the perforation curls back (round 130),
+ * the rip runs along the perforation while it's curled, and the curled stub flies into My Trips while
+ * the rest of the card lies back down; then the header settles back onto the card (rounds 127 to 130,
+ * John: "I quite literally want it to bend back and tear like an exponential graph"). About 1.5s in all.
  */
-export const LIFT_MS = 160;
-export const BEND_MS = 240;
+export const LIFT_MS = 180;
+export const CURL_MS = 380;
 export const HOLD_MS = 80;
 export const RIP_MS = 280;
 export const FLY_MS = 420;
 export const SETTLE_MS = 200;
-/**
- * Depth of the bend. The perspective is close (a small number) so the halves visibly narrow as they
- * turn away, like paper in your hands, rather than just squashing flat (round 129, John: "it folds in
- * like a 2D effect").
- */
-export const PERSPECTIVE = 420;
-export const TOP_BEND_DEG = 40;
-export const BOTTOM_BEND_DEG = 34;
-/** The pick-up: a small lift and tilt. */
+/** Each slice of the curl sees the scene from this close, so the curl has depth. */
+export const PERSPECTIVE = 600;
+/** The pick-up: a small lift, and held at an angle so the curl's side shows. */
 const LIFT_SCALE = 1.03;
-const LIFT_TILT_X = 6;
-const LIFT_TILT_Y = -8;
-/** How far the free left end of the top lifts as the rip runs. */
+const LIFT_TILT_X = 12;
+const LIFT_TILT_Y = -16;
+/** How far the free left end of the stub lifts as the rip runs. */
 const RIP_DEG = 4;
 /** Light ticks along the rip, like paper giving at each hole. */
 const RIP_TICKS = 3;
-/** The torn edge: small paper teeth hanging under the top, each the lower half of a turned square. */
+/** The torn edge: small paper teeth hanging under the stub, each the lower half of a turned square. */
 const TOOTH = 6;
 const TOOTH_H = (TOOTH * Math.SQRT2) / 2;
 
 /**
- * How much narrower the far edge of a panel of this height looks when it turns this far away under this
- * perspective: 1 is flat, smaller reads as depth. The tests hold the bend to real foreshortening.
+ * The curl (round 130): the stub is cut into thin slices across, each hinged on the one below it, and
+ * each bends a little more than the last. The total turn up the stub follows an exponential, so near the
+ * perforation the paper stays almost flat and it curves away harder and harder toward the free edge,
+ * like the graph of e^x on its side, instead of folding flat on one hinge.
  */
-export function farEdgeScale(height: number, deg: number, perspective = PERSPECTIVE): number {
-  return perspective / (perspective + height * Math.sin((deg * Math.PI) / 180));
+export const CURL_SLICES = 14;
+export const CURL_TOTAL_DEG = 140;
+export const CURL_GROWTH = 3.2;
+
+/** How far the paper has turned at a point a fraction `at` of the way up the stub (0 at the line). */
+export function curlTurn(at: number, total = CURL_TOTAL_DEG, growth = CURL_GROWTH): number {
+  return (total * (Math.exp(growth * at) - 1)) / (Math.exp(growth) - 1);
+}
+
+/** Points of the curl's timeline that each slice's motion is sampled at. */
+const CURL_STEPS = Array.from({ length: 11 }, (_, i) => i / 10);
+
+export interface SlicePose {
+  /** How far the slice has turned back, in degrees. */
+  turn: number;
+  /** Where its bottom edge lands and how big it looks, seen from in front of the card's middle. */
+  shift: number;
+  scale: number;
+  /** How deep its bottom edge sits, for its own perspective. */
+  depth: number;
+}
+
+/**
+ * Where every slice of the stub sits at a point `t` of the curl, worked out in one shared 3D space: the
+ * stub climbs from the perforation, each slice tilted back by the curl so far, and each is then seen
+ * from `perspective` in front of the card's middle (`centerY`, from the stub's top). Laying the slices
+ * out this way, side by side, keeps the curve true; views nested inside each other flatten at every level
+ * and lose it.
+ */
+export function slicePoses(t: number, height: number, centerY: number, perspective = PERSPECTIVE): SlicePose[] {
+  const n = CURL_SLICES;
+  const h = height / n;
+  const out: SlicePose[] = [];
+  let y = height;
+  let z = 0;
+  for (let i = 0; i < n; i++) {
+    const turn = t * curlTurn((i + 1) / n);
+    const scale = perspective / (perspective + z);
+    out.push({ turn, shift: centerY + (y - centerY) * scale - (height - i * h), scale, depth: z });
+    const a = (turn * Math.PI) / 180;
+    y -= h * Math.cos(a);
+    z += h * Math.sin(a);
+  }
+  return out;
+}
+
+/** Each slice's own bend, bottom (at the perforation) to top (the free edge). */
+export function curlAngles(slices = CURL_SLICES, total = CURL_TOTAL_DEG, growth = CURL_GROWTH): number[] {
+  return Array.from(
+    { length: slices },
+    (_, i) => curlTurn((i + 1) / slices, total, growth) - curlTurn(i / slices, total, growth),
+  );
 }
 
 interface Flight {
@@ -190,7 +236,7 @@ export function TearAwayHost({ children }: { children: ReactNode }) {
 
 function FlyingPiece({ flight, onDone }: { flight: Flight; onDone: () => void }) {
   const lift = useRef(new Animated.Value(0)).current;
-  const bend = useRef(new Animated.Value(0)).current;
+  const curl = useRef(new Animated.Value(0)).current;
   const rip = useRef(new Animated.Value(0)).current;
   const fly = useRef(new Animated.Value(0)).current;
   useEffect(() => {
@@ -199,7 +245,8 @@ function FlyingPiece({ flight, onDone }: { flight: Flight; onDone: () => void })
       Animated.timing(v, { toValue: 1, duration, easing, useNativeDriver: true });
     const run = Animated.sequence([
       timing(lift, LIFT_MS, Easing.out(Easing.quad)),
-      timing(bend, BEND_MS, Easing.inOut(Easing.cubic)),
+      // The curl deepens slowly, then fast: exponential easing.
+      timing(curl, CURL_MS, Easing.in(Easing.exp)),
       // Held creased for a beat before it gives.
       Animated.delay(HOLD_MS),
       timing(rip, RIP_MS, Easing.inOut(Easing.quad)),
@@ -210,9 +257,9 @@ function FlyingPiece({ flight, onDone }: { flight: Flight; onDone: () => void })
       onDone();
     });
     // A tick as it creases, then light ticks along the rip.
-    const ripAt = LIFT_MS + BEND_MS + HOLD_MS;
+    const ripAt = LIFT_MS + CURL_MS + HOLD_MS;
     const ticks = [
-      setTimeout(impactTick, LIFT_MS + BEND_MS - 30),
+      setTimeout(impactTick, LIFT_MS + CURL_MS - 30),
       ...Array.from({ length: RIP_TICKS }, (_, i) => setTimeout(impactTick, ripAt + (i * RIP_MS) / RIP_TICKS + 40)),
     ];
     return () => {
@@ -240,30 +287,6 @@ function FlyingPiece({ flight, onDone }: { flight: Flight; onDone: () => void })
       { rotateY: held.interpolate({ inputRange: [0, 1], outputRange: ['0deg', `${LIFT_TILT_Y}deg`], extrapolate: clamp }) },
     ],
   };
-  // Both halves turn away from you around the perforation, like a card bent back in two hands. The rest
-  // of the card lies back flat while the top flies; the top opens a little so it still reads as a ticket.
-  const bottomBent = Animated.subtract(bend, fly);
-  const bottomMotion = {
-    transformOrigin: 'center top',
-    transform: [
-      { perspective: PERSPECTIVE },
-      {
-        rotateX: bottomBent.interpolate({
-          inputRange: [0, 1],
-          outputRange: ['0deg', `-${BOTTOM_BEND_DEG}deg`],
-          extrapolate: clamp,
-        }),
-      },
-    ],
-  };
-  const topBent = Animated.subtract(bend, Animated.multiply(fly, 0.4));
-  const topMotion = {
-    transformOrigin: 'center bottom',
-    transform: [
-      { perspective: PERSPECTIVE },
-      { rotateX: topBent.interpolate({ inputRange: [0, 1], outputRange: ['0deg', `${TOP_BEND_DEG}deg`], extrapolate: clamp }) },
-    ],
-  };
   // The rip, hinged at the bottom right where it's still attached: the free left end lifts as it runs.
   const ripMotion = {
     transformOrigin: 'right bottom',
@@ -280,31 +303,28 @@ function FlyingPiece({ flight, onDone }: { flight: Flight; onDone: () => void })
       { scale: fly.interpolate({ inputRange: [0, 1], outputRange: [1, 0.12] }) },
     ],
   };
-  // Turned from the light, each face darkens, most at the crease.
-  const shade = (most: number, fades: Animated.AnimatedSubtraction) =>
-    fades.interpolate({ inputRange: [0, 1], outputRange: [0, most], extrapolate: clamp });
   const edge = { borderColor: source.edge, borderWidth: source.edgeWidth };
   const step = TOOTH * Math.SQRT2;
   const teeth = Math.ceil(width / step) + 2;
   return (
     <Animated.View style={[styles.card, { left: x, top: y, width, height, shadowColor: '#000' }, cardMotion]} testID="tear-away">
-      {/* The rest of the card, under the perforation. */}
-      <Animated.View style={[styles.half, { top: topHeight, bottom: 0 }, bottomMotion]} testID="tear-bottom">
-        <View style={[styles.bottomPaper, edge, { backgroundColor: source.bodyPaper }]}>
-          {flight.body}
-          <Animated.View pointerEvents="none" style={[styles.shade, { opacity: shade(0.16, bottomBent) }]} />
-          <Animated.View pointerEvents="none" style={[styles.creaseTop, { opacity: shade(0.22, bottomBent) }]} />
-        </View>
-      </Animated.View>
-      {/* The top, which tears off and flies. */}
+      {/* The rest of the card, under the perforation, stays flat in your hand. */}
+      <View style={[styles.half, { top: topHeight, bottom: 0 }]} testID="tear-bottom">
+        <View style={[styles.bottomPaper, edge, { backgroundColor: source.bodyPaper }]}>{flight.body}</View>
+      </View>
+      {/* The stub, which curls back, tears off and flies. */}
       <Animated.View style={[styles.half, { top: 0, height: topHeight }, flyMotion]}>
-        <Animated.View style={[styles.fill, topMotion]} testID="tear-peel">
-          <Animated.View style={[styles.fill, ripMotion]} testID="tear-rip">
-            <View style={[styles.topPaper, edge, { backgroundColor: source.paper }]} testID="tear-piece">
-              <TearCopyContext.Provider value={true}>{flight.piece}</TearCopyContext.Provider>
-              <Animated.View pointerEvents="none" style={[styles.shade, { opacity: shade(0.22, topBent) }]} testID="tear-shade" />
-              <Animated.View pointerEvents="none" style={[styles.creaseBottom, { opacity: shade(0.26, topBent) }]} />
-            </View>
+        <Animated.View style={[styles.fill, ripMotion]} testID="tear-rip">
+          <Curl
+            curl={curl}
+            height={topHeight}
+            centerY={height / 2}
+            back={source.paper}
+            paper={
+              <View style={[styles.topPaper, edge, { backgroundColor: source.paper, height: topHeight }]} testID="tear-piece">
+                <TearCopyContext.Provider value={true}>{flight.piece}</TearCopyContext.Provider>
+              </View>
+            }>
             {/* The ragged edge shows hole by hole as the rip runs from left to right. */}
             <View style={[styles.teeth, { left: source.edgeWidth, right: source.edgeWidth }]} testID="tear-edge">
               {Array.from({ length: teeth }, (_, i) => {
@@ -328,10 +348,94 @@ function FlyingPiece({ flight, onDone }: { flight: Flight; onDone: () => void })
                 );
               })}
             </View>
-          </Animated.View>
+          </Curl>
         </Animated.View>
       </Animated.View>
     </Animated.View>
+  );
+}
+
+/**
+ * The stub as thin slices across, laid side by side and each moved to its place on the curve (round 130),
+ * so together they curve back: almost flat at the perforation, rolling over toward the free edge. Every
+ * slice shows its own band of the same paper and darkens as it turns from the light; once a slice turns
+ * past upright you see the plain back of the paper. `children` sit on the bottom slice, at the line.
+ */
+function Curl({
+  curl,
+  height,
+  centerY,
+  paper,
+  back,
+  children,
+}: {
+  curl: Animated.Value;
+  height: number;
+  centerY: number;
+  paper: ReactNode;
+  back: string;
+  children?: ReactNode;
+}) {
+  const n = CURL_SLICES;
+  const slice = height / n;
+  const poses = CURL_STEPS.map((t) => slicePoses(t, height, centerY));
+  const full = poses[poses.length - 1];
+  return (
+    <View style={styles.fill}>
+      {Array.from({ length: n }, (_, i) => {
+        const at = (k: keyof SlicePose) => poses.map((p) => p[i][k]);
+        const turned = curlTurn((i + 1) / n) / CURL_TOTAL_DEG;
+        // The point of the curl where this slice stands upright, after which its back shows.
+        const upright = full[i].turn > 90 ? 90 / full[i].turn : null;
+        const overlap = i === n - 1 ? 0 : 0.75;
+        return (
+          <Animated.View
+            key={i}
+            style={[
+              styles.slice,
+              {
+                top: height - (i + 1) * slice,
+                height: slice,
+                transformOrigin: 'center bottom',
+                transform: [
+                  { translateY: curl.interpolate({ inputRange: CURL_STEPS, outputRange: at('shift') }) },
+                  { scale: curl.interpolate({ inputRange: CURL_STEPS, outputRange: at('scale') }) },
+                  { perspective: PERSPECTIVE + full[i].depth },
+                  {
+                    rotateX: curl.interpolate({
+                      inputRange: CURL_STEPS,
+                      outputRange: at('turn').map((d) => `${d}deg`),
+                    }),
+                  },
+                ],
+              },
+            ]}
+            testID="curl-slice">
+            {/* A hair taller than the slice so no seam shows between slices. */}
+            <View style={[styles.sliceClip, { height: slice + overlap, top: -overlap, backgroundColor: back }]}>
+              <Animated.View
+                style={[
+                  styles.slicePaper,
+                  { top: -(height - (i + 1) * slice) + overlap },
+                  upright != null
+                    ? { opacity: curl.interpolate({ inputRange: [0, upright, upright + 0.001, 1], outputRange: [1, 1, 0, 0] }) }
+                    : null,
+                ]}>
+                {paper}
+              </Animated.View>
+              <Animated.View
+                pointerEvents="none"
+                style={[
+                  styles.shade,
+                  { opacity: curl.interpolate({ inputRange: [0, 1], outputRange: [0, 0.06 + 0.3 * turned] }) },
+                ]}
+              />
+            </View>
+            {i === 0 ? children : null}
+          </Animated.View>
+        );
+      })}
+    </View>
   );
 }
 
@@ -347,7 +451,6 @@ const styles = StyleSheet.create({
   half: { position: 'absolute', left: 0, right: 0 },
   fill: { flex: 1 },
   topPaper: {
-    flex: 1,
     overflow: 'hidden',
     borderBottomWidth: 0,
     borderTopLeftRadius: radius.md,
@@ -362,8 +465,9 @@ const styles = StyleSheet.create({
   },
   shade: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: '#000' },
   // A darker band along the crease on each side of it.
-  creaseBottom: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 14, backgroundColor: '#000' },
-  creaseTop: { position: 'absolute', left: 0, right: 0, top: 0, height: 14, backgroundColor: '#000' },
+  slice: { position: 'absolute', left: 0, right: 0 },
+  sliceClip: { position: 'absolute', left: 0, right: 0, overflow: 'hidden' },
+  slicePaper: { position: 'absolute', left: 0, right: 0 },
   teeth: { position: 'absolute', bottom: -TOOTH_H, height: TOOTH_H, overflow: 'hidden' },
   tooth: { position: 'absolute', top: -TOOTH / 2, width: TOOTH, height: TOOTH, transform: [{ rotate: '45deg' }] },
 });

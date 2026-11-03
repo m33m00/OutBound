@@ -162,3 +162,4 @@ Each item names its owner. One item per work session. spec-keeper runs a pre-fli
 | 155 | Design round 127: the save tear peels the header back and rips it left to right along the perforation (John) | main | P2 | Built (design round 127, branch claude/project-thread-fzqwou) |
 | 156 | Design round 128: the save tear folds the header hard back, holds, then rips along the fold (John) | main | P2 | Built (design round 128, branch claude/project-thread-fzqwou) |
 | 157 | Design round 129: the whole route card bends back in 3D at the perforation and tears down the crease; "Arrive at DFW by 2:40 PM" beside Leave now (John) | main | P2 | Built (design round 129, branch claude/project-thread-fzqwou) |
+| 158 | Design round 130: the torn top curls back on an exponential curve (flat at the perforation, rolling harder toward the edge), rips while curled and flies curled (John) | main | P2 | Built (design round 130, branch claude/project-thread-fzqwou) |
