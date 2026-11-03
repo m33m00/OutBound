@@ -16,7 +16,7 @@ import {
 import { AIRPORTS, areaFor, localDate, type Flight, type Itinerary, type SearchRequest } from '@/engine';
 import type { RouteImpact } from '@/live';
 import { shortDate, type DateChip } from '@/search/dates';
-import { formatTime } from '@/search/format';
+import { formatTime, rowTimes } from '@/search/format';
 import { departedFirst, type RowStatus } from '@/search/statusTags';
 import type { SearchState } from '@/search/useRouteSearch';
 import { fonts, radius, spacing, textStyles, useColors } from '@/theme';
@@ -403,7 +403,11 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
                   status={p.statuses?.[focused.id]}
                   topAction={
                     p.onToggleSave ? (
-                      <SaveRouteButton saved={!!p.isSaved?.(focused)} onPress={() => p.onToggleSave?.(focused)} />
+                      <SaveRouteButton
+                        saved={!!p.isSaved?.(focused)}
+                        onPress={() => p.onToggleSave?.(focused)}
+                        ticket={{ title: focusTitle, sub: ticketSub(focused) }}
+                      />
                     ) : undefined
                   }
                 />
@@ -490,6 +494,12 @@ export const PULL_DOWN_VELOCITY = 1;
  * A hard pull down at the top of a list: dragged well past the top (iOS bounce), or
  * flicked down fast while already at the top. A pull further down the list just scrolls.
  */
+/** The little saved ticket's line under the route: "10:40 AM – 7:45 PM" (round 125). */
+function ticketSub(it: Itinerary): string {
+  const t = rowTimes(it);
+  return `${t.depart} – ${t.arrive}`;
+}
+
 /** "DFW → LGA" with soft grey arrows so the codes lead (round 120, the Clean look). */
 function softArrows(title: string, accent: string) {
   return title.split(' → ').flatMap((part, i) =>

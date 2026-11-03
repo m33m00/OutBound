@@ -40,6 +40,7 @@ import { growFit, halfSnap, Sheet, SHEET_HANDLE_H, SHEET_LOCKED_TOP, sheetMode, 
 import { useRadarLayers } from '@/ui/useRadarLayers';
 import { useSheetContent } from '@/ui/useSheetContent';
 import { selectionTick } from '@/ui/haptics';
+import { TearAwayHost } from '@/ui/TearAway';
 
 /** Peek height above the home indicator. */
 const PEEK = 132;
@@ -453,228 +454,231 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: c.bg }]} edges={['top']}>
-      <View style={styles.topBar}>
-        <Text style={[textStyles.wordmark, { color: c.text }]} accessibilityRole="header">
-          OutBound
-        </Text>
-      </View>
+      {/* Saving a route tears a little ticket off into My Trips (round 125); the layer sits over it all. */}
+      <TearAwayHost>
+        <View style={styles.topBar}>
+          <Text style={[textStyles.wordmark, { color: c.text }]} accessibilityRole="header">
+            OutBound
+          </Text>
+        </View>
 
-      <View style={styles.body} onLayout={onBodyLayout}>
-        <GlobeMap
-          routes={globeRoutes}
-          homeAirports={homeMarks}
-          origin={markOrigin ? mark(markOrigin) : null}
-          destinations={markDestinations}
-          // No airport delay badges (the purple diamonds): they had no key and repeated the delay
-          // callout John dropped in round 104 (John, 2026-11-02).
-          radar={radar.layers}
-          selectedRouteId={selectedId}
-          // Rests on your From airport (your location when it's on) and drifts back there after a spin.
-          home={homeCenter}
-          // Before a search: a faint arc draws itself between From and To (John, 2026-11-01).
-          preview={previewPair}
-          // The home pin ripple, only on the search page while this tab is in view.
-          homeMotion={focused && !showResults && !routeOpen}
-          // A tap on a route picks it (with the same tick as a row); a tap on empty globe
-          // closes the open route the same way "‹ Routes" does.
-          onSelectRoute={(id) => {
-            if (id) {
-              selectionTick();
-              select(id);
-            } else if (selectedId) closeRoute(selectedId);
-          }}
-          insets={{ bottom: snaps[sheetAt], top: airportBanner && airportBannerH ? airportBannerH + spacing.group : 0 }}
-        />
-        {/* "At DAL? Report a load" drops down from the top into the map, out of the drawer
+        <View style={styles.body} onLayout={onBodyLayout}>
+          <GlobeMap
+            routes={globeRoutes}
+            homeAirports={homeMarks}
+            origin={markOrigin ? mark(markOrigin) : null}
+            destinations={markDestinations}
+            // No airport delay badges (the purple diamonds): they had no key and repeated the delay
+            // callout John dropped in round 104 (John, 2026-11-02).
+            radar={radar.layers}
+            selectedRouteId={selectedId}
+            // Rests on your From airport (your location when it's on) and drifts back there after a spin.
+            home={homeCenter}
+            // Before a search: a faint arc draws itself between From and To (John, 2026-11-01).
+            preview={previewPair}
+            // The home pin ripple, only on the search page while this tab is in view.
+            homeMotion={focused && !showResults && !routeOpen}
+            // A tap on a route picks it (with the same tick as a row); a tap on empty globe
+            // closes the open route the same way "‹ Routes" does.
+            onSelectRoute={(id) => {
+              if (id) {
+                selectionTick();
+                select(id);
+              } else if (selectedId) closeRoute(selectedId);
+            }}
+            insets={{ bottom: snaps[sheetAt], top: airportBanner && airportBannerH ? airportBannerH + spacing.group : 0 }}
+          />
+          {/* "At DAL? Report a load" drops down from the top into the map, out of the drawer
             (John, 2026-11-02). Only on the search page; the panel covers it when pulled up. */}
-        {airportBanner && atAirport ? (
-          <DropBanner onHeight={setAirportBannerH} onDismiss={() => setBannerGoneAt(atAirport)}>
-            <AtAirportCard
-              onDismiss={() => setBannerGoneAt(atAirport)}
-              code={atAirport}
-              upcoming={departures.filter((f) => f.departUtc > now).length}
-              onBoard={departures.length}
-              onReport={() => setDeparturesFor(atAirport)}
-            />
-          </DropBanner>
-        ) : null}
-        {/* Rain radar is switched in Settings > Map, not on the map (John, 2026-11-01). */}
-        {/* A picked route holds the panel at its size: no drag, no handle (John, 2026-11-01). */}
-        {bodyHeight > 0 ? (
-          <Sheet snaps={snaps} index={sheetAt} onIndexChange={setSheetIndex} locked={mode.locked} flush={mode.flush}>
-            {/* Search and results cross-fade as they swap (design round 29). */}
-            <Appear key={showResults ? 'results' : 'search'}>
-              {!showResults ? (
-                <SearchPanel
-                  chips={chips}
-                  date={date}
-                  onDate={setDate}
-                  origin={origin}
-                  destination={destination}
-                  onPickOrigin={() => setPicking('origin')}
-                  originEmptyText={
-                    origin
-                      ? undefined
-                      : locationStatus === 'locating'
-                        ? 'Finding nearest airport…'
-                        : locationStatus === 'denied'
-                          ? 'Location is off. Choose airport'
-                          : undefined
-                  }
-                  onPickDestination={() => setPicking('destination')}
-                  onSwap={() => {
-                    setPickedOrigin(destination);
-                    setDestination(origin);
-                  }}
-                  areaOn={areaOn}
-                  onToggleArea={toggleArea}
-                  onFilters={openFilters}
-                  filtersChanged={filtersChanged}
-                  onFind={() => runSearch()}
-                  onGetHome={getHomeShown ? getHome : undefined}
-                  onFitHeight={(h) =>
-                    setFit((prev) =>
-                      growFit(prev, `${locationCard ? 'card' : ''}${banner ? 'banner' : ''}${mainHome ? '' : 'sethome'}`, h),
-                    )
-                  }
-                  homeName={mainHome ? (areaFor(mainHome)?.city ?? mainHome) : undefined}
-                  onSetHome={mainHome ? undefined : () => router.push({ pathname: '/settings', params: { section: 'homes' } })}
-                  locationCard={
-                    locationCard ? (
-                      <LocationOptInCard
-                        onAllow={async () => {
-                          // A denial hides the card too (permission is no longer undetermined).
-                          updateSettings((await requestLocation()) ? { useLocation: true } : { locationAsked: true });
-                        }}
-                        onNotNow={() => updateSettings({ locationAsked: true })}
-                      />
-                    ) : null
-                  }
-                  banner={
-                    banner ? (
-                      <ResultsBanner
-                        banner={banner}
-                        onShow={() => {
-                          setShowHidden(true);
-                          setSheetIndex(SHEET.full);
-                        }}
-                        onDismiss={reset}
-                        next={tryNext}
-                      />
-                    ) : null
-                  }
-                />
-              ) : (
-                <ResultsPanel
-                  ref={listRef}
-                  state={state}
-                  selectedId={selectedId}
-                  now={now}
-                  onSelect={(id) => (id !== selectedId ? select(id) : closeRoute(id))}
-                  onBack={backToSearch}
-                  onRetry={() => rerun(state.request.date)}
-                  impacts={impacts.byId}
-                  impactsLoading={!sampleImpacts && live.state === 'loading'}
-                  onImpactPress={setImpactFor}
-                  onLegPress={setStatusFlight}
-                  statuses={rowStatuses}
-                  sampleFlights={!LIVE_FLIGHTS}
-                  showingHidden={showHidden}
-                  days={chips}
-                  onDay={(d) => {
-                    setDate(d);
-                    rerun(d);
-                  }}
-                  onRouteHeight={onRouteHeight}
-                  onRouteBarHeight={setRouteBar}
-                  onFilters={openFilters}
-                  filtersChanged={filtersChanged}
-                  note={missingNote}
-                  isSaved={(it) => saved.isSaved(savedKey(it, state.request.date))}
-                  onToggleSave={(it) => {
-                    const key = savedKey(it, state.request.date);
-                    if (saved.isSaved(key)) saved.remove(key);
-                    else saved.save(savedRouteFrom(it, state.request, Date.now()));
-                  }}
-                  selectedCard={
-                    firstLeg ? (
-                      <LeaveByCard
-                        airport={AIRPORTS[firstLeg.from]}
-                        departUtc={firstLeg.departUtc}
-                        departed={!!(selected && rowStatuses?.[selected.id]?.dimmed)}
-                        delayedText={selected ? (rowStatuses?.[selected.id]?.legs[0]?.newText ?? null) : null}
-                        bufferMin={settings.bufferMin}
-                        now={now}
-                        location={location}
-                        locationStatus={locationStatus}
-                        mapsApp={settings.mapsApp}
-                        liveDriveMin={liveDrive?.minutes ?? null}
-                        onUseLocation={async () => {
-                          if (await requestLocation()) updateSettings({ useLocation: true });
-                        }}
-                      />
-                    ) : null
-                  }
-                />
-              )}
-            </Appear>
-          </Sheet>
-        ) : null}
-      </View>
+          {airportBanner && atAirport ? (
+            <DropBanner onHeight={setAirportBannerH} onDismiss={() => setBannerGoneAt(atAirport)}>
+              <AtAirportCard
+                onDismiss={() => setBannerGoneAt(atAirport)}
+                code={atAirport}
+                upcoming={departures.filter((f) => f.departUtc > now).length}
+                onBoard={departures.length}
+                onReport={() => setDeparturesFor(atAirport)}
+              />
+            </DropBanner>
+          ) : null}
+          {/* Rain radar is switched in Settings > Map, not on the map (John, 2026-11-01). */}
+          {/* A picked route holds the panel at its size: no drag, no handle (John, 2026-11-01). */}
+          {bodyHeight > 0 ? (
+            <Sheet snaps={snaps} index={sheetAt} onIndexChange={setSheetIndex} locked={mode.locked} flush={mode.flush}>
+              {/* Search and results cross-fade as they swap (design round 29). */}
+              <Appear key={showResults ? 'results' : 'search'}>
+                {!showResults ? (
+                  <SearchPanel
+                    chips={chips}
+                    date={date}
+                    onDate={setDate}
+                    origin={origin}
+                    destination={destination}
+                    onPickOrigin={() => setPicking('origin')}
+                    originEmptyText={
+                      origin
+                        ? undefined
+                        : locationStatus === 'locating'
+                          ? 'Finding nearest airport…'
+                          : locationStatus === 'denied'
+                            ? 'Location is off. Choose airport'
+                            : undefined
+                    }
+                    onPickDestination={() => setPicking('destination')}
+                    onSwap={() => {
+                      setPickedOrigin(destination);
+                      setDestination(origin);
+                    }}
+                    areaOn={areaOn}
+                    onToggleArea={toggleArea}
+                    onFilters={openFilters}
+                    filtersChanged={filtersChanged}
+                    onFind={() => runSearch()}
+                    onGetHome={getHomeShown ? getHome : undefined}
+                    onFitHeight={(h) =>
+                      setFit((prev) =>
+                        growFit(prev, `${locationCard ? 'card' : ''}${banner ? 'banner' : ''}${mainHome ? '' : 'sethome'}`, h),
+                      )
+                    }
+                    homeName={mainHome ? (areaFor(mainHome)?.city ?? mainHome) : undefined}
+                    onSetHome={mainHome ? undefined : () => router.push({ pathname: '/settings', params: { section: 'homes' } })}
+                    locationCard={
+                      locationCard ? (
+                        <LocationOptInCard
+                          onAllow={async () => {
+                            // A denial hides the card too (permission is no longer undetermined).
+                            updateSettings((await requestLocation()) ? { useLocation: true } : { locationAsked: true });
+                          }}
+                          onNotNow={() => updateSettings({ locationAsked: true })}
+                        />
+                      ) : null
+                    }
+                    banner={
+                      banner ? (
+                        <ResultsBanner
+                          banner={banner}
+                          onShow={() => {
+                            setShowHidden(true);
+                            setSheetIndex(SHEET.full);
+                          }}
+                          onDismiss={reset}
+                          next={tryNext}
+                        />
+                      ) : null
+                    }
+                  />
+                ) : (
+                  <ResultsPanel
+                    ref={listRef}
+                    state={state}
+                    selectedId={selectedId}
+                    now={now}
+                    onSelect={(id) => (id !== selectedId ? select(id) : closeRoute(id))}
+                    onBack={backToSearch}
+                    onRetry={() => rerun(state.request.date)}
+                    impacts={impacts.byId}
+                    impactsLoading={!sampleImpacts && live.state === 'loading'}
+                    onImpactPress={setImpactFor}
+                    onLegPress={setStatusFlight}
+                    statuses={rowStatuses}
+                    sampleFlights={!LIVE_FLIGHTS}
+                    showingHidden={showHidden}
+                    days={chips}
+                    onDay={(d) => {
+                      setDate(d);
+                      rerun(d);
+                    }}
+                    onRouteHeight={onRouteHeight}
+                    onRouteBarHeight={setRouteBar}
+                    onFilters={openFilters}
+                    filtersChanged={filtersChanged}
+                    note={missingNote}
+                    isSaved={(it) => saved.isSaved(savedKey(it, state.request.date))}
+                    onToggleSave={(it) => {
+                      const key = savedKey(it, state.request.date);
+                      if (saved.isSaved(key)) saved.remove(key);
+                      else saved.save(savedRouteFrom(it, state.request, Date.now()));
+                    }}
+                    selectedCard={
+                      firstLeg ? (
+                        <LeaveByCard
+                          airport={AIRPORTS[firstLeg.from]}
+                          departUtc={firstLeg.departUtc}
+                          departed={!!(selected && rowStatuses?.[selected.id]?.dimmed)}
+                          delayedText={selected ? (rowStatuses?.[selected.id]?.legs[0]?.newText ?? null) : null}
+                          bufferMin={settings.bufferMin}
+                          now={now}
+                          location={location}
+                          locationStatus={locationStatus}
+                          mapsApp={settings.mapsApp}
+                          liveDriveMin={liveDrive?.minutes ?? null}
+                          onUseLocation={async () => {
+                            if (await requestLocation()) updateSettings({ useLocation: true });
+                          }}
+                        />
+                      ) : null
+                    }
+                  />
+                )}
+              </Appear>
+            </Sheet>
+          ) : null}
+        </View>
 
-      <AirportPicker
-        visible={pickerSheet.visible}
-        title={pickerSheet.shown === 'origin' ? 'From' : 'To'}
-        current={pickerSheet.shown === 'origin' ? origin : destination}
-        nearest={nearest}
-        homes={homes}
-        onPick={(code) => {
-          if (picking === 'origin') setPickedOrigin(code);
-          else setDestination(code);
-          setPicking(null);
-        }}
-        onClose={() => setPicking(null)}
-      />
-      <ImpactSheet
-        visible={impactSheet.visible}
-        title="Delays and weather"
-        subtitle={impactRoute}
-        impact={impactSheet.shown ? (impacts.byId[impactSheet.shown] ?? null) : null}
-        now={now}
-        onClose={() => setImpactFor(null)}
-      />
-      <FlightStatusSheet
-        flight={statusSheet.shown}
-        visible={statusSheet.visible}
-        now={now}
-        onClose={() => setStatusFlight(null)}
-        // Sample flights never ask the live service about a made-up flight.
-        liveOptions={LIVE_FLIGHTS ? undefined : SAMPLE_STATUS_OPTIONS}
-        // Sample rows open the same sample status their tag shows.
-        sample={
-          statusSheet.shown && flightStatuses.sample
-            ? (flightStatuses.byKey[flightLookupKey(legLookup(statusSheet.shown))] ?? null)
-            : null
-        }
-        load={statusLoad}
-        seats={statusSeats}
-      />
-      <DeparturesSheet
-        code={departuresSheet.shown}
-        visible={departuresSheet.visible}
-        flights={departures}
-        now={now}
-        reportFor={requests.reportFor}
-        onReport={requests.report}
-        onClose={() => setDeparturesFor(null)}
-      />
-      <FiltersModal
-        visible={filtersOpen}
-        filters={filters}
-        defaults={settings.search}
-        onChange={setFilters}
-        onClose={closeFilters}
-      />
+        <AirportPicker
+          visible={pickerSheet.visible}
+          title={pickerSheet.shown === 'origin' ? 'From' : 'To'}
+          current={pickerSheet.shown === 'origin' ? origin : destination}
+          nearest={nearest}
+          homes={homes}
+          onPick={(code) => {
+            if (picking === 'origin') setPickedOrigin(code);
+            else setDestination(code);
+            setPicking(null);
+          }}
+          onClose={() => setPicking(null)}
+        />
+        <ImpactSheet
+          visible={impactSheet.visible}
+          title="Delays and weather"
+          subtitle={impactRoute}
+          impact={impactSheet.shown ? (impacts.byId[impactSheet.shown] ?? null) : null}
+          now={now}
+          onClose={() => setImpactFor(null)}
+        />
+        <FlightStatusSheet
+          flight={statusSheet.shown}
+          visible={statusSheet.visible}
+          now={now}
+          onClose={() => setStatusFlight(null)}
+          // Sample flights never ask the live service about a made-up flight.
+          liveOptions={LIVE_FLIGHTS ? undefined : SAMPLE_STATUS_OPTIONS}
+          // Sample rows open the same sample status their tag shows.
+          sample={
+            statusSheet.shown && flightStatuses.sample
+              ? (flightStatuses.byKey[flightLookupKey(legLookup(statusSheet.shown))] ?? null)
+              : null
+          }
+          load={statusLoad}
+          seats={statusSeats}
+        />
+        <DeparturesSheet
+          code={departuresSheet.shown}
+          visible={departuresSheet.visible}
+          flights={departures}
+          now={now}
+          reportFor={requests.reportFor}
+          onReport={requests.report}
+          onClose={() => setDeparturesFor(null)}
+        />
+        <FiltersModal
+          visible={filtersOpen}
+          filters={filters}
+          defaults={settings.search}
+          onChange={setFilters}
+          onClose={closeFilters}
+        />
+      </TearAwayHost>
     </SafeAreaView>
   );
 }
