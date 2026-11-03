@@ -44,11 +44,20 @@ export function useTearAway(): Launch | null {
   return useContext(TearAwayContext);
 }
 
-/** A little wobble, the rip, the flight into My Trips, and the header settling back: under a second. */
-export const WOBBLE_MS = 150;
-export const TEAR_MS = 150;
-export const FLY_MS = 420;
-export const SETTLE_MS = 220;
+/**
+ * The peel back at the perforation, the rip along it from left to right, the flight into My Trips, and
+ * the header settling back (round 127, John: "pulling back the card and tearing it horizontally").
+ * About a second in all.
+ */
+export const PULL_MS = 200;
+export const RIP_MS = 300;
+export const FLY_MS = 400;
+export const SETTLE_MS = 200;
+/** How far the header bends back toward you at the perforation, and how far its free end lifts. */
+const PEEL_DEG = 26;
+const RIP_DEG = 4;
+/** Light ticks along the rip, like paper giving at each hole. */
+const RIP_TICKS = 3;
 /** The torn edge: small paper teeth hanging under the piece, each the lower half of a turned square. */
 const TOOTH = 6;
 const TOOTH_H = (TOOTH * Math.SQRT2) / 2;
@@ -69,8 +78,9 @@ interface Flight {
 
 /**
  * Saving a route tears the route card's header off along its perforation (round 126, John): the header
- * wobbles, rips along the dashed line with a light haptic, and arcs down into My Trips, shrinking as it
- * goes; then the header settles back onto the card so the screen isn't left broken. Drawn over the
+ * bends back at the dashed line, rips along it from left to right with light ticks (round 127), and arcs
+ * down into My Trips, shrinking as it goes; then the header settles back onto the card so the screen
+ * isn't left broken. Drawn over the
  * screen on a layer that never takes a touch. With Reduce Motion on nothing moves; Save's own tap says it.
  */
 export function TearAwayHost({ children }: { children: ReactNode }) {
@@ -137,24 +147,24 @@ export function TearAwayHost({ children }: { children: ReactNode }) {
 }
 
 function FlyingPiece({ flight, onDone }: { flight: Flight; onDone: () => void }) {
-  const wobble = useRef(new Animated.Value(0)).current;
-  const tear = useRef(new Animated.Value(0)).current;
+  const pull = useRef(new Animated.Value(0)).current;
+  const rip = useRef(new Animated.Value(0)).current;
   const fly = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     let finished = false;
     const run = Animated.sequence([
-      Animated.timing(wobble, { toValue: 1, duration: WOBBLE_MS, easing: Easing.linear, useNativeDriver: true }),
-      Animated.timing(tear, { toValue: 1, duration: TEAR_MS, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+      Animated.timing(pull, { toValue: 1, duration: PULL_MS, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+      Animated.timing(rip, { toValue: 1, duration: RIP_MS, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
       Animated.timing(fly, { toValue: 1, duration: FLY_MS, easing: Easing.in(Easing.cubic), useNativeDriver: true }),
     ]);
     run.start(() => {
       finished = true;
       onDone();
     });
-    // A light tick as it rips.
-    const t = setTimeout(impactTick, WOBBLE_MS);
+    // Light ticks as the rip runs along the holes.
+    const ticks = Array.from({ length: RIP_TICKS }, (_, i) => setTimeout(impactTick, PULL_MS + (i * RIP_MS) / RIP_TICKS + 40));
     return () => {
-      clearTimeout(t);
+      ticks.forEach(clearTimeout);
       run.stop();
       // Never leave the card without its header.
       if (!finished) flight.source.hold.setValue(1);
@@ -166,51 +176,73 @@ function FlyingPiece({ flight, onDone }: { flight: Flight; onDone: () => void })
   const { x, y, width, height, toX, toY, source } = flight;
   const dx = toX - (x + width / 2);
   const dy = toY - (y + height / 2);
-  const motion = {
+  // The flight: an arc down into My Trips, shrinking and fading at the end.
+  const flyMotion = {
     opacity: fly.interpolate({ inputRange: [0, 0.8, 1], outputRange: [1, 1, 0] }),
     transform: [
       { translateX: fly.interpolate({ inputRange: [0, 1], outputRange: [0, dx] }) },
-      {
-        // It lifts a hair as it rips, rises a little more, then drops into the tab bar: an arc.
-        translateY: Animated.add(
-          tear.interpolate({ inputRange: [0, 1], outputRange: [0, -6] }),
-          fly.interpolate({ inputRange: [0, 0.3, 1], outputRange: [0, -14, dy] }),
-        ),
-      },
+      { translateY: fly.interpolate({ inputRange: [0, 0.3, 1], outputRange: [0, -14, dy] }) },
       { scale: fly.interpolate({ inputRange: [0, 1], outputRange: [1, 0.12] }) },
+    ],
+  };
+  // The tear, hinged at the bottom right where it's still attached: first the header bends back toward
+  // you along the perforation, then the rip runs left to right, lifting the free left end as it goes.
+  const tearMotion = {
+    transformOrigin: 'right bottom',
+    transform: [
+      { perspective: 700 },
       {
-        rotate: wobble.interpolate({
-          inputRange: [0, 0.25, 0.5, 0.75, 1],
-          outputRange: ['0deg', '-1.2deg', '1.2deg', '-0.6deg', '0deg'],
+        rotateX: Animated.add(pull, Animated.multiply(rip, -0.45)).interpolate({
+          inputRange: [0, 1],
+          outputRange: ['0deg', `-${PEEL_DEG}deg`],
         }),
       },
-      { rotate: tear.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '-3deg'] }) },
+      { rotate: rip.interpolate({ inputRange: [0, 1], outputRange: ['0deg', `${RIP_DEG}deg`] }) },
+      { translateY: Animated.add(pull, rip).interpolate({ inputRange: [0, 2], outputRange: [0, -4] }) },
     ],
   };
   const step = TOOTH * Math.SQRT2;
   const teeth = Math.ceil(width / step) + 2;
   return (
-    <Animated.View style={[styles.flight, { left: x, top: y, width, height, shadowColor: '#000' }, motion]} testID="tear-away">
-      <View
-        style={[styles.paper, { backgroundColor: source.paper, borderColor: source.edge, borderWidth: source.edgeWidth }]}
-        testID="tear-piece">
-        <TearCopyContext.Provider value={true}>{flight.piece}</TearCopyContext.Provider>
-      </View>
-      {/* The ragged edge where it tore along the perforation. */}
-      <View style={[styles.teeth, { left: source.edgeWidth, right: source.edgeWidth }]} testID="tear-edge">
-        {Array.from({ length: teeth }, (_, i) => (
-          <View key={i} style={[styles.tooth, { left: i * step - TOOTH / 2, backgroundColor: source.paper }]} />
-        ))}
-      </View>
+    <Animated.View style={[styles.flight, { left: x, top: y, width, height }, flyMotion]} testID="tear-away">
+      <Animated.View style={[styles.tear, { shadowColor: '#000' }, tearMotion]} testID="tear-peel">
+        <View
+          style={[styles.paper, { backgroundColor: source.paper, borderColor: source.edge, borderWidth: source.edgeWidth }]}
+          testID="tear-piece">
+          <TearCopyContext.Provider value={true}>{flight.piece}</TearCopyContext.Provider>
+        </View>
+        {/* The ragged edge shows hole by hole as the rip runs from left to right. */}
+        <View style={[styles.teeth, { left: source.edgeWidth, right: source.edgeWidth }]} testID="tear-edge">
+          {Array.from({ length: teeth }, (_, i) => {
+            const at = Math.min(1, i / teeth);
+            return (
+              <Animated.View
+                key={i}
+                style={[
+                  styles.tooth,
+                  {
+                    left: i * step - TOOTH / 2,
+                    backgroundColor: source.paper,
+                    opacity: rip.interpolate({
+                      inputRange: [Math.max(0, at - 0.08), Math.max(0.001, at)],
+                      outputRange: [0, 1],
+                      extrapolate: 'clamp',
+                    }),
+                  },
+                ]}
+              />
+            );
+          })}
+        </View>
+      </Animated.View>
     </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
-  flight: {
-    position: 'absolute',
-    zIndex: 50,
-    elevation: 50,
+  flight: { position: 'absolute', zIndex: 50, elevation: 50 },
+  tear: {
+    flex: 1,
     shadowOpacity: 0.14,
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 6 },

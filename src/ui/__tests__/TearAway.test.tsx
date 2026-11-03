@@ -9,7 +9,7 @@ import { createMemoryProvider, searchItineraries, zonedToUtc, type Itinerary } f
 
 import { ResultRow, SEAT_CIRCLE_HINT } from '../ResultRow';
 import { SaveRouteButton } from '../SaveRouteButton';
-import { FLY_MS, SETTLE_MS, TEAR_MS, TearAwayHost, WOBBLE_MS } from '../TearAway';
+import { FLY_MS, PULL_MS, RIP_MS, SETTLE_MS, TearAwayHost } from '../TearAway';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -77,8 +77,8 @@ describe('TearAway: the route card tears along its perforation when you save (ro
     return typeof o === 'number' ? o : o.__getValue();
   };
 
-  it('is quick: wobble, rip, flight and settle stay under about a second', () => {
-    expect(WOBBLE_MS + TEAR_MS + FLY_MS + SETTLE_MS).toBeLessThanOrEqual(1000);
+  it('stays short: the peel, the rip, the flight and the settle take about a second', () => {
+    expect(PULL_MS + RIP_MS + FLY_MS + SETTLE_MS).toBeLessThanOrEqual(1100);
   });
 
   it('tapping Save flies a copy of the card header with a torn edge, and hides the real header meanwhile', async () => {
@@ -97,6 +97,24 @@ describe('TearAway: the route card tears along its perforation when you save (ro
     expect(piece.findAll((n) => n.props.name === 'bookmark.fill').length).toBeGreaterThan(0);
     expect(r!.root.findByProps({ testID: 'tear-away-layer' }).props.pointerEvents).toBe('none');
     expect(holdOpacity()).toBe(0);
+  });
+
+  it('peels back at the perforation and rips from left to right (round 127, John)', async () => {
+    jest.spyOn(Animated, 'sequence').mockReturnValue({ start: jest.fn(), stop: jest.fn(), reset: jest.fn() });
+    await mount(false, false);
+    press();
+    const peel = r!.root.findAllByProps({ testID: 'tear-peel' })[0];
+    // Hinged at the bottom right, where it's still attached, with a bend back toward you.
+    const style = [peel.props.style].flat(3).reduce((a, b) => ({ ...a, ...b }), {});
+    expect(style.transformOrigin).toBe('right bottom');
+    expect(style.transform.map((t: object) => Object.keys(t)[0])).toEqual(['perspective', 'rotateX', 'rotate', 'translateY']);
+    // The ragged edge shows hole by hole: the left teeth before the right ones.
+    const edge = r!.root.findAllByProps({ testID: 'tear-edge' })[0];
+    const teeth = edge.findAllByType(Animated.View);
+    const startOf = (n: (typeof teeth)[number]) =>
+      ([n.props.style].flat(3).find((x) => x?.opacity)?.opacity as { _config: { inputRange: number[] } })._config.inputRange[1];
+    expect(teeth.length).toBeGreaterThan(10);
+    expect(startOf(teeth[0])).toBeLessThan(startOf(teeth[teeth.length - 1]));
   });
 
   it('once it lands, the copy goes and the real header settles back onto the card', async () => {
