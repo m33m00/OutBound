@@ -97,6 +97,8 @@ describe('computeLeaveBy', () => {
       title: 'Leave now',
       sub: 'Be at BNA by 7:45 AM',
     });
+    // Beside Leave now on the slim row, spelled out (John, 2026-11-03).
+    expect(leaveByShort(run({ now: DEP - 30 * MIN }), BNA.tz)).toBe('Arrive at BNA by 7:45 AM');
   });
 
   it('says departed only when live status says so, never from the schedule (round 42, Q-050)', () => {

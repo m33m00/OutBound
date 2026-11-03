@@ -145,7 +145,8 @@ export function leaveByShort(r: LeaveBy, tz: string): string {
     case 'leaveBy':
       return `${r.live ? '' : '~'}${formatDuration(r.driveMin)} drive`;
     case 'leaveNow':
-      return `At ${r.airport} by ${t(r.beAtUtc)}`;
+      // Spelled out (John, 2026-11-03: "Arrive at DFW by 2:40 PM" instead of just "At DFW").
+      return `Arrive at ${r.airport} by ${t(r.beAtUtc)}`;
     case 'beAt':
       return `${formatDuration(r.bufferMin)} early`;
   }
