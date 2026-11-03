@@ -10,8 +10,7 @@ import { AirportCard } from '../SearchPanel';
 
 const texts = (r: ReactTestRenderer) =>
   r.root.findAll((n) => typeof n.props.children === 'string').map((n) => n.props.children as string);
-const textOf = (r: ReactTestRenderer) =>
-  r.root.findAllByType(Text).map((n) => [n.props.children].flat().join(''));
+const textOf = (r: ReactTestRenderer) => r.root.findAllByType(Text).map((n) => [n.props.children].flat().join(''));
 
 describe('AirportCard area pill (Q-048, Q-056)', () => {
   let r: ReactTestRenderer | undefined;
@@ -36,7 +35,7 @@ describe('AirportCard area pill (Q-048, Q-056)', () => {
     expect(textOf(off)).toContain('Area');
     expect(textOf(off)).not.toContain('All Dallas');
     expect(StyleSheet.flatten(p.props.style({ pressed: false })).borderColor).toBe(colors.light.line2);
-    expect(texts(off)).not.toContain('DAL · DFW');
+    expect(texts(off)).not.toContain('DAL, DFW');
     act(() => p.props.onPress());
     expect(toggle).toHaveBeenCalled();
     act(() => r?.unmount());
@@ -45,7 +44,7 @@ describe('AirportCard area pill (Q-048, Q-056)', () => {
     expect(pill(on).props.accessibilityState).toEqual({ checked: true });
     expect(StyleSheet.flatten(pill(on).props.style({ pressed: false })).backgroundColor).toBe(colors.light.accent);
     expect(textOf(on)).toContain('All Dallas');
-    expect(texts(on)).toContain('DAL · DFW');
+    expect(texts(on)).toContain('DAL, DFW');
     expect(texts(on)).toContain('Dallas/Fort Worth');
   });
 

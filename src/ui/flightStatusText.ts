@@ -83,7 +83,7 @@ export function placeText(m: Movement): string {
 /** Age line, always shown: "Updated 4m ago", with the stale reason when it applies. No spend cap, so no "paused" (Q-049). */
 export function ageText(r: FlightStatusResponse, now: number): string {
   const age = r.fetchedAt ? `Updated ${formatAge(Date.parse(r.fetchedAt), now)}` : 'Not updated yet';
-  if (r.stale) return `${age} · may be out of date`;
+  if (r.stale) return `${age}, may be out of date`;
   return age;
 }
 

@@ -11,6 +11,7 @@ import { Icon } from './Icon';
 import { pressStyle } from './press';
 import { ReportForm } from './ReportSheet';
 import { SheetHeader, TITLE_MAX_SCALE } from './SheetHeader';
+import { spaced } from './MetaLine';
 import { TIER_FG } from './tierColors';
 import { useAnnounceLater } from './useAnnounceLater';
 
@@ -64,7 +65,9 @@ export function DeparturesSheet({ code, visible, flights, now, reportFor, onRepo
       <Pressable
         onPress={() => setPicked(f)}
         accessibilityRole="button"
-        accessibilityLabel={forSpeech(`${left ? 'Departed' : 'Departs'} ${time} · ${f.airline} ${f.flightNumber} to ${f.to} · ${yours || !left ? detail : place}`)}
+        accessibilityLabel={forSpeech(
+          `${left ? 'Departed' : 'Departs'} ${time} · ${f.airline} ${f.flightNumber} to ${f.to} · ${yours || !left ? detail : place}`,
+        )}
         accessibilityHint={yours ? 'Opens Report Load again' : 'Opens Report Load'}
         testID="departure-row"
         style={pressStyle([styles.row, big && styles.rowStacked, { borderBottomColor: c.line }])}>
@@ -74,16 +77,21 @@ export function DeparturesSheet({ code, visible, flights, now, reportFor, onRepo
           {time}
         </Text>
         <View style={[styles.text, big && styles.textStacked]}>
-          <Text lineBreakStrategyIOS="push-out" style={[textStyles.heading, { color: c.text }]}>{`${f.airline} ${f.flightNumber} to ${f.to}`}</Text>
+          <Text
+            lineBreakStrategyIOS="push-out"
+            style={[textStyles.heading, { color: c.text }]}>{`${f.airline} ${f.flightNumber} to ${f.to}`}</Text>
           {yours && tier ? (
             <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.text }]}>
               <Text style={{ color: c.youText }}>You reported </Text>
               <Text style={{ color: c[TIER_FG[tier]], fontFamily: textStyles.bodyStrong.fontFamily }}>{TIER_WORD[tier]}</Text>
-              {` · ${yours.open} open · ${yours.listed} listed · ${formatAge(yours.at, now)}`}
+              {spaced(` · ${yours.open} open · ${yours.listed} listed · ${formatAge(yours.at, now)}`)}
             </Text>
           ) : (
-            <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]} numberOfLines={big ? undefined : 2}>
-              {detail}
+            <Text
+              lineBreakStrategyIOS="push-out"
+              style={[textStyles.small, { color: c.muted }]}
+              numberOfLines={big ? undefined : 2}>
+              {spaced(detail)}
             </Text>
           )}
         </View>

@@ -40,7 +40,7 @@ describe('SavedRouteCard', () => {
     const texts = r!.root
       .findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string')
       .map((n) => n.props.children as string);
-    expect(texts).toEqual(expect.arrayContaining(['DFW → ORD → LAX', 'Tue, Oct 20 · 7:05 AM – 1:20 PM', 'AA 1234, AA 88']));
+    expect(texts).toEqual(expect.arrayContaining(['DFW → ORD → LAX', 'Tue, Oct 20', '7:05 AM – 1:20 PM', 'AA 1234, AA 88']));
     expect(texts).not.toContain('Passed');
     // A boarding pass (round 114): the path and day on the navy stub, a torn edge, the flights below.
     const host = (id: string) => r!.root.findAll((n) => n.props.testID === id && typeof n.type === 'string');
@@ -49,7 +49,7 @@ describe('SavedRouteCard', () => {
     const stubTexts = host('saved-route-stub')[0]
       .findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string')
       .map((n) => n.props.children as string);
-    expect(stubTexts).toEqual(['DFW → ORD → LAX', 'Tue, Oct 20 · 7:05 AM – 1:20 PM']);
+    expect(stubTexts).toEqual(['DFW → ORD → LAX', 'Tue, Oct 20', '7:05 AM – 1:20 PM']);
     const [open, remove] = buttons();
     expect(open.props.accessibilityLabel).toBe('DFW to ORD to LAX. Tue, Oct 20, 7:05 AM – 1:20 PM. Flights AA 1234, AA 88');
     expect(open.props.accessibilityHint).toBe('Searches this day again');

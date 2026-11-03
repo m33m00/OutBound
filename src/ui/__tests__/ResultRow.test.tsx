@@ -155,7 +155,7 @@ describe('ResultRow', () => {
     act(() => row.props.onAccessibilityAction({ nativeEvent: { actionName: 'leg-0' } }));
     expect(onLeg).toHaveBeenCalledWith(it.legs[0].flight);
     const texts = r!.root.findAll((n) => n.props.children != null).flatMap((n) => [n.props.children].flat());
-    expect(texts.some((t) => typeof t === 'string' && t.startsWith('Nonstop · '))).toBe(true);
+    expect(texts.some((t) => typeof t === 'string' && t === 'Nonstop')).toBe(true);
   });
 
   it("connections: the headline is the weakest leg's chance word; legs are one line each (round 66)", async () => {
@@ -789,10 +789,8 @@ describe('ResultRow', () => {
 describe('connectionText (John, 2026-11-02)', () => {
   it('gives the live minutes, or says the connection is missed', () => {
     expect(connectionText({ airport: 'DEN', sameAirline: true }, 125)).toBe('2h 5m connection at DEN');
-    expect(connectionText({ airport: 'DEN', sameAirline: false }, 35)).toBe('35m connection at DEN · change airlines');
-    expect(connectionText({ airport: 'DEN', sameAirline: false }, 35, 'UA')).toBe(
-      '35m connection at DEN · change airlines to UA',
-    );
+    expect(connectionText({ airport: 'DEN', sameAirline: false }, 35)).toBe('35m connection at DEN, change airlines');
+    expect(connectionText({ airport: 'DEN', sameAirline: false }, 35, 'UA')).toBe('35m connection at DEN, change airlines to UA');
     expect(connectionText({ airport: 'DEN', sameAirline: true }, -10)).toBe('Misses the connection at DEN');
   });
 });

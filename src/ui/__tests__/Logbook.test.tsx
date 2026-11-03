@@ -59,9 +59,13 @@ describe('Logbook tab', () => {
     });
   };
   const texts = () =>
-    r!.root.findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string').map((n) => n.props.children as string);
+    r!.root
+      .findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string')
+      .map((n) => n.props.children as string);
   const button = (label: string) =>
-    r!.root.find((n) => typeof n.type !== 'string' && n.props.accessibilityRole === 'button' && n.props.accessibilityLabel === label);
+    r!.root.find(
+      (n) => typeof n.type !== 'string' && n.props.accessibilityRole === 'button' && n.props.accessibilityLabel === label,
+    );
   const field = (label: string) => r!.root.find((n) => n.type === TextInput && n.props.accessibilityLabel === label);
   const stored = async () => JSON.parse((await AsyncStorage.getItem(LOGBOOK_KEY)) ?? '[]') as LoggedFlight[];
 
@@ -84,19 +88,34 @@ describe('Logbook tab', () => {
     expect(add().props.disabled).toBe(false);
     await act(async () => add().props.onPress());
     expect(await stored()).toEqual([
-      expect.objectContaining({ airline: 'AA', flightNumber: '1234', from: 'DFW', to: 'LAX', date: '2026-10-30', seat: '12A', source: 'manual' }),
+      expect.objectContaining({
+        airline: 'AA',
+        flightNumber: '1234',
+        from: 'DFW',
+        to: 'LAX',
+        date: '2026-10-30',
+        seat: '12A',
+        source: 'manual',
+      }),
     ]);
-    expect(r!.root.findByProps({ testID: 'logbook-totals' }).props.accessibilityLabel).toMatch(/^1 flight, 1,2\d\d miles, 2 airports$/);
+    expect(r!.root.findByProps({ testID: 'logbook-totals' }).props.accessibilityLabel).toMatch(
+      /^1 flight, 1,2\d\d miles, 2 airports$/,
+    );
     // One short footer: where the logbook lives (round 65 cut the miles explainer).
     expect(texts()).toContain('Your logbook stays on this phone.');
     expect(texts().some((t: string) => t.includes('straight-line'))).toBe(false);
-    expect(texts()).toEqual(expect.arrayContaining(['DFW → LAX', 'Today · Seat 12A', 'OCTOBER 2026']));
+    expect(texts()).toEqual(expect.arrayContaining(['DFW → LAX', 'Today\u2003Seat 12A', 'OCTOBER 2026']));
   });
 
   it('moves through the boxes from the keyboard and adds from the last one', async () => {
     await mount();
     await act(async () => button('Add Flight').props.onPress());
-    expect(['Airline', 'Flight', 'From', 'To'].map((l) => field(l).props.returnKeyType)).toEqual(['next', 'next', 'next', 'next']);
+    expect(['Airline', 'Flight', 'From', 'To'].map((l) => field(l).props.returnKeyType)).toEqual([
+      'next',
+      'next',
+      'next',
+      'next',
+    ]);
     const toFocus = jest.fn();
     const to = field('To');
     // A full From code moves on to To by itself.
@@ -116,7 +135,8 @@ describe('Logbook tab', () => {
   it('puts the boxes one per line at big text', async () => {
     const rowOf = (label: string) => {
       let n = field(label).parent;
-      while (n && !(n.props.style && [n.props.style].flat(3).some((x: { flexDirection?: string }) => x?.flexDirection === 'row'))) n = n.parent;
+      while (n && !(n.props.style && [n.props.style].flat(3).some((x: { flexDirection?: string }) => x?.flexDirection === 'row')))
+        n = n.parent;
       return [n!.props.style].flat(3).reduce((a: object, x: object) => ({ ...a, ...x }), {}) as { flexDirection?: string };
     };
     await mount();
@@ -168,11 +188,13 @@ describe('Logbook tab', () => {
     });
     await AsyncStorage.setItem(LOGBOOK_KEY, JSON.stringify([logged('1', 'DFW', 'LAX', 1), logged('2', 'LAX', 'DFW', 2)]));
     await mount();
-    const rows = r!.root.findAllByProps({ testID: 'edit-logged-flight' }).filter((n) => typeof n.type !== 'string' && n.props.onPress);
+    const rows = r!.root
+      .findAllByProps({ testID: 'edit-logged-flight' })
+      .filter((n) => typeof n.type !== 'string' && n.props.onPress);
     expect(rows[1].props.accessibilityHint).toBe('Opens it to fix the details');
     await act(async () => rows[1].props.onPress());
     expect(r!.root.findByProps({ testID: 'logbook-totals' }).props.accessibilityLabel).toMatch(
-      /^2 flights, 2,4\d\d miles, 2 airports\. Most flown: DFW, 2 flights\. Longest: DFW to LAX, 1,2\d\d miles$/,
+      /^2 flights, 2,4\d\d miles, 2 airports\. Most flown: DFW \(2 flights\)\. Longest: DFW to LAX \(1,2\d\d miles\)$/,
     );
     expect(texts()).toContain('Edit Flight');
     expect(texts()).not.toContain('Scan Boarding Pass');

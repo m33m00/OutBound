@@ -6,6 +6,7 @@ import type { LegStatusView } from '@/search/statusTags';
 import { fonts, minTapTarget, radius, spacing, textStyles, useColors } from '@/theme';
 
 import { Icon } from './Icon';
+import { spaced } from './MetaLine';
 import { pressStyle } from './press';
 import { StatusTag, TAG_TONE } from './StatusTag';
 import { TIER_FG, TIER_MARK } from './tierColors';
@@ -44,9 +45,13 @@ export function RequestRow({ request, now, mine, onAnswer, onOpen, leg }: Reques
   const spokenStatus = status === 'Waiting' ? status : null;
   // Waiting: the old time struck, then the new time that matters now.
   const tag = leg?.tag ?? null;
-  const live = liveRequestDetail(request, now, tag && leg ? { kind: tag.kind, scheduledText: leg.scheduledText, newUtc: leg.newUtc } : null);
+  const live = liveRequestDetail(
+    request,
+    now,
+    tag && leg ? { kind: tag.kind, scheduledText: leg.scheduledText, newUtc: leg.newUtc } : null,
+  );
   // Answered rows show the tier line, so the new time rides on the tag instead.
-  const tagLabel = tag && answered && leg?.newText ? `${tag.label} · now ${leg.newText}` : tag?.label;
+  const tagLabel = tag && answered && leg?.newText ? `${tag.label}, now ${leg.newText}` : tag?.label;
   // The detail line already says the new and old times, so the tag only adds the delay.
   const tagSpoken = tag ? (live && tag.kind === 'delayed' ? tag.spoken.split(', was ')[0] : tag.spoken) : null;
   const label = forSpeech([title, live ? live.spoken : detail, tagSpoken, spokenStatus].filter(Boolean).join('. '));
@@ -56,10 +61,14 @@ export function RequestRow({ request, now, mine, onAnswer, onOpen, leg }: Reques
         style={stacked ? styles.textStacked : styles.text}
         accessible={!onOpen}
         accessibilityLabel={onOpen ? undefined : label}>
-        <Text lineBreakStrategyIOS="push-out" style={[textStyles.heading, { color: c.text }]}>{title}</Text>
+        <Text lineBreakStrategyIOS="push-out" style={[textStyles.heading, { color: c.text }]}>
+          {spaced(title)}
+        </Text>
         <View style={styles.detailLine}>
           {tier ? <View style={[styles.dot, { backgroundColor: c[TIER_MARK[tier]] }]} /> : null}
-          <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, styles.detail, { color: tier ? c[TIER_FG[tier]] : c.muted }]}>
+          <Text
+            lineBreakStrategyIOS="push-out"
+            style={[textStyles.small, styles.detail, { color: tier ? c[TIER_FG[tier]] : c.muted }]}>
             {live ? (
               <>
                 {live.prefix}
@@ -67,10 +76,10 @@ export function RequestRow({ request, now, mine, onAnswer, onOpen, leg }: Reques
                 {live.struck ? <Text style={styles.struck}>{live.struck}</Text> : null}
                 {live.time && live.struck ? '\u00a0' : null}
                 {live.time ? <Text style={{ color: c.text, fontFamily: fonts.bodySemiBold }}>{live.time}</Text> : null}
-                {live.tail}
+                {spaced(live.tail)}
               </>
             ) : (
-              detail
+              spaced(detail)
             )}
           </Text>
         </View>
@@ -85,7 +94,9 @@ export function RequestRow({ request, now, mine, onAnswer, onOpen, leg }: Reques
           style={[styles.badge, stacked && styles.selfStart, { backgroundColor: answered ? c.accentSoft : c.surface2 }]}
           importantForAccessibility="no-hide-descendants"
           accessibilityElementsHidden>
-          <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: answered ? c.accent : c.muted }]}>{status}</Text>
+          <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: answered ? c.accent : c.muted }]}>
+            {status}
+          </Text>
         </View>
       ) : null}
       {!mine && !answered && onAnswer ? (

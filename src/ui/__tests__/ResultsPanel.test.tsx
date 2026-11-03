@@ -259,7 +259,7 @@ describe('ResultsPanel day and filters (Q-057)', () => {
       );
     });
     const summary = r!.root.findAll((n) => n.props.testID === 'results-summary' && typeof n.type === 'string')[0];
-    expect(summary.props.children).toBe('Tue, Oct 20 · 2 routes');
+    expect(summary.props.children).toBe('Tue, Oct 20\n2 routes');
     expect(r!.root.findAll((n) => n.props.testID === 'day-next').length).toBe(0);
   });
 });

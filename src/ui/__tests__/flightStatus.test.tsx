@@ -86,8 +86,8 @@ describe('flight status text', () => {
       status,
     };
     expect(ageText(r, NOW)).toBe('Updated 4m ago');
-    expect(ageText({ ...r, stale: true }, NOW)).toBe('Updated 4m ago · may be out of date');
-    expect(ageText({ ...r, stale: true, paused: true }, NOW)).toBe('Updated 4m ago · may be out of date');
+    expect(ageText({ ...r, stale: true }, NOW)).toBe('Updated 4m ago, may be out of date');
+    expect(ageText({ ...r, stale: true, paused: true }, NOW)).toBe('Updated 4m ago, may be out of date');
     expect(ageText({ ...r, paused: true }, NOW)).not.toContain('paused');
   });
 });
@@ -151,8 +151,8 @@ describe('leg tap and sheet', () => {
     expect(fetcher).toHaveBeenCalledTimes(1);
     expect(texts).toContain('Delayed');
     expect(texts).toContain('50m late');
-    expect(texts).toContain('Terminal S · Gate B22');
-    expect(texts).toContain('Updated 7m ago · may be out of date');
+    expect(texts).toContain('Terminal S\u2003Gate B22');
+    expect(texts).toContain('Updated 7m ago, may be out of date');
   });
 
   it('makes no request while closed', async () => {

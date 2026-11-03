@@ -188,7 +188,7 @@ export function AirportCard({
         </Animated.View>
         {whole ? (
           <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.text }]}>
-            {area.airports.join(' · ')}
+            {area.airports.join(', ')}
           </Text>
         ) : null}
         {/* Two lines so long names ("Dallas/Fort Worth International") show at big text sizes. */}
@@ -426,7 +426,7 @@ export function SearchPanel(p: SearchPanelProps) {
           once To is already home, so there's one main button (John, 2026-11-01). */}
       {p.onGetHome ? (
         <Button
-          label={p.homeName ? `Get Home · ${p.homeName}` : 'Get Home'}
+          label={p.homeName ? `Get Home to ${p.homeName}` : 'Get Home'}
           icon="house.fill"
           onPress={p.onGetHome}
           accessibilityLabel={`Get Home: find routes to your main home${p.homeName ? `, ${p.homeName}` : ''}`}

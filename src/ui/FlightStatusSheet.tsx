@@ -30,6 +30,7 @@ import { STATE_TONE, TONE_BG, TONE_FG } from './statusTone';
 import { SheetHeader, TITLE_MAX_SCALE } from './SheetHeader';
 import { TIER_FG } from './tierColors';
 import { useAnnounceLater } from './useAnnounceLater';
+import { spaced } from './MetaLine';
 
 export interface FlightStatusSheetProps {
   /** The opened flight; null = closed (no request is made). */
@@ -159,7 +160,7 @@ export function FlightStatusSheet({ flight, visible, now, onClose, liveOptions, 
           </Text>
         ) : null}
         <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, { color: c.muted }]}>
-          {placeText(m)}
+          {spaced(placeText(m))}
         </Text>
       </View>
     );
@@ -244,7 +245,7 @@ export function FlightStatusSheet({ flight, visible, now, onClose, liveOptions, 
                           styles.ageText,
                           { color: response.stale ? c.text : c.muted },
                         ]}>
-                        {ageText(response, now)}
+                        {spaced(ageText(response, now))}
                       </Text>
                     </View>
                   ) : null}
@@ -324,7 +325,7 @@ function SearchSeats({ seats, now }: { seats: LegSeats; now: number }) {
       testID="search-seats">
       <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, { color: c.text }]}>
         <Text style={[textStyles.bodyStrong, { color: c[TIER_FG[seats.tier]] }]}>{TIER_WORD[seats.tier]}</Text>
-        {` · ${counts}`}
+        {spaced(` · ${counts}`)}
       </Text>
       {age ? (
         <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>
@@ -384,7 +385,7 @@ function LoadCard({
           <Text lineBreakStrategyIOS="push-out" style={[textStyles.bodyStrong, { color: c[TIER_FG[tier]] }]}>
             {TIER_WORD[tier]}
           </Text>
-          {` · ${yourReport.open} open · ${yourReport.listed} listed · ${formatAge(yourReport.at, now)}`}
+          {spaced(` · ${yourReport.open} open · ${yourReport.listed} listed · ${formatAge(yourReport.at, now)}`)}
         </Text>
       ) : null}
       {askAnswer && answerTierWord ? (
@@ -396,7 +397,7 @@ function LoadCard({
           <Text lineBreakStrategyIOS="push-out" style={[textStyles.bodyStrong, { color: c[TIER_FG[answerTierWord]] }]}>
             {TIER_WORD[answerTierWord]}
           </Text>
-          {` · ${askAnswer.open} open · ${askAnswer.listed} listed · ${formatAge(askAnswer.at, now)}`}
+          {spaced(` · ${askAnswer.open} open · ${askAnswer.listed} listed · ${formatAge(askAnswer.at, now)}`)}
         </Text>
       ) : null}
       {/* Report and Ask side by side (design audit, round 67); stacked at big text. */}

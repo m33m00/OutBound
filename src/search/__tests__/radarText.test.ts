@@ -21,7 +21,7 @@ describe('radar overlay rules', () => {
   });
 
   it('captions with the oldest drawn frame age and the source', () => {
-    expect(radarCaption(true, 'ready', [frame('conus', 2), frame('hi', 4)], NOW)).toBe('Radar 4m ago · NOAA/NWS');
+    expect(radarCaption(true, 'ready', [frame('conus', 2), frame('hi', 4)], NOW)).toBe('Radar 4m ago (NOAA/NWS)');
   });
 
   it('says loading or unavailable, and nothing when off', () => {
@@ -36,13 +36,25 @@ describe('radar overlay rules', () => {
 describe('radarLayersFrom', () => {
   const bytes = new Uint8Array([1]);
   it('keeps the previous image while a newer frame downloads', () => {
-    const held = { conus: { observedAt: new Date(NOW - 6 * 60_000).toISOString(), bbox: [-125, 20, -65, 50] as [number, number, number, number], bytes } };
+    const held = {
+      conus: {
+        observedAt: new Date(NOW - 6 * 60_000).toISOString(),
+        bbox: [-125, 20, -65, 50] as [number, number, number, number],
+        bytes,
+      },
+    };
     expect(radarLayersFrom([frame('conus', 1)], held, NOW)).toEqual([
       { region: 'conus', bbox: held.conus.bbox, observedAt: held.conus.observedAt, bytes },
     ]);
   });
   it('drops images past the max age and regions no longer offered', () => {
-    const old = { conus: { observedAt: new Date(NOW - RADAR_MAX_AGE_MS - 60_000).toISOString(), bbox: [-125, 20, -65, 50] as [number, number, number, number], bytes } };
+    const old = {
+      conus: {
+        observedAt: new Date(NOW - RADAR_MAX_AGE_MS - 60_000).toISOString(),
+        bbox: [-125, 20, -65, 50] as [number, number, number, number],
+        bytes,
+      },
+    };
     expect(radarLayersFrom([frame('conus', 1)], old, NOW)).toEqual([]);
     expect(radarLayersFrom([], { conus: { ...old.conus, observedAt: new Date(NOW).toISOString() } }, NOW)).toEqual([]);
   });

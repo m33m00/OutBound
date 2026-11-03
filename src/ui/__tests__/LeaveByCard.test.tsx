@@ -195,7 +195,8 @@ describe('LeaveByCard location button', () => {
         />,
       );
     });
-    expect(lineText(r!)).toMatch(/^Leave by .+ · {2}32m drive$/);
+    expect(lineText(r!)).toMatch(/^Leave by .+\u200332m drive$/);
+    expect(lineText(r!)).not.toContain('·');
     const texts = r!.root
       .findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string')
       .map((n) => n.props.children as string);
@@ -220,7 +221,7 @@ describe('LeaveByCard location button', () => {
         />,
       );
     });
-    expect(lineText(r!)).toMatch(/^You’re at DAL \(Dallas Love Field\) {2}· {2}Flight departs at /);
+    expect(lineText(r!)).toMatch(/^You’re at DAL \(Dallas Love Field\)\u2003Flight departs at /);
     const line = r!.root.find((n) => n.props.testID === 'leave-by-line' && typeof n.type === 'string');
     act(() => line.props.onTextLayout({ nativeEvent: { lines: [{}, {}] } }));
     expect(lineText(r!)).toBe('You’re at DAL (Dallas Love Field)');

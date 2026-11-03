@@ -148,7 +148,7 @@ export function LeaveByCard(p: LeaveByCardProps) {
                 style={[
                   textStyles.small,
                   { color: c.muted, fontFamily: textStyles.body.fontFamily },
-                ]}>{`  ·  ${keepTimes(short)}`}</Text>
+                ]}>{`\u2003${keepTimes(short)}`}</Text>
             </Text>
           )}
         </View>

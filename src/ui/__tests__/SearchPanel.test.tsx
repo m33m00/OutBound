@@ -140,7 +140,7 @@ describe('SearchPanel main button (Q-063)', () => {
     r = render(1, { onGetHome: jest.fn(), homeName: 'Dallas' });
     expect(order()).toEqual(['Get Home: find routes to your main home, Dallas', 'Find Routes']);
     // It says where it goes before you tap it.
-    expect(r.root.findAll((n) => n.props.children === 'Get Home · Dallas' && typeof n.type === 'string').length).toBe(1);
+    expect(r.root.findAll((n) => n.props.children === 'Get Home to Dallas' && typeof n.type === 'string').length).toBe(1);
     expect(fill('Get Home')).toBe(atHomeFind);
     expect(fill('Find Routes')).not.toBe(atHomeFind);
   });

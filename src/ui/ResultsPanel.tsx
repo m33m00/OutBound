@@ -163,7 +163,8 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
       : null,
   ]
     .filter(Boolean)
-    .join(' · ');
+    // Stacked, not dotted (round 123, John: no dots between text).
+    .join('\n');
 
   // Fixed above the list (results take over, Q-062): back, route and Filters on one line,
   // the day and count under it.
@@ -573,9 +574,17 @@ function NowLine({ time }: { time: string | null }) {
       accessible
       accessibilityLabel={`Now${time ? `, ${time}` : ''}. Flights below haven’t left yet.`}>
       <View style={[styles.rule, { backgroundColor: c.accent }]} />
-      <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { fontFamily: fonts.bodySemiBold, color: c.accent }]}>
-        {time ? `Now · ${time}` : 'Now'}
-      </Text>
+      {/* "Now" and the time set apart by space, not a dot (round 123, John). */}
+      <View style={styles.nowWords}>
+        <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { fontFamily: fonts.bodySemiBold, color: c.accent }]}>
+          Now
+        </Text>
+        {time ? (
+          <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { fontFamily: fonts.bodyMedium, color: c.accent }]}>
+            {time}
+          </Text>
+        ) : null}
+      </View>
       <View style={[styles.rule, { backgroundColor: c.accent }]} />
     </View>
   );
@@ -583,6 +592,7 @@ function NowLine({ time }: { time: string | null }) {
 
 const styles = StyleSheet.create({
   fill: { flex: 1 },
+  nowWords: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   selectedBlock: { gap: spacing.group },
   hidden: { display: 'none' },
   // Tighter above and between the Leave By card and the route card so the whole route fits (round 122).

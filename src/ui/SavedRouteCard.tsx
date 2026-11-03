@@ -16,6 +16,7 @@ import {
 import { savedRouteFlights, savedRouteTitle, savedRouteWhen, type SavedRoute } from '@/trips/savedRoutes';
 
 import { Icon } from './Icon';
+import { MetaLine } from './MetaLine';
 import { pressStyle } from './press';
 import { ScalePressable } from './ScalePressable';
 import { StatusTag } from './StatusTag';
@@ -66,9 +67,8 @@ export function SavedRouteCard({ route, past, now, onOpen, onRemove }: SavedRout
               {title}
             </Text>
             <View style={styles.whenLine}>
-              <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, styles.shrink, { color: ink.muted }]}>
-                {when}
-              </Text>
+              {/* The day and the times set apart by space, not a dot (round 123, John). */}
+              <MetaLine text={when} textStyle={[textStyles.body, { color: ink.muted }]} testID="saved-route-when" />
               {past ? <StatusTag label="Passed" tone="gone" /> : null}
             </View>
           </View>

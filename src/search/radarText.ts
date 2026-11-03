@@ -25,7 +25,7 @@ export function radarCaption(
   if (state === 'loading') return 'Radar loading…';
   if (!drawn.length) return 'Radar unavailable';
   const oldest = Math.min(...drawn.map((f) => Date.parse(f.observedAt)));
-  return `Radar ${formatAge(oldest, now)} · NOAA/NWS`;
+  return `Radar ${formatAge(oldest, now)} (NOAA/NWS)`;
 }
 
 /** The newest downloaded image per region. */

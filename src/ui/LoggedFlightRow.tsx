@@ -7,6 +7,7 @@ import { minTapTarget, spacing, textStyles, useColors } from '@/theme';
 import { AirlinePill } from './AirlinePill';
 import { Icon } from './Icon';
 import { pressStyle } from './press';
+import { spaced } from './MetaLine';
 
 export interface LoggedFlightRowProps {
   flight: LoggedFlight;
@@ -42,7 +43,9 @@ export function LoggedFlightRow({ flight: f, now, onRemove, onEdit }: LoggedFlig
         testID="edit-logged-flight"
         style={pressStyle(styles.main)}>
         <View style={styles.top}>
-          <Text lineBreakStrategyIOS="push-out" style={[textStyles.heading, { color: c.text }]}>{route}</Text>
+          <Text lineBreakStrategyIOS="push-out" style={[textStyles.heading, { color: c.text }]}>
+            {route}
+          </Text>
           {miles != null ? (
             <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, styles.miles, { color: c.muted }]}>
               {`${groupDigits(miles)} mi`}
@@ -51,7 +54,9 @@ export function LoggedFlightRow({ flight: f, now, onRemove, onEdit }: LoggedFlig
         </View>
         <View style={styles.bottom}>
           <AirlinePill airline={f.airline} flightNumber={f.flightNumber} />
-          <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, styles.detail, { color: c.muted }]}>{detail}</Text>
+          <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, styles.detail, { color: c.muted }]}>
+            {spaced(detail)}
+          </Text>
         </View>
       </Pressable>
       <Pressable

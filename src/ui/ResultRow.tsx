@@ -34,6 +34,7 @@ import {
 
 import { AirlinePill } from './AirlinePill';
 import { Icon } from './Icon';
+import { MetaLine } from './MetaLine';
 import { MiniRoute } from './MiniRoute';
 import { TicketTear } from './TicketTear';
 import { pressStyle } from './press';
@@ -122,14 +123,14 @@ function LegTimes({ leg, view, text, dimmed }: { leg: Flight; view?: LegStatusVi
 }
 
 /**
- * "3h 25m connection at DEN · change airlines to UA"; "Misses the connection at DEN" when the
+ * "3h 25m connection at DEN, change airlines to UA"; "Misses the connection at DEN" when the
  * onward flight leaves first. The switch names the onward airline (John, 2026-11-03).
  */
 export function connectionText(c: { airport: string; sameAirline: boolean }, layoverMin: number, nextAirline?: string): string {
   const what =
     layoverMin < 0 ? `Misses the connection at ${c.airport}` : `${formatDuration(layoverMin)} connection at ${c.airport}`;
   if (c.sameAirline) return what;
-  return `${what} · change airlines${nextAirline ? ` to ${nextAirline}` : ''}`;
+  return `${what}, change airlines${nextAirline ? ` to ${nextAirline}` : ''}`;
 }
 
 /**
@@ -587,9 +588,15 @@ export const ResultRow = memo(function ResultRow({
                 </View>
                 <View style={[styles.line, styles.subLine]} testID="headline-row">
                   {seatSummary(false)}
-                  <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, styles.shrink, { color: hc.muted }]}>
-                    {[stopCount(it), tripLength(it, status)].filter(Boolean).join(' · ')}
+                  {/* Each fact its own word group, set apart by space, not dots (round 123, John). */}
+                  <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: hc.muted }]}>
+                    {stopCount(it)}
                   </Text>
+                  {tripLength(it, status) ? (
+                    <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: hc.muted }]}>
+                      {tripLength(it, status)}
+                    </Text>
+                  ) : null}
                 </View>
               </View>
             </InkContext.Provider>
@@ -644,18 +651,21 @@ export const ResultRow = memo(function ResultRow({
                 {/* The market as a mini route line (round 119, John picked it): ends big, stops above their dots. */}
                 <MiniRoute airports={[it.origin, ...it.legs.map((l) => l.flight.to)]} dimmed={dimmed} />
               </View>
-              <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, { color: c.muted }]}>
-                {/* The route line already names the connections; the slim row adds short layovers. */}
-                {[
+              {/* The route line already names the connections; the slim row adds short layovers. Items
+                  are set apart by space, not dots (round 123, John). */}
+              <MetaLine
+                parts={[
                   slimStops(
                     it,
                     it.connections.map((_, k) => liveLayoverMin(it, status, k)),
                   ),
                   tripLength(it, status),
-                ]
-                  .filter(Boolean)
-                  .join(' · ')}
-              </Text>
+                ]}
+                gap={10}
+                style={styles.metaEnd}
+                textStyle={[textStyles.body, { color: c.muted }]}
+                testID="row-stops"
+              />
             </View>
             {/* Slim row: who flies it and anything live; seats per leg live in the route card. One line of
                 flights and at most one tag, which names the flight it means ("PHX → LAX delayed 40m"), so the
@@ -741,7 +751,9 @@ const styles = StyleSheet.create({
   headlineMain: { flex: 1, minWidth: 0 },
   // The chance word, stops and trip length under the times: one small line, the dot and words
   // apart by a little more than a space (round 122).
-  subLine: { justifyContent: 'flex-start', columnGap: 10, rowGap: 2 },
+  subLine: { justifyContent: 'flex-start', columnGap: 12, rowGap: 2 },
+  // The slim row's stops and trip length hug the right end and wrap between items.
+  metaEnd: { justifyContent: 'flex-end', flexShrink: 0 },
   // A 44pt tap target that doesn't make the headline line taller: it overhangs into the card's padding.
   topAction: { marginVertical: -8, marginRight: -10 },
   topRight: {
