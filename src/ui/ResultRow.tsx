@@ -1,5 +1,5 @@
-import { memo, type ReactNode, useState } from 'react';
-import { Pressable, StyleSheet, Text, type TextStyle, useWindowDimensions, View } from 'react-native';
+import { type ComponentRef, memo, type ReactNode, useRef, useState } from 'react';
+import { Animated, Pressable, StyleSheet, Text, type TextStyle, useWindowDimensions, View } from 'react-native';
 
 import { AIRPORTS, type Flight, type Itinerary, type LegSeats } from '@/engine';
 import type { RouteImpact } from '@/live';
@@ -37,6 +37,7 @@ import { AirlinePill } from './AirlinePill';
 import { Icon } from './Icon';
 import { MetaLine } from './MetaLine';
 import { MiniRoute } from './MiniRoute';
+import { TearSourceProvider, type TearSource } from './TearAway';
 import { TicketTear } from './TicketTear';
 import { pressStyle } from './press';
 import { ScalePressable } from './ScalePressable';
@@ -90,6 +91,9 @@ export function dotSeats(seats: LegSeats): string {
   if (seats.openSeats != null && seats.listed != null) return `${seats.openSeats}/${seats.listed}`;
   return `${Math.max(0, seats.netSeats)}`;
 }
+/** Under the route card's legs: how to read a seat circle (round 126, John). */
+export const SEAT_CIRCLE_HINT = 'In each circle: open seats / people listed';
+
 /** Space above and below a connection label, before any extra that centers it on the line. */
 const CONNECTION_PAD = 6;
 
@@ -419,6 +423,10 @@ export const ResultRow = memo(function ResultRow({
 }: ResultRowProps) {
   const c = useColors();
   const scheme = useColorSchemeName();
+  // The route card's header tears off along its perforation when you save it (round 126, John); this
+  // hides the real header while its copy flies into My Trips, then eases it back.
+  const stubRef = useRef<ComponentRef<typeof View>>(null);
+  const hold = useRef(new Animated.Value(1)).current;
   // A memo row redraws when Bold Text changes.
   useBoldText();
   const { fontScale } = useWindowDimensions();
@@ -599,13 +607,9 @@ export const ResultRow = memo(function ResultRow({
           // In the route view (round 120, the Clean look): the chip, Save and the times up top, then the
           // flights in soft boxes, all on one white card.
           <>
-            <InkContext.Provider value={!!large}>
-              <View
-                style={large ? [styles.stub, { backgroundColor: c.ink }] : styles.stubSlim}
-                testID={large ? 'ticket-stub' : undefined}>
-                {/* The times lead with the chance under them; the stop count sits on top of the trip length
-                    at the right, Nonstop too (round 124, John: "Doesn't need to be all horizontal on a
-                    line"); Save top right (John, 2026-11-01). */}
+            {(() => {
+              const stubStyle = large ? [styles.stub, { backgroundColor: c.ink }] : styles.stubSlim;
+              const headlineRow = (
                 <View style={styles.headlineRow}>
                   <View style={[styles.headlineMain, styles.headlineStack]}>
                     {times}
@@ -620,8 +624,40 @@ export const ResultRow = memo(function ResultRow({
                     </View>
                   ) : null}
                 </View>
-              </View>
-            </InkContext.Provider>
+              );
+              const stub = (
+                <InkContext.Provider value={!!large}>
+                  <View ref={stubRef} style={stubStyle} testID={large ? 'ticket-stub' : undefined}>
+                    {headlineRow}
+                  </View>
+                </InkContext.Provider>
+              );
+              if (!large) return stub;
+              const source: TearSource = {
+                measure: (done) => stubRef.current?.measureInWindow(done),
+                piece: () => (
+                  <InkContext.Provider value>
+                    <View style={[stubStyle, styles.tornCopy]}>{headlineRow}</View>
+                  </InkContext.Provider>
+                ),
+                hold,
+                paper: c.ink,
+                edge: it.isFull ? c.full : c.line,
+                edgeWidth: edgeW,
+              };
+              return (
+                <TearSourceProvider value={source}>
+                  <Animated.View
+                    testID="ticket-stub-hold"
+                    style={{
+                      opacity: hold,
+                      transform: [{ translateY: hold.interpolate({ inputRange: [0, 1], outputRange: [-6, 0] }) }],
+                    }}>
+                    {stub}
+                  </Animated.View>
+                </TearSourceProvider>
+              );
+            })()}
             {/* The route card tears like a boarding pass between its header and the flights (round 121). */}
             {large ? (
               <TicketTear notch={c.bg} edge={c.line} line={c.line2} />
@@ -637,6 +673,12 @@ export const ResultRow = memo(function ResultRow({
             )}
             <View style={large ? styles.ticketBody : styles.stubSlim}>
               <LegTimeline itinerary={it} status={status} now={now} large={!!large} dimmed={dimmed} onLegPress={onLegPress} />
+              {/* A new user won't know what "25/16" in a circle means (round 126, John), so the card says. */}
+              {large && it.legs.some((l) => dotSeats(l.seats).includes('/')) ? (
+                <Text style={[textStyles.small, styles.seatHint, { color: c.muted }]} testID="seat-circle-hint">
+                  {SEAT_CIRCLE_HINT}
+                </Text>
+              ) : null}
               {cardAge && SHOW_SEAT_AGE ? (
                 <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]} testID="seat-age">
                   {cardAge}
@@ -750,6 +792,9 @@ const styles = StyleSheet.create({
   },
   // In the list, the picked row keeps its old stack: the same parts, no stub.
   stubSlim: { gap: spacing.group },
+  seatHint: { fontSize: 12, lineHeight: 16 },
+  // The flying copy of the header fills the piece that tore off.
+  tornCopy: { flex: 1 },
   ticketBody: {
     paddingTop: 4,
     paddingBottom: spacing.rowY,

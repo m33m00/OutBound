@@ -1,223 +1,227 @@
-import { type ComponentRef, createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
-import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
+import { type ComponentRef, createContext, type ReactNode, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { Animated, Easing, StyleSheet, View } from 'react-native';
 
-import { fonts, radius, useColors } from '@/theme';
+import { radius } from '@/theme';
 
 import { impactTick } from './haptics';
 import { useReducedMotion } from './useReducedMotion';
 
-/** Where on screen the tear starts, in window points. */
-export interface TearFrom {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
+/**
+ * The part of a card that tears off when you save it (round 126, John: "Can you have it actually
+ * tear off the perforated line on the flight card"). The route card's header gives one: where it is
+ * on screen, a copy of itself to fly, and a value that hides the real one while the copy is away.
+ */
+export interface TearSource {
+  measure: (done: (x: number, y: number, width: number, height: number) => void) => void;
+  /** A copy of the piece, drawn on the flying layer. */
+  piece: () => ReactNode;
+  /** 1 while the real piece shows; set to 0 while its copy flies, then eased back to 1. */
+  hold: Animated.Value;
+  /** The piece's paper and the card's edge, so the copy looks torn from that card. */
+  paper: string;
+  edge: string;
+  edgeWidth: number;
 }
 
-export interface TearTicket {
-  title: string;
-  sub?: string;
+const TearSourceContext = createContext<TearSource | null>(null);
+/** Wraps the part of a card that can tear off. */
+export const TearSourceProvider = TearSourceContext.Provider;
+export function useTearSource(): TearSource | null {
+  return useContext(TearSourceContext);
 }
 
-type Launch = (from: TearFrom, ticket: TearTicket) => void;
+/** True inside the flying copy, so a piece can draw itself as already saved. */
+const TearCopyContext = createContext(false);
+export function useIsTearCopy(): boolean {
+  return useContext(TearCopyContext);
+}
 
+type Launch = (source: TearSource) => void;
 const TearAwayContext = createContext<Launch | null>(null);
 
-/** Starts the save animation, or null where no screen hosts it. */
+/** Starts the tear, or null where no screen hosts it. */
 export function useTearAway(): Launch | null {
   return useContext(TearAwayContext);
 }
 
-/** The little ticket's size: the pass, then the stub past its perforation. */
-export const TICKET_W = 132;
-export const STUB_W = 30;
-const TICKET_H = 52;
-const NOTCH = 5;
-/** The tear, then the flight to My Trips: well under a second in all (round 125). */
-export const TEAR_MS = 200;
-export const FLY_MS = 460;
+/** A little wobble, the rip, the flight into My Trips, and the header settling back: under a second. */
+export const WOBBLE_MS = 150;
+export const TEAR_MS = 150;
+export const FLY_MS = 420;
+export const SETTLE_MS = 220;
+/** The torn edge: small paper teeth hanging under the piece, each the lower half of a turned square. */
+const TOOTH = 6;
+const TOOTH_H = (TOOTH * Math.SQRT2) / 2;
 
 interface Flight {
   id: number;
+  /** Where the piece sits in the host, edge included. */
   x: number;
   y: number;
+  width: number;
+  height: number;
+  /** Where its middle ends up: the My Trips tab, just under the screen's bottom middle. */
   toX: number;
   toY: number;
-  ticket: TearTicket;
+  source: TearSource;
+  piece: ReactNode;
 }
 
 /**
- * Saving a route tears a little ticket off (round 125, John: "A cute animation of tearing a ticket of
- * a flight you save onto your trips"): a mini pass pops out at Save, its stub tears off along the
- * dashed line and drops away, and the pass flies down into My Trips, shrinking as it goes. Drawn over
- * the screen and ignores touches. With Reduce Motion on there is no flight; Save's own tap says it.
+ * Saving a route tears the route card's header off along its perforation (round 126, John): the header
+ * wobbles, rips along the dashed line with a light haptic, and arcs down into My Trips, shrinking as it
+ * goes; then the header settles back onto the card so the screen isn't left broken. Drawn over the
+ * screen on a layer that never takes a touch. With Reduce Motion on nothing moves; Save's own tap says it.
  */
 export function TearAwayHost({ children }: { children: ReactNode }) {
   const reduceMotion = useReducedMotion();
   const host = useRef<ComponentRef<typeof View>>(null);
   const [frame, setFrame] = useState({ x: 0, y: 0, width: 0, height: 0 });
   const [flight, setFlight] = useState<Flight | null>(null);
+  const flying = useRef(false);
   const seq = useRef(0);
 
   const launch = useCallback<Launch>(
-    (from, ticket) => {
-      if (reduceMotion || frame.width === 0) return;
-      seq.current += 1;
-      // Start centred under Save, in the host's own points; end at the bottom middle, where My Trips
-      // sits in the tab bar (the third of five tabs).
-      const x = Math.min(Math.max(8, from.x - frame.x + from.width / 2 - TICKET_W / 2), frame.width - TICKET_W - 8);
-      const y = from.y - frame.y + from.height;
-      setFlight({
-        id: seq.current,
-        x,
-        y,
-        toX: frame.width / 2 - TICKET_W / 2,
-        toY: frame.height + 12,
-        ticket,
+    (source) => {
+      if (reduceMotion || frame.width === 0 || flying.current) return;
+      source.measure((x, y, width, height) => {
+        if (!width || !height || flying.current) return;
+        flying.current = true;
+        seq.current += 1;
+        const e = source.edgeWidth;
+        source.hold.setValue(0);
+        setFlight({
+          id: seq.current,
+          x: x - frame.x - e,
+          y: y - frame.y - e,
+          width: width + e * 2,
+          height: height + e,
+          toX: frame.width / 2,
+          toY: frame.height + 10,
+          source,
+          piece: source.piece(),
+        });
       });
     },
     [reduceMotion, frame],
   );
 
+  const landed = useCallback((source: TearSource) => {
+    flying.current = false;
+    setFlight(null);
+    // The header settles back onto the card with a small bounce.
+    Animated.timing(source.hold, {
+      toValue: 1,
+      duration: SETTLE_MS,
+      easing: Easing.out(Easing.back(1.4)),
+      useNativeDriver: true,
+    }).start();
+  }, []);
+
   return (
     <TearAwayContext.Provider value={launch}>
       {children}
-      {/* A layer over the whole screen that never takes a touch; the ticket flies on it. */}
+      {/* A layer over the whole screen that never takes a touch; the torn piece flies on it. */}
       <View
         ref={host}
         pointerEvents="none"
         style={StyleSheet.absoluteFill}
         onLayout={() => host.current?.measureInWindow((x, y, width, height) => setFrame({ x, y, width, height }))}
+        accessibilityElementsHidden
+        importantForAccessibility="no-hide-descendants"
         testID="tear-away-layer">
-        {flight ? <FlyingTicket key={flight.id} flight={flight} onDone={() => setFlight(null)} /> : null}
+        {flight ? <FlyingPiece key={flight.id} flight={flight} onDone={() => landed(flight.source)} /> : null}
       </View>
     </TearAwayContext.Provider>
   );
 }
 
-function FlyingTicket({ flight, onDone }: { flight: Flight; onDone: () => void }) {
-  const c = useColors();
-  const pop = useRef(new Animated.Value(0)).current;
+function FlyingPiece({ flight, onDone }: { flight: Flight; onDone: () => void }) {
+  const wobble = useRef(new Animated.Value(0)).current;
   const tear = useRef(new Animated.Value(0)).current;
   const fly = useRef(new Animated.Value(0)).current;
   useEffect(() => {
+    let finished = false;
     const run = Animated.sequence([
-      Animated.timing(pop, { toValue: 1, duration: 120, easing: Easing.out(Easing.back(1.6)), useNativeDriver: true }),
+      Animated.timing(wobble, { toValue: 1, duration: WOBBLE_MS, easing: Easing.linear, useNativeDriver: true }),
       Animated.timing(tear, { toValue: 1, duration: TEAR_MS, easing: Easing.out(Easing.quad), useNativeDriver: true }),
       Animated.timing(fly, { toValue: 1, duration: FLY_MS, easing: Easing.in(Easing.cubic), useNativeDriver: true }),
     ]);
-    run.start(() => onDone());
-    // A light tick as the stub rips.
-    const t = setTimeout(impactTick, 120);
+    run.start(() => {
+      finished = true;
+      onDone();
+    });
+    // A light tick as it rips.
+    const t = setTimeout(impactTick, WOBBLE_MS);
     return () => {
       clearTimeout(t);
       run.stop();
+      // Never leave the card without its header.
+      if (!finished) flight.source.hold.setValue(1);
     };
     // One run per flight; the host keys this by flight.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  const dx = flight.toX - flight.x;
-  const dy = flight.toY - flight.y;
-  const pass = {
-    opacity: fly.interpolate({ inputRange: [0, 0.75, 1], outputRange: [1, 0.9, 0] }),
+
+  const { x, y, width, height, toX, toY, source } = flight;
+  const dx = toX - (x + width / 2);
+  const dy = toY - (y + height / 2);
+  const motion = {
+    opacity: fly.interpolate({ inputRange: [0, 0.8, 1], outputRange: [1, 1, 0] }),
     transform: [
       { translateX: fly.interpolate({ inputRange: [0, 1], outputRange: [0, dx] }) },
-      // A small lift before it drops, so it arcs.
-      { translateY: fly.interpolate({ inputRange: [0, 0.3, 1], outputRange: [0, -18, dy] }) },
       {
-        scale: Animated.multiply(
-          pop.interpolate({ inputRange: [0, 1], outputRange: [0.6, 1] }),
-          fly.interpolate({ inputRange: [0, 1], outputRange: [1, 0.35] }),
+        // It lifts a hair as it rips, rises a little more, then drops into the tab bar: an arc.
+        translateY: Animated.add(
+          tear.interpolate({ inputRange: [0, 1], outputRange: [0, -6] }),
+          fly.interpolate({ inputRange: [0, 0.3, 1], outputRange: [0, -14, dy] }),
         ),
       },
-      { rotate: tear.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '-5deg'] }) },
+      { scale: fly.interpolate({ inputRange: [0, 1], outputRange: [1, 0.12] }) },
+      {
+        rotate: wobble.interpolate({
+          inputRange: [0, 0.25, 0.5, 0.75, 1],
+          outputRange: ['0deg', '-1.2deg', '1.2deg', '-0.6deg', '0deg'],
+        }),
+      },
+      { rotate: tear.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '-3deg'] }) },
     ],
   };
-  const stub = {
-    opacity: tear.interpolate({ inputRange: [0, 0.6, 1], outputRange: [1, 1, 0] }),
-    transform: [
-      { translateX: tear.interpolate({ inputRange: [0, 1], outputRange: [0, 10] }) },
-      { translateY: tear.interpolate({ inputRange: [0, 1], outputRange: [0, 22] }) },
-      { rotate: tear.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '16deg'] }) },
-    ],
-  };
-  const paper = { backgroundColor: c.surface, borderColor: c.line2 };
-  const bite = { backgroundColor: c.bg, borderColor: c.line2 };
+  const step = TOOTH * Math.SQRT2;
+  const teeth = Math.ceil(width / step) + 2;
   return (
-    <View pointerEvents="none" style={[styles.flight, { left: flight.x, top: flight.y }]} testID="tear-away">
-      <Animated.View style={[styles.ticket, { opacity: pop }]}>
-        <Animated.View
-          style={[styles.pass, styles.above, paper, styles.shadow, { shadowColor: c.text }, pass]}
-          testID="tear-pass">
-          <Text style={[styles.title, { color: c.text }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
-            {flight.ticket.title}
-          </Text>
-          {flight.ticket.sub ? (
-            <Text style={[styles.sub, { color: c.muted }]} numberOfLines={1}>
-              {flight.ticket.sub}
-            </Text>
-          ) : null}
-          <View style={[styles.biteTop, bite]} />
-          <View style={[styles.biteBottom, bite]} />
-        </Animated.View>
-        <Animated.View style={[styles.stub, paper, stub]} testID="tear-stub">
-          <View style={[styles.perf, { borderColor: c.line2 }]} />
-          <View style={[styles.stubBar, { backgroundColor: c.accent }]} />
-        </Animated.View>
-      </Animated.View>
-    </View>
+    <Animated.View style={[styles.flight, { left: x, top: y, width, height, shadowColor: '#000' }, motion]} testID="tear-away">
+      <View
+        style={[styles.paper, { backgroundColor: source.paper, borderColor: source.edge, borderWidth: source.edgeWidth }]}
+        testID="tear-piece">
+        <TearCopyContext.Provider value={true}>{flight.piece}</TearCopyContext.Provider>
+      </View>
+      {/* The ragged edge where it tore along the perforation. */}
+      <View style={[styles.teeth, { left: source.edgeWidth, right: source.edgeWidth }]} testID="tear-edge">
+        {Array.from({ length: teeth }, (_, i) => (
+          <View key={i} style={[styles.tooth, { left: i * step - TOOTH / 2, backgroundColor: source.paper }]} />
+        ))}
+      </View>
+    </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
-  flight: { position: 'absolute', width: TICKET_W, height: TICKET_H, zIndex: 50, elevation: 50 },
-  ticket: { flexDirection: 'row', width: TICKET_W, height: TICKET_H },
-  pass: {
-    width: TICKET_W - STUB_W,
-    height: TICKET_H,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRightWidth: 0,
-    borderTopLeftRadius: radius.sm,
-    borderBottomLeftRadius: radius.sm,
-    paddingHorizontal: 10,
-    justifyContent: 'center',
-    gap: 1,
-  },
-  above: { zIndex: 2 },
-  shadow: { shadowOpacity: 0.16, shadowRadius: 8, shadowOffset: { width: 0, height: 4 } },
-  title: { fontFamily: fonts.bodyBold, fontSize: 14, lineHeight: 18, letterSpacing: -0.2 },
-  sub: { fontFamily: fonts.monoMedium, fontSize: 10, lineHeight: 13 },
-  // Half-circle notches at the perforation, top and bottom.
-  biteTop: {
+  flight: {
     position: 'absolute',
-    right: -NOTCH,
-    top: -NOTCH - StyleSheet.hairlineWidth,
-    width: NOTCH * 2,
-    height: NOTCH * 2,
-    borderRadius: NOTCH,
-    borderWidth: StyleSheet.hairlineWidth,
-    zIndex: 2,
+    zIndex: 50,
+    elevation: 50,
+    shadowOpacity: 0.14,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 6 },
   },
-  biteBottom: {
-    position: 'absolute',
-    right: -NOTCH,
-    bottom: -NOTCH - StyleSheet.hairlineWidth,
-    width: NOTCH * 2,
-    height: NOTCH * 2,
-    borderRadius: NOTCH,
-    borderWidth: StyleSheet.hairlineWidth,
-    zIndex: 2,
+  paper: {
+    flex: 1,
+    overflow: 'hidden',
+    borderBottomWidth: 0,
+    borderTopLeftRadius: radius.md,
+    borderTopRightRadius: radius.md,
   },
-  stub: {
-    width: STUB_W,
-    height: TICKET_H,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderLeftWidth: 0,
-    borderTopRightRadius: radius.sm,
-    borderBottomRightRadius: radius.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  perf: { position: 'absolute', left: 0, top: NOTCH + 2, bottom: NOTCH + 2, borderLeftWidth: 1, borderStyle: 'dashed' },
-  stubBar: { width: 4, height: 22, borderRadius: 2, opacity: 0.8 },
+  teeth: { position: 'absolute', bottom: -TOOTH_H, height: TOOTH_H, overflow: 'hidden' },
+  tooth: { position: 'absolute', top: -TOOTH / 2, width: TOOTH, height: TOOTH, transform: [{ rotate: '45deg' }] },
 });
