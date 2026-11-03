@@ -9,7 +9,18 @@ import { createMemoryProvider, searchItineraries, zonedToUtc, type Itinerary } f
 
 import { ResultRow, SEAT_CIRCLE_HINT } from '../ResultRow';
 import { SaveRouteButton } from '../SaveRouteButton';
-import { FLY_MS, FOLD_DEG, HOLD_MS, PULL_MS, RIP_MS, SETTLE_MS, TearAwayHost } from '../TearAway';
+import {
+  BEND_MS,
+  BOTTOM_BEND_DEG,
+  farEdgeScale,
+  FLY_MS,
+  HOLD_MS,
+  LIFT_MS,
+  RIP_MS,
+  SETTLE_MS,
+  TearAwayHost,
+  TOP_BEND_DEG,
+} from '../TearAway';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -31,8 +42,10 @@ async function itinerary() {
   return it;
 }
 
-// Every view says where it is: the header near the top, the screen 390 x 760.
-const measureInWindow = (cb: (x: number, y: number, w: number, h: number) => void) => cb(16, 200, 358, 80);
+// Every view says where it is: the card near the top of a 390 x 760 screen, its header the top 90 points.
+type Measured = (x: number, y: number, w: number, h: number) => void;
+const measureCard = (cb: Measured) => cb(16, 200, 358, 300);
+const measureHeader = (cb: Measured) => cb(16, 200, 358, 90);
 
 describe('TearAway: the route card tears along its perforation when you save (round 126, John)', () => {
   let r: ReactTestRenderer | undefined;
@@ -63,13 +76,22 @@ describe('TearAway: the route card tears along its perforation when you save (ro
     });
     // The mocked views measure nothing, so give each one a place on screen.
     for (const n of r!.root.findAll((x) => typeof x.instance?.measureInWindow === 'function')) {
-      n.instance.measureInWindow = measureInWindow;
+      n.instance.measureInWindow = measureCard;
+    }
+    for (const n of r!.root.findAllByProps({ testID: 'ticket-stub' })) {
+      if (typeof n.instance?.measureInWindow === 'function') n.instance.measureInWindow = measureHeader;
     }
     act(() => r!.root.findByProps({ testID: 'tear-away-layer' }).props.onLayout());
   }
 
   const press = () => act(() => r!.root.findByProps({ testID: 'save-route' }).props.onPress());
   const flying = () => r!.root.findAllByProps({ testID: 'tear-away' }).filter((n) => typeof n.type !== 'string');
+  const cardOpacity = () => {
+    const o = r!.root.findAllByProps({ testID: 'route-card-hold' })[0].props.style.opacity as
+      | number
+      | { __getValue: () => number };
+    return typeof o === 'number' ? o : o.__getValue();
+  };
   const holdOpacity = () => {
     const o = r!.root.findAllByProps({ testID: 'ticket-stub-hold' })[0].props.style.opacity as
       | number
@@ -77,13 +99,16 @@ describe('TearAway: the route card tears along its perforation when you save (ro
     return typeof o === 'number' ? o : o.__getValue();
   };
 
-  it('stays short: the fold, the beat, the rip, the flight and the settle take well under 1.5s', () => {
-    expect(PULL_MS + HOLD_MS + RIP_MS + FLY_MS + SETTLE_MS).toBeLessThanOrEqual(1400);
+  it('stays short: pick up, bend, beat, rip, flight and settle take under 1.5s', () => {
+    expect(LIFT_MS + BEND_MS + HOLD_MS + RIP_MS + FLY_MS + SETTLE_MS).toBeLessThan(1500);
   });
 
-  it('folds hard back at the perforation before it tears (round 128, John: "Bend it more")', () => {
-    expect(FOLD_DEG).toBeGreaterThanOrEqual(60);
-    expect(FOLD_DEG).toBeLessThan(90);
+  it('bends in real 3D: each half visibly narrows as it turns away, not just squashes (round 129, John)', () => {
+    // A header about 90 points tall and a body about 220 tall, at full bend.
+    expect(farEdgeScale(90, TOP_BEND_DEG)).toBeLessThan(0.9);
+    expect(farEdgeScale(220, BOTTOM_BEND_DEG)).toBeLessThan(0.82);
+    // Flat would be no narrowing at all.
+    expect(farEdgeScale(90, 0)).toBe(1);
   });
 
   it('tapping Save flies a copy of the card header with a torn edge, and hides the real header meanwhile', async () => {
@@ -101,18 +126,37 @@ describe('TearAway: the route card tears along its perforation when you save (ro
     expect(piece.findAllByProps({ testID: 'tear-edge' }).length).toBeGreaterThan(0);
     expect(piece.findAll((n) => n.props.name === 'bookmark.fill').length).toBeGreaterThan(0);
     expect(r!.root.findByProps({ testID: 'tear-away-layer' }).props.pointerEvents).toBe('none');
-    expect(holdOpacity()).toBe(0);
+    // The real card hides while its copy bends and tears; the header stays put under it.
+    expect(cardOpacity()).toBe(0);
+    expect(holdOpacity()).toBe(1);
+    // The copy has both halves: the top that tears off and the rest of the card.
+    expect(r!.root.findAllByProps({ testID: 'tear-bottom' }).length).toBeGreaterThan(0);
+    expect(piece.findAllByProps({ testID: 'leg-dot-seats' }).length).toBeGreaterThan(0);
   });
 
-  it('peels back at the perforation and rips from left to right (round 127, John)', async () => {
+  it('bends both halves back at the perforation and rips from left to right (rounds 127 to 129, John)', async () => {
     jest.spyOn(Animated, 'sequence').mockReturnValue({ start: jest.fn(), stop: jest.fn(), reset: jest.fn() });
     await mount(false, false);
     press();
-    const peel = r!.root.findAllByProps({ testID: 'tear-peel' })[0];
-    // Hinged at the bottom right, where it's still attached, with a bend back toward you.
-    const style = [peel.props.style].flat(3).reduce((a, b) => ({ ...a, ...b }), {});
-    expect(style.transformOrigin).toBe('right bottom');
-    expect(style.transform.map((t: object) => Object.keys(t)[0])).toEqual(['perspective', 'rotateX', 'rotate', 'translateY']);
+    const flat = (testID: string) =>
+      [r!.root.findAllByProps({ testID })[0].props.style].flat(3).reduce((a, b) => ({ ...a, ...b }), {});
+    // Both halves turn around the perforation with a close perspective: the top back from its bottom
+    // edge, the rest of the card the other way from its top edge.
+    const top = flat('tear-peel');
+    expect(top.transformOrigin).toBe('center bottom');
+    expect(top.transform.map((t: object) => Object.keys(t)[0])).toEqual(['perspective', 'rotateX']);
+    const bottom = flat('tear-bottom');
+    expect(bottom.transformOrigin).toBe('center top');
+    expect(bottom.transform.map((t: object) => Object.keys(t)[0])).toEqual(['perspective', 'rotateX']);
+    // The whole card is picked up and tilted first.
+    expect(flat('tear-away').transform.map((t: object) => Object.keys(t)[0])).toEqual([
+      'perspective',
+      'scale',
+      'rotateX',
+      'rotateY',
+    ]);
+    // The rip is hinged where it's still attached, at the bottom right.
+    expect(flat('tear-rip').transformOrigin).toBe('right bottom');
     // The ragged edge shows hole by hole: the left teeth before the right ones.
     const edge = r!.root.findAllByProps({ testID: 'tear-edge' })[0];
     const teeth = edge.findAllByType(Animated.View);
@@ -132,6 +176,7 @@ describe('TearAway: the route card tears along its perforation when you save (ro
     await mount(false, false);
     press();
     expect(flying()).toHaveLength(0);
+    expect(cardOpacity()).toBe(1);
     expect(settle).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ toValue: 1, duration: SETTLE_MS }));
   });
 

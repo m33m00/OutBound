@@ -427,6 +427,9 @@ export const ResultRow = memo(function ResultRow({
   // hides the real header while its copy flies into My Trips, then eases it back.
   const stubRef = useRef<ComponentRef<typeof View>>(null);
   const hold = useRef(new Animated.Value(1)).current;
+  // The whole card, hidden while its copy bends in your hands and tears (round 129).
+  const ticketRef = useRef<ComponentRef<typeof View>>(null);
+  const cardHold = useRef(new Animated.Value(1)).current;
   // A memo row redraws when Bold Text changes.
   useBoldText();
   const { fontScale } = useWindowDimensions();
@@ -562,7 +565,24 @@ export const ResultRow = memo(function ResultRow({
         {neutralSeatText(it, now)}
       </Text>
     );
-  return (
+  // The flights under the perforation; the save tear draws a copy of it too (round 129).
+  const ticketBodyView = (
+    <View style={large ? styles.ticketBody : styles.stubSlim}>
+      <LegTimeline itinerary={it} status={status} now={now} large={!!large} dimmed={dimmed} onLegPress={onLegPress} />
+      {/* A new user won't know what "25/16" in a circle means (round 126, John), so the card says. */}
+      {large && it.legs.some((l) => dotSeats(l.seats).includes('/')) ? (
+        <Text style={[textStyles.small, styles.seatHint, { color: c.muted }]} testID="seat-circle-hint">
+          {SEAT_CIRCLE_HINT}
+        </Text>
+      ) : null}
+      {cardAge && SHOW_SEAT_AGE ? (
+        <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]} testID="seat-age">
+          {cardAge}
+        </Text>
+      ) : null}
+    </View>
+  );
+  const card = (
     // Soft depth and a gentle press: the card shrinks a hair and dims a little (round 113). The
     // route view's big card stays still under the finger.
     <ScalePressable
@@ -601,7 +621,7 @@ export const ResultRow = memo(function ResultRow({
       ]}>
       {/* Route color = weakest leg. */}
       {large ? null : <View style={[styles.edge, { backgroundColor: dimmed || notFlyable ? c.unknown : c[it.tier] }]} />}
-      <View style={large ? styles.ticket : styles.content}>
+      <View ref={ticketRef} style={large ? styles.ticket : styles.content}>
         {selected ? (
           // Route card A (John, 2026-10-31): the seat chip up top, the times, then one box per flight.
           // In the route view (round 120, the Clean look): the chip, Save and the times up top, then the
@@ -635,13 +655,22 @@ export const ResultRow = memo(function ResultRow({
               if (!large) return stub;
               const source: TearSource = {
                 measure: (done) => stubRef.current?.measureInWindow(done),
+                measureCard: (done) => ticketRef.current?.measureInWindow(done),
                 piece: () => (
                   <InkContext.Provider value>
                     <View style={[stubStyle, styles.tornCopy]}>{headlineRow}</View>
                   </InkContext.Provider>
                 ),
+                body: () => (
+                  <>
+                    <TicketTear notch={c.bg} edge={c.line} line={c.line2} />
+                    {ticketBodyView}
+                  </>
+                ),
                 hold,
+                cardHold,
                 paper: c.ink,
+                bodyPaper: it.isFull ? c.surface2 : c.surface,
                 edge: it.isFull ? c.full : c.line,
                 edgeWidth: edgeW,
               };
@@ -671,20 +700,7 @@ export const ResultRow = memo(function ResultRow({
                 edgeWidth={edgeW}
               />
             )}
-            <View style={large ? styles.ticketBody : styles.stubSlim}>
-              <LegTimeline itinerary={it} status={status} now={now} large={!!large} dimmed={dimmed} onLegPress={onLegPress} />
-              {/* A new user won't know what "25/16" in a circle means (round 126, John), so the card says. */}
-              {large && it.legs.some((l) => dotSeats(l.seats).includes('/')) ? (
-                <Text style={[textStyles.small, styles.seatHint, { color: c.muted }]} testID="seat-circle-hint">
-                  {SEAT_CIRCLE_HINT}
-                </Text>
-              ) : null}
-              {cardAge && SHOW_SEAT_AGE ? (
-                <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]} testID="seat-age">
-                  {cardAge}
-                </Text>
-              ) : null}
-            </View>
+            {ticketBodyView}
           </>
         ) : (
           <>
@@ -751,6 +767,14 @@ export const ResultRow = memo(function ResultRow({
         )}
       </View>
     </ScalePressable>
+  );
+  // The route card hides while its 3D copy bends and tears on the flying layer (round 129).
+  return large ? (
+    <Animated.View style={{ opacity: cardHold }} testID="route-card-hold">
+      {card}
+    </Animated.View>
+  ) : (
+    card
   );
 });
 
