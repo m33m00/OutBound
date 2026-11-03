@@ -189,7 +189,7 @@ export function tripLength(it: Itinerary, status: RowStatus | undefined): string
 }
 
 /** The route's chip when a leg is canceled, in place of its chance word. */
-export const NOT_FLYABLE = 'Not flyable';
+export const NOT_FLYABLE = 'Unavailable';
 
 /** A result row under the finger: a gentler shrink and dim than a button, so a big card doesn't jump. */
 export const CARD_PRESS_SCALE = 0.985;

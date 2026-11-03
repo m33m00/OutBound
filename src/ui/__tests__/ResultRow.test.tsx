@@ -536,7 +536,7 @@ describe('ResultRow', () => {
     // A canceled leg: the route chip says it can't be flown, not a seat chance (John, 2026-11-02).
     const chip = r!.root.findAll((n) => n.props.testID === 'seat-summary' && typeof n.type === 'string')[0];
     const chipWords = chip.findAll((n) => typeof n.props.children === 'string').map((n) => n.props.children as string);
-    expect(chipWords).toContain('Not flyable');
+    expect(chipWords).toContain('Unavailable');
   });
 
   it('a canceled second leg: flights on one line, one tag that names that flight (round 68, John)', async () => {
