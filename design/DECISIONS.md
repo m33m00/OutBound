@@ -401,3 +401,11 @@ John: "Flights that have more than 1 stop are squished. Is there a way we can fi
 - The stop count and trip length moved from beside the route line to the top right of the row, next to the times, the same place the route card already keeps them. The route line now spans the whole card, so every leg gets an even share of the full width and its seat numbers and stop code have room on 0, 1, 2 or 3 stop routes.
 - At big text sizes the stops line goes under the times, left-aligned.
 - No "Unavailable" verdict on a canceled route, on the row or the route card: the canceled leg's own red tag says it, and the line for that leg is gray. VoiceOver still says it can't be flown as listed.
+
+## Round 142: fix round 141's squeezed stops text (2026-11-04)
+
+John: "No what happened. It's all messed up now" (screenshot: "Nonstop 3h 25m" wrapped letter by letter in a sliver beside the times, cards very tall).
+
+- Cause: round 141 put the stops block beside the big times with a percent max width inside a box sized by its contents, so it collapsed to almost nothing.
+- Fix: the stops, short layover and trip length are one line of their own under the times ("1 stop | 35m at DEN | 6h 40m"), left-aligned, never wrapping. The times keep the full width, and the route line below still spans the card at any stop count. Widest case measured (3 stops, a layover, a 23h trip) is about 270pt at the largest text size before stacking, inside the smallest iPhone card.
+- A canceled or no-data leg shows no label over its gray stretch (it showed a lone dash).

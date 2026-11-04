@@ -10,6 +10,9 @@ import { connectionText, dotSeats, measurePerfOn, ResultRow } from '../ResultRow
 import { StatusTag } from '../StatusTag';
 import { TIER_FG } from '../tierColors';
 
+/** Every string drawn under a node, in order. */
+const allText = (n: ReactTestInstance): string => n.children.map((ch) => (typeof ch === 'string' ? ch : allText(ch))).join('');
+
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 const NOW = Date.UTC(2026, 9, 19, 12);
@@ -62,10 +65,13 @@ describe('ResultRow', () => {
     // seat numbers sit over its stretch of the route line instead.
     expect(texts).not.toContain('Full');
     expect(texts.some((t) => /Likely|Long.shot|Maybe|Easy/.test(String(t)))).toBe(false);
-    // Round 141: the top right holds the stops and trip length, so the route line gets the whole width.
-    const topRight = root.findAll((n) => n.props.testID === 'top-right' && typeof n.type === 'string');
-    expect(topRight).toHaveLength(1);
-    expect(topRight[0].findAll((n) => n.props.testID === 'row-stops' && typeof n.type === 'string')).toHaveLength(1);
+    // Round 142: stops and trip length get their own one-line row under the times (beside them, round 141,
+    // they got squeezed to a sliver), so neither the times nor the route line give up width.
+    expect(root.findAll((n) => n.props.testID === 'top-right')).toHaveLength(0);
+    const topLine = root.find((n) => n.props.testID === 'top-line' && typeof n.type === 'string');
+    expect(topLine.findAll((n) => n.props.testID === 'row-stops')).toHaveLength(0);
+    const stopsRow = root.find((n) => n.props.testID === 'row-stops' && typeof n.type === 'string');
+    expect(stopsRow.props.numberOfLines).toBe(1);
     const routeLine = root.find((n) => n.props.testID === 'mini-route' && typeof n.type === 'string');
     expect(routeLine.findAll((n) => n.props.testID === 'row-stops')).toHaveLength(0);
     const labels = root.findAll((n) => n.props.testID === 'mini-route-leg-label' && typeof n.type === 'string');
@@ -167,8 +173,9 @@ describe('ResultRow', () => {
     expect(row.props.accessibilityActions).toEqual([{ name: 'leg-0', label: 'Flight status, AA 1' }]);
     act(() => row.props.onAccessibilityAction({ nativeEvent: { actionName: 'leg-0' } }));
     expect(onLeg).toHaveBeenCalledWith(it.legs[0].flight);
-    const texts = r!.root.findAll((n) => n.props.children != null).flatMap((n) => [n.props.children].flat());
-    expect(texts.some((t) => typeof t === 'string' && t === 'Nonstop')).toBe(true);
+    const stops = r!.root.find((n) => n.props.testID === 'row-stops' && typeof n.type === 'string');
+    expect(allText(stops)).toMatch(/^Nonstop/);
+    expect(allText(stops)).not.toMatch(/BNA|LAX/);
   });
 
   it("connections: the headline is the weakest leg's chance word; legs are one line each (round 66)", async () => {
@@ -431,8 +438,8 @@ describe('ResultRow', () => {
       const top = r!.root.findAll((n) => n.props.testID === 'top-line' && typeof n.type === 'string')[0];
       const flat = Object.assign({}, ...[top.props.style].flat(3).filter(Boolean));
       expect(flat.flexWrap).toBe('nowrap');
-      const right = top.findAll((n) => n.props.testID === 'top-right' && typeof n.type === 'string')[0];
-      expect(Object.assign({}, ...[right.props.style].flat(3).filter(Boolean)).flexShrink).toBe(0);
+      // Nothing shares the times' line any more (round 142), so they keep their width.
+      expect(top.findAll((n) => n.props.testID === 'top-right')).toHaveLength(0);
       // A moved row's big times stay on one line and shrink to fit rather than wrap (John, 2026-11-02).
       await act(async () => {
         r!.update(
@@ -824,17 +831,32 @@ describe('ResultRow at big text sizes (design round 26)', () => {
   let r: ReactTestRenderer | undefined;
   afterEach(() => act(() => r?.unmount()));
 
-  it('puts the stops and trip length under the times, left-aligned, instead of squeezing them (round 141)', async () => {
+  it('keeps the stops and trip length on one line under the times, never wrapping letter by letter (round 142)', async () => {
     // Jest's default font scale is 2, which is past STACK_TOP_LINE_SCALE.
     const it = await fullItinerary();
     await act(async () => {
       r = create(<ResultRow itinerary={it} selected={false} now={NOW} onPress={jest.fn()} />);
     });
-    const stops = r!.root.findAll((n) => n.props.testID === 'row-stops' && typeof n.type === 'string')[0];
-    const flat = (style: unknown) => Object.assign({}, ...([style] as unknown[]).flat(3).filter(Boolean));
-    expect(flat(stops.props.style)).toMatchObject({ alignItems: 'flex-start', maxWidth: '100%' });
-    const holder = r!.root.findAll((n) => n.props.testID === 'top-right' && typeof n.type === 'string')[0];
-    expect(flat(holder.props.style)).toMatchObject({ flexBasis: '100%', justifyContent: 'flex-start' });
+    const stops = r!.root.find((n) => n.props.testID === 'row-stops' && typeof n.type === 'string');
+    expect(stops.props.numberOfLines).toBe(1);
+    expect(allText(stops)).toMatch(/Nonstop.*4h 20m/);
+    expect(r!.root.findAll((n) => n.props.testID === 'top-right')).toHaveLength(0);
+  });
+
+  it('shows no label over a canceled leg, not a lone dash (round 142, John)', async () => {
+    const it = await fullItinerary();
+    const status = {
+      legs: [{ tag: { kind: 'canceled' } }],
+      risks: [],
+      dimmed: false,
+      canceled: true,
+      spoken: ['Canceled'],
+    } as unknown as Parameters<typeof ResultRow>[0]['status'];
+    await act(async () => {
+      r = create(<ResultRow itinerary={it} selected={false} now={NOW} onPress={jest.fn()} status={status} />);
+    });
+    expect(r!.root.findAll((n) => n.props.testID === 'mini-route-leg-label')).toHaveLength(0);
+    expect(r!.root.findAll((n) => n.props.testID === 'mini-route-seg' && typeof n.type === 'string')).toHaveLength(1);
   });
 });
 

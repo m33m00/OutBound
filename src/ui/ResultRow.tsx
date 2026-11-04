@@ -34,7 +34,7 @@ import {
 
 import { AirlinePill } from './AirlinePill';
 import { Icon } from './Icon';
-import { MetaLine } from './MetaLine';
+import { Divided, MetaLine } from './MetaLine';
 import { MiniRoute } from './MiniRoute';
 import { snapshotCard, TearSourceProvider, type TearSource } from './TearAway';
 import { TearSwipe } from './TearSwipe';
@@ -515,6 +515,7 @@ export const ResultRow = memo(function ResultRow({
   // Departed rows are dimmed with a gray fill and edge; text keeps 4.5:1.
   const dimmed = !!status?.dimmed;
   const notFlyable = !!status?.canceled;
+  const slimLength = tripLength(it, status);
   // The route card's header panel (round 114 onward): what's drawn on it takes the ink palette, which
   // in the Clean look is just the card itself.
   const hc = large ? inkColors[scheme] : c;
@@ -736,22 +737,26 @@ export const ResultRow = memo(function ResultRow({
                 text the times take the line and the seats go under them. */}
             <View style={[styles.line, !stacked && styles.lineKeep]} testID="top-line">
               {times}
-              {/* Stops and trip length sit up here, as on the route card, so the route line below gets the whole
-                  width however many stops it has (round 141, John: "Flights that have more than 1 stop are
-                  squished"). No verdict word: a canceled leg's own red tag says it. */}
-              <View style={[styles.topRight, stacked ? styles.topRightStacked : styles.topRightKeep]} testID="top-right">
-                <StopsStack
-                  stops={slimStops(
+            </View>
+            {/* Stops, a short layover and the trip length on one line of their own under the times, so the
+                times keep their width and the route line below gets the whole card at any stop count
+                (round 142, after round 141 squeezed them beside the times). No verdict word: a canceled
+                leg's own red tag says it. */}
+            <Text
+              lineBreakStrategyIOS="push-out"
+              numberOfLines={1}
+              style={[textStyles.small, styles.stopsLine, { color: c.muted }]}
+              testID="row-stops">
+              <Text style={{ color: dimmed ? c.muted : c.text, fontFamily: fonts.bodyMedium }} testID="row-stop-count">
+                <Divided
+                  text={slimStops(
                     it,
                     it.connections.map((_, k) => liveLayoverMin(it, status, k)),
                   )}
-                  length={tripLength(it, status)}
-                  color={c.muted}
-                  lead={dimmed ? c.muted : c.text}
-                  start={stacked}
                 />
-              </View>
-            </View>
+              </Text>
+              {slimLength ? <Divided text={` · ${slimLength}`} /> : null}
+            </Text>
             {/* A boarding pass perforation between the times and the route (round 121, John). */}
             <TicketTear notch={c.bg} edge={c.line} line={c.line2} left={spacing.rowX} right={spacing.rowX} edgeWidth={edgeW} />
             <View style={styles.line}>
@@ -774,7 +779,9 @@ export const ResultRow = memo(function ResultRow({
                       l.seats.source === 'unknown' ||
                       status?.legs[i]?.tag?.kind === 'canceled';
                     const tier = gray ? 'unknown' : l.seats.tier;
-                    return { color: c[tier], text: c[TIER_FG[tier]], label: dotSeats(l.seats) };
+                    // No label over a canceled or no-data leg: a lone dash said nothing (round 142, John).
+                    const blank = status?.legs[i]?.tag?.kind === 'canceled' || l.seats.source === 'unknown';
+                    return { color: c[tier], text: c[TIER_FG[tier]], label: blank ? '' : dotSeats(l.seats) };
                   })}
                 />
               </View>
@@ -878,6 +885,7 @@ const styles = StyleSheet.create({
   stopsTop: { justifyContent: 'flex-end' },
   stopsStackStart: { alignItems: 'flex-start', maxWidth: '100%' },
   stopsTopStart: { justifyContent: 'flex-start' },
+  stopsLine: { marginTop: 2 },
   headlineStack: { gap: 2 },
   // A 44pt tap target that doesn't make the headline line taller: it overhangs into the card's padding.
   topAction: { marginVertical: -8, marginRight: -10 },

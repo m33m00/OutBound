@@ -71,19 +71,22 @@ export function MiniRoute({
                 testID="mini-route-seg"
               />
             ))}
-            {segs.map((leg, i) => (
-              <View key={`lab${i}`} style={[styles.legLabel, { left: pct(i), width: pct(1) }]} testID="mini-route-leg-slot">
-                <Text
-                  style={[styles.legText, { color: leg.text }]}
-                  numberOfLines={1}
-                  adjustsFontSizeToFit
-                  minimumFontScale={0.75}
-                  maxFontSizeMultiplier={1.2}
-                  testID="mini-route-leg-label">
-                  {leg.label}
-                </Text>
-              </View>
-            ))}
+            {segs.map((leg, i) =>
+              // A leg with nothing to say (canceled, no data) shows no label at all (round 142).
+              !leg.label ? null : (
+                <View key={`lab${i}`} style={[styles.legLabel, { left: pct(i), width: pct(1) }]} testID="mini-route-leg-slot">
+                  <Text
+                    style={[styles.legText, { color: leg.text }]}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.75}
+                    maxFontSizeMultiplier={1.2}
+                    testID="mini-route-leg-label">
+                    {leg.label}
+                  </Text>
+                </View>
+              ),
+            )}
           </View>
         ) : null}
         <View style={[dot(false), styles.startDot]} />
