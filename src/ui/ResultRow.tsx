@@ -786,9 +786,15 @@ export const ResultRow = memo(function ResultRow({
                     // A canceled leg is red with an X on it (round 143, John), with no numbers over it; a
                     // no-data leg shows no label either (a lone dash said nothing, round 142).
                     const canceled = status?.legs[i]?.tag?.kind === 'canceled';
-                    if (canceled) return { color: c.canceled, text: c.canceledFg, label: '', canceled: true };
+                    // The leg's flight and aircraft sit under its stretch of line (round 145, John).
+                    const flight = {
+                      airline: l.flight.airline,
+                      number: l.flight.flightNumber,
+                      aircraft: aircraftLabel(l.flight.aircraft),
+                    };
+                    if (canceled) return { color: c.canceled, text: c.canceledFg, label: '', canceled: true, flight };
                     const blank = l.seats.source === 'unknown';
-                    return { color: c[tier], text: c[TIER_FG[tier]], label: blank ? '' : dotSeats(l.seats) };
+                    return { color: c[tier], text: c[TIER_FG[tier]], label: blank ? '' : dotSeats(l.seats), flight };
                   })}
                 />
               </View>
@@ -796,40 +802,25 @@ export const ResultRow = memo(function ResultRow({
             {/* Slim row: who flies it and anything live; seats per leg live in the route card. One line of
                 flights and at most one tag, which names the flight it means ("PHX → LAX delayed 40m"), so the
                 row never stacks (John, 2026-10-31). */}
-            <View style={styles.legLine} testID="flights-line">
-              {it.legs.map((leg) => {
-                const plane = aircraftLabel(leg.flight.aircraft);
-                return (
-                  <View key={leg.flight.id} style={styles.flightStack} testID="flight-item">
-                    <AirlinePill airline={leg.flight.airline} flightNumber={leg.flight.flightNumber} />
-                    {/* Each flight's aircraft under its chip, so the results show it without opening the
-                        flight (round 143, John). */}
-                    {plane ? (
-                      <Text
-                        lineBreakStrategyIOS="push-out"
-                        numberOfLines={1}
-                        style={[textStyles.small, styles.chipAircraft, { color: c.muted }]}
-                        testID="row-aircraft">
-                        {plane}
-                      </Text>
-                    ) : null}
-                  </View>
-                );
-              })}
-              {/* A connection at risk is flagged on its stop and a canceled leg is drawn red with an X on the
+            {/* The flights live under their legs on the route line now (round 145, John); this line keeps only
+                a live tag (delays, a diversion) and the seat age when ages are on. */}
+            {(headline && !riskOnLine && headline.tone !== 'canceled') || shownAge ? (
+              <View style={styles.legLine} testID="flights-line">
+                {/* A connection at risk is flagged on its stop and a canceled leg is drawn red with an X on the
                   route line now (round 143, John), so the row's tag skips both ("Drop the tag", round 144).
                   VoiceOver still says it. */}
-              {headline && !riskOnLine && headline.tone !== 'canceled' ? (
-                <View style={styles.flight} testID="row-tag">
-                  <StatusTag label={headline.label} tone={headline.tone} />
-                </View>
-              ) : null}
-              {shownAge ? (
-                <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]} testID="seat-age">
-                  {shownAge}
-                </Text>
-              ) : null}
-            </View>
+                {headline && !riskOnLine && headline.tone !== 'canceled' ? (
+                  <View style={styles.flight} testID="row-tag">
+                    <StatusTag label={headline.label} tone={headline.tone} />
+                  </View>
+                ) : null}
+                {shownAge ? (
+                  <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]} testID="seat-age">
+                    {shownAge}
+                  </Text>
+                ) : null}
+              </View>
+            ) : null}
           </>
         )}
       </View>
@@ -946,9 +937,6 @@ const styles = StyleSheet.create({
     gap: spacing.group,
     flexWrap: 'wrap',
   },
-  // A chip with its aircraft under it, left-aligned with the chip.
-  flightStack: { alignItems: 'flex-start', gap: 2 },
-  chipAircraft: { paddingLeft: 6 },
   flight: {
     flexDirection: 'row',
     alignItems: 'center',

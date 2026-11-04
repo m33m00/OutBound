@@ -427,3 +427,12 @@ John, asked whether to keep the red "DEN → LAX canceled" tag now that the rout
 
 - The slim result card no longer shows a tag for a canceled leg; the red stretch with an X on the route line says it. VoiceOver still says the flight is canceled and that the route can't be flown as listed.
 - Delays and diversions keep their tag under the flights. The route card's own leg boxes keep their Canceled pill.
+
+## Round 145: each flight under its own leg of the route line (2026-11-04)
+
+John: "Anyway to fit the airline and aircraft underneath the route line for multiple legs? Like it's aligned underneath the route line?"
+
+- The chip row under the route line is gone from the result card. Each leg's airline mark and flight number ("AA 1550") sit centred under that leg's stretch of line, with its aircraft under them in small gray ("737-800"). They sit below the stop codes, so a code at a dot never runs into them.
+- At 3 stops (4 legs) the code beside a known airline's logo drops ("1550"), so it fits; an airline without a mark keeps its code. Both lines stay on one line and shrink a touch if a leg is short.
+- Measured in the app's mono font on a 375pt phone: the flight line is 69pt against legs of 226, 113 and 74pt (0, 1, 2 stops), and 49pt against 55pt at 3 stops. The longest aircraft name ("737 MAX 8") is 60pt and shrinks to about 49pt at 3 stops; "737-800" fits as is.
+- The line under the route only appears for a live tag (a delay, a diversion) now.

@@ -177,3 +177,4 @@ Each item names its owner. One item per work session. spec-keeper runs a pre-fli
 | 170 | Design round 142: stops and trip length on their own one-line row under the times (fixes round 141 squeeze), no dash over canceled legs (John) | main | P1 | Built (design round 142, branch claude/project-thread-fzqwou) |
 | 171 | Design round 143: canceled leg red with an X on the route line, At risk on top of its stop, aircraft under each flight chip, map key canceled row (John) | main | P2 | Built (design round 143, branch claude/project-thread-fzqwou) |
 | 172 | Design round 144: drop the canceled tag on result cards; the red X on the route line says it (John) | main | P2 | Built (design round 144, branch claude/project-thread-fzqwou) |
+| 173 | Design round 145: each leg's airline, flight number and aircraft under its own stretch of the route line, chip row removed (John) | main | P2 | Built (design round 145, branch claude/project-thread-fzqwou) |

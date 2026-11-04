@@ -119,4 +119,18 @@ describe('MiniRoute (round 119)', () => {
     );
     expect(flag.top + flag.height).toBeLessThanOrEqual(label.top);
   });
+
+  it('drops the airline code beside a known logo only when there are 4 legs, to fit (round 145)', () => {
+    const leg = (number: string) => ({ color: '#0a0', text: '#060', label: '9/1', flight: { airline: 'AA', number } });
+    const numbers = (airports: string[]) => {
+      act(() => {
+        r = create(<MiniRoute airports={airports} legs={airports.slice(1).map((_, i) => leg(`${100 + i}`))} />);
+      });
+      return r!.root
+        .findAll((n) => n.props.testID === 'mini-route-flight-number' && typeof n.type === 'string')
+        .map((n) => n.props.children);
+    };
+    expect(numbers(['DFW', 'CLT', 'MIA', 'LGA'])).toEqual(['AA 100', 'AA 101', 'AA 102']);
+    expect(numbers(['DFW', 'ORD', 'CLT', 'MIA', 'LGA'])).toEqual(['100', '101', '102', '103']);
+  });
 });
