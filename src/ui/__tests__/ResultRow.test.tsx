@@ -413,10 +413,11 @@ describe('ResultRow', () => {
     // The big line keeps only the times now, on one line, so a moved row never wraps (John, 2026-11-02).
     expect(flat(times.props.children)).toBe('9:25\u00a0AM – 11:45\u00a0AM');
     expect(flat(struck[0].props.children)).toBe('9:00\u00a0AM – 11:20\u00a0AM');
-    // The flights stay on one line with one tag after them (John, 2026-10-31).
-    const line = root.findAll((n) => n.props.testID === 'flights-line' && typeof n.type === 'string')[0];
-    expect(line.props.style).toMatchObject({ flexDirection: 'row' });
-    expect(line.findAll((n) => n.props.testID === 'row-tag' && typeof n.type === 'string')).toHaveLength(1);
+    // The delay rides over its own leg on the route line, not in a tag under the card (round 146, John).
+    expect(root.findAll((n) => n.props.testID === 'row-tag' && typeof n.type === 'string')).toHaveLength(0);
+    const flags = root.findAll((n) => n.props.testID === 'mini-route-leg-flag' && typeof n.type === 'string');
+    expect(flags).toHaveLength(1);
+    expect(flat(flags[0].props.children)).toBe('Delayed 25m');
     const row = root.findAll((n) => n.props.accessibilityRole === 'button')[0];
     expect(row.props.accessibilityLabel).toContain('Delayed 25 minutes, was 9:00 AM, now 9:25 AM');
   });

@@ -40,7 +40,10 @@ describe('SavedRouteCard', () => {
     const texts = r!.root
       .findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string')
       .map((n) => n.props.children as string);
-    expect(texts).toEqual(expect.arrayContaining(['DFW → ORD → LAX', 'Tue, Oct 20', '7:05 AM – 1:20 PM', 'AA 1234, AA 88']));
+    expect(texts).toEqual(expect.arrayContaining(['DFW → ORD → LAX', 'Tue, Oct 20', '7:05 AM – 1:20 PM', 'AA 1234', 'AA 88']));
+    // The flights sit under their legs on a route line, like the results (round 146).
+    expect(r!.root.findAll((n) => n.props.testID === 'saved-route-line' && typeof n.type === 'string')).toHaveLength(1);
+    expect(r!.root.findAll((n) => n.props.testID === 'mini-route-flight' && typeof n.type === 'string')).toHaveLength(2);
     expect(texts).not.toContain('Passed');
     // A boarding pass (round 114): the path and day on the navy stub, a torn edge, the flights below.
     const host = (id: string) => r!.root.findAll((n) => n.props.testID === id && typeof n.type === 'string');

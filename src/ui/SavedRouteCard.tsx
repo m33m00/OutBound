@@ -3,7 +3,6 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { forSpeech } from '@/search/format';
 import {
   elevation,
-  fonts,
   InkContext,
   inkColors,
   minTapTarget,
@@ -15,8 +14,11 @@ import {
 } from '@/theme';
 import { savedRouteFlights, savedRouteTitle, savedRouteWhen, type SavedRoute } from '@/trips/savedRoutes';
 
+import { aircraftLabel } from '@/engine';
+
 import { Icon } from './Icon';
 import { MetaLine } from './MetaLine';
+import { MiniRoute } from './MiniRoute';
 import { pressStyle } from './press';
 import { ScalePressable } from './ScalePressable';
 import { StatusTag } from './StatusTag';
@@ -75,9 +77,20 @@ export function SavedRouteCard({ route, past, now, onOpen, onRemove }: SavedRout
         </InkContext.Provider>
         <TicketTear notch={c.bg} edge={c.line} line={c.line2} />
         <View style={styles.body}>
-          <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, styles.flights, { color: c.muted }]}>
-            {flights}
-          </Text>
+          {/* The same route line as a result card (round 146): each flight under its own leg with its
+              aircraft. No seat colors, since a saved route's seats are read again when you open it. */}
+          <View style={styles.route} testID="saved-route-line">
+            <MiniRoute
+              airports={[route.legs[0].from, ...route.legs.map((l) => l.to)]}
+              dimmed={past}
+              legs={route.legs.map((l) => ({
+                color: c.line2,
+                text: c.muted,
+                label: '',
+                flight: { airline: l.airline, number: l.flightNumber, aircraft: aircraftLabel(l.aircraft) },
+              }))}
+            />
+          </View>
           <View importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
             <Icon
               name="chevron.right"
@@ -133,7 +146,7 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.page - 2,
     paddingHorizontal: spacing.page,
   },
-  flights: { flex: 1, fontFamily: fonts.monoMedium },
+  route: { flex: 1, minWidth: 0 },
   remove: {
     position: 'absolute',
     top: spacing.page - (minTapTarget - 28) / 2,

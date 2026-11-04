@@ -538,7 +538,9 @@ export const ResultRow = memo(function ResultRow({
   // The worst live thing on the route: the slim row's one tag. The route card has no banner for it; each
   // leg's own pill says it (John, 2026-11-02).
   const headline = statusHeadline(it, status);
-  const riskOnLine = !!headline && !!status?.risks[0] && headline.label === `Connection at risk at ${status.risks[0].airport}`;
+  // Canceled legs, connections at risk, delays and diversions are all drawn on the route line now (rounds
+  // 143 to 146, John), so the row's own tag is left only for a route whose first flight has gone.
+  const rowTag = headline?.tone === 'gone' ? headline : null;
   const ageWords = summaryAge ? summaryAge[0].toLowerCase() + summaryAge.slice(1) : null;
   const cardAge = ageWords ? `Seats ${ageWords}` : null;
   // A moved time (John, 2026-11-02): the schedule sits small and struck on its own line above, and the big
@@ -794,7 +796,10 @@ export const ResultRow = memo(function ResultRow({
                     };
                     if (canceled) return { color: c.canceled, text: c.canceledFg, label: '', canceled: true, flight };
                     const blank = l.seats.source === 'unknown';
-                    return { color: c[tier], text: c[TIER_FG[tier]], label: blank ? '' : dotSeats(l.seats), flight };
+                    // A delay or diversion rides over its own leg, above the seats (round 146, John).
+                    const tag = status?.legs[i]?.tag;
+                    const flag = tag && (tag.kind === 'delayed' || tag.kind === 'diverted') ? tag.label : null;
+                    return { color: c[tier], text: c[TIER_FG[tier]], label: blank ? '' : dotSeats(l.seats), flag, flight };
                   })}
                 />
               </View>
@@ -804,14 +809,14 @@ export const ResultRow = memo(function ResultRow({
                 row never stacks (John, 2026-10-31). */}
             {/* The flights live under their legs on the route line now (round 145, John); this line keeps only
                 a live tag (delays, a diversion) and the seat age when ages are on. */}
-            {(headline && !riskOnLine && headline.tone !== 'canceled') || shownAge ? (
+            {rowTag || shownAge ? (
               <View style={styles.legLine} testID="flights-line">
                 {/* A connection at risk is flagged on its stop and a canceled leg is drawn red with an X on the
                   route line now (round 143, John), so the row's tag skips both ("Drop the tag", round 144).
                   VoiceOver still says it. */}
-                {headline && !riskOnLine && headline.tone !== 'canceled' ? (
+                {rowTag ? (
                   <View style={styles.flight} testID="row-tag">
-                    <StatusTag label={headline.label} tone={headline.tone} />
+                    <StatusTag label={rowTag.label} tone={rowTag.tone} />
                   </View>
                 ) : null}
                 {shownAge ? (
@@ -900,7 +905,8 @@ const styles = StyleSheet.create({
   stopsTop: { justifyContent: 'flex-end' },
   stopsStackStart: { alignItems: 'flex-start', maxWidth: '100%' },
   stopsTopStart: { justifyContent: 'flex-start' },
-  stopsLine: { marginTop: 2 },
+  // A size up from the small text (round 146, John: "blow up the text a little bit more").
+  stopsLine: { marginTop: 3, fontSize: 14, lineHeight: 19 },
   headlineStack: { gap: 2 },
   // A 44pt tap target that doesn't make the headline line taller: it overhangs into the card's padding.
   topAction: { marginVertical: -8, marginRight: -10 },

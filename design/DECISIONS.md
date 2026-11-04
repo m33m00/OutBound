@@ -436,3 +436,15 @@ John: "Anyway to fit the airline and aircraft underneath the route line for mult
 - At 3 stops (4 legs) the code beside a known airline's logo drops ("1550"), so it fits; an airline without a mark keeps its code. Both lines stay on one line and shrink a touch if a leg is short.
 - Measured in the app's mono font on a 375pt phone: the flight line is 69pt against legs of 226, 113 and 74pt (0, 1, 2 stops), and 49pt against 55pt at 3 stops. The longest aircraft name ("737 MAX 8") is 60pt and shrinks to about 49pt at 3 stops; "737-800" fits as is.
 - The line under the route only appears for a live tag (a delay, a diversion) now.
+
+## Design round 146: the Delayed pill rides on its leg; bigger text, taller cards (John, 2026-11-04)
+
+John: "The delayed pill, can that be over on top of that route line, aligned, centered on that route line that it's calling out on? ... these cards can be a little taller ... the text doesn't need to be so small to fit everything."
+
+- A delayed or diverted flight's pill now sits above the route line, centred over that flight's own leg, in its own band above the seat numbers. A connection's At risk pill keeps its band just under it, centred on the stop, so a delay and the risk it causes never sit on each other.
+- On short legs (2 or more stops) the pill shortens to "+50m" and "Diverted" so it stays inside its stretch; it can shrink a touch if it still has to.
+- The tag line under the route is gone for delays and diversions; it stays only for a route whose first flight has departed. VoiceOver still says every live change.
+- Bigger text, cards a bit taller: seat numbers 11 to 13, flight numbers 11 to 13, aircraft 10 to 12, stop codes 10 to 12, pills 10 to 12, the stops and trip length line 12 to 14.
+- With the bigger numbers, the code beside a known airline logo drops from 2 stops up (was 3), so "1550" fits a 74pt leg; 1-stop routes keep "AA 1550".
+- My Trips saved cards now draw the same route line, with each flight and its aircraft under its leg. Saved trips keep each flight's aircraft from now on; older saves just show the flight.
+- Measured with the app's fonts on a 375pt phone (not rendered): "Delayed 50m" is 88pt in a 113pt leg (1 stop) and 226pt (nonstop); "21/12" is about 47pt in the 55pt leg at 3 stops; the longest stops line is under 290pt of the 318pt card.

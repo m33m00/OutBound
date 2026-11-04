@@ -1,4 +1,5 @@
 import React from 'react';
+import { StyleSheet } from 'react-native';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 
 import { MiniRoute } from '../MiniRoute';
@@ -120,7 +121,7 @@ describe('MiniRoute (round 119)', () => {
     expect(flag.top + flag.height).toBeLessThanOrEqual(label.top);
   });
 
-  it('drops the airline code beside a known logo only when there are 4 legs, to fit (round 145)', () => {
+  it('drops the airline code beside a known logo from 3 legs up, to fit the bigger text (rounds 145, 146)', () => {
     const leg = (number: string) => ({ color: '#0a0', text: '#060', label: '9/1', flight: { airline: 'AA', number } });
     const numbers = (airports: string[]) => {
       act(() => {
@@ -130,7 +131,40 @@ describe('MiniRoute (round 119)', () => {
         .findAll((n) => n.props.testID === 'mini-route-flight-number' && typeof n.type === 'string')
         .map((n) => n.props.children);
     };
-    expect(numbers(['DFW', 'CLT', 'MIA', 'LGA'])).toEqual(['AA 100', 'AA 101', 'AA 102']);
-    expect(numbers(['DFW', 'ORD', 'CLT', 'MIA', 'LGA'])).toEqual(['100', '101', '102', '103']);
+    expect(numbers(['DFW', 'MIA', 'LGA'])).toEqual(['AA 100', 'AA 101']);
+    expect(numbers(['DFW', 'CLT', 'MIA', 'LGA'])).toEqual(['100', '101', '102']);
+  });
+
+  it("centres a flight's delay over its own leg, above the seat numbers (round 146, John)", () => {
+    const leg = (flag?: string) => ({
+      color: '#0a0',
+      text: '#060',
+      label: '21/12',
+      flag,
+      flight: { airline: 'AA', number: '1' },
+    });
+    const flags = (airports: string[], legs: ReturnType<typeof leg>[]) => {
+      act(() => {
+        r = create(<MiniRoute airports={airports} legs={legs} stopFlags={airports.slice(2).map(() => 'At risk')} />);
+      });
+      return r!.root.findAll((n) => n.props.testID === 'mini-route-leg-flag' && typeof n.type === 'string');
+    };
+    const two = flags(['DFW', 'MIA', 'LGA'], [leg(), leg('Delayed 50m')]);
+    expect(two).toHaveLength(1);
+    const slot = StyleSheet.flatten(two[0].props.style);
+    // The slot spans the second leg, so the pill centres on it.
+    expect(slot).toMatchObject({ left: '50%', width: '50%', top: 0 });
+    const text = two[0].findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string')[0];
+    expect(text.props.children).toBe('Delayed 50m');
+    // The stop's own flag sits in the band under it, so the two never overlap, and the seats sit lower still.
+    const stop = r!.root.findAll((n) => n.props.testID === 'mini-route-stop-flag' && typeof n.type === 'string')[0];
+    const stopTop = StyleSheet.flatten(stop.props.style).top as number;
+    expect(stopTop).toBeGreaterThanOrEqual(17);
+    const label = r!.root.findAll((n) => n.props.testID === 'mini-route-leg-slot' && typeof n.type === 'string')[0];
+    expect(StyleSheet.flatten(label.props.style).top as number).toBeGreaterThan(stopTop);
+    // On a short leg the delay shortens so it stays inside its own stretch.
+    const three = flags(['DFW', 'CLT', 'MIA', 'LGA'], [leg(), leg(), leg('Delayed 50m')]);
+    const short = three[0].findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string')[0];
+    expect(short.props.children).toBe('+50m');
   });
 });
