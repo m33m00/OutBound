@@ -12,6 +12,7 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
+import { GestureDetector, usePanGesture } from 'react-native-gesture-handler';
 
 import { AIRPORTS, areaFor, localDate, type Flight, type Itinerary, type SearchRequest } from '@/engine';
 import type { RouteImpact } from '@/live';
@@ -263,6 +264,20 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
     if (focusedId && barH > 0) onRouteBarHeight?.(Math.ceil(barH));
   }, [focusedId, barH, onRouteBarHeight]);
 
+  // Swipe the route bar left or right to flip routes (round 134, John: the pager "feels forced" in
+  // the top right). Runs on every render, so it sits above the loading and error returns.
+  const flipRef = useRef<(by: 1 | -1) => void>(() => {});
+  const flipPan = usePanGesture({
+    runOnJS: true,
+    disableReanimated: true,
+    activeOffsetX: [-ROUTE_FLIP.start, ROUTE_FLIP.start],
+    failOffsetY: [-ROUTE_FLIP.scroll, ROUTE_FLIP.scroll],
+    onDeactivate: (e) => {
+      const by = routeFlip(e.translationX, e.velocityX, e.canceled);
+      if (by) flipRef.current(by);
+    },
+  });
+
   if (p.state.status === 'loading') {
     return (
       <View style={styles.fill}>
@@ -332,6 +347,7 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
     const target = results[to];
     return target ? withTick(() => p.onSelect(target.id)) : undefined;
   };
+  flipRef.current = (by) => step(focusIndex + by)?.();
 
   return (
     <View style={styles.fill}>
@@ -341,39 +357,32 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
           <View style={styles.fill} testID="route-view">
             {/* One slim row (round 122, John: the market wrapped and the top felt squished): a back
                 chevron, the market on one line that shrinks before it would wrap, and a compact pager. */}
-            <View
-              style={[styles.bar, styles.pad, styles.routeBar, { borderBottomColor: c.line }]}
-              onLayout={(e) => setBarH(e.nativeEvent.layout.height)}
-              testID="route-bar">
-              <BackButton label="" onPress={() => p.onSelect(focused.id)} accessibilityLabel="Back to all routes" />
-              {/* The market as two airport pills with a plane between, not a line of text (round 132,
-                  John: "Same with displaying the mark at the top of the card next to the page selector"). */}
-              <View
-                ref={routeTitleRef}
-                style={styles.routeTitle}
-                accessible
-                accessibilityRole="header"
-                accessibilityLabel={focusSpoken}
-                testID="route-title">
-                <RouteEnds from={ends?.from ?? request.origin} to={ends?.to ?? request.destination} />
+            {/* Round 134 (John: the market "still feels odd that it's aligned to the left", and the
+                pager "feels forced to have in the top right"): back on the left, the market centered,
+                and under it a dot for each route. Swipe the bar left or right, or tap a dot, to flip. */}
+            <GestureDetector gesture={flipPan}>
+              <View collapsable={false}>
+                <CenteredTitleRow
+                  style={[styles.bar, styles.pad, styles.routeBar, { borderBottomColor: c.line }]}
+                  onLayout={(e) => setBarH(e.nativeEvent.layout.height)}
+                  testID="route-bar"
+                  left={<BackButton label="" onPress={() => p.onSelect(focused.id)} accessibilityLabel="Back to all routes" />}
+                  title={
+                    <View style={styles.routeMiddle}>
+                      <View
+                        ref={routeTitleRef}
+                        accessible
+                        accessibilityRole="header"
+                        accessibilityLabel={focusSpoken}
+                        testID="route-title">
+                        <RouteEnds from={ends?.from ?? request.origin} to={ends?.to ?? request.destination} />
+                      </View>
+                      <RouteDots count={results.length} index={focusIndex} onPick={(i) => step(i)?.()} />
+                    </View>
+                  }
+                />
               </View>
-              <View style={styles.pager}>
-                <StepArrow dir="prev" onPress={step(focusIndex - 1)} />
-                {/* VoiceOver: swipe up or down here to flip routes (the arrows stay for Voice Control). */}
-                <Text
-                  style={[textStyles.small, styles.count, { color: c.muted }]}
-                  numberOfLines={1}
-                  testID="route-count"
-                  accessible
-                  accessibilityRole="adjustable"
-                  accessibilityLabel={`Route ${focusIndex + 1} of ${results.length}`}
-                  accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
-                  onAccessibilityAction={(e) => step(focusIndex + (e.nativeEvent.actionName === 'increment' ? 1 : -1))?.()}>
-                  {focusIndex + 1} of {results.length}
-                </Text>
-                <StepArrow dir="next" onPress={step(focusIndex + 1)} />
-              </View>
-            </View>
+            </GestureDetector>
             {/* Flipping to another route fades the card in so the change registers. */}
             <Appear trigger={focused.id}>
               {/* Keyed by route so each one opens at its top. */}
@@ -536,27 +545,57 @@ export function isHardPullDown(e: Pick<NativeScrollEvent, 'contentOffset'> & { v
 /** Text size at which the results bar shows Back and Filters as icons only. */
 export const COMPACT_BAR_SCALE = 1.3;
 
-/** Previous / next route in the route view; dims at the ends of the list. */
-function StepArrow({ dir, onPress }: { dir: 'prev' | 'next'; onPress?: () => void }) {
+/** Swiping the route bar: how far or fast before it flips, and how far up or down before it's a scroll. */
+export const ROUTE_FLIP = { start: 14, scroll: 12, distance: 44, speed: 450 } as const;
+
+/** Which way a swipe on the route bar flips: +1 to the next route (swipe left), -1 back, 0 for neither. */
+export function routeFlip(dx: number, vx: number, canceled = false): 1 | -1 | 0 {
+  if (canceled) return 0;
+  if (dx <= -ROUTE_FLIP.distance || vx <= -ROUTE_FLIP.speed) return 1;
+  if (dx >= ROUTE_FLIP.distance || vx >= ROUTE_FLIP.speed) return -1;
+  return 0;
+}
+
+/** Up to this many routes get a dot each; past it, the count reads "2 of 24" instead. */
+export const MAX_ROUTE_DOTS = 9;
+
+/**
+ * Where you are among the routes (round 134): a dot each, the current one a longer pill in the accent,
+ * tap a dot to jump. VoiceOver flips by swiping up or down here, as on the old count.
+ */
+function RouteDots({ count, index, onPick }: { count: number; index: number; onPick: (i: number) => void }) {
   const c = useColors();
+  if (count < 2) return null;
+  const a11y = {
+    accessible: true,
+    accessibilityRole: 'adjustable' as const,
+    accessibilityLabel: `Route ${index + 1} of ${count}`,
+    accessibilityActions: [{ name: 'increment' }, { name: 'decrement' }],
+    onAccessibilityAction: (e: { nativeEvent: { actionName: string } }) =>
+      onPick(index + (e.nativeEvent.actionName === 'increment' ? 1 : -1)),
+    testID: 'route-count',
+  };
+  if (count > MAX_ROUTE_DOTS) {
+    return (
+      <Text style={[textStyles.small, styles.count, { color: c.muted }]} numberOfLines={1} {...a11y}>
+        {index + 1} of {count}
+      </Text>
+    );
+  }
   return (
-    <Pressable
-      testID={`route-${dir}`}
-      onPress={onPress}
-      hitSlop={{ left: 6, right: 6, top: 8, bottom: 8 }}
-      disabled={!onPress}
-      accessibilityRole="button"
-      accessibilityLabel={dir === 'prev' ? 'Previous route' : 'Next route'}
-      accessibilityState={{ disabled: !onPress }}
-      style={pressStyle([styles.stepArrow, { backgroundColor: c.accentSoft, opacity: onPress ? 1 : 0.35 }])}>
-      <Icon
-        name={dir === 'prev' ? 'chevron.left' : 'chevron.right'}
-        size={16}
-        weight="semibold"
-        tintColor={c.accent}
-        fallback={<Text style={[textStyles.heading, { color: c.accent }]}>{dir === 'prev' ? '‹' : '›'}</Text>}
-      />
-    </Pressable>
+    <View style={styles.dots} {...a11y}>
+      {Array.from({ length: count }, (_, i) => (
+        <Pressable
+          key={i}
+          onPress={i === index ? undefined : () => onPick(i)}
+          hitSlop={{ top: 10, bottom: 10, left: 3, right: 3 }}
+          testID="route-dot">
+          <View
+            style={[styles.dot, i === index ? [styles.dotOn, { backgroundColor: c.accent }] : { backgroundColor: c.line2 }]}
+          />
+        </Pressable>
+      ))}
+    </View>
   );
 }
 
@@ -624,20 +663,19 @@ const styles = StyleSheet.create({
   hidden: { display: 'none' },
   // Tighter above and between the Leave By card and the route card so the whole route fits (round 122).
   focus: { padding: spacing.page, paddingTop: spacing.group + 2, gap: spacing.group + 2 },
-  // Room between the arrows and the count so nothing touches (John, 2026-11-01).
-  pager: { flexDirection: 'row', alignItems: 'center', gap: 4, flexShrink: 0 },
   count: { textAlign: 'center', fontVariant: ['tabular-nums'] },
-  // Round soft buttons (round 79), so flipping routes reads as a button, not a bare chevron.
-  stepArrow: { width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
   pad: { paddingHorizontal: spacing.page },
   list: { paddingHorizontal: spacing.page, paddingBottom: spacing.page * 2 },
   header: { gap: 2, paddingTop: spacing.group, paddingBottom: spacing.section },
   headerGap: { height: spacing.group },
   bar: { gap: 4, paddingBottom: spacing.group, borderBottomWidth: StyleSheet.hairlineWidth },
   title: { textAlign: 'center' },
-  // The route view's bar: back, the market on the left taking the room, the pager at the end.
-  routeBar: { flexDirection: 'row', alignItems: 'center', gap: spacing.group, paddingTop: 2 },
-  routeTitle: { flex: 1, minWidth: 0 },
+  // The route view's bar (round 134): back on the left, the market and its dots centered.
+  routeBar: { paddingTop: 2 },
+  routeMiddle: { alignItems: 'center', gap: 6 },
+  dots: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 8 },
+  dot: { width: 6, height: 6, borderRadius: 3 },
+  dotOn: { width: 16 },
   routeEnds: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   endPill: { borderRadius: 8, paddingHorizontal: 9, paddingVertical: 3 },
   endCode: { fontFamily: fonts.mono, fontSize: 16, lineHeight: 21, letterSpacing: 0.5 },

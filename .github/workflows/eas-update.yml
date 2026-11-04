@@ -103,12 +103,27 @@ jobs:
             *) echo "Airline logos are off: LOGO_DEV_KEY isn't a publishable key (pk_...)." | tee -a "$GITHUB_STEP_SUMMARY"; exit 0 ;;
           esac
           echo "### Airline logos" >> "$GITHUB_STEP_SUMMARY"
+          mkdir -p logo-check
           for domain in aa.com aircanada.com alaskaair.com jetblue.com delta.com flyfrontier.com spirit.com united.com southwest.com; do
-            out=$(curl -s -o /dev/null -w '%{http_code} %{content_type} %{size_download}' --max-time 30 \
-              "https://img.logo.dev/$domain?token=$LOGO_DEV_KEY&size=40&format=png&retina=true&fallback=404" || true)
-            echo "- $domain: $out" >> "$GITHUB_STEP_SUMMARY"
-            echo "logo $domain: $out"
+            # Light and dark (round 134: the logos sit straight on the card, so the dark ones must read on navy).
+            for theme in light dark; do
+              extra=""; [ "$theme" = dark ] && extra="&theme=dark"
+              out=$(curl -s -o "logo-check/$domain-$theme.png" -w '%{http_code} %{content_type} %{size_download}' --max-time 30 \
+                "https://img.logo.dev/$domain?token=$LOGO_DEV_KEY&size=56&format=png&retina=true&fallback=404$extra" || true)
+              echo "- $domain ($theme): $out" >> "$GITHUB_STEP_SUMMARY"
+              echo "logo $domain $theme: $out"
+            done
           done
+
+      # The logo pictures from the check, so their look on light and dark can be reviewed.
+      - name: Keep the logo pictures
+        if: steps.token.outputs.ok == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: logo-check
+          path: logo-check/
+          if-no-files-found: ignore
+          retention-days: 7
 
       # Says in the run summary whether each live function answers, so a "couldn't load" in the
       # app can be traced to a function that isn't deployed or set up yet. Never fails the run.

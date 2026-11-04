@@ -74,8 +74,9 @@ export function markSet(input: MarkSetInput): MarkSpec[] {
   const homeMarks: MarkSpec[] = groupHomes(homes).map((g, i) => ({
     kind: i === 0 ? 'home' : 'altHome',
     code: g[0].code,
-    // A home says where it is ("Dallas, TX"), not its codes (round 132, John).
-    label: g[0].place ?? g.map((k) => k.code).join('/'),
+    // Back to the home's airport codes (round 134, John: "change the home labeling back"), after
+    // round 132's "Dallas, TX" label.
+    label: g.map((k) => k.code).join('/'),
     coord: g[0].coord,
   }));
   for (const h of homes) taken.add(h.code);

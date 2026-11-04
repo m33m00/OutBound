@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { BackHandler, FlatList, StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { AIRPORTS, areaFor, localDate, placeLabel, toRouteLine, type Flight, type Itinerary } from '@/engine';
+import { AIRPORTS, areaFor, localDate, toRouteLine, type Flight, type Itinerary } from '@/engine';
 import { flightLookupKey, sampleRouteImpacts, useDriveTime, useFlightStatuses, useRouteImpacts } from '@/live';
 import { GlobeMap, type LonLat, type MapAirport } from '@/map';
 import { nearestAirport } from '@/search/airports';
@@ -292,7 +292,7 @@ export default function HomeScreen() {
   // Map marks (item 9): homes (main first), the search origin, and the requested
   // destination plus any area airport a result actually lands at. Area origins
   // (e.g. DAL when From is DFW) get a ring when their route is selected.
-  const homeMarks = useMemo(() => homes.map((h) => ({ ...mark(h.code), place: placeLabel(h.code) })), [homes]);
+  const homeMarks = useMemo(() => homes.map((h) => mark(h.code)), [homes]);
   const searched = state.status === 'idle' ? null : state.request;
   const markOrigin = searched?.origin ?? origin;
   const markDestinations = useMemo(() => {

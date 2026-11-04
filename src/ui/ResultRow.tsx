@@ -704,7 +704,8 @@ export const ResultRow = memo(function ResultRow({
             })()}
             {/* The route card tears like a boarding pass between its header and the flights (round 121). */}
             {large ? (
-              <View>
+              // Above the flights below it, so the swipe strip reaches a little into them too.
+              <View style={styles.tearLine}>
                 <TicketTear notch={c.bg} edge={c.line} line={c.line2} />
                 {/* Swipe left along the perforation to tear the stub off and save (round 133, John). */}
                 {tearSource ? <TearSwipe source={tearSource} onSave={onSwipeSave} /> : null}
@@ -801,6 +802,7 @@ export const ResultRow = memo(function ResultRow({
 const EDGE_W = 5;
 
 const styles = StyleSheet.create({
+  tearLine: { zIndex: 2 },
   // No overflow clip, so the soft shadow shows; the edge rounds its own corners instead.
   row: {
     flexDirection: 'row',

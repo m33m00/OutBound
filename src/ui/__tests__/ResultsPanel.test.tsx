@@ -5,7 +5,7 @@ import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import { createMemoryProvider, searchItineraries, zonedToUtc } from '@/engine';
 import { dateChips } from '@/search/dates';
 
-import { areaLines, isHardPullDown, nowLineIndex, ResultsPanel, routeEnds } from '../ResultsPanel';
+import { areaLines, isHardPullDown, nowLineIndex, ResultsPanel, routeEnds, routeFlip } from '../ResultsPanel';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -143,10 +143,15 @@ describe('ResultsPanel', () => {
     expect(r!.root.findAll((n) => n.props.testID === 'card' && typeof n.type === 'string').length).toBe(1);
     // "2 of 2": next is off at the end, previous picks the first route.
     expect(r!.root.findAll((n) => n.props.accessibilityLabel === 'Route 2 of 2').length).toBeGreaterThan(0);
-    const arrow = (dir: string) =>
-      r!.root.findAll((n) => n.props.testID === `route-${dir}` && n.props.accessibilityRole === 'button')[0];
-    expect(arrow('next').props.accessibilityState).toEqual({ disabled: true });
-    act(() => arrow('prev').props.onPress());
+    // A dot per route under the market, the current one with nothing to press; tapping the other picks it
+    // (round 134, John: the arrows "feel forced" in the top right).
+    expect(r!.root.findAll((n) => n.props.testID === 'route-next' || n.props.testID === 'route-prev')).toHaveLength(0);
+    const dots = r!.root.findAll(
+      (n) => n.props.testID === 'route-dot' && typeof n.type !== 'string' && n.parent?.props.testID !== 'route-dot',
+    );
+    expect(dots).toHaveLength(2);
+    expect(dots[1].props.onPress).toBeUndefined();
+    act(() => dots[0].props.onPress());
     expect(onSelect).toHaveBeenCalledWith(list[0].id);
     // VoiceOver flips routes by swiping on the count; nothing past the end.
     const count = r!.root.findAll((n) => n.props.testID === 'route-count' && n.props.accessibilityRole === 'adjustable')[0];
@@ -543,5 +548,16 @@ describe('hard pull down (round 58)', () => {
     expect(isHardPullDown({ contentOffset: { x: 0, y: 0 }, velocity: { x: 0, y: -1.5 } })).toBe(true);
     expect(isHardPullDown({ contentOffset: { x: 0, y: 120 }, velocity: { x: 0, y: -3 } })).toBe(false);
     expect(isHardPullDown({ contentOffset: { x: 0, y: 0 }, velocity: { x: 0, y: 2 } })).toBe(false);
+  });
+});
+
+describe('flipping routes by swiping the route bar (round 134, John)', () => {
+  it('flips to the next route on a swipe left and back on a swipe right, far or fast enough', () => {
+    expect(routeFlip(-60, 0)).toBe(1);
+    expect(routeFlip(60, 0)).toBe(-1);
+    expect(routeFlip(-20, -800)).toBe(1);
+    expect(routeFlip(20, 800)).toBe(-1);
+    expect(routeFlip(-20, -100)).toBe(0);
+    expect(routeFlip(-80, 0, true)).toBe(0);
   });
 });

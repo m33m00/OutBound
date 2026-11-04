@@ -330,10 +330,10 @@ describe('accessibility summary', () => {
   });
 });
 
-describe('home pin label (round 132, John)', () => {
-  it('says where home is instead of its codes, and keeps codes when the place is unknown', () => {
+describe('home pin label (round 134, John: back to the home codes)', () => {
+  it('labels home by its airport codes again, even when a place name is known', () => {
     const at = (code: string, place?: string) => ({ code, coord: [-97, 33] as [number, number], place });
-    expect(markSet({ homeAirports: [at('DFW', 'Dallas, TX'), at('DAL', 'Dallas, TX')] })[0].label).toBe('Dallas, TX');
-    expect(markSet({ homeAirports: [at('DFW'), at('DAL')] })[0].label).toBe('DFW/DAL');
+    expect(markSet({ homeAirports: [at('DFW', 'Dallas, TX'), at('DAL', 'Dallas, TX')] })[0].label).toBe('DFW/DAL');
+    expect(markSet({ homeAirports: [at('DFW')] })[0].label).toBe('DFW');
   });
 });

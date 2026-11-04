@@ -2,7 +2,7 @@
  * Saving a route tears the route card's own header off along its perforation and drops it into My
  * Trips (round 126, John: "Can you have it actually tear off the perforated line on the flight card").
  */
-import { AccessibilityInfo, Animated, PanResponder, Text, type PanResponderCallbacks } from 'react-native';
+import { AccessibilityInfo, Animated, Text } from 'react-native';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 
 import { createMemoryProvider, searchItineraries, zonedToUtc, type Itinerary } from '@/engine';
@@ -27,6 +27,24 @@ import {
 } from '../TearAway';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+
+// The swipe strip's native pan (round 134): keep its config so a test can play the gesture.
+type PanCfg = {
+  enabled?: boolean;
+  activeOffsetX?: [number, number];
+  failOffsetY?: [number, number];
+  onActivate?: (e: object) => void;
+  onUpdate?: (e: object) => void;
+  onDeactivate?: (e: object) => void;
+};
+const mockPans: PanCfg[] = [];
+jest.mock('react-native-gesture-handler', () => ({
+  GestureDetector: ({ children }: { children: unknown }) => children,
+  usePanGesture: (config: PanCfg) => {
+    mockPans.push(config);
+    return {};
+  },
+}));
 
 const NOW = Date.UTC(2026, 9, 19, 12);
 
@@ -317,47 +335,50 @@ describe('TearAway: the route card tears along its perforation when you save (ro
     });
 
     describe('swipe left on the perforation to save (round 133, John)', () => {
-      type Cfg = PanResponderCallbacks;
-      const e = {} as never;
-      const g = (dx: number, vx = 0, dy = 0) => ({ dx, dy, vx, vy: 0 }) as never;
       const W = 358;
+      const ev = (translationX: number, velocityX = 0, canceled = false) => ({ translationX, velocityX, canceled });
       async function swipeMount(onSwipeSave = jest.fn(), reduceMotion = false) {
-        const create$ = jest.spyOn(PanResponder, 'create');
+        mockPans.length = 0;
         await mount(false, reduceMotion, jest.fn(), onSwipeSave);
         const strip = r!.root.findAll((n) => n.props.testID === 'tear-swipe' && typeof n.props.onLayout === 'function')[0];
         act(() => strip.props.onLayout({ nativeEvent: { layout: { width: W } } }));
-        const cfg = create$.mock.calls[create$.mock.calls.length - 1][0] as Cfg;
+        const cfg = mockPans[mockPans.length - 1];
         return { cfg, onSwipeSave };
       }
       const drive = () => paperProps.current!.drive as TearDrive;
       // A swipe this far through, as the finger's move left.
       const at = (p: number) => -p * W * TEAR_DRAG.span;
+      const activate = (cfg: PanCfg) =>
+        act(async () => {
+          cfg.onActivate!(ev(-12));
+        });
+      const letGo = (cfg: PanCfg, dx: number, vx = 0, canceled = false) =>
+        act(() => {
+          cfg.onDeactivate!(ev(dx, vx, canceled));
+        });
 
-      it('takes only a clear sideways swipe to the left, so the card still scrolls', async () => {
+      it('starts only on a swipe to the left, and leaves up and down to the scroll (round 134)', async () => {
         useMesh({ picture: true });
         const { cfg } = await swipeMount();
-        expect(cfg.onMoveShouldSetPanResponder!(e, g(-20))).toBe(true);
-        expect(cfg.onMoveShouldSetPanResponder!(e, g(20))).toBe(false);
-        expect(cfg.onMoveShouldSetPanResponder!(e, g(-20, 0, 30))).toBe(false);
-        expect(cfg.onPanResponderTerminationRequest!(e, g(-20))).toBe(false);
+        expect(cfg.enabled).toBe(true);
+        expect(cfg.activeOffsetX![0]).toBeLessThan(0);
+        expect(cfg.activeOffsetX![1]).toBeGreaterThan(1000);
+        expect(cfg.failOffsetY![0]).toBeLessThan(0);
+        expect(cfg.failOffsetY![1]).toBeGreaterThan(0);
       });
 
       it('lets the finger drive the paper tear, and tears it free and saves when let go past the middle', async () => {
         useMesh({ picture: true });
         const { cfg, onSwipeSave } = await swipeMount();
-        await act(async () => {
-          cfg.onPanResponderGrant!(e, g(-10));
-        });
+        await activate(cfg);
         expect(r!.root.findAllByProps({ testID: 'paper-tear' }).length).toBeGreaterThan(0);
         expect(cardOpacity()).toBe(0);
         expect(drive().mode).toBe('drag');
         act(() => {
-          cfg.onPanResponderMove!(e, g(at(0.5)));
+          cfg.onUpdate!(ev(at(0.5)));
         });
         expect(drive().target).toBeCloseTo(dragMs(0.5));
-        act(() => {
-          cfg.onPanResponderRelease!(e, g(at(0.7)));
-        });
+        letGo(cfg, at(0.7));
         expect(drive().mode).toBe('finish');
         expect(onSwipeSave).toHaveBeenCalledTimes(1);
         act(() => (paperProps.current!.onDone as () => void)());
@@ -367,45 +388,35 @@ describe('TearAway: the route card tears along its perforation when you save (ro
       it('lays the paper back down and saves nothing when let go too soon', async () => {
         useMesh({ picture: true });
         const { cfg, onSwipeSave } = await swipeMount();
-        await act(async () => {
-          cfg.onPanResponderGrant!(e, g(-10));
-        });
-        act(() => {
-          cfg.onPanResponderRelease!(e, g(at(0.3)));
-        });
+        await activate(cfg);
+        letGo(cfg, at(0.3));
         expect(drive().mode).toBe('cancel');
         expect(onSwipeSave).not.toHaveBeenCalled();
         act(() => (paperProps.current!.onCancel as () => void)());
         expect(r!.root.findAllByProps({ testID: 'paper-tear' })).toHaveLength(0);
         expect(cardOpacity()).toBe(1);
         // And the card can tear again.
-        await act(async () => {
-          cfg.onPanResponderGrant!(e, g(-10));
-        });
+        await activate(cfg);
         expect(r!.root.findAllByProps({ testID: 'paper-tear' }).length).toBeGreaterThan(0);
       });
 
-      it('saves on a quick flick left once the rip has started', async () => {
+      it('saves on a quick flick left once the rip has started, but not when the touch is cancelled', async () => {
         useMesh({ picture: true });
         const { cfg, onSwipeSave } = await swipeMount();
-        await act(async () => {
-          cfg.onPanResponderGrant!(e, g(-10));
-        });
-        act(() => {
-          cfg.onPanResponderRelease!(e, g(at(0.35), -1.2));
-        });
+        await activate(cfg);
+        letGo(cfg, at(0.8), 0, true);
+        expect(onSwipeSave).not.toHaveBeenCalled();
+        await activate(cfg);
+        // 1200 points a second to the left.
+        letGo(cfg, at(0.35), -1200);
         expect(onSwipeSave).toHaveBeenCalledTimes(1);
       });
 
       it('still saves with Reduce Motion on, without the tear', async () => {
         useMesh({ picture: true });
         const { cfg, onSwipeSave } = await swipeMount(jest.fn(), true);
-        await act(async () => {
-          cfg.onPanResponderGrant!(e, g(-10));
-        });
-        act(() => {
-          cfg.onPanResponderRelease!(e, g(at(0.8)));
-        });
+        await activate(cfg);
+        letGo(cfg, at(0.8));
         expect(onSwipeSave).toHaveBeenCalledTimes(1);
         expect(r!.root.findAllByProps({ testID: 'paper-tear' })).toHaveLength(0);
       });

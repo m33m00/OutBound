@@ -1,8 +1,8 @@
 import { Image } from 'expo-image';
-import { useState } from 'react';
+import { useContext, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { fonts, radius, textStyles, useColors } from '@/theme';
+import { fonts, InkContext, radius, textStyles, useColors, useColorSchemeName } from '@/theme';
 
 import { Icon } from './Icon';
 
@@ -48,11 +48,14 @@ export function logosOn(key = LOGO_KEY): boolean {
 }
 
 /** The logo's address for an airline at `size` points, or null when logos are off or unknown. */
-export function airlineLogoUrl(code: string, size: number, key = LOGO_KEY): string | null {
+export function airlineLogoUrl(code: string, size: number, key = LOGO_KEY, dark = false): string | null {
   const m = AIRLINE_MARKS[code];
   if (!key || !m) return null;
   const px = Math.round(size * 2);
-  return `https://img.logo.dev/${m.domain}?token=${encodeURIComponent(key)}&size=${px}&format=png&retina=true&fallback=404`;
+  // On a dark background Logo.dev lightens a dark logo so it doesn't vanish (round 134).
+  return `https://img.logo.dev/${m.domain}?token=${encodeURIComponent(key)}&size=${px}&format=png&retina=true&fallback=404${
+    dark ? '&theme=dark' : ''
+  }`;
 }
 
 /** The airline's name for speech and labels, or its code when we don't know it. */
@@ -60,20 +63,23 @@ export function airlineName(code: string): string {
   return AIRLINE_MARKS[code]?.name ?? code;
 }
 
-/** The airline's logo on a white tile, or its tail mark when there's no logo. `size` points square. */
+/**
+ * The airline's logo straight on the card, no tile behind it (round 134, John: "bigger with a
+ * transparent background"), or its tail mark when there's no logo. `size` points square.
+ */
 export function AirlineMark({ airline, size = 18, logoKey = LOGO_KEY }: { airline: string; size?: number; logoKey?: string }) {
   const m = AIRLINE_MARKS[airline];
   const [failed, setFailed] = useState(false);
+  const ink = useContext(InkContext);
+  const dark = useColorSchemeName() === 'dark' || ink;
   if (!m) return null;
-  const url = failed ? null : airlineLogoUrl(airline, size, logoKey);
+  const url = failed ? null : airlineLogoUrl(airline, size, logoKey, dark);
   if (url) {
     return (
-      <View
-        style={[styles.mark, styles.logoTile, { width: size, height: size, borderRadius: size * 0.28 }]}
-        testID="airline-logo">
+      <View style={[styles.mark, { width: size, height: size }]} testID="airline-logo">
         <Image
           source={{ uri: url }}
-          style={{ width: size - 2, height: size - 2 }}
+          style={{ width: size, height: size }}
           contentFit="contain"
           cachePolicy="disk"
           accessibilityIgnoresInvertColors
@@ -127,7 +133,7 @@ export function AirlinePill({
       accessibilityLabel={`${airlineName(airline)} ${flightNumber}`}
       testID="airline-pill">
       {known ? (
-        <AirlineMark airline={airline} size={large ? 20 : 16} />
+        <AirlineMark airline={airline} size={logosOn() ? (large ? 28 : 22) : large ? 20 : 16} />
       ) : (
         <Icon
           name="airplane"
@@ -154,7 +160,5 @@ const styles = StyleSheet.create({
     borderRadius: radius.sm - 2,
   },
   mark: { overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
-  // Logos are drawn for light backgrounds, so each sits on its own white tile in dark mode too.
-  logoTile: { backgroundColor: '#FFFFFF', borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(0,0,0,0.12)' },
   stripe: { position: 'absolute', transform: [{ rotate: '-28deg' }] },
 });
