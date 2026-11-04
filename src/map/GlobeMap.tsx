@@ -414,6 +414,16 @@ export function GlobeMap({
     [statusKey, marks, selectedRoute],
   );
   const statusSpoken = useMemo(() => statusSummary(JSON.parse(statusKey)), [statusKey]);
+  // What the key explains: the marks drawn now and the weather badges on the picked route (round 137).
+  const legendMarks = useMemo(() => [...new Set(marks.map((m) => m.kind))], [marks]);
+  const legendBadges = useMemo(() => {
+    if (!selectedRoute) return [];
+    const codes = new Set(selectedRoute.legs.flatMap((l) => [l.fromCode, l.toCode]));
+    const levels = (JSON.parse(statusKey) as NonNullable<typeof airportStatus>)
+      .filter((s) => codes.has(s.code))
+      .map((s) => s.level);
+    return [...new Set(levels)];
+  }, [statusKey, selectedRoute]);
   const statusColorSet = useMemo(() => statusColors(palette), [palette]);
   // Leg flight-time pills (item 15): selected route only, kept off the
   // legend (measured below).
@@ -759,7 +769,13 @@ export function GlobeMap({
           onLayout={onLegendLayout}
           pointerEvents="box-none"
           style={[styles.legend, { left: normInsets.left + LEGEND_GAP, top: normInsets.top + LEGEND_GAP }]}>
-          <RouteLegend route={selectedRoute!} open={legendOpen} onToggle={setLegendOpen} />
+          <RouteLegend
+            route={selectedRoute!}
+            marks={legendMarks}
+            badges={legendBadges}
+            open={legendOpen}
+            onToggle={setLegendOpen}
+          />
         </View>
       ) : null}
     </GestureHandlerRootView>

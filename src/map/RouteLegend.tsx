@@ -24,10 +24,12 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { fonts, textStyles, useColors } from '@/theme';
+import { Icon } from '@/ui/Icon';
 
 import { hexToRgb, rgba } from './globeColors';
-import { DASH_PATTERN, legendEntries, TIER_LABEL } from './routeModel';
-import type { RouteLine, SeatTier } from './types';
+import type { MarkKind } from './marks';
+import { DASH_PATTERN, legendEntries, TIER_LABEL, type LegendEntry } from './routeModel';
+import type { AirportStatusLevel, RouteLine, SeatTier } from './types';
 
 const SWATCH_W = 16;
 const SWATCH_H = 3;
@@ -50,8 +52,27 @@ function DashedSwatch({ color }: { color: string }) {
   );
 }
 
+/** The map's own marks, drawn small: the same shapes and colors as on the globe. */
+function MarkSwatch({ kind }: { kind: (typeof MARK_MEANING)[number]['kind'] }) {
+  const c = useColors();
+  if (kind === 'origin') return <View style={[styles.markDot, { backgroundColor: c.accent, borderColor: c.surface }]} />;
+  if (kind === 'destination') return <View style={[styles.markRing, { borderColor: c.accent }]} />;
+  if (kind === 'stop') return <View style={[styles.markStop, { borderColor: c.muted }]} />;
+  if (kind === 'badge-caution') return <View style={[styles.markDiamond, { backgroundColor: c.caution }]} />;
+  if (kind === 'badge-likelyDelays') return <Text style={[styles.markTriangle, { color: c.likelyDelays }]}>▲</Text>;
+  return (
+    <View style={[styles.markHome, { backgroundColor: c.you }]}>
+      <Icon name="house.fill" size={8} tintColor={c.onAccent} fallback={null} />
+    </View>
+  );
+}
+
 export interface RouteLegendProps {
   route: RouteLine;
+  /** The marks drawn on the map now, so the key explains each one (round 136, John). */
+  marks?: readonly MarkKind[];
+  /** The airport weather badges on this route. */
+  badges?: readonly AirportStatusLevel[];
   /** Open state, when the parent controls it. Uncontrolled (starts folded) without it. */
   open?: boolean;
   onToggle?: (open: boolean) => void;
@@ -66,6 +87,42 @@ export const TIER_MEANING: Record<SeatTier, string> = {
   full: 'no open seats',
   unknown: 'no seat info yet',
 };
+
+/** Each line's chance, in a couple of words, for the folded key's rows (round 137, John). */
+export const TIER_SHORT: Record<SeatTier, string> = {
+  wide: 'Easy seat',
+  good: 'Likely seat',
+  okay: 'Maybe a seat',
+  tight: 'Long shot',
+  full: 'Full',
+  unknown: 'No seat info',
+};
+
+/**
+ * One folded row: what the color says and what the line style says, e.g. "Likely seat, reported" or
+ * "Long shot, estimated" (round 137, John: the key "just says Map Key with no other context").
+ */
+export function chipLine(entry: LegendEntry): string {
+  if (entry.source === 'typical') return 'Typical day, estimated';
+  if (entry.source === 'unknown') return 'No seat info yet';
+  return `${TIER_SHORT[entry.tier]}, ${entry.dashed ? 'estimated' : 'reported'}`;
+}
+
+/** The map's marks, in plain words, in the order the key lists them. */
+export const MARK_MEANING: { kind: MarkKind | 'badge-caution' | 'badge-likelyDelays'; text: string }[] = [
+  { kind: 'origin', text: 'Where you leave from' },
+  { kind: 'stop', text: 'Where you connect' },
+  { kind: 'destination', text: "Where you're going" },
+  { kind: 'home', text: 'Your home' },
+  { kind: 'badge-caution', text: 'Weather to watch at that airport' },
+  { kind: 'badge-likelyDelays', text: 'Delays likely at that airport' },
+];
+
+/** The marks rows for what's on the map now. */
+export function markRows(marks: readonly MarkKind[] = [], badges: readonly AirportStatusLevel[] = []) {
+  const has = new Set<string>([...marks.map((k) => (k === 'altHome' ? 'home' : k)), ...badges.map((b) => `badge-${b}`)]);
+  return MARK_MEANING.filter((m) => has.has(m.kind));
+}
 
 /** What each line style means. */
 const STYLE_MEANING = {
@@ -97,7 +154,7 @@ export function keyRows(route: RouteLine) {
   return { colors, lineStyles };
 }
 
-export function RouteLegend({ route, open: openProp, onToggle }: RouteLegendProps) {
+export function RouteLegend({ route, marks, badges, open: openProp, onToggle }: RouteLegendProps) {
   const c = useColors();
   const [openState, setOpenState] = useState(false);
   const open = openProp ?? openState;
@@ -116,18 +173,22 @@ export function RouteLegend({ route, open: openProp, onToggle }: RouteLegendProp
       <Pressable
         onPress={toggle}
         hitSlop={8}
-        style={({ pressed }) => [boxStyle, styles.chip, pressed && styles.pressed]}
+        style={({ pressed }) => [boxStyle, styles.open, pressed && styles.pressed]}
         accessibilityRole="button"
-        accessibilityLabel="Map key"
-        accessibilityHint="Explains the line colors, line styles and seat circles"
+        accessibilityLabel={['Map key.', ...rows.map((row) => `${chipLine(row)}, ${row.dashed ? 'dashed' : 'solid'} line.`)].join(
+          ' ',
+        )}
+        accessibilityHint="Opens the full key: line colors, line styles, the map's marks and seat circles"
         accessibilityState={{ expanded: false }}
         testID="route-legend">
-        <View style={styles.chipSwatches}>
-          {rows.map((row) => (
-            <View key={row.key}>{swatch(row)}</View>
-          ))}
-        </View>
-        <Text style={textStyle}>Map key</Text>
+        {/* Each line on the route with what it means, so the folded key reads on its own (round 137). */}
+        {rows.map((row) => (
+          <View key={row.key} style={styles.row} testID="legend-line">
+            {swatch(row)}
+            <Text style={[textStyle, styles.rowText]}>{chipLine(row)}</Text>
+          </View>
+        ))}
+        <Text style={[textStyles.small, styles.more, { color: c.accent }]}>What the map shows ›</Text>
       </Pressable>
     );
   }
@@ -135,12 +196,14 @@ export function RouteLegend({ route, open: openProp, onToggle }: RouteLegendProp
   // Opened, the key explains itself at a glance (round 126, John: "I'm not sure what it means as a new
   // user"): a title, what the color means, what the line style means, and how to read a seat circle.
   const key = keyRows(route);
+  const marked = markRows(marks, badges);
   const heading = [textStyles.small, styles.heading, { color: c.muted }];
   const spoken = [
     'Map key.',
     'Line color is your chance of a seat:',
     ...key.colors.map((r) => `${r.label}, ${r.meaning}.`),
     ...key.lineStyles.map((s) => `${STYLE_MEANING[s]}.`),
+    ...marked.map((m) => `${m.text}.`),
     `On the route card, a seat circle like ${SEAT_CIRCLE_EXAMPLE} means ${SEAT_CIRCLE_MEANING}.`,
   ].join(' ');
   return (
@@ -170,6 +233,15 @@ export function RouteLegend({ route, open: openProp, onToggle }: RouteLegendProp
           <Text style={[textStyles.small, styles.label, styles.rowText, { color: c.text }]}>{STYLE_MEANING[s]}</Text>
         </View>
       ))}
+      {marked.length ? <Text style={[heading, styles.section]}>On the map</Text> : null}
+      {marked.map((m) => (
+        <View key={m.kind} style={styles.row} testID="legend-mark">
+          <View style={styles.markSlot}>
+            <MarkSwatch kind={m.kind} />
+          </View>
+          <Text style={[textStyles.small, styles.label, styles.rowText, { color: c.text }]}>{m.text}</Text>
+        </View>
+      ))}
       <Text style={[heading, styles.section]}>Seat circles on the route card</Text>
       <View style={styles.row} testID="legend-seats">
         <View style={[styles.seatDot, { borderColor: c.muted }]}>
@@ -191,13 +263,14 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     gap: 3,
   },
-  chip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingVertical: 5,
-  },
-  chipSwatches: { gap: 2 },
+  more: { fontFamily: fonts.bodySemiBold, fontSize: 11, lineHeight: 14, marginTop: 1 },
+  markSlot: { width: 16, alignItems: 'center', justifyContent: 'center' },
+  markDot: { width: 9, height: 9, borderRadius: 4.5, borderWidth: 1.5 },
+  markRing: { width: 10, height: 10, borderRadius: 5, borderWidth: 2.2 },
+  markStop: { width: 7, height: 7, borderRadius: 3.5, borderWidth: 1.6 },
+  markDiamond: { width: 7, height: 7, transform: [{ rotate: '45deg' }] },
+  markTriangle: { fontSize: 10, lineHeight: 12 },
+  markHome: { width: 13, height: 13, borderRadius: 6.5, alignItems: 'center', justifyContent: 'center' },
   pressed: { opacity: 0.8 },
   // The open key wraps its words rather than running across the map.
   open: { maxWidth: 236, paddingVertical: 8, gap: 4 },

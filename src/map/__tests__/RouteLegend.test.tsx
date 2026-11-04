@@ -36,20 +36,43 @@ describe('RouteLegend', () => {
       .findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string')
       .map((n) => n.props.children as string);
 
-  it('starts folded as a Key chip and opens to the full list on tap', () => {
+  it('starts folded with each line labeled, and opens to the full key on tap (round 137, John)', () => {
     act(() => {
       r = create(<RouteLegend route={route} />);
     });
-    expect(button().props.accessibilityLabel).toBe('Map key');
+    // John: the key "just says Map Key with no other context". Folded, each line says what it means.
+    const folded = ['Likely seat, reported', 'Long shot, estimated', 'What the map shows ›'];
+    expect(texts()).toEqual(folded);
+    expect(button().props.accessibilityLabel).toBe(
+      'Map key. Likely seat, reported, solid line. Long shot, estimated, dashed line.',
+    );
     expect(button().props.accessibilityState).toMatchObject({ expanded: false });
-    expect(texts()).toEqual(['Map key']);
 
     act(() => button().props.onPress());
     expect(texts()).toContain('Line color is your chance of a seat');
     expect(button().props.accessibilityState).toMatchObject({ expanded: true });
 
     act(() => button().props.onPress());
-    expect(texts()).toEqual(['Map key']);
+    expect(texts()).toEqual(folded);
+  });
+
+  it("explains the map's marks that are drawn now, and only those", () => {
+    act(() => {
+      r = create(<RouteLegend route={route} open marks={['home', 'origin', 'destination', 'stop']} badges={['likelyDelays']} />);
+    });
+    const rows = r!.root.findAll((n) => n.props.testID === 'legend-mark' && typeof n.type === 'string');
+    expect(rows).toHaveLength(5);
+    expect(texts()).toEqual(
+      expect.arrayContaining([
+        'On the map',
+        'Where you leave from',
+        'Where you connect',
+        "Where you're going",
+        'Your home',
+        'Delays likely at that airport',
+      ]),
+    );
+    expect(texts()).not.toContain('Weather to watch at that airport');
   });
 
   it('follows the parent when it controls the open state', () => {
