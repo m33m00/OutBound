@@ -194,13 +194,26 @@ function LegEnds({
  * be listed on top of the time? Even when it says Nonstop?"). A short layover rides on the stops
  * line after a thin divider.
  */
-function StopsStack({ stops, length, color, lead }: { stops: string; length: string | null; color: string; lead: string }) {
+function StopsStack({
+  stops,
+  length,
+  color,
+  lead,
+  start,
+}: {
+  stops: string;
+  length: string | null;
+  color: string;
+  lead: string;
+  /** Left-aligned, when it sits under the times at big text sizes. */
+  start?: boolean;
+}) {
   return (
-    <View style={styles.stopsStack} testID="row-stops">
+    <View style={[styles.stopsStack, start && styles.stopsStackStart]} testID="row-stops">
       <MetaLine
         text={stops}
         gap={6}
-        style={styles.stopsTop}
+        style={start ? styles.stopsTopStart : styles.stopsTop}
         textStyle={[textStyles.small, { color: lead, fontFamily: fonts.bodyMedium }]}
         testID="row-stop-count"
       />
@@ -578,20 +591,6 @@ export const ResultRow = memo(function ResultRow({
       </Text>
     </View>
   );
-  // No chance words any more (round 140, John: "Just color and seat availability. Let the user decide on the
-  // likelihood"): each leg's color and numbers say it, on the route line and in the flight boxes. Only a route
-  // that can't be flown as listed (a canceled leg) still says so, in gray.
-  const seatSummary = (lead: boolean, pill = false) =>
-    notFlyable ? (
-      <View
-        style={[styles.summary, lead && styles.summaryLead, pill && [styles.chancePill, { borderColor: hc.line }]]}
-        testID="seat-summary">
-        <View style={[styles.summaryDot, { backgroundColor: hc.unknown }]} />
-        <Text lineBreakStrategyIOS="push-out" style={[lead ? styles.badgeLead : styles.badge, { color: hc.muted }]}>
-          {NOT_FLYABLE}
-        </Text>
-      </View>
-    ) : null;
   // The flights under the perforation; the save tear draws a copy of it too (round 129).
   const ticketBodyView = (
     <View style={large ? styles.ticketBody : styles.stubSlim}>
@@ -658,11 +657,6 @@ export const ResultRow = memo(function ResultRow({
                     {/* The seat chance sits above the times as a small pill, like a ticket's class, not
                         under them (round 132, John: "I don't like that the Likely indicator is below the
                         time"). */}
-                    {notFlyable ? (
-                      <View style={[styles.line, styles.chanceLine]} testID="headline-row">
-                        {seatSummary(false, !!large)}
-                      </View>
-                    ) : null}
                     {times}
                   </View>
                   <StopsStack stops={stopCount(it)} length={tripLength(it, status)} color={hc.muted} lead={hc.text} />
@@ -742,11 +736,21 @@ export const ResultRow = memo(function ResultRow({
                 text the times take the line and the seats go under them. */}
             <View style={[styles.line, !stacked && styles.lineKeep]} testID="top-line">
               {times}
-              {notFlyable ? (
-                <View style={[styles.topRight, stacked ? styles.topRightStacked : styles.topRightKeep]} testID="top-right">
-                  {seatSummary(false)}
-                </View>
-              ) : null}
+              {/* Stops and trip length sit up here, as on the route card, so the route line below gets the whole
+                  width however many stops it has (round 141, John: "Flights that have more than 1 stop are
+                  squished"). No verdict word: a canceled leg's own red tag says it. */}
+              <View style={[styles.topRight, stacked ? styles.topRightStacked : styles.topRightKeep]} testID="top-right">
+                <StopsStack
+                  stops={slimStops(
+                    it,
+                    it.connections.map((_, k) => liveLayoverMin(it, status, k)),
+                  )}
+                  length={tripLength(it, status)}
+                  color={c.muted}
+                  lead={dimmed ? c.muted : c.text}
+                  start={stacked}
+                />
+              </View>
             </View>
             {/* A boarding pass perforation between the times and the route (round 121, John). */}
             <TicketTear notch={c.bg} edge={c.line} line={c.line2} left={spacing.rowX} right={spacing.rowX} edgeWidth={edgeW} />
@@ -774,17 +778,6 @@ export const ResultRow = memo(function ResultRow({
                   })}
                 />
               </View>
-              {/* The stop count on top of the trip length (round 124, John), Nonstop too; the route line
-                  already names the connections, so the stops line adds only short layovers. */}
-              <StopsStack
-                stops={slimStops(
-                  it,
-                  it.connections.map((_, k) => liveLayoverMin(it, status, k)),
-                )}
-                length={tripLength(it, status)}
-                color={c.muted}
-                lead={dimmed ? c.muted : c.text}
-              />
             </View>
             {/* Slim row: who flies it and anything live; seats per leg live in the route card. One line of
                 flights and at most one tag, which names the flight it means ("PHX → LAX delayed 40m"), so the
@@ -883,6 +876,8 @@ const styles = StyleSheet.create({
   // The stop count over the trip length, hugging the right end.
   stopsStack: { alignItems: 'flex-end', flexShrink: 0, maxWidth: '45%' },
   stopsTop: { justifyContent: 'flex-end' },
+  stopsStackStart: { alignItems: 'flex-start', maxWidth: '100%' },
+  stopsTopStart: { justifyContent: 'flex-start' },
   headlineStack: { gap: 2 },
   // A 44pt tap target that doesn't make the headline line taller: it overhangs into the card's padding.
   topAction: { marginVertical: -8, marginRight: -10 },

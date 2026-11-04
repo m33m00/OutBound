@@ -62,7 +62,12 @@ describe('ResultRow', () => {
     // seat numbers sit over its stretch of the route line instead.
     expect(texts).not.toContain('Full');
     expect(texts.some((t) => /Likely|Long.shot|Maybe|Easy/.test(String(t)))).toBe(false);
-    expect(root.findAll((n) => n.props.testID === 'top-right')).toHaveLength(0);
+    // Round 141: the top right holds the stops and trip length, so the route line gets the whole width.
+    const topRight = root.findAll((n) => n.props.testID === 'top-right' && typeof n.type === 'string');
+    expect(topRight).toHaveLength(1);
+    expect(topRight[0].findAll((n) => n.props.testID === 'row-stops' && typeof n.type === 'string')).toHaveLength(1);
+    const routeLine = root.find((n) => n.props.testID === 'mini-route' && typeof n.type === 'string');
+    expect(routeLine.findAll((n) => n.props.testID === 'row-stops')).toHaveLength(0);
     const labels = root.findAll((n) => n.props.testID === 'mini-route-leg-label' && typeof n.type === 'string');
     expect(labels.map((n) => n.props.children)).toEqual(['4/9']);
     expect(texts.some((t) => / seats · \d+ listed/.test(String(t)))).toBe(false);
@@ -559,10 +564,11 @@ describe('ResultRow', () => {
     expect(words).toContain('10:00\u00a0AM');
     expect(words).toContain('BNA');
     expect(words).toContain('DEN');
-    // A canceled leg: the route chip says it can't be flown, not a seat chance (John, 2026-11-02).
-    const chip = r!.root.findAll((n) => n.props.testID === 'seat-summary' && typeof n.type === 'string')[0];
-    const chipWords = chip.findAll((n) => typeof n.props.children === 'string').map((n) => n.props.children as string);
-    expect(chipWords).toContain('Unavailable');
+    // A canceled leg: its own pill says it; no "Unavailable" verdict up top (round 141, John's "just color
+    // and seat numbers").
+    expect(r!.root.findAll((n) => n.props.testID === 'seat-summary')).toHaveLength(0);
+    const all = r!.root.findAll((n) => typeof n.props.children === 'string').map((n) => n.props.children);
+    expect(all).not.toContain('Unavailable');
   });
 
   it('a canceled second leg: flights on one line, one tag that names that flight (round 68, John)', async () => {
@@ -790,11 +796,12 @@ describe('ResultRow', () => {
     await act(async () => {
       r = create(<ResultRow itinerary={it} selected large now={NOW} onPress={jest.fn()} status={status} />);
     });
-    const row = r!.root.findAll((n) => n.props.testID === 'headline-row' && typeof n.type === 'string')[0];
-    const head = row.findAll((n) => typeof n.props.children === 'string').map((n) => n.props.children);
+    const stub = r!.root.findAll((n) => n.props.testID === 'ticket-stub' && typeof n.type === 'string')[0];
+    const head = stub.findAll((n) => typeof n.props.children === 'string').map((n) => n.props.children);
     expect(head).not.toContain('DEN → LAX canceled');
+    expect(head).not.toContain('Unavailable');
     expect(r!.root.findAll((n) => n.props.testID === 'headline')).toHaveLength(0);
-    expect(row.findAll((n) => n.props.testID === 'seat-summary').length).toBeGreaterThan(0);
+    expect(r!.root.findAll((n) => n.props.testID === 'seat-summary')).toHaveLength(0);
     expect(r!.root.findAll((n) => n.props.testID === 'seat-age')).toHaveLength(0);
     // The canceled leg keeps its one tag on its own line; no seat text per leg.
     const timeline = r!.root.findAll((n) => n.props.testID === 'leg-timeline' && typeof n.type === 'string')[0];
@@ -817,17 +824,15 @@ describe('ResultRow at big text sizes (design round 26)', () => {
   let r: ReactTestRenderer | undefined;
   afterEach(() => act(() => r?.unmount()));
 
-  it('puts the not-flyable chip under the times, left-aligned, and lets it wrap instead of clipping', async () => {
-    // Jest's default font scale is 2, which is past STACK_TOP_LINE_SCALE. Since round 140 only a route
-    // that can't be flown as listed has a chip up there.
+  it('puts the stops and trip length under the times, left-aligned, instead of squeezing them (round 141)', async () => {
+    // Jest's default font scale is 2, which is past STACK_TOP_LINE_SCALE.
     const it = await fullItinerary();
-    const status = { legs: [], risks: [], dimmed: false, canceled: true, spoken: ['Canceled'] };
     await act(async () => {
-      r = create(<ResultRow itinerary={it} selected={false} now={NOW} onPress={jest.fn()} status={status} />);
+      r = create(<ResultRow itinerary={it} selected={false} now={NOW} onPress={jest.fn()} />);
     });
-    const chip = r!.root.findAll((n) => n.props.testID === 'seat-summary' && typeof n.type === 'string')[0];
+    const stops = r!.root.findAll((n) => n.props.testID === 'row-stops' && typeof n.type === 'string')[0];
     const flat = (style: unknown) => Object.assign({}, ...([style] as unknown[]).flat(3).filter(Boolean));
-    expect(flat(chip.props.style)).toMatchObject({ flexShrink: 1, maxWidth: '100%' });
+    expect(flat(stops.props.style)).toMatchObject({ alignItems: 'flex-start', maxWidth: '100%' });
     const holder = r!.root.findAll((n) => n.props.testID === 'top-right' && typeof n.type === 'string')[0];
     expect(flat(holder.props.style)).toMatchObject({ flexBasis: '100%', justifyContent: 'flex-start' });
   });

@@ -393,3 +393,11 @@ John: "Can the route lines be colored with a small label centered above the rout
 - The colored left edge on the row is gone: the route line carries the color now. A full route keeps its red outline; a canceled route keeps its "can't be flown as listed" chip.
 - Map key: "Line color is seats left after the list" with rows 50+ seats, 15 to 49, 6 to 14, 1 to 5, No seats (thresholds unchanged from Q-074). Folded rows read like "15 to 49 seats, reported".
 - "At risk" stays: it's about connection time, not seats.
+
+## Round 141: route line gets the full width at any number of stops (2026-11-04)
+
+John: "Flights that have more than 1 stop are squished. Is there a way we can fix this so it's consistent across the no matter how many stops?" (screenshot: DAL to LGA, a 2-stop card with "2 stops | 35m at MIA | 10h 40m" beside the line).
+
+- The stop count and trip length moved from beside the route line to the top right of the row, next to the times, the same place the route card already keeps them. The route line now spans the whole card, so every leg gets an even share of the full width and its seat numbers and stop code have room on 0, 1, 2 or 3 stop routes.
+- At big text sizes the stops line goes under the times, left-aligned.
+- No "Unavailable" verdict on a canceled route, on the row or the route card: the canceled leg's own red tag says it, and the line for that leg is gray. VoiceOver still says it can't be flown as listed.
