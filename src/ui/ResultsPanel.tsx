@@ -798,7 +798,8 @@ const styles = StyleSheet.create({
   routeEndsTrack: { flexDirection: 'row', alignItems: 'center', gap: 4, width: 64 },
   routeEndsLine: { flex: 1, height: 1 },
   filters: { paddingHorizontal: spacing.section },
-  sep: { height: spacing.group },
+  // A little more air between tickets so each one reads as its own (round 150, John).
+  sep: { height: spacing.group + 4 },
   state: { paddingVertical: spacing.page, gap: spacing.section, alignItems: 'flex-start' },
   loading: { flexDirection: 'row', alignItems: 'center', gap: spacing.group },
   loadingBlock: { paddingVertical: spacing.section, gap: spacing.group },

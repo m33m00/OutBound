@@ -6,8 +6,9 @@ import { flightLookupKey, type FlightStatus } from '@/live';
 import { legLookup, rowStatus } from '@/search/statusTags';
 import { colors, inkColors } from '@/theme';
 
-import { connectionText, dotSeats, measurePerfOn, ResultRow, seatCounts } from '../ResultRow';
+import { CARD_EDGE_W, connectionText, dotSeats, measurePerfOn, ResultRow, seatCounts } from '../ResultRow';
 import { StatusTag } from '../StatusTag';
+import { TicketTear } from '../TicketTear';
 import { TIER_FG } from '../tierColors';
 
 /** Every string drawn under a node, in order. */
@@ -971,5 +972,22 @@ describe('seatCounts (round 147)', () => {
       { kind: 'seats', value: '30' },
     ]);
     expect(seatCounts({ ...base, source: 'unknown', netSeats: null } as never)).toEqual([]);
+  });
+});
+
+describe('ticket edge (round 150)', () => {
+  it('draws each result card with a full point of the darker card edge, the tear notches matching', async () => {
+    // A route with room on it (a full one keeps its red edge).
+    const it = { ...(await twoLegItinerary()), isFull: false };
+    let r: ReactTestRenderer;
+    await act(async () => {
+      r = create(<ResultRow itinerary={it} selected={false} now={NOW} onPress={jest.fn()} />);
+    });
+    const card = r!.root.findAll((n) => n.props.accessibilityRole === 'button' && typeof n.type === 'string')[0];
+    const style = Object.assign({}, ...([card.props.style] as unknown[]).flat(5).filter(Boolean));
+    expect(style.borderColor).toBe(colors.light.cardEdge);
+    expect(style.borderWidth).toBe(CARD_EDGE_W);
+    const tear = r!.root.findAll((n) => n.type === TicketTear)[0];
+    expect(tear.props).toMatchObject({ edge: colors.light.cardEdge, edgeWidth: CARD_EDGE_W });
   });
 });

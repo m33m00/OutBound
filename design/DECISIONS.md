@@ -474,3 +474,12 @@ John: "Can we have it like say 5H and like 0M ... I just want to keep things con
 - Durations always show both once there's an hour: "5h 0m", never "5h". Under an hour stays "45m". This covers trip times, layovers, delays ("Delayed 1h 0m"), leg times on the map and saved trips. Ages ("3h ago") are not durations and stay as they are.
 - The stops line under the times is always: number of stops, total trip time, then a short connection last, only when there is one: "2 stops · 11h 30m · 35m connection at MIA" (or "missed connection at MIA").
 - With more than one short connection, only the tightest shows, so the line stays one line. Measured at 14pt on a 375pt phone: "2 stops · 11h 30m · 35m connection at MIA" is about 283pt and the "missed" form about 301pt, inside the 318pt card. It can shrink a touch at big text sizes instead of cutting off.
+
+## Design round 150: a clearer ticket edge on the results (John, 2026-11-04)
+
+John: "Can you add like a more obvious ticket border when I'm like scanning through the flights ... especially in dark mode ... in both dark and light mode."
+
+- Each result ticket's edge is a full point wide (was a hairline) in a new, darker card edge color: #bfcad6 in light mode, #3a4e66 in dark mode. Against the page that is a contrast of 1.54 in light (was 1.17) and 2.22 in dark (was 1.34).
+- Light mode gets a slightly firmer, tighter shadow. Dark mode drops the shadow, which only showed as a faint glow, and leans on the edge.
+- A little more space between tickets (12pt, was 8pt).
+- The tear notches match the new edge. Picked routes keep their blue outline and full routes their red one, both still 2pt. The tear itself is unchanged.

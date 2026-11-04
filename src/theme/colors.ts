@@ -17,6 +17,8 @@ export const colors = {
     surface2: '#f3f6fa',
     line: '#dfe5ec',
     line2: '#cbd4de',
+    // A result card's own edge, darker than the lines inside it so each ticket stands apart (round 150, John).
+    cardEdge: '#bfcad6',
 
     // Text
     text: '#101824',
@@ -88,6 +90,7 @@ export const colors = {
     surface2: '#172231',
     line: '#1f2c3b',
     line2: '#2a3a4d',
+    cardEdge: '#3a4e66',
 
     text: '#e8eef5',
     muted: '#9cadc0',

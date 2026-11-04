@@ -108,6 +108,9 @@ export function seatCounts(seats: LegSeats): { kind: 'seats' | 'listed'; value: 
   return [{ kind: 'seats', value: `${Math.max(0, seats.netSeats)}` }];
 }
 
+/** A result card's edge (round 150, John: "a more obvious ticket border"). */
+export const CARD_EDGE_W = 1;
+
 /** Space above and below a connection label, before any extra that centers it on the line. */
 const CONNECTION_PAD = 6;
 /** How far the airport pills rise when a status pill sits over the line, so the line stays level with them. */
@@ -547,8 +550,9 @@ export const ResultRow = memo(function ResultRow({
   const lastLeg = it.legs[it.legs.length - 1]?.flight;
   const arriveTint = status?.arrival && lastLeg ? tint(shiftMinutes(status.arrival.newUtc, lastLeg.arriveUtc)) : null;
   const highlight = selected && !large;
-  // Picked and full rows draw a thicker edge; the tear's notches match it.
-  const edgeW = highlight || it.isFull ? 2 : StyleSheet.hairlineWidth;
+  // Picked and full rows draw a thicker edge; the tear's notches match it. Every other card has a full
+  // point of a darker edge, so each ticket stands apart when scanning, in dark mode too (round 150, John).
+  const edgeW = highlight || it.isFull ? 2 : CARD_EDGE_W;
   // Every value shows its age: the summary's comes from the leg that sets it.
   const summaryAge = it.tier !== 'unknown' ? routeSeatAge(it, now) : null;
   // Shown only while seat ages are on (off since round 124, John).
@@ -658,9 +662,11 @@ export const ResultRow = memo(function ResultRow({
           // The route view's card drops the selected tint so the Leave By card above it leads.
           // The picked row keeps white and gets an accent outline, as in the Clean look (round 120).
           backgroundColor: highlight ? c.surface : it.isFull || dimmed ? c.surface2 : c.surface,
-          borderColor: highlight ? c.accent : it.isFull ? c.full : c.line,
+          borderColor: highlight ? c.accent : it.isFull ? c.full : c.cardEdge,
           shadowColor: c.text,
         },
+        // A touch more lift in light mode; dark mode leans on the edge, where a shadow can't show.
+        !dimmed && (scheme === 'dark' ? styles.flatDark : styles.liftLight),
         (highlight || it.isFull) && styles.strongBorder,
       ]}>
       {/* No colored edge since round 140: the route line carries each leg's color now, and a full route keeps
@@ -713,7 +719,7 @@ export const ResultRow = memo(function ResultRow({
                 ),
                 body: () => (
                   <>
-                    <TicketTear notch={c.bg} edge={c.line} line={c.line2} />
+                    <TicketTear notch={c.bg} edge={c.cardEdge} line={c.line2} edgeWidth={edgeW} />
                     {ticketBodyView}
                   </>
                 ),
@@ -721,7 +727,7 @@ export const ResultRow = memo(function ResultRow({
                 cardHold,
                 paper: c.ink,
                 bodyPaper: it.isFull ? c.surface2 : c.surface,
-                edge: it.isFull ? c.full : c.line,
+                edge: it.isFull ? c.full : c.cardEdge,
                 edgeWidth: edgeW,
               });
               return (
@@ -742,13 +748,20 @@ export const ResultRow = memo(function ResultRow({
               // Above the flights below it, so the swipe strip reaches a little into them too.
               <View style={styles.tearLine}>
                 <View ref={perfRef} collapsable={false} testID="tear-perf">
-                  <TicketTear notch={c.bg} edge={c.line} line={c.line2} />
+                  <TicketTear notch={c.bg} edge={c.cardEdge} line={c.line2} edgeWidth={edgeW} />
                 </View>
                 {/* Swipe left along the perforation to tear the stub off and save (round 133, John). */}
                 {tearSource ? <TearSwipe source={tearSource} onSave={onSwipeSave} /> : null}
               </View>
             ) : (
-              <TicketTear notch={c.bg} edge={c.line} line={c.line2} left={spacing.rowX} right={spacing.rowX} edgeWidth={edgeW} />
+              <TicketTear
+                notch={c.bg}
+                edge={c.cardEdge}
+                line={c.line2}
+                left={spacing.rowX}
+                right={spacing.rowX}
+                edgeWidth={edgeW}
+              />
             )}
             {ticketBodyView}
           </>
@@ -782,7 +795,14 @@ export const ResultRow = memo(function ResultRow({
               ) : null}
             </Text>
             {/* A boarding pass perforation between the times and the route (round 121, John). */}
-            <TicketTear notch={c.bg} edge={c.line} line={c.line2} left={spacing.rowX} right={spacing.rowX} edgeWidth={edgeW} />
+            <TicketTear
+              notch={c.bg}
+              edge={c.cardEdge}
+              line={c.line2}
+              left={spacing.rowX}
+              right={spacing.rowX}
+              edgeWidth={edgeW}
+            />
             <View style={styles.line}>
               <View style={styles.path}>
                 {saved ? (
@@ -878,13 +898,15 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     borderRadius: radius.md,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: CARD_EDGE_W,
     minHeight: 44,
   },
   shrink: { flexShrink: 1 },
   strongBorder: {
     borderWidth: 2,
   },
+  liftLight: { shadowOpacity: 0.1, shadowRadius: 10, shadowOffset: { width: 0, height: 3 } },
+  flatDark: { shadowOpacity: 0 },
   edge: {
     width: EDGE_W,
     borderTopLeftRadius: radius.md - 1,

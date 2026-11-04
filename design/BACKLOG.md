@@ -182,3 +182,4 @@ Each item names its owner. One item per work session. spec-keeper runs a pre-fli
 | 175 | Design round 147: tiny seat icon over open seats and person icon over people listed on each leg, explained in the map key (John) | main | P2 | Built (design round 147, branch claude/project-thread-fzqwou) |
 | 176 | Design round 148: Delayed pill under the route line, right above its flight number (John) | main | P2 | Built (design round 148, branch claude/project-thread-fzqwou) |
 | 177 | Design round 149: durations always "Xh Ym"; stops line reads stops, trip time, then "35m connection at MIA" last (John) | main | P2 | Built (design round 149, branch claude/project-thread-fzqwou) |
+| 178 | Design round 150: clearer result ticket edge in light and dark, more space between tickets (John) | main | P2 | Built (design round 150, branch claude/project-thread-fzqwou) |
