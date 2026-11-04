@@ -20,6 +20,7 @@ import {
   FLY_MS,
   HOLD_MS,
   LIFT_MS,
+  perfLine,
   RIP_MS,
   SETTLE_MS,
   setMeshModuleForTests,
@@ -68,6 +69,8 @@ async function itinerary() {
 type Measured = (x: number, y: number, w: number, h: number) => void;
 const measureCard = (cb: Measured) => cb(16, 200, 358, 300);
 const measureHeader = (cb: Measured) => cb(16, 200, 358, 90);
+// The dashed line under the header: 14 points tall, its middle 97 points down the card.
+const measurePerf = (cb: Measured) => cb(16, 290, 358, 14);
 
 describe('TearAway: the route card tears along its perforation when you save (round 126, John)', () => {
   let r: ReactTestRenderer | undefined;
@@ -105,6 +108,9 @@ describe('TearAway: the route card tears along its perforation when you save (ro
     }
     for (const n of r!.root.findAllByProps({ testID: 'ticket-stub' })) {
       if (typeof n.instance?.measureInWindow === 'function') n.instance.measureInWindow = measureHeader;
+    }
+    for (const n of r!.root.findAllByProps({ testID: 'tear-perf' })) {
+      if (typeof n.instance?.measureInWindow === 'function') n.instance.measureInWindow = measurePerf;
     }
     act(() => r!.root.findByProps({ testID: 'tear-away-layer' }).props.onLayout());
   }
@@ -315,9 +321,10 @@ describe('TearAway: the route card tears along its perforation when you save (ro
       // No sliced copy, and the real card hides while its picture tears.
       expect(flying()).toHaveLength(0);
       expect(cardOpacity()).toBe(0);
-      // The perforation sits at the header's bottom: 90 points down the card.
+      // Round 135 (John: "it's not cutting at the perforated line"): the rip runs down the middle of
+      // the dashed line, 97 points down the card, not along the header's bottom at 90.
       const geometry = paperProps.current!.geometry as { perf: number; width: number; height: number };
-      expect(geometry).toMatchObject({ perf: 90, width: 358, height: 300 });
+      expect(geometry).toMatchObject({ perf: 97, width: 358, height: 300 });
       act(() => (paperProps.current!.onDone as () => void)());
       expect(r!.root.findAllByProps({ testID: 'paper-tear' })).toHaveLength(0);
       expect(cardOpacity()).toBe(1);
@@ -426,5 +433,16 @@ describe('TearAway: the route card tears along its perforation when you save (ro
         expect(r!.root.findAll((n) => n.props.testID === 'tear-swipe')).toHaveLength(0);
       });
     });
+  });
+});
+
+describe('perfLine: the rip runs down the dashed line (round 135, John)', () => {
+  it('uses the middle of the dashes, inside the card', () => {
+    expect(perfLine(200, 300, 200, 90, 290, 14)).toBe(97);
+  });
+  it("falls back to the header's bottom without the dashes, and stays on the card", () => {
+    expect(perfLine(200, 300, 200, 90)).toBe(90);
+    expect(perfLine(200, 300, 200, 90, 0, 0)).toBe(90);
+    expect(perfLine(200, 50, 200, 90)).toBe(50);
   });
 });

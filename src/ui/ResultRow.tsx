@@ -434,6 +434,7 @@ export const ResultRow = memo(function ResultRow({
   // The whole card, hidden while its copy bends in your hands and tears (round 129).
   const ticketRef = useRef<ComponentRef<typeof View>>(null);
   const wholeRef = useRef<ComponentRef<typeof Animated.View>>(null);
+  const perfRef = useRef<ComponentRef<typeof View>>(null);
   const cardHold = useRef(new Animated.Value(1)).current;
   // A memo row redraws when Bold Text changes.
   useBoldText();
@@ -670,6 +671,7 @@ export const ResultRow = memo(function ResultRow({
                 measureCard: (done) => ticketRef.current?.measureInWindow(done),
                 // The whole card as a picture, so the tear bends the real thing (round 132).
                 measureWhole: (done) => wholeRef.current?.measureInWindow(done),
+                measurePerf: (done) => (perfRef.current ? perfRef.current.measureInWindow(done) : done(0, 0, 0, 0)),
                 snapshot: () => snapshotCard(wholeRef),
                 piece: () => (
                   <InkContext.Provider value>
@@ -706,7 +708,9 @@ export const ResultRow = memo(function ResultRow({
             {large ? (
               // Above the flights below it, so the swipe strip reaches a little into them too.
               <View style={styles.tearLine}>
-                <TicketTear notch={c.bg} edge={c.line} line={c.line2} />
+                <View ref={perfRef} collapsable={false} testID="tear-perf">
+                  <TicketTear notch={c.bg} edge={c.line} line={c.line2} />
+                </View>
                 {/* Swipe left along the perforation to tear the stub off and save (round 133, John). */}
                 {tearSource ? <TearSwipe source={tearSource} onSave={onSwipeSave} /> : null}
               </View>

@@ -4,6 +4,8 @@ import {
   Canvas,
   FilterMode,
   MipmapMode,
+  PaintStyle,
+  StrokeCap,
   Picture,
   Skia,
   TileMode,
@@ -17,6 +19,7 @@ import { StyleSheet } from 'react-native';
 
 import { impactTick } from './haptics';
 import {
+  hash01,
   poseAt,
   stepDrive,
   TEAR_MESH,
@@ -112,10 +115,71 @@ export function recordTearFrame(
       canvas.drawVertices(verts, BlendMode.Modulate, paint);
     }
   };
+  // The torn edge's paper fibres (round 135, John: "like if I had cut paper with a dull knife"): a pale
+  // fuzzy rim where the paper's core shows, with little hairs sticking out, once each stretch lets go.
+  const fibres = (part: MeshPart, rows: number, top: boolean, opacity: number) => {
+    const w = TEAR_MESH.cols + 1;
+    const edge = top ? 0 : rows * w;
+    const inward = top ? w : (rows - 1) * w;
+    const rim = Skia.PathBuilder.Make();
+    const hairs = Skia.PathBuilder.Make();
+    let open = false;
+    for (let i = 0; i <= TEAR_MESH.cols; i++) {
+      const torn = mesh.edgeTorn[i];
+      const p0 = part.positions[edge + i];
+      if (torn < 0.05) {
+        open = false;
+        continue;
+      }
+      if (!open) rim.moveTo(p0.x, p0.y);
+      else rim.lineTo(p0.x, p0.y);
+      open = true;
+      // A hair out from the edge, away from the paper, on about half the columns.
+      const h = hash01(i * 3 + (top ? 1 : 2));
+      if (h > 0.45) {
+        const a = part.positions[edge + Math.max(0, i - 1)];
+        const b = part.positions[edge + Math.min(TEAR_MESH.cols, i + 1)];
+        const q = part.positions[inward + i];
+        let nx = -(b.y - a.y);
+        let ny = b.x - a.x;
+        const nl = Math.hypot(nx, ny) || 1;
+        nx /= nl;
+        ny /= nl;
+        if (nx * (q.x - p0.x) + ny * (q.y - p0.y) > 0) {
+          nx = -nx;
+          ny = -ny;
+        }
+        const len = (0.8 + 2.2 * hash01(i * 7 + 5)) * torn;
+        const lean = (hash01(i * 11 + 3) - 0.5) * 1.2;
+        hairs.moveTo(p0.x, p0.y);
+        hairs.lineTo(p0.x + nx * len + ny * lean, p0.y + ny * len - nx * lean);
+      }
+    }
+    const rimPath = rim.build();
+    const hairPath = hairs.build();
+    const paint = Skia.Paint();
+    paint.setAntiAlias(true);
+    paint.setStyle(PaintStyle.Stroke);
+    paint.setStrokeCap(StrokeCap.Round);
+    paint.setMaskFilter(Skia.MaskFilter.MakeBlur(BlurStyle.Normal, 0.5, true));
+    // A faint grey shadow first, so the fuzz shows on white paper, then the pale torn core on top,
+    // so it shows on dark paper too.
+    const pen = (rgb: string, alpha: number, width: number, path: typeof rimPath) => {
+      paint.setColor(Skia.Color(`rgba(${rgb},${(alpha * opacity).toFixed(3)})`));
+      paint.setStrokeWidth(width);
+      canvas.drawPath(path, paint);
+    };
+    pen('20,30,45', 0.2, 2.4, rimPath);
+    pen('252,250,242', 0.9, 1.3, rimPath);
+    pen('20,30,45', 0.3, 0.9, hairPath);
+    pen('252,250,242', 0.75, 0.5, hairPath);
+  };
   draw(mesh.body, 1);
+  fibres(mesh.body, TEAR_MESH.bodyRows, true, 1);
   const lifted = Math.max(pose.pull * 0.6, pose.tear) * (1 - pose.fly);
   shadow(mesh.stub, TEAR_MESH.stubRows, lifted * 0.8, 6, 12);
   draw(mesh.stub, mesh.stubOpacity);
+  fibres(mesh.stub, TEAR_MESH.stubRows, false, mesh.stubOpacity);
   return recorder.finishRecordingAsPicture();
 }
 

@@ -22,6 +22,8 @@ export interface TearSource {
    * card as paper. Without them (or if the picture fails) the earlier sliced tear runs instead.
    */
   measureWhole?: (done: (x: number, y: number, width: number, height: number) => void) => void;
+  /** Round 135: where the dashed perforation is, so the rip runs right down its middle. */
+  measurePerf?: (done: (x: number, y: number, width: number, height: number) => void) => void;
   snapshot?: () => Promise<unknown>;
   /** A copy of the header, drawn on the flying layer. */
   piece: () => ReactNode;
@@ -36,6 +38,22 @@ export interface TearSource {
   bodyPaper: string;
   edge: string;
   edgeWidth: number;
+}
+
+/**
+ * Round 135 (John: "it's not cutting at the perforated line"): the rip runs down the middle of the
+ * dashed line, not along the bottom of the header above it. Falls back to the header's bottom.
+ */
+export function perfLine(wy: number, wh: number, hy: number, hh: number, py?: number, ph?: number): number {
+  const line = ph ? (py ?? 0) + ph / 2 : hy + hh;
+  return Math.max(0, Math.min(wh, line - wy));
+}
+
+function perfAt(source: TearSource, done: (hy: number, hh: number, py?: number, ph?: number) => void) {
+  source.measure((_hx, hy, _hw, hh) => {
+    if (!source.measurePerf) return done(hy, hh);
+    source.measurePerf((_px, py, _pw, ph) => done(hy, hh, py, ph));
+  });
 }
 
 const TearSourceContext = createContext<TearSource | null>(null);
@@ -253,7 +271,7 @@ export function TearAwayHost({ children }: { children: ReactNode }) {
       // One frame first, so the picture shows Save already filled.
       requestAnimationFrame(() =>
         measureWhole((wx, wy, ww, wh) =>
-          source.measure((_hx, hy, _hw, hh) => {
+          perfAt(source, (hy, hh, py, ph) => {
             if (!ww || !wh || !hh) return fallBack();
             snapshot()
               .then((image) => {
@@ -268,7 +286,7 @@ export function TearAwayHost({ children }: { children: ReactNode }) {
                   y,
                   width: ww,
                   height: wh,
-                  perf: Math.min(wh, hy + hh - wy),
+                  perf: perfLine(wy, wh, hy, hh, py, ph),
                   toX: frame.width / 2 - x,
                   toY: frame.height + 10 - y,
                   image,
@@ -302,7 +320,7 @@ export function TearAwayHost({ children }: { children: ReactNode }) {
       if (!measureWhole || !snapshot || !mesh) giveUp();
       else {
         measureWhole((wx, wy, ww, wh) =>
-          source.measure((_hx, hy, _hw, hh) => {
+          perfAt(source, (hy, hh, py, ph) => {
             if (state.dead) return;
             if (!ww || !wh || !hh) return giveUp();
             snapshot()
@@ -320,7 +338,7 @@ export function TearAwayHost({ children }: { children: ReactNode }) {
                   y,
                   width: ww,
                   height: wh,
-                  perf: Math.min(wh, hy + hh - wy),
+                  perf: perfLine(wy, wh, hy, hh, py, ph),
                   toX: frame.width / 2 - x,
                   toY: frame.height + 10 - y,
                   image,

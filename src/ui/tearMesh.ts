@@ -47,6 +47,11 @@ export interface MeshPart {
 export interface TearMesh {
   body: MeshPart;
   stub: MeshPart;
+  /**
+   * The torn edge (round 135): how far each column has let go (0 to 1). The body's edge is its top row
+   * (vertices 0 to cols), the stub's its bottom row (vertices stubRows * (cols + 1) on).
+   */
+  edgeTorn: number[];
   /** The stub's opacity (it fades as it lands). */
   stubOpacity: number;
 }
@@ -69,12 +74,15 @@ export type TearMeshConfig = Record<
   | 'freeX'
   | 'freeY'
   | 'freeOut'
-  | 'tug',
+  | 'tug'
+  | 'rag'
+  | 'ragJitter',
   number
 >;
 
 export const TEAR_MESH: TearMeshConfig = {
-  cols: 18,
+  // Fine across, so the torn edge can be ragged (round 135).
+  cols: 48,
   stubRows: 10,
   bodyRows: 12,
   perspective: 720,
@@ -100,7 +108,33 @@ export const TEAR_MESH: TearMeshConfig = {
   freeOut: 30,
   /** The bottom half gives a little the other way while the rip runs. */
   tug: 5,
+  /**
+   * The torn edge isn't a clean line (round 135, John: "like if I had cut paper with a dull knife"): it
+   * wanders up and down the perforation by up to `rag` points, with sharp little jags of `ragJitter`.
+   */
+  rag: 3,
+  ragJitter: 2.2,
 };
+
+/** A steady pseudo-random 0 to 1 for column `i`, so the same card always tears the same way. */
+export function hash01(i: number): number {
+  const x = Math.sin(i * 127.1 + 311.7) * 43758.5453;
+  return x - Math.floor(x);
+}
+
+/**
+ * Where the torn edge runs at `u` across, as points below the perforation's middle (negative is above).
+ * Both pieces share it, so they fit back together like real torn paper.
+ */
+export function raggedAt(u: number, i: number, m: TearMeshConfig = TEAR_MESH): number {
+  const wander =
+    0.55 * Math.sin(2 * Math.PI * (u * 3.3 + 0.21)) +
+    0.3 * Math.sin(2 * Math.PI * (u * 8.7 + 0.63)) +
+    0.15 * Math.sin(2 * Math.PI * (u * 19.4 + 0.07));
+  // The ends sit on the notches, where the dull knife starts and finishes.
+  const ends = Math.min(1, u * 12, (1 - u) * 12);
+  return ends * (m.rag * wander + m.ragJitter * (hash01(i) - 0.5));
+}
 
 type V3 = { x: number; y: number; z: number };
 
@@ -214,11 +248,13 @@ export function tearMesh(g: TearGeometry, pose: TearPose, m: TearMeshConfig = TE
   const bodyPts: V3[] = [];
   const bodyTex: { x: number; y: number }[] = [];
   for (let j = 0; j <= m.bodyRows; j++) {
-    const y = perf + ((H - perf) * j) / m.bodyRows;
+    const row = perf + ((H - perf) * j) / m.bodyRows;
     const near = 1 - j / m.bodyRows;
     for (let i = 0; i <= m.cols; i++) {
       const u = i / m.cols;
       const x = W * u;
+      // The top row is the torn edge.
+      const y = j === 0 ? perf + raggedAt(u, i, m) : row;
       bodyPts.push({ x, y, z: bowAt(u) - m.tug * ripping * near * near });
       bodyTex.push({ x, y });
     }
@@ -229,13 +265,18 @@ export function tearMesh(g: TearGeometry, pose: TearPose, m: TearMeshConfig = TE
   const stubTex: { x: number; y: number }[] = new Array(stubPts.length);
   const free = smooth(pose.free);
   const fa = (-m.freeDeg * free * Math.PI) / 180;
-  const seg = perf / m.stubRows;
+  const edgeTorn: number[] = [];
   for (let i = 0; i <= m.cols; i++) {
     const u = i / m.cols;
     const x = W * u;
     const torn = Math.max(tornAt(u, pose.tear), free);
+    edgeTorn.push(torn);
     const k = m.pullShare * clamp01(pose.pull) + (1 - m.pullShare) * torn;
-    let y = perf - m.detachUp * torn;
+    // The stub's bottom is the same ragged edge as the body's top.
+    const rag = raggedAt(u, i, m);
+    // Each column's strip runs from the card's top down to its own bit of the ragged edge.
+    const colSeg = Math.max(0, perf + rag) / m.stubRows;
+    let y = perf + rag - m.detachUp * torn;
     let z = bowAt(u) + m.detachOut * torn;
     for (let j = m.stubRows; j >= 0; j--) {
       const idx = j * (m.cols + 1) + i;
@@ -243,12 +284,12 @@ export function tearMesh(g: TearGeometry, pose: TearPose, m: TearMeshConfig = TE
       const fx = x * Math.cos(fa) - (y - perf) * Math.sin(fa) + m.freeX * free;
       const fy = perf + x * Math.sin(fa) + (y - perf) * Math.cos(fa) + m.freeY * free;
       stubPts[idx] = { x: fx, y: fy, z: z + m.freeOut * free };
-      stubTex[idx] = { x, y: seg * j };
+      stubTex[idx] = { x, y: colSeg * j };
       if (j === 0) break;
       const mid = (m.stubRows - j + 0.5) / m.stubRows;
       const turn = (k * m.curlDeg * curlShare(mid, m.growth) * Math.PI) / 180;
-      y -= seg * Math.cos(turn);
-      z += seg * Math.sin(turn);
+      y -= colSeg * Math.cos(turn);
+      z += colSeg * Math.sin(turn);
     }
   }
 
@@ -286,6 +327,7 @@ export function tearMesh(g: TearGeometry, pose: TearPose, m: TearMeshConfig = TE
       indices: stubFront,
       backIndices: stubBack,
     },
+    edgeTorn,
     stubOpacity: fly < 0.8 ? 1 : 1 - (fly - 0.8) / 0.2,
   };
 }

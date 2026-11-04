@@ -8,6 +8,7 @@ import {
   dragMs,
   dragProgress,
   poseAt,
+  raggedAt,
   RIP_END_MS,
   RIP_START_MS,
   shouldCommit,
@@ -137,5 +138,43 @@ describe('swipe to save drives the same tear (round 133, John)', () => {
     expect(ticksCrossed(0, TEAR_TOTAL_MS)).toBe(4);
     expect(ticksCrossed(RIP_END_MS, 0)).toBe(0);
     expect(ticksCrossed(0, RIP_START_MS)).toBe(1);
+  });
+});
+
+describe('the torn edge looks cut with a dull knife (round 135, John)', () => {
+  const us = Array.from({ length: TEAR_MESH.cols + 1 }, (_, i) => i / TEAR_MESH.cols);
+  const rags = us.map((u, i) => raggedAt(u, i));
+
+  it('wanders off the line instead of running dead straight, but stays near the dashes', () => {
+    const spread = Math.max(...rags) - Math.min(...rags);
+    expect(spread).toBeGreaterThan(2);
+    for (const r of rags) expect(Math.abs(r)).toBeLessThanOrEqual(TEAR_MESH.rag + TEAR_MESH.ragJitter / 2 + 1e-9);
+    // Not a smooth curve either: neighbours jump about like fibres giving way.
+    const jumps = rags.slice(1).filter((r, i) => Math.abs(r - rags[i]) > 0.3);
+    expect(jumps.length).toBeGreaterThan(TEAR_MESH.cols / 4);
+  });
+
+  it('starts and ends on the notches at either side', () => {
+    expect(rags[0]).toBe(0);
+    expect(rags[rags.length - 1]).toBeCloseTo(0, 9);
+  });
+
+  it('is the same edge on both pieces, so they fit back together', () => {
+    const m = tearMesh(g, pose({}));
+    const bodyTop = m.body.textures.slice(0, TEAR_MESH.cols + 1);
+    const stubBottom = m.stub.textures.slice(TEAR_MESH.stubRows * (TEAR_MESH.cols + 1));
+    bodyTop.forEach((t, i) => {
+      expect(t.y).toBeCloseTo(g.perf + rags[i], 6);
+      expect(stubBottom[i].y).toBeCloseTo(t.y, 6);
+    });
+  });
+
+  it('marks which bits of the edge have torn, for the paper fibres along it', () => {
+    expect(tearMesh(g, pose({})).edgeTorn.every((t) => t === 0)).toBe(true);
+    const half = tearMesh(g, pose({ lift: 1, pull: 1, tear: 0.5 })).edgeTorn;
+    expect(half).toHaveLength(TEAR_MESH.cols + 1);
+    // Swiping left: the right side has given way before the left.
+    expect(half[half.length - 1]).toBeGreaterThan(half[0]);
+    expect(tearMesh(g, pose({ tear: 1, free: 1 })).edgeTorn.every((t) => t === 1)).toBe(true);
   });
 });
