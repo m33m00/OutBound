@@ -94,21 +94,20 @@ export function MiniRoute({
   const withIcons = !!segs?.some((l) => l.label && l.counts?.length);
   // Short legs (2 or more stops on a small phone) drop the airline code beside a known airline's logo.
   const compact = n >= COMPACT_LEGS;
-  // Flags get their own bands above the seat numbers: a flight's (delays) on top, a stop's (At risk)
-  // nearest its dot, so a delay and the risk it causes never sit on each other.
-  const legFlagTop = 0;
-  const stopFlagTop = legFlagged ? FLAG_H : 0;
+  // A stop's flag (At risk) sits above the line over its stop. A flight's flag (a delay) sits under the
+  // line, below the stop codes and right over that flight's number (round 148, John: "can the delayed pill
+  // sit right above the airline and the flight number, but underneath the route line?").
+  const stopFlagTop = 0;
   // Everything in the track sits this far lower when there are flags or count icons above it.
-  const top = (legFlagged ? FLAG_H : 0) + (stopFlagged ? FLAG_H : 0) + (withIcons ? ICON_H : 0);
+  const top = (stopFlagged ? FLAG_H : 0) + (withIcons ? ICON_H : 0);
   const below = (y: number) => ({ top: top + y });
+  // Room under the stop codes for the delay pills, then each flight.
+  const under = legFlagged ? FLAG_H : 0;
+  const tail = under + (withFlights ? FLIGHT_H : 0);
+  const legFlagY = LABEL_H + DOT + LABEL_H + 2;
   return (
     <View
-      style={[
-        styles.row,
-        segs && styles.rowLabeled,
-        top > 0 && { paddingTop: 6 + top },
-        withFlights && { paddingBottom: 6 + FLIGHT_H },
-      ]}
+      style={[styles.row, segs && styles.rowLabeled, top > 0 && { paddingTop: 6 + top }, tail > 0 && { paddingBottom: 6 + tail }]}
       testID="mini-route"
       importantForAccessibility="no-hide-descendants"
       accessibilityElementsHidden>
@@ -122,9 +121,9 @@ export function MiniRoute({
           styles.track,
           { minWidth: 40 + stops.length * STOP_W },
           {
-            height: top + LABEL_H + DOT + LABEL_H + (withFlights ? FLIGHT_H : 0),
+            height: top + LABEL_H + DOT + LABEL_H + tail,
             marginTop: -(top + LABEL_H),
-            marginBottom: -(LABEL_H + (withFlights ? FLIGHT_H : 0)),
+            marginBottom: -(LABEL_H + tail),
           },
         ]}
         testID="mini-route-track">
@@ -160,7 +159,7 @@ export function MiniRoute({
               return (
                 <View
                   key={`lf${i}`}
-                  style={[styles.flagSlot, styles.legFlagSlot, { top: legFlagTop, left: pct(i), width: pct(1) }]}
+                  style={[styles.flagSlot, styles.legFlagSlot, below(legFlagY), { left: pct(i), width: pct(1) }]}
                   testID="mini-route-leg-flag">
                   <Text
                     style={[styles.flagText, { color: c.caution, backgroundColor: c.cautionBg }]}
@@ -184,7 +183,7 @@ export function MiniRoute({
               return (
                 <View
                   key={`fl${i}`}
-                  style={[styles.flightSlot, below(LABEL_H + DOT + LABEL_H + 2), { left: pct(i), width: pct(1) }]}
+                  style={[styles.flightSlot, below(legFlagY + under), { left: pct(i), width: pct(1) }]}
                   testID="mini-route-flight">
                   <View style={styles.flightLine}>
                     {known ? <AirlineMark airline={f.airline} size={15} /> : null}

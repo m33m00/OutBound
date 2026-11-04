@@ -154,15 +154,19 @@ describe('MiniRoute (round 119)', () => {
     expect(two).toHaveLength(1);
     const slot = StyleSheet.flatten(two[0].props.style);
     // The slot spans the second leg, so the pill centres on it.
-    expect(slot).toMatchObject({ left: '50%', width: '50%', top: 0 });
+    expect(slot).toMatchObject({ left: '50%', width: '50%' });
     const text = two[0].findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string')[0];
     expect(text.props.children).toBe('Delayed 50m');
-    // The stop's own flag sits in the band under it, so the two never overlap, and the seats sit lower still.
-    const stop = r!.root.findAll((n) => n.props.testID === 'mini-route-stop-flag' && typeof n.type === 'string')[0];
-    const stopTop = StyleSheet.flatten(stop.props.style).top as number;
-    expect(stopTop).toBeGreaterThanOrEqual(17);
-    const label = r!.root.findAll((n) => n.props.testID === 'mini-route-leg-slot' && typeof n.type === 'string')[0];
-    expect(StyleSheet.flatten(label.props.style).top as number).toBeGreaterThan(stopTop);
+    // Under the line (round 148, John): below the stop codes and right above that leg's flight number,
+    // while At risk and the seats stay above the line.
+    const host = (id: string) => r!.root.findAll((n) => n.props.testID === id && typeof n.type === 'string');
+    const topOf = (n: { props: { [k: string]: unknown } }) => StyleSheet.flatten(n.props.style as never).top as number;
+    const stopSlot = topOf(host('mini-route-stop-slot')[0]);
+    const flights = host('mini-route-flight');
+    expect(topOf(two[0])).toBeGreaterThan(stopSlot);
+    expect(topOf(flights[1])).toBeGreaterThanOrEqual(topOf(two[0]) + 17);
+    expect(topOf(host('mini-route-stop-flag')[0])).toBeLessThan(topOf(host('mini-route-leg-slot')[0]));
+    expect(topOf(host('mini-route-leg-slot')[0])).toBeLessThan(stopSlot);
     // On a short leg the delay shortens so it stays inside its own stretch.
     const three = flags(['DFW', 'CLT', 'MIA', 'LGA'], [leg(), leg(), leg('Delayed 50m')]);
     const short = three[0].findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string')[0];
@@ -192,10 +196,9 @@ describe('MiniRoute (round 119)', () => {
       ['carseat.right.fill', '#060'],
       ['person.fill', '#060'],
     ]);
-    // The delay pill keeps its own band above the icons, so the two stack instead of overlapping.
+    // The icons sit above the line and the delay pill under it, so the two never meet.
     const slot = StyleSheet.flatten(host('mini-route-leg-slot')[0].props.style);
     const flag = StyleSheet.flatten(host('mini-route-leg-flag')[0].props.style);
-    expect(flag.top).toBe(0);
-    expect(slot.top as number).toBeGreaterThanOrEqual(17);
+    expect(flag.top as number).toBeGreaterThan(slot.top as number);
   });
 });

@@ -458,3 +458,11 @@ John: "for like the seat count ... can you put like a tiny icon above each numbe
 - iOS draws Apple's seat and person symbols; Android uses Material's airline seat and person.
 - The map key has a new "Numbers over each leg" part with both icons: Open seats, People listed. VoiceOver reads it too.
 - Fit on a 375pt phone (measured, not rendered): "21/12" with its icons is about 47pt, inside the 55pt leg at 3 stops.
+
+## Design round 148: the Delayed pill moves under the line, right over its flight (John, 2026-11-04)
+
+John: "Okay, I really like this. So actually, can the delayed pill sit right above the airline and the flight number, but underneath the route line? I actually think it looks better there."
+
+- A delayed or diverted flight's pill now sits under the route line, below the stop codes and right above that leg's airline logo and flight number, still centred on its own leg. The flight moves down a row to make room, only on routes with a delay.
+- At risk and the seat numbers with their icons stay above the line, so the top of the card is one row shorter when a flight is delayed.
+- Short legs (2 or more stops) keep the short form ("+50m", "Diverted").

@@ -180,3 +180,4 @@ Each item names its owner. One item per work session. spec-keeper runs a pre-fli
 | 173 | Design round 145: each leg's airline, flight number and aircraft under its own stretch of the route line, chip row removed (John) | main | P2 | Built (design round 145, branch claude/project-thread-fzqwou) |
 | 174 | Design round 146: delay and diversion pills centred over their own leg above the seats, bigger text, taller cards, saved cards get the route line (John) | main | P2 | Built (design round 146, branch claude/project-thread-fzqwou) |
 | 175 | Design round 147: tiny seat icon over open seats and person icon over people listed on each leg, explained in the map key (John) | main | P2 | Built (design round 147, branch claude/project-thread-fzqwou) |
+| 176 | Design round 148: Delayed pill under the route line, right above its flight number (John) | main | P2 | Built (design round 148, branch claude/project-thread-fzqwou) |
