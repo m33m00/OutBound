@@ -75,14 +75,40 @@ jobs:
           EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
           # Real airline logos (round 133). Without this secret the app shows its own tail marks.
-          EXPO_PUBLIC_LOGO_DEV_KEY: ${{ secrets.LOGO_DEV_KEY }}
+          LOGO_DEV_KEY: ${{ secrets.LOGO_DEV_KEY }}
         run: |
+          # Only a publishable key (pk_) goes into the app; a secret key (sk_) never does.
+          case "$LOGO_DEV_KEY" in
+            pk_*) export EXPO_PUBLIC_LOGO_DEV_KEY="$LOGO_DEV_KEY" ;;
+            "") ;;
+            *) echo "::warning::LOGO_DEV_KEY isn't a publishable key (pk_...), so logos stay off." ;;
+          esac
           MESSAGE=$(printf '%s' "${COMMIT_MESSAGE:-Manual publish}" | head -n 1)
           eas update --branch "$BRANCH" --message "$MESSAGE" --environment preview --non-interactive
           {
             echo "### Published to Expo Go"
             echo "Open Expo Go, sign in, then Projects > outbound > branch \`$BRANCH\` and tap the newest update."
           } >> "$GITHUB_STEP_SUMMARY"
+
+      # Says in the run summary whether each airline's real logo loads with the Logo.dev key
+      # (round 133), without printing the key. Never fails the run.
+      - name: Check the airline logos
+        if: steps.token.outputs.ok == 'true'
+        env:
+          LOGO_DEV_KEY: ${{ secrets.LOGO_DEV_KEY }}
+        run: |
+          case "$LOGO_DEV_KEY" in
+            pk_*) ;;
+            "") echo "Airline logos are off: LOGO_DEV_KEY isn't set." | tee -a "$GITHUB_STEP_SUMMARY"; exit 0 ;;
+            *) echo "Airline logos are off: LOGO_DEV_KEY isn't a publishable key (pk_...)." | tee -a "$GITHUB_STEP_SUMMARY"; exit 0 ;;
+          esac
+          echo "### Airline logos" >> "$GITHUB_STEP_SUMMARY"
+          for domain in aa.com aircanada.com alaskaair.com jetblue.com delta.com flyfrontier.com spirit.com united.com southwest.com; do
+            out=$(curl -s -o /dev/null -w '%{http_code} %{content_type} %{size_download}' --max-time 30 \
+              "https://img.logo.dev/$domain?token=$LOGO_DEV_KEY&size=40&format=png&retina=true&fallback=404" || true)
+            echo "- $domain: $out" >> "$GITHUB_STEP_SUMMARY"
+            echo "logo $domain: $out"
+          done
 
       # Says in the run summary whether each live function answers, so a "couldn't load" in the
       # app can be traced to a function that isn't deployed or set up yet. Never fails the run.
