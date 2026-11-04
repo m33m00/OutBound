@@ -420,3 +420,10 @@ John: "Can you point out on the route line if a flight is canceled? Maybe an X i
 - Aircraft: each flight chip on the results card has its aircraft under it in small gray ("737-800", "A321neo"), one line.
 - Map key: under the seat circles, a red-with-X swatch reads "Red with an X: that flight is canceled".
 - Sizes measured for a 375pt phone: legs are 55pt each at 3 stops, the widest seat label needs about 49pt and the At risk pill about 41pt, so nothing overlaps. Four flight chips (3 stops) wrap whole onto a second line rather than squeeze.
+
+## Round 144: no canceled tag on result cards (2026-11-04)
+
+John, asked whether to keep the red "DEN → LAX canceled" tag now that the route line shows a red X: "Drop the tag".
+
+- The slim result card no longer shows a tag for a canceled leg; the red stretch with an X on the route line says it. VoiceOver still says the flight is canceled and that the route can't be flown as listed.
+- Delays and diversions keep their tag under the flights. The route card's own leg boxes keep their Canceled pill.

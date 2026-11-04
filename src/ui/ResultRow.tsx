@@ -816,9 +816,10 @@ export const ResultRow = memo(function ResultRow({
                   </View>
                 );
               })}
-              {/* A connection at risk is flagged on its stop on the route line now (round 143, John), so the
-                  row's tag skips it. */}
-              {headline && !riskOnLine ? (
+              {/* A connection at risk is flagged on its stop and a canceled leg is drawn red with an X on the
+                  route line now (round 143, John), so the row's tag skips both ("Drop the tag", round 144).
+                  VoiceOver still says it. */}
+              {headline && !riskOnLine && headline.tone !== 'canceled' ? (
                 <View style={styles.flight} testID="row-tag">
                   <StatusTag label={headline.label} tone={headline.tone} />
                 </View>

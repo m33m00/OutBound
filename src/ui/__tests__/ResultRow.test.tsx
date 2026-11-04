@@ -509,14 +509,16 @@ describe('ResultRow', () => {
     expect(r!.root.findAll((n) => n.props.testID === 'leg-aircraft')).toHaveLength(0);
   });
 
-  it('canceled: tag word and spoken text; departed: gray tag', async () => {
+  it('canceled: no tag, a red X on the line and the spoken text; departed: gray tag (round 144, John)', async () => {
     const it = await fullItinerary();
     await act(async () => {
       r = create(
         <ResultRow itinerary={it} selected={false} now={NOW} onPress={jest.fn()} status={statusFor(it, live(it, 'canceled'))} />,
       );
     });
-    expect(strings(r!.root)).toContain('Canceled');
+    // John: "Drop the tag". The red X on the route line says it; VoiceOver still hears it.
+    expect(r!.root.findAll((n) => n.props.testID === 'row-tag')).toHaveLength(0);
+    expect(r!.root.findAll((n) => n.props.testID === 'mini-route-canceled' && typeof n.type === 'string')).toHaveLength(1);
     expect(r!.root.findAll((n) => n.props.accessibilityRole === 'button')[0].props.accessibilityLabel).toContain(
       'Canceled, was 9:00 AM',
     );
@@ -578,7 +580,7 @@ describe('ResultRow', () => {
     expect(all).not.toContain('Unavailable');
   });
 
-  it('a canceled second leg: flights on one line, one tag that names that flight (round 68, John)', async () => {
+  it('a canceled second leg: flights on one line, no tag, the X on that leg, and VoiceOver names it (rounds 68, 144)', async () => {
     const at = (hhmm: string) => zonedToUtc('2026-10-20', hhmm, 'America/Chicago');
     const provider = createMemoryProvider(
       [
@@ -626,11 +628,11 @@ describe('ResultRow', () => {
     const items = line.findAll((n) => n.props.testID === 'flight-item' && typeof n.type === 'string');
     const words = items.map((n) => n.findAll((x) => typeof x.props.children === 'string').map((x) => x.props.children as string));
     expect(words.flat().some((w) => /cancel/i.test(w))).toBe(false);
-    const tags = line.findAll((n) => n.props.testID === 'row-tag' && typeof n.type === 'string');
-    expect(tags).toHaveLength(1);
-    expect(tags[0].findAll((x) => typeof x.props.children === 'string').map((x) => x.props.children)).toContain(
-      'DEN → LAX canceled',
-    );
+    expect(line.findAll((n) => n.props.testID === 'row-tag')).toHaveLength(0);
+    const x = r!.root.find((n) => n.props.testID === 'mini-route-canceled' && typeof n.type === 'string');
+    expect(Object.assign({}, ...[x.props.style].flat(3).filter(Boolean)).left).toBe('75%');
+    const spoken = r!.root.findAll((n) => n.props.accessibilityRole === 'button')[0].props.accessibilityLabel as string;
+    expect(spoken).toMatch(/cancel/i);
   });
 
   it('a diverted leg keeps its time, names where it went and says it continues (John, 2026-11-01)', async () => {
