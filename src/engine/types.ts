@@ -17,6 +17,10 @@ export interface Airport {
   lat: number;
   /** IANA time zone, e.g. "America/Chicago". */
   tz: string;
+  /** The city it serves ("Dallas"), its state or province ("TX") and country ("US"), for place labels. */
+  city?: string;
+  region?: string;
+  country?: string;
 }
 
 /** One scheduled flight leg. */

@@ -16,6 +16,12 @@ export interface TearSource {
   measure: (done: (x: number, y: number, width: number, height: number) => void) => void;
   /** Where the whole card is, inside its edge (round 129: the whole card bends in your hands). */
   measureCard: (done: (x: number, y: number, width: number, height: number) => void) => void;
+  /**
+   * Round 132: where the card is with its edge, and a picture of it, so the tear can bend the real
+   * card as paper. Without them (or if the picture fails) the earlier sliced tear runs instead.
+   */
+  measureWhole?: (done: (x: number, y: number, width: number, height: number) => void) => void;
+  snapshot?: () => Promise<unknown>;
   /** A copy of the header, drawn on the flying layer. */
   piece: () => ReactNode;
   /** A copy of the rest of the card under the perforation. */
@@ -178,12 +184,12 @@ export function TearAwayHost({ children }: { children: ReactNode }) {
   const host = useRef<ComponentRef<typeof View>>(null);
   const [frame, setFrame] = useState({ x: 0, y: 0, width: 0, height: 0 });
   const [flight, setFlight] = useState<Flight | null>(null);
+  const [paper, setPaper] = useState<PaperFlight | null>(null);
   const flying = useRef(false);
   const seq = useRef(0);
 
-  const launch = useCallback<Launch>(
-    (source) => {
-      if (reduceMotion || frame.width === 0 || flying.current) return;
+  const sliced = useCallback(
+    (source: TearSource) => {
       source.measureCard((cx, cy, cw, ch) => {
         source.measure((hx, hy, hw, hh) => {
           if (!cw || !ch || !hw || !hh || flying.current) return;
@@ -210,7 +216,54 @@ export function TearAwayHost({ children }: { children: ReactNode }) {
         });
       });
     },
-    [reduceMotion, frame],
+    [frame],
+  );
+
+  const launch = useCallback<Launch>(
+    (source) => {
+      if (reduceMotion || frame.width === 0 || flying.current) return;
+      const { measureWhole, snapshot } = source;
+      const mesh = loadMesh();
+      if (!measureWhole || !snapshot || !mesh) {
+        sliced(source);
+        return;
+      }
+      flying.current = true;
+      const fallBack = () => {
+        flying.current = false;
+        sliced(source);
+      };
+      // One frame first, so the picture shows Save already filled.
+      requestAnimationFrame(() =>
+        measureWhole((wx, wy, ww, wh) =>
+          source.measure((_hx, hy, _hw, hh) => {
+            if (!ww || !wh || !hh) return fallBack();
+            snapshot()
+              .then((image) => {
+                if (!image) return fallBack();
+                seq.current += 1;
+                const x = wx - frame.x;
+                const y = wy - frame.y;
+                source.cardHold.setValue(0);
+                setPaper({
+                  id: seq.current,
+                  x,
+                  y,
+                  width: ww,
+                  height: wh,
+                  perf: Math.min(wh, hy + hh - wy),
+                  toX: frame.width / 2 - x,
+                  toY: frame.height + 10 - y,
+                  image,
+                  source,
+                });
+              })
+              .catch(fallBack);
+          }),
+        ),
+      );
+    },
+    [reduceMotion, frame, sliced],
   );
 
   const landed = useCallback((source: TearSource) => {
@@ -240,8 +293,95 @@ export function TearAwayHost({ children }: { children: ReactNode }) {
         importantForAccessibility="no-hide-descendants"
         testID="tear-away-layer">
         {flight ? <FlyingPiece key={flight.id} flight={flight} onDone={() => landed(flight.source)} /> : null}
+        {paper ? (
+          <PaperTear
+            key={paper.id}
+            paper={paper}
+            canvasWidth={frame.width}
+            canvasHeight={frame.height}
+            onDone={() => {
+              setPaper(null);
+              landed(paper.source);
+            }}
+          />
+        ) : null}
       </View>
     </TearAwayContext.Provider>
+  );
+}
+
+interface PaperFlight {
+  id: number;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  perf: number;
+  toX: number;
+  toY: number;
+  image: unknown;
+  source: TearSource;
+}
+
+type MeshModule = typeof import('./TearMeshFlight');
+let meshModule: MeshModule | null | undefined;
+/** The paper tear loads Skia only when it first runs; anywhere that can't, the sliced tear runs. */
+function loadMesh(): MeshModule | null {
+  if (meshModule === undefined) {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      meshModule = require('./TearMeshFlight') as MeshModule;
+    } catch {
+      meshModule = null;
+    }
+  }
+  return meshModule;
+}
+
+/** A picture of the card for the paper tear, or null where it can't be taken. */
+export function snapshotCard(ref: { current: unknown }): Promise<unknown> {
+  const mod = loadMesh();
+  if (!mod) return Promise.resolve(null);
+  return mod.snapshotView(ref as Parameters<MeshModule['snapshotView']>[0]);
+}
+
+/** Test hook: pretend the paper tear can or can't load. */
+export function setMeshModuleForTests(m: MeshModule | null | undefined) {
+  meshModule = m;
+}
+
+function PaperTear({
+  paper,
+  canvasWidth,
+  canvasHeight,
+  onDone,
+}: {
+  paper: PaperFlight;
+  canvasWidth: number;
+  canvasHeight: number;
+  onDone: () => void;
+}) {
+  const mod = loadMesh();
+  useEffect(() => {
+    // Never leave the screen without its card.
+    return () => {
+      paper.source.cardHold.setValue(1);
+    };
+  }, [paper]);
+  if (!mod) return null;
+  const { TearMeshFlight } = mod;
+  return (
+    <TearMeshFlight
+      image={paper.image as Parameters<typeof TearMeshFlight>[0]['image']}
+      x={paper.x}
+      y={paper.y}
+      width={paper.width}
+      height={paper.height}
+      geometry={{ width: paper.width, height: paper.height, perf: paper.perf, toX: paper.toX, toY: paper.toY }}
+      canvasWidth={canvasWidth}
+      canvasHeight={canvasHeight}
+      onDone={onDone}
+    />
   );
 }
 

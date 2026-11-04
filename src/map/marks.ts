@@ -74,7 +74,8 @@ export function markSet(input: MarkSetInput): MarkSpec[] {
   const homeMarks: MarkSpec[] = groupHomes(homes).map((g, i) => ({
     kind: i === 0 ? 'home' : 'altHome',
     code: g[0].code,
-    label: g.map((k) => k.code).join('/'),
+    // A home says where it is ("Dallas, TX"), not its codes (round 132, John).
+    label: g[0].place ?? g.map((k) => k.code).join('/'),
     coord: g[0].coord,
   }));
   for (const h of homes) taken.add(h.code);
@@ -110,8 +111,9 @@ export function markSet(input: MarkSetInput): MarkSpec[] {
 
 /** Sizes in pt (prototype values). */
 export const MARK = {
-  home: { r: 9, stroke: 1.5, shadowSigma: 2, shadowAlpha: 0.25, glyphWidth: 1.4 },
-  altHome: { r: 7, stroke: 1.5, glyphWidth: 1.4 },
+  // A little smaller since round 132 (John: "The Home icon can be a little smaller").
+  home: { r: 7.5, stroke: 1.4, shadowSigma: 2, shadowAlpha: 0.25, glyphWidth: 1.25 },
+  altHome: { r: 6, stroke: 1.4, glyphWidth: 1.25 },
   origin: { r: 3.6, stroke: 1.6 },
   destination: { r: 4.5, stroke: 2.2 },
   stop: { r: 3.2, stroke: 1.6 },
@@ -132,8 +134,8 @@ export interface LabelFont {
 
 /** Label type per mark (prototype: ends 700 12.5, others 600 11.5, home 700 12.5, alt home 600 11). */
 export const LABEL_FONT: Record<MarkKind, LabelFont> = {
-  home: { weight: 700, size: 12.5, halo: 3.5 },
-  altHome: { weight: 600, size: 11, halo: 3 },
+  home: { weight: 700, size: 11.5, halo: 3.5 },
+  altHome: { weight: 600, size: 10.5, halo: 3 },
   origin: { weight: 700, size: 12.5, halo: 3.5 },
   destination: { weight: 700, size: 12.5, halo: 3.5 },
   stop: { weight: 600, size: 11.5, halo: 3.5 },
@@ -141,8 +143,8 @@ export const LABEL_FONT: Record<MarkKind, LabelFont> = {
 
 /** Gap from the mark center to the label's near edge (prototype: home 14, alt home 11, others 8). */
 export const LABEL_GAP: Record<MarkKind, number> = {
-  home: 14,
-  altHome: 11,
+  home: 12,
+  altHome: 10,
   origin: 8,
   destination: 8,
   stop: 8,
@@ -154,8 +156,8 @@ export const LABEL_GAP: Record<MarkKind, number> = {
  * drop below (+9) when that spot is taken.
  */
 export const LABEL_DY: Record<MarkKind, readonly number[]> = {
-  home: [0, -12, 12],
-  altHome: [0, -10, 10],
+  home: [0, -11, 11],
+  altHome: [0, -9, 9],
   origin: [-6, 9],
   destination: [-6, 9],
   stop: [-6, 9],

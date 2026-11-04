@@ -5,9 +5,64 @@ import { fonts, radius, textStyles, useColors } from '@/theme';
 import { Icon } from './Icon';
 
 /**
- * Airline badge: pill + plane glyph + IATA code (DECISIONS.md: no logos).
- * One neutral accent color for every airline so it never reads as a tier; the flight number in mono
- * (round 120, the Clean look).
+ * Each airline's mark (round 132, John: "can we not use airline logos? Instead of WN, UA, DL, AA"): a
+ * small tail in the airline's own colors with a plane on it, so you know the airline at a glance
+ * without reading a code. These are our own simple marks in each airline's colors, not their logos,
+ * which are trademarks. The name is still spoken. An airline we don't know shows its code as before.
+ */
+export interface AirlineMarkStyle {
+  name: string;
+  /** The tail's color, the stripe across its corner, and the plane's color. */
+  tail: string;
+  stripe: string;
+  glyph: string;
+}
+
+export const AIRLINE_MARKS: Record<string, AirlineMarkStyle> = {
+  AA: { name: 'American', tail: '#0078D2', stripe: '#C30019', glyph: '#FFFFFF' },
+  AC: { name: 'Air Canada', tail: '#1A1A1A', stripe: '#F01428', glyph: '#FFFFFF' },
+  AS: { name: 'Alaska', tail: '#01426A', stripe: '#48A9C5', glyph: '#FFFFFF' },
+  B6: { name: 'JetBlue', tail: '#003876', stripe: '#1E90FF', glyph: '#FFFFFF' },
+  DL: { name: 'Delta', tail: '#003366', stripe: '#C8102E', glyph: '#FFFFFF' },
+  F9: { name: 'Frontier', tail: '#248168', stripe: '#9BD3AE', glyph: '#FFFFFF' },
+  NK: { name: 'Spirit', tail: '#FFE500', stripe: '#1A1A1A', glyph: '#1A1A1A' },
+  UA: { name: 'United', tail: '#0033A0', stripe: '#6CACE4', glyph: '#FFFFFF' },
+  WN: { name: 'Southwest', tail: '#304CB2', stripe: '#FFBF27', glyph: '#FFFFFF' },
+};
+
+/** The airline's name for speech and labels, or its code when we don't know it. */
+export function airlineName(code: string): string {
+  return AIRLINE_MARKS[code]?.name ?? code;
+}
+
+/** The tail mark alone, `size` points square. */
+export function AirlineMark({ airline, size = 18 }: { airline: string; size?: number }) {
+  const m = AIRLINE_MARKS[airline];
+  if (!m) return null;
+  return (
+    <View
+      style={[styles.mark, { width: size, height: size, borderRadius: size * 0.28, backgroundColor: m.tail }]}
+      testID="airline-mark">
+      {/* A stripe across the lower corner, like a painted tail. */}
+      <View
+        style={[
+          styles.stripe,
+          { width: size * 1.6, height: size * 0.34, top: size * 0.72, left: -size * 0.1, backgroundColor: m.stripe },
+        ]}
+      />
+      <Icon
+        name="airplane"
+        size={size * 0.62}
+        tintColor={m.glyph}
+        fallback={<Text style={{ color: m.glyph, fontSize: size * 0.55, lineHeight: size * 0.7 }}>✈</Text>}
+      />
+    </View>
+  );
+}
+
+/**
+ * Airline badge: the airline's mark and the flight number in mono (round 132). Unknown airlines keep
+ * the earlier neutral pill with a plane and the code.
  */
 export function AirlinePill({
   airline,
@@ -21,16 +76,25 @@ export function AirlinePill({
 }) {
   const c = useColors();
   const text = large ? textStyles.bodyStrong : textStyles.small;
+  const known = !!AIRLINE_MARKS[airline];
   return (
-    <View style={[styles.pill, { backgroundColor: c.accentSoft }]}>
-      <Icon
-        name="airplane"
-        size={large ? 13 : 11}
-        tintColor={c.accent}
-        fallback={<Text style={[textStyles.small, { color: c.accent }]}>✈</Text>}
-      />
+    <View
+      style={[styles.pill, { backgroundColor: c.accentSoft }]}
+      accessible
+      accessibilityLabel={`${airlineName(airline)} ${flightNumber}`}
+      testID="airline-pill">
+      {known ? (
+        <AirlineMark airline={airline} size={large ? 20 : 16} />
+      ) : (
+        <Icon
+          name="airplane"
+          size={large ? 13 : 11}
+          tintColor={c.accent}
+          fallback={<Text style={[textStyles.small, { color: c.accent }]}>✈</Text>}
+        />
+      )}
       <Text style={[text, { fontFamily: fonts.mono, color: c.accent }]}>
-        {airline} {flightNumber}
+        {known ? flightNumber : `${airline} ${flightNumber}`}
       </Text>
     </View>
   );
@@ -40,9 +104,12 @@ const styles = StyleSheet.create({
   pill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 8,
+    gap: 5,
+    paddingLeft: 3,
+    paddingRight: 8,
     paddingVertical: 2,
     borderRadius: radius.sm - 2,
   },
+  mark: { overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
+  stripe: { position: 'absolute', transform: [{ rotate: '-28deg' }] },
 });

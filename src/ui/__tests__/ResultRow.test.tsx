@@ -194,9 +194,13 @@ describe('ResultRow', () => {
     expect(timeline[0].findAll((n) => n.props.testID === 'leg-dot' && typeof n.type === 'string').length).toBe(2);
     const chips = r!.root.findAll((n) => n.props.testID === 'seat-summary' && typeof n.type === 'string');
     expect(chips.length).toBe(1);
-    // Each leg line leads with its own departure time.
+    // Each leg shows its own departure time over its airports, each in a pill (round 132, John).
     expect(all).toContain('8:00\u00a0AM');
-    expect(all).toContain('BNA\u00a0→\u00a0DEN');
+    const firstBox = r!.root.findAll((n) => n.props.testID === 'leg-box' && typeof n.type === 'string')[0];
+    const codes = firstBox
+      .findAll((n) => n.props.testID === 'leg-code' && typeof n.type === 'string')
+      .flatMap((n) => n.findAll((x) => typeof x.props.children === 'string').map((x) => x.props.children as string));
+    expect([...new Set(codes)]).toEqual(['BNA', 'DEN']);
   });
 
   it('connection label sits at the middle of the line between the dots, even when a leg wraps (John, 2026-11-01)', async () => {
@@ -243,12 +247,10 @@ describe('ResultRow', () => {
     expect(boxes).toHaveLength(2);
     const inBox = (b: (typeof boxes)[number]) =>
       b
-        .findAll(
-          (n) => typeof n.type === 'string' && (n.props.testID === 'leg-flight' || /→/.test([n.props.children].flat().join(''))),
-        )
+        .findAll((n) => typeof n.type === 'string' && (n.props.testID === 'leg-flight' || n.props.testID === 'leg-line'))
         .map((n) => (n.props.testID === 'leg-flight' ? 'flight' : 'time'))
         .filter((t, i, a) => a.indexOf(t) === i);
-    // Every box has the same order: times and airports, then the flight chip (John, 2026-11-02).
+    // Every box has the same order: the two ends (times over airports), then the flight chip (John, 2026-11-02).
     expect(inBox(boxes[0])).toEqual(['time', 'flight']);
     expect(inBox(boxes[1])).toEqual(['time', 'flight']);
     expect(r!.root.findAll((n) => n.props.testID === 'leg-dot' && typeof n.type === 'string')).toHaveLength(2);
@@ -466,9 +468,18 @@ describe('ResultRow', () => {
     const flat = group
       .findAll((n) => typeof n.type === 'string' && n.props.children != null)
       .map((n) => [n.props.children].flat().join(''));
-    const flightAt = flat.findIndex((t) => /AA\s?1/.test(t));
+    // The flight chip shows American's mark and the number, no code (round 132, John).
+    const flightAt = group
+      .findAll((n) => typeof n.type === 'string' && (n.props.testID === 'airline-pill' || n.props.children != null))
+      .findIndex((n) => n.props.testID === 'airline-pill');
+    expect(group.findAll((n) => n.props.testID === 'airline-mark' && typeof n.type === 'string').length).toBeGreaterThan(0);
+    expect(group.findAll((n) => n.props.accessibilityLabel === 'American 1' && typeof n.type === 'string').length).toBe(1);
     expect(flightAt).toBeGreaterThanOrEqual(0);
-    expect(flightAt).toBeLessThan(flat.indexOf('Delayed 25m'));
+    const tagIndex = group
+      .findAll((n) => typeof n.type === 'string' && (n.props.testID === 'airline-pill' || n.props.children != null))
+      .findIndex((n) => [n.props.children].flat().join('') === 'Delayed 25m');
+    expect(flat).toContain('Delayed 25m');
+    expect(flightAt).toBeLessThan(tagIndex);
   });
 
   it('canceled: tag word and spoken text; departed: gray tag', async () => {
@@ -518,11 +529,10 @@ describe('ResultRow', () => {
         <ResultRow itinerary={it} selected large now={NOW} onPress={jest.fn()} status={statusFor(it, live(it, 'canceled'))} />,
       );
     });
-    // The leg keeps its scheduled times, struck; the top times go grey, not struck (on the pass's navy
-    // stub, its own grey).
+    // The leg keeps its scheduled times, both ends struck; the top times go grey, not struck (on the
+    // pass's navy stub, its own grey).
     const struck = struckTexts();
-    expect(struck).toHaveLength(1);
-    expect(struck[0].props.testID).toBe('leg-times');
+    expect(struck.map((n) => n.props.testID)).toEqual(['leg-clock', 'leg-arrive']);
     const top = r!.root.findAll((n) => n.props.testID === 'row-times-canceled' && typeof n.type === 'string')[0];
     expect(top.props.style).toEqual({ color: inkColors.light.muted });
     const after = r!.root.findAll((n) => n.props.testID === 'leg-timeline' && typeof n.type === 'string')[0];
@@ -532,7 +542,8 @@ describe('ResultRow', () => {
     expect(words).toContain('Canceled');
     expect(words).toContain('9:00\u00a0AM');
     expect(words).toContain('10:00\u00a0AM');
-    expect(words).toContain('BNA\u00a0→\u00a0DEN');
+    expect(words).toContain('BNA');
+    expect(words).toContain('DEN');
     // A canceled leg: the route chip says it can't be flown, not a seat chance (John, 2026-11-02).
     const chip = r!.root.findAll((n) => n.props.testID === 'seat-summary' && typeof n.type === 'string')[0];
     const chipWords = chip.findAll((n) => typeof n.props.children === 'string').map((n) => n.props.children as string);

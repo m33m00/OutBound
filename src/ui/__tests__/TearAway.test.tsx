@@ -7,7 +7,7 @@ import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 
 import { createMemoryProvider, searchItineraries, zonedToUtc, type Itinerary } from '@/engine';
 
-import { ResultRow, SEAT_CIRCLE_HINT } from '../ResultRow';
+import { ResultRow } from '../ResultRow';
 import { SaveRouteButton } from '../SaveRouteButton';
 import {
   CURL_MS,
@@ -21,6 +21,7 @@ import {
   LIFT_MS,
   RIP_MS,
   SETTLE_MS,
+  setMeshModuleForTests,
   TearAwayHost,
 } from '../TearAway';
 
@@ -55,6 +56,8 @@ describe('TearAway: the route card tears along its perforation when you save (ro
   beforeAll(async () => {
     route = await itinerary();
   });
+  beforeEach(() => setMeshModuleForTests(null));
+  afterAll(() => setMeshModuleForTests(undefined));
   afterEach(() => {
     act(() => r?.unmount());
     jest.restoreAllMocks();
@@ -258,9 +261,57 @@ describe('TearAway: the route card tears along its perforation when you save (ro
     expect(onPress).toHaveBeenCalled();
   });
 
-  it('the route card says how to read its seat circles (round 126, John)', async () => {
+  it('the route card no longer explains its seat circles under the legs; the Map key does (round 132, John)', async () => {
     await mount(false, false);
-    const hint = r!.root.findByProps({ testID: 'seat-circle-hint' });
-    expect(hint.findByType(Text).props.children).toBe(SEAT_CIRCLE_HINT);
+    expect(r!.root.findAllByProps({ testID: 'seat-circle-hint' })).toHaveLength(0);
+  });
+
+  describe('the paper tear (round 132, John: "the paper would pull back (arc) and tear")', () => {
+    const paperProps: { current: Record<string, unknown> | null } = { current: null };
+    const PaperStub = (props: Record<string, unknown>) => {
+      paperProps.current = props;
+      return <Text testID="paper-tear">paper</Text>;
+    };
+    function useMesh(image: unknown) {
+      const snapshotView = jest.fn(() => Promise.resolve(image));
+      setMeshModuleForTests({ TearMeshFlight: PaperStub, snapshotView } as unknown as Parameters<
+        typeof setMeshModuleForTests
+      >[0]);
+      jest.spyOn(globalThis, 'requestAnimationFrame').mockImplementation((cb) => {
+        cb(0);
+        return 0;
+      });
+      return snapshotView;
+    }
+
+    it('bends a picture of the real card: hides the card, tears it as paper, then settles the header back', async () => {
+      const snapshotView = useMesh({ picture: true });
+      const settle = jest.spyOn(Animated, 'timing');
+      await mount(false, false);
+      press();
+      await act(async () => {});
+      expect(snapshotView).toHaveBeenCalled();
+      expect(r!.root.findAllByProps({ testID: 'paper-tear' }).length).toBeGreaterThan(0);
+      // No sliced copy, and the real card hides while its picture tears.
+      expect(flying()).toHaveLength(0);
+      expect(cardOpacity()).toBe(0);
+      // The perforation sits at the header's bottom: 90 points down the card.
+      const geometry = paperProps.current!.geometry as { perf: number; width: number; height: number };
+      expect(geometry).toMatchObject({ perf: 90, width: 358, height: 300 });
+      act(() => (paperProps.current!.onDone as () => void)());
+      expect(r!.root.findAllByProps({ testID: 'paper-tear' })).toHaveLength(0);
+      expect(cardOpacity()).toBe(1);
+      expect(settle).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ toValue: 1, duration: SETTLE_MS }));
+    });
+
+    it('falls back to the sliced tear when the picture can’t be taken', async () => {
+      useMesh(null);
+      jest.spyOn(Animated, 'sequence').mockReturnValue({ start: jest.fn(), stop: jest.fn(), reset: jest.fn() });
+      await mount(false, false);
+      press();
+      await act(async () => {});
+      expect(r!.root.findAllByProps({ testID: 'paper-tear' })).toHaveLength(0);
+      expect(flying().length).toBeGreaterThan(0);
+    });
   });
 });

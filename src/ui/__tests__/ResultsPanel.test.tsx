@@ -57,14 +57,11 @@ describe('ResultsPanel', () => {
     });
     const view = r!.root.findAll((n) => n.props.testID === 'route-view' && typeof n.type === 'string')[0];
     const header = view.find((n) => n.props.accessibilityRole === 'header' && typeof n.type === 'string');
-    // The arrow is its own soft grey run inside the title (since round 117).
-    const flat = (n: unknown): string =>
-      typeof n === 'string'
-        ? n
-        : Array.isArray(n)
-          ? n.map(flat).join('')
-          : flat((n as { props: { children: unknown } }).props.children);
-    expect(flat(header.props.children)).toBe('BNA → LAX');
+    // The title is two airport pills, the route's own ends (round 132).
+    const codes = header
+      .findAll((n) => n.props.testID === 'route-end' && typeof n.type === 'string')
+      .map((n) => n.findAll((x) => typeof x.props.children === 'string')[0].props.children);
+    expect(codes).toEqual(['BNA', 'LAX']);
     expect(header.props.accessibilityLabel).toBe('BNA to LAX');
     expect(routeEnds({ legs: [] })).toBeNull();
     raf.mockRestore();
@@ -158,10 +155,11 @@ describe('ResultsPanel', () => {
     expect(onSelect).not.toHaveBeenCalled();
     act(() => count.props.onAccessibilityAction({ nativeEvent: { actionName: 'decrement' } }));
     expect(onSelect).toHaveBeenCalledWith(list[0].id);
-    // The market stays on one line and shrinks rather than wrapping; back is a bare chevron (round 122).
+    // The market is two airport pills with a plane between (round 132, John); back is a bare chevron (round 122).
     const title = r!.root.findAll((n) => n.props.testID === 'route-title' && typeof n.type === 'string')[0];
-    expect(title.props.numberOfLines).toBe(1);
-    expect(title.props.adjustsFontSizeToFit).toBe(true);
+    expect(title.props.accessibilityRole).toBe('header');
+    const ends = title.findAll((n) => n.props.testID === 'route-end' && typeof n.type === 'string');
+    expect(ends).toHaveLength(2);
     const bar = r!.root.findAll((n) => n.props.testID === 'route-bar' && typeof n.type === 'string')[0];
     const barTexts = bar.findAll((n) => typeof n.props.children === 'string').map((n) => n.props.children);
     expect(barTexts).not.toContain('Routes');

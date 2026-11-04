@@ -65,6 +65,8 @@ export interface RouteLine {
 export interface MapAirport {
   code: string;
   coord: LonLat;
+  /** Where it is in words ("Dallas, TX"); a home pin says this instead of its codes (round 132). */
+  place?: string;
 }
 
 /** Disruption level shown on an airport (DECISIONS.md "Weather"). */

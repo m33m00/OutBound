@@ -139,7 +139,7 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
   }, [pinNow, p.selectedId]);
   // VoiceOver follows the panel (design round 29): opening or flipping a route lands on its
   // title, and coming back lands on the list's title, instead of staying on a button that's gone.
-  const routeTitleRef = useRef<ComponentRef<typeof Text>>(null);
+  const routeTitleRef = useRef<ComponentRef<typeof View>>(null);
   const listTitleRef = useRef<ComponentRef<typeof Text>>(null);
   const shownRoute = p.state.status === 'done' ? p.selectedId : null;
   const lastRoute = useRef(shownRoute);
@@ -346,17 +346,17 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
               onLayout={(e) => setBarH(e.nativeEvent.layout.height)}
               testID="route-bar">
               <BackButton label="" onPress={() => p.onSelect(focused.id)} accessibilityLabel="Back to all routes" />
-              <Text
+              {/* The market as two airport pills with a plane between, not a line of text (round 132,
+                  John: "Same with displaying the mark at the top of the card next to the page selector"). */}
+              <View
                 ref={routeTitleRef}
-                style={[textStyles.routeTitle, styles.routeTitle, { color: c.text }]}
+                style={styles.routeTitle}
+                accessible
                 accessibilityRole="header"
                 accessibilityLabel={focusSpoken}
-                numberOfLines={1}
-                adjustsFontSizeToFit
-                minimumFontScale={0.6}
                 testID="route-title">
-                {softArrows(focusTitle, c.faint)}
-              </Text>
+                <RouteEnds from={ends?.from ?? request.origin} to={ends?.to ?? request.destination} />
+              </View>
               <View style={styles.pager}>
                 <StepArrow dir="prev" onPress={step(focusIndex - 1)} />
                 {/* VoiceOver: swipe up or down here to flip routes (the arrows stay for Voice Control). */}
@@ -490,6 +490,29 @@ export const PULL_DOWN_VELOCITY = 1;
  * A hard pull down at the top of a list: dragged well past the top (iOS bounce), or
  * flicked down fast while already at the top. A pull further down the list just scrolls.
  */
+/** The route bar's market: two airport pills joined by a short line with a plane (round 132). */
+function RouteEnds({ from, to }: { from: string; to: string }) {
+  const c = useColors();
+  const pill = (code: string) => (
+    <View style={[styles.endPill, { backgroundColor: c.accentSoft }]} testID="route-end">
+      <Text style={[styles.endCode, { color: c.accent }]} maxFontSizeMultiplier={1.3}>
+        {code}
+      </Text>
+    </View>
+  );
+  return (
+    <View style={styles.routeEnds}>
+      {pill(from)}
+      <View style={styles.routeEndsTrack}>
+        <View style={[styles.routeEndsLine, { backgroundColor: c.line2 }]} />
+        <Icon name="airplane" size={12} tintColor={c.faint} fallback={<Text style={{ color: c.faint }}>✈</Text>} />
+        <View style={[styles.routeEndsLine, { backgroundColor: c.line2 }]} />
+      </View>
+      {pill(to)}
+    </View>
+  );
+}
+
 /** "DFW → LGA" with soft grey arrows so the codes lead (round 120, the Clean look). */
 function softArrows(title: string, accent: string) {
   return title.split(' → ').flatMap((part, i) =>
@@ -614,6 +637,11 @@ const styles = StyleSheet.create({
   // The route view's bar: back, the market on the left taking the room, the pager at the end.
   routeBar: { flexDirection: 'row', alignItems: 'center', gap: spacing.group, paddingTop: 2 },
   routeTitle: { flex: 1, minWidth: 0 },
+  routeEnds: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  endPill: { borderRadius: 8, paddingHorizontal: 9, paddingVertical: 3 },
+  endCode: { fontFamily: fonts.mono, fontSize: 16, lineHeight: 21, letterSpacing: 0.5 },
+  routeEndsTrack: { flexDirection: 'row', alignItems: 'center', gap: 4, width: 64 },
+  routeEndsLine: { flex: 1, height: 1 },
   filters: { paddingHorizontal: spacing.section },
   sep: { height: spacing.group },
   state: { paddingVertical: spacing.page, gap: spacing.section, alignItems: 'flex-start' },

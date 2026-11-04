@@ -1,4 +1,4 @@
-import { AIRPORTS, AREA_TABLE, areaFor, endAirports, transferMin } from '../airports';
+import { AIRPORTS, AREA_TABLE, areaFor, endAirports, placeLabel, transferMin } from '../airports';
 
 const known = (...codes: string[]) => Object.fromEntries(codes.map((c) => [c, true]));
 
@@ -52,5 +52,24 @@ describe('endAirports', () => {
       ['DAL', 35],
     ]);
     expect(endAirports('BNA', true)).toEqual([['BNA', 0]]);
+  });
+});
+
+describe('placeLabel (round 132, John: "city, state or city, country abbreviation")', () => {
+  it('names a US airport by city and state, a foreign one by city and country, and falls back to the code', () => {
+    expect(placeLabel('DFW')).toBe('Dallas, TX');
+    expect(placeLabel('DAL')).toBe('Dallas, TX');
+    expect(placeLabel('LGA')).toBe('New York, NY');
+    const LHR = {
+      code: 'LHR',
+      name: 'London Heathrow',
+      lon: -0.45,
+      lat: 51.47,
+      tz: 'Europe/London',
+      city: 'London',
+      country: 'GB',
+    };
+    expect(placeLabel('LHR', { LHR })).toBe('London, GB');
+    expect(placeLabel('ZZZ')).toBe('ZZZ');
   });
 });

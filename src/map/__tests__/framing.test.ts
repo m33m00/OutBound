@@ -12,8 +12,8 @@ describe('routeFrameTarget (auto camera)', () => {
   });
 
   it('home view sits closer than the whole-globe fit and the round 99 1.8 (John, 2026-11-02)', () => {
-    expect(HOME_ZOOM).toBeGreaterThan(1.8);
-    expect(HOME_ZOOM).toBeLessThanOrEqual(3);
+    expect(HOME_ZOOM).toBeGreaterThan(2.4);
+    expect(HOME_ZOOM).toBeLessThanOrEqual(4);
     const vp: Viewport = { width: 390, height: 760, insets: normalizeInsets({ top: 8, right: 56, bottom: 380 }) };
     const home = cameraForTarget(routeFrameTarget([], null), vp, null);
     const whole = cameraForTarget({ kind: 'center', center: DEFAULT_CENTER }, vp, null);

@@ -7,21 +7,33 @@ import type { Airport } from './types';
 export const AIRPORTS: Record<string, Airport> = Object.fromEntries(
   (
     [
-      ['ATL', 'Atlanta', -84.4277, 33.6407, 'America/New_York'],
-      ['BNA', 'Nashville', -86.6774, 36.1263, 'America/Chicago'],
-      ['CLT', 'Charlotte', -80.9431, 35.214, 'America/New_York'],
-      ['DAL', 'Dallas Love Field', -96.8518, 32.8471, 'America/Chicago'],
-      ['DEN', 'Denver', -104.6737, 39.8561, 'America/Denver'],
-      ['DFW', 'Dallas/Fort Worth', -97.0403, 32.8998, 'America/Chicago'],
-      ['LAX', 'Los Angeles', -118.4085, 33.9416, 'America/Los_Angeles'],
-      ['LGA', 'New York LaGuardia', -73.874, 40.7769, 'America/New_York'],
-      ['MIA', 'Miami', -80.287, 25.7959, 'America/New_York'],
-      ['ORD', "Chicago O'Hare", -87.9073, 41.9742, 'America/Chicago'],
-      ['PHX', 'Phoenix', -112.0116, 33.4342, 'America/Phoenix'],
-      ['SEA', 'Seattle', -122.3088, 47.4502, 'America/Los_Angeles'],
+      ['ATL', 'Atlanta', -84.4277, 33.6407, 'America/New_York', 'Atlanta', 'GA', 'US'],
+      ['BNA', 'Nashville', -86.6774, 36.1263, 'America/Chicago', 'Nashville', 'TN', 'US'],
+      ['CLT', 'Charlotte', -80.9431, 35.214, 'America/New_York', 'Charlotte', 'NC', 'US'],
+      ['DAL', 'Dallas Love Field', -96.8518, 32.8471, 'America/Chicago', 'Dallas', 'TX', 'US'],
+      ['DEN', 'Denver', -104.6737, 39.8561, 'America/Denver', 'Denver', 'CO', 'US'],
+      ['DFW', 'Dallas/Fort Worth', -97.0403, 32.8998, 'America/Chicago', 'Dallas', 'TX', 'US'],
+      ['LAX', 'Los Angeles', -118.4085, 33.9416, 'America/Los_Angeles', 'Los Angeles', 'CA', 'US'],
+      ['LGA', 'New York LaGuardia', -73.874, 40.7769, 'America/New_York', 'New York', 'NY', 'US'],
+      ['MIA', 'Miami', -80.287, 25.7959, 'America/New_York', 'Miami', 'FL', 'US'],
+      ['ORD', "Chicago O'Hare", -87.9073, 41.9742, 'America/Chicago', 'Chicago', 'IL', 'US'],
+      ['PHX', 'Phoenix', -112.0116, 33.4342, 'America/Phoenix', 'Phoenix', 'AZ', 'US'],
+      ['SEA', 'Seattle', -122.3088, 47.4502, 'America/Los_Angeles', 'Seattle', 'WA', 'US'],
     ] as const
-  ).map(([code, name, lon, lat, tz]) => [code, { code, name, lon, lat, tz }]),
+  ).map(([code, name, lon, lat, tz, city, region, country]) => [code, { code, name, lon, lat, tz, city, region, country }]),
 );
+
+/**
+ * Where an airport is, the way a person says it: "Dallas, TX" in the US, and city plus country code
+ * elsewhere ("London, GB"). Falls back to the code when the table doesn't know the city (round 132,
+ * John: the home pin "should also say the city, state or city, country abbreviation").
+ */
+export function placeLabel(code: string, airports: Readonly<Record<string, Airport>> = AIRPORTS): string {
+  const a = airports[code];
+  if (!a?.city) return code;
+  const tail = !a.country || a.country === 'US' ? a.region : a.country;
+  return tail ? `${a.city}, ${tail}` : a.city;
+}
 
 /**
  * Airport areas (Q-048): IATA metropolitan city groupings as major airlines

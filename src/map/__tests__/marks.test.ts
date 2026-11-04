@@ -154,11 +154,11 @@ describe('label placement', () => {
     expect(p.side).toBe('right');
   });
 
-  it('home labels sit level with the pin, 14pt out', () => {
+  it('home labels sit level with the (smaller, round 132) pin, 12pt out', () => {
     const [p] = placeLabels([req('H', 100, 200, 'home')], bounds);
-    expect(p).toMatchObject({ side: 'right', x: 114, y: 200, dy: 0 });
+    expect(p).toMatchObject({ side: 'right', x: 112, y: 200, dy: 0 });
     const [q] = placeLabels([req('H', 300, 200, 'home')], bounds);
-    expect(q).toMatchObject({ side: 'left', x: 300 - 14 - 24 });
+    expect(q).toMatchObject({ side: 'left', x: 300 - 12 - 24 });
   });
 
   it('nudges down when the spot is taken', () => {
@@ -327,5 +327,13 @@ describe('accessibility summary', () => {
       'Homes BNA, DEN. Destinations LAX, JFK.',
     );
     expect(marksSummary({})).toBe('');
+  });
+});
+
+describe('home pin label (round 132, John)', () => {
+  it('says where home is instead of its codes, and keeps codes when the place is unknown', () => {
+    const at = (code: string, place?: string) => ({ code, coord: [-97, 33] as [number, number], place });
+    expect(markSet({ homeAirports: [at('DFW', 'Dallas, TX'), at('DAL', 'Dallas, TX')] })[0].label).toBe('Dallas, TX');
+    expect(markSet({ homeAirports: [at('DFW'), at('DAL')] })[0].label).toBe('DFW/DAL');
   });
 });

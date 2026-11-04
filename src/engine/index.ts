@@ -2,7 +2,7 @@
  * Itinerary engine public API (backlog item 1). Pure TypeScript; reads
  * flights only through a FlightDataProvider.
  */
-export { AIRPORTS, AREA_TABLE, areaFor, endAirports, transferMin, type Area } from './airports';
+export { AIRPORTS, AREA_TABLE, areaFor, endAirports, placeLabel, transferMin, type Area } from './airports';
 export { createMemoryProvider } from './memoryProvider';
 export { createSampleProvider } from './sample/sampleProvider';
 export {
