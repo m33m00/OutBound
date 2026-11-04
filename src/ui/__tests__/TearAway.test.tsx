@@ -186,7 +186,7 @@ describe('TearAway: the route card tears along its perforation when you save (ro
     expect(flying().length).toBeGreaterThan(0);
     const piece = flying()[0];
     // The copy is the header itself: same times, a torn edge, and the bookmark already filled.
-    expect(piece.findAllByProps({ testID: 'headline-row' }).length).toBeGreaterThan(0);
+    expect(piece.findAllByProps({ testID: 'row-times' }).length).toBeGreaterThan(0);
     expect(piece.findAllByProps({ testID: 'tear-edge' }).length).toBeGreaterThan(0);
     expect(piece.findAll((n) => n.props.name === 'bookmark.fill').length).toBeGreaterThan(0);
     expect(r!.root.findByProps({ testID: 'tear-away-layer' }).props.pointerEvents).toBe('none');

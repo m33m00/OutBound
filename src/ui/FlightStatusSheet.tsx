@@ -15,7 +15,7 @@ import {
   type ReportWindow,
 } from '@/requests/requests';
 import { shortDate } from '@/search/dates';
-import { formatAge, forSpeech, seatCounts, seatPair, seatSourceText, seatText, SHOW_SEAT_AGE, TIER_WORD } from '@/search/format';
+import { formatAge, forSpeech, seatCounts, seatPair, seatSourceText, seatText, SHOW_SEAT_AGE } from '@/search/format';
 import { radius, spacing, textStyles, useColors } from '@/theme';
 
 import { Button, PillButton } from './Buttons';
@@ -307,7 +307,7 @@ export function FlightStatusSheet({ flight, visible, now, onClose, liveOptions, 
 
 /**
  * What search knows about this flight's seats: the chance word with both numbers, and how
- * old they are ("Likely · 20 seats · 7 listed", "Reported 5m ago"). Typical loads stay neutral.
+ * old they are ("20 seats · 7 listed" in its seat color, "Reported 5m ago"). Typical loads stay neutral.
  */
 function SearchSeats({ seats, now }: { seats: LegSeats; now: number }) {
   const c = useColors();
@@ -322,13 +322,12 @@ function SearchSeats({ seats, now }: { seats: LegSeats; now: number }) {
   const counts = seatCounts(seats);
   const age = seatSourceText(seats, now);
   return (
-    <View
-      accessible
-      accessibilityLabel={forSpeech([`${TIER_WORD[seats.tier]} · ${counts}`, age].filter(Boolean).join('. '))}
-      testID="search-seats">
+    <View accessible accessibilityLabel={forSpeech([counts, age].filter(Boolean).join('. '))} testID="search-seats">
       <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, { color: c.text }]}>
-        <Text style={[textStyles.bodyStrong, { color: c[TIER_FG[seats.tier]] }]}>{TIER_WORD[seats.tier]}</Text>
-        <Divided text={` · ${counts}`} />
+        {/* The numbers in their seat color, no chance word (round 140). */}
+        <Text style={[textStyles.bodyStrong, { color: c[TIER_FG[seats.tier]] }]}>
+          <Divided text={counts} color={c[TIER_FG[seats.tier]]} />
+        </Text>
       </Text>
       {age && SHOW_SEAT_AGE ? (
         <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>
@@ -386,11 +385,9 @@ function LoadCard({
           {/* Amber means you; the tier word keeps its tier color. */}
           <Text style={{ color: c.youText }}>You reported </Text>
           <Text lineBreakStrategyIOS="push-out" style={[textStyles.bodyStrong, { color: c[TIER_FG[tier]] }]}>
-            {TIER_WORD[tier]}
+            <Divided text={seatPair(yourReport.open, yourReport.listed)} color={c[TIER_FG[tier]]} />
           </Text>
-          <Divided
-            text={` · ${seatPair(yourReport.open, yourReport.listed)}${SHOW_SEAT_AGE ? ` · ${formatAge(yourReport.at, now)}` : ''}`}
-          />
+          {SHOW_SEAT_AGE ? <Divided text={` · ${formatAge(yourReport.at, now)}`} /> : null}
         </Text>
       ) : null}
       {askAnswer && answerTierWord ? (
@@ -400,11 +397,9 @@ function LoadCard({
           accessibilityLabel={forSpeech(`Your request was answered: ${answerText(askAnswer)} · ${formatAge(askAnswer.at, now)}`)}>
           {'Answered: '}
           <Text lineBreakStrategyIOS="push-out" style={[textStyles.bodyStrong, { color: c[TIER_FG[answerTierWord]] }]}>
-            {TIER_WORD[answerTierWord]}
+            <Divided text={seatPair(askAnswer.open, askAnswer.listed)} color={c[TIER_FG[answerTierWord]]} />
           </Text>
-          <Divided
-            text={` · ${seatPair(askAnswer.open, askAnswer.listed)}${SHOW_SEAT_AGE ? ` · ${formatAge(askAnswer.at, now)}` : ''}`}
-          />
+          {SHOW_SEAT_AGE ? <Divided text={` · ${formatAge(askAnswer.at, now)}`} /> : null}
         </Text>
       ) : null}
       {/* Report and Ask side by side (design audit, round 67); stacked at big text. */}

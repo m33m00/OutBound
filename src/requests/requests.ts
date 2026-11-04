@@ -11,7 +11,7 @@
 import { addDays, AIRPORTS, localDate, tierForNetSeats, zonedToUtc, type Flight, type SeatTier } from '@/engine';
 import { sampleAircraft } from '@/engine/aircraft';
 import { SAMPLE_SCHEDULE } from '@/engine/sample/schedule';
-import { formatAge, formatTime, seatPair, TIER_WORD } from '@/search/format';
+import { formatAge, formatTime, seatPair } from '@/search/format';
 
 /** Max open asks per person (DECISIONS.md). */
 export const MAX_OPEN_REQUESTS = 5;
@@ -124,8 +124,9 @@ export function departsText(f: Flight, now: number, atUtc: number = f.departUtc)
   return `Departs ${day}${formatTime(atUtc, tz)}`;
 }
 
-/** "Likely · 18 seats · 3 listed": tier word with both numbers (Q-065; no "open", round 138). */
-export const answerText = (a: LoadAnswer) => `${TIER_WORD[answerTier(a)]} · ${seatPair(a.open, a.listed)}`;
+/** "18 seats · 3 listed": both numbers (Q-065; no "open", round 138; no tier word, round 140). */
+// Just the numbers since round 140; the color says the rest.
+export const answerText = (a: LoadAnswer) => seatPair(a.open, a.listed);
 
 /** Second line of a request row. */
 export function requestDetail(r: LoadRequest, now: number): string {

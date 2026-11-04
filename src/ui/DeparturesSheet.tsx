@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AIRPORTS, type Flight } from '@/engine';
 import { answerText, answerTier, flightKey, type LoadAnswer } from '@/requests/requests';
-import { formatAge, formatTime, forSpeech, seatPair, TIER_WORD, SHOW_SEAT_AGE } from '@/search/format';
+import { formatAge, formatTime, forSpeech, seatPair, SHOW_SEAT_AGE } from '@/search/format';
 import { minTapTarget, spacing, textStyles, useColors } from '@/theme';
 
 import { Icon } from './Icon';
@@ -83,10 +83,10 @@ export function DeparturesSheet({ code, visible, flights, now, reportFor, onRepo
           {yours && tier ? (
             <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.text }]}>
               <Text style={{ color: c.youText }}>You reported </Text>
-              <Text style={{ color: c[TIER_FG[tier]], fontFamily: textStyles.bodyStrong.fontFamily }}>{TIER_WORD[tier]}</Text>
-              <Divided
-                text={` · ${seatPair(yours.open, yours.listed)}${SHOW_SEAT_AGE ? ` · ${formatAge(yours.at, now)}` : ''}`}
-              />
+              <Text style={{ color: c[TIER_FG[tier]], fontFamily: textStyles.bodyStrong.fontFamily }}>
+                <Divided text={seatPair(yours.open, yours.listed)} color={c[TIER_FG[tier]]} />
+              </Text>
+              {SHOW_SEAT_AGE ? <Divided text={` · ${formatAge(yours.at, now)}`} /> : null}
             </Text>
           ) : (
             <Text

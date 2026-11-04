@@ -381,3 +381,15 @@ John: "Pulling back my direction and tearing it horizontally or at a diagonal is
 - One look per kind: primary is filled blue with white words; secondary buttons and soft pills are the blue tint with blue words (secondary used to be gray with black words); links are blue words; selected chips and segments are filled blue. No outlined buttons (Leave By's Use Location and Open Settings, the location card's Not Now, and Undo all use the tint).
 - Off things you can't tap: the empty-state and at-airport icon tiles (gray tile, gray icon) and their bullet dots, the Leave By card's background (gray box; the car stays blue), the location card (white card with a hairline), the loading spinner, the saved mark on result rows, the mini route rings and the map's origin dot and destination ring (text ink; the map key matches). Still blue as "where you are": the current route dot and the picked card's outline. Amber stays for "you" only; seat, delay, weather and time colors unchanged.
 - Middle dots: the round 138 strings ("20 seats · 17 listed", the sheet subtitle with the aircraft) go through the round 124 dividers, so they show thin bars on screen; nothing new shows a dot.
+
+## Round 140: seat color on the route line, no chance words (2026-11-04)
+
+John: "Can the route lines be colored with a small label centered above the route line with the availability in the same color?", "Like each leg is colored on the route line with a small label in between each leg", "We don't need the Long Shot, Likely group names anymore", "Just color and seat availability. Let the user decide on the likelihood".
+
+- The results row's mini route line is drawn one stretch per leg, each in that leg's seat color. Over the middle of each stretch sits that leg's seat numbers ("40/2", the same form as the seat circles) in the matching text color. Every leg gets its label, even when two match. Labels shrink to fit a short leg on one line.
+- Stop codes moved under their dots so the labels have the space above the line.
+- Gray stretch: typical day or no seat data, a departed route, or a canceled leg.
+- No chance words anywhere: the row's top-right word, the route card's chance pill, VoiceOver's "Chances:", the flight sheet's seat line, your report, an answered ask, the departures list and the report sheet now show the numbers in their seat color instead.
+- The colored left edge on the row is gone: the route line carries the color now. A full route keeps its red outline; a canceled route keeps its "can't be flown as listed" chip.
+- Map key: "Line color is seats left after the list" with rows 50+ seats, 15 to 49, 6 to 14, 1 to 5, No seats (thresholds unchanged from Q-074). Folded rows read like "15 to 49 seats, reported".
+- "At risk" stays: it's about connection time, not seats.

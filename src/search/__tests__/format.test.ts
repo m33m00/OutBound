@@ -8,7 +8,6 @@ import {
   nearbyNotes,
   neutralSeatText,
   routeSeatAge,
-  routeSeatSummary,
   rowAccessibilityLabel,
   rowTimes,
   seatSourceText,
@@ -73,12 +72,12 @@ describe('time and duration', () => {
 });
 
 describe('seatText', () => {
-  it('always pairs the tier word with the number and age', () => {
-    expect(seatText(seats({ asOf: NOW - 12 * 60_000 }), NOW)).toBe('Likely · 22 seats · reported 12m ago');
-    expect(seatText(seats({ source: 'estimate', tier: 'wide', netSeats: 60 }), NOW)).toBe('Easy · 60 seats · est. just now');
+  it('shows the number and age with no chance word (round 140, John)', () => {
+    expect(seatText(seats({ asOf: NOW - 12 * 60_000 }), NOW)).toBe('22 seats · reported 12m ago');
+    expect(seatText(seats({ source: 'estimate', tier: 'wide', netSeats: 60 }), NOW)).toBe('60 seats · est. just now');
   });
   it('says Full with no open seats', () => {
-    expect(seatText(seats({ tier: 'full', netSeats: -3 }), NOW)).toBe('Full · no seats left · reported just now');
+    expect(seatText(seats({ tier: 'full', netSeats: -3 }), NOW)).toBe('no seats left · reported just now');
   });
   it('keeps typical loads neutral (no tier word)', () => {
     expect(seatText(seats({ source: 'typical', tier: 'unknown', netSeats: 30 }), NOW)).toBe('30 seats estimated');
@@ -88,36 +87,12 @@ describe('seatText', () => {
   });
 });
 
-describe('seat summary (Q-059)', () => {
-  const NOW = Date.UTC(2026, 9, 19, 12);
-  const seats = (p: Partial<LegSeats>): LegSeats => ({ source: 'reported', tier: 'good', netSeats: 8, asOf: NOW, ...p });
-  const route = (legs: LegSeats[], tier: LegSeats['tier']) =>
-    ({ tier, legs: legs.map((s) => ({ seats: s })) }) as unknown as Parameters<typeof routeSeatSummary>[0];
-
-  it('is just the route chance word; the numbers live in the flight sheet (John, 2026-10-31)', () => {
-    expect(routeSeatSummary(route([seats({ tier: 'good', netSeats: 9 }), seats({ tier: 'tight', netSeats: 2 })], 'tight'))).toBe(
-      'Long\u00a0shot',
-    );
-    expect(routeSeatSummary(route([seats({ tier: 'full', netSeats: -3 })], 'full'))).toBe('Full');
-  });
-
-  it('stays off when no leg has reported or estimated seats', () => {
-    expect(routeSeatSummary(route([seats({ source: 'typical', tier: 'unknown', netSeats: 12 })], 'unknown'))).toBeNull();
-  });
-
-  it('says where a number came from and its age', () => {
-    expect(seatSourceText(seats({}), NOW)).toBe('Reported just now');
-    expect(seatSourceText(seats({ source: 'estimate', asOf: NOW - 2 * 3_600_000 }), NOW)).toBe('Est. 2h ago');
-    expect(seatSourceText(seats({ source: 'typical' }), NOW)).toBeNull();
-  });
-});
-
 describe('slim row seat and stop text (design round 22)', () => {
   const NOW = Date.UTC(2026, 9, 19, 12);
   const seats = (p: Partial<LegSeats>): LegSeats => ({ source: 'reported', tier: 'good', netSeats: 8, asOf: NOW, ...p });
   const route = (legs: LegSeats[], tier: LegSeats['tier'], connections: { airport: string; layoverMin: number }[] = []) =>
     ({ tier, stops: connections.length, connections, legs: legs.map((s) => ({ seats: s })) }) as unknown as Parameters<
-      typeof routeSeatSummary
+      typeof routeSeatAge
     >[0];
 
   it('gives the summary the age of the leg that sets it', () => {
@@ -185,7 +160,7 @@ describe('row text', () => {
     });
     expect(rowAccessibilityLabel(it, NOW)).toBe(
       // Spelled out so VoiceOver doesn't read "20m" as meters (design round 26).
-      'Departs 9:00 AM from BNA, arrives 11:20 AM at LAX, Nonstop, 4 hours 20 minutes, Chances: Likely, AA 1: Likely, 30 seats, 8 listed, reported 5 minutes ago',
+      'Departs 9:00 AM from BNA, arrives 11:20 AM at LAX, Nonstop, 4 hours 20 minutes, AA 1: 30 seats, 8 listed, reported 5 minutes ago',
     );
   });
 });

@@ -1,7 +1,7 @@
 /**
  * Line legend, shown only while a route is selected (DECISIONS.md "Map").
  * One combined list (Q-044): each row is a tier color drawn in that row's
- * line style, e.g. "Likely (Estimate)" with a dashed green swatch. Only the
+ * line style, e.g. "15 to 49 seats (Estimate)" with a dashed green swatch. Only the
  * tier/source combinations on the selected route are listed. Swatches are
  * line fills (allowed); all text is in the `text` token, never tier-colored.
  * Each row is one accessible element; the swatch is decorative. No weather
@@ -78,29 +78,32 @@ export interface RouteLegendProps {
   onToggle?: (open: boolean) => void;
 }
 
-/** What each chance word means, in plain words, for a first-time user (round 126, John). */
+/**
+ * What each color means: seats left after the standby list. Round 140 (John: "Just color and seat
+ * availability. Let the user decide on the likelihood") dropped the chance words it used to explain.
+ */
 export const TIER_MEANING: Record<SeatTier, string> = {
-  wide: 'lots of seats left',
-  good: 'good odds of a seat',
-  okay: 'could go either way',
-  tight: 'only a few seats left',
-  full: 'no seats left',
-  unknown: 'no seat info yet',
+  wide: '',
+  good: '',
+  okay: '',
+  tight: '',
+  full: '',
+  unknown: 'no count yet',
 };
 
-/** Each line's chance, in a couple of words, for the folded key's rows (round 137, John). */
+/** Each line's color as a seat range, for the folded key's rows (round 137, numbers since round 140). */
 export const TIER_SHORT: Record<SeatTier, string> = {
-  wide: 'Easy seat',
-  good: 'Likely seat',
-  okay: 'Maybe a seat',
-  tight: 'Long shot',
-  full: 'Full',
+  wide: '50+ seats',
+  good: '15 to 49 seats',
+  okay: '6 to 14 seats',
+  tight: '1 to 5 seats',
+  full: 'No seats',
   unknown: 'No seat info',
 };
 
 /**
- * One folded row: what the color says and what the line style says, e.g. "Likely seat, reported" or
- * "Long shot, estimated" (round 137, John: the key "just says Map Key with no other context").
+ * One folded row: what the color says and what the line style says, e.g. "15 to 49 seats, reported" or
+ * "1 to 5 seats, estimated" (round 137, John: the key "just says Map Key with no other context").
  */
 export function chipLine(entry: LegendEntry): string {
   if (entry.source === 'typical') return 'Typical day, estimated';
@@ -137,14 +140,14 @@ export const SEAT_CIRCLE_MEANING = '10 seats left, 4 people listed';
 /** The open key's rows, in order, for the card and for VoiceOver. */
 export function keyRows(route: RouteLine) {
   const rows = legendEntries(route);
-  // One color row per chance word on this route; typical loads and no data share the gray.
+  // One color row per seat range on this route; typical loads and no data share the gray.
   const tiers: SeatTier[] = [];
   for (const r of rows) if (!tiers.includes(r.tier)) tiers.push(r.tier);
   const colors = tiers.map((tier) => {
     const typicalOnly = rows.every((r) => r.tier !== tier || r.source === 'typical');
     return {
       tier,
-      label: typicalOnly ? 'Gray' : TIER_LABEL[tier].replace('\u00a0', ' '),
+      label: typicalOnly ? 'Gray' : TIER_LABEL[tier],
       meaning: typicalOnly ? 'a typical day, no live count' : TIER_MEANING[tier],
     };
   });
@@ -200,8 +203,8 @@ export function RouteLegend({ route, marks, badges, open: openProp, onToggle }: 
   const heading = [textStyles.small, styles.heading, { color: c.muted }];
   const spoken = [
     'Map key.',
-    'Line color is your chance of a seat:',
-    ...key.colors.map((r) => `${r.label}, ${r.meaning}.`),
+    'Line color is seats left after the list:',
+    ...key.colors.map((r) => `${r.label}${r.meaning ? `, ${r.meaning}` : ''}.`),
     ...key.lineStyles.map((s) => `${STYLE_MEANING[s]}.`),
     ...marked.map((m) => `${m.text}.`),
     `On the route card, a seat circle like ${SEAT_CIRCLE_EXAMPLE} means ${SEAT_CIRCLE_MEANING}.`,
@@ -216,13 +219,13 @@ export function RouteLegend({ route, marks, badges, open: openProp, onToggle }: 
       accessibilityState={{ expanded: true }}
       testID="route-legend">
       <Text style={[textStyles.small, styles.title, { color: c.text }]}>Map key</Text>
-      <Text style={heading}>Line color is your chance of a seat</Text>
+      <Text style={heading}>Line color is seats left after the list</Text>
       {key.colors.map((r) => (
         <View key={r.tier} style={styles.row} testID="legend-color">
           <SolidSwatch color={c[r.tier]} />
           <Text style={[textStyles.small, styles.label, styles.rowText, { color: c.muted }]}>
             <Text style={[styles.strong, { color: c.text }]}>{r.label}</Text>
-            {`  ${r.meaning}`}
+            {r.meaning ? `  ${r.meaning}` : ''}
           </Text>
         </View>
       ))}

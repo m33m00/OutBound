@@ -48,11 +48,7 @@ export function groupByPath(routes: readonly RouteLine[]): Map<string, string[]>
  * Routes to draw: the first MAP_ROUTE_LIMIT, plus the selected route if it is
  * further down the list (it was picked from the list, so it must show).
  */
-export function drawnRoutes(
-  routes: readonly RouteLine[],
-  selectedId: string | null,
-  limit = MAP_ROUTE_LIMIT,
-): RouteLine[] {
+export function drawnRoutes(routes: readonly RouteLine[], selectedId: string | null, limit = MAP_ROUTE_LIMIT): RouteLine[] {
   const top = routes.slice(0, limit);
   if (selectedId && !top.some((r) => r.id === selectedId)) {
     const sel = routes.find((r) => r.id === selectedId);
@@ -207,13 +203,14 @@ export function drawLegs(drawn: readonly RouteLine[], selectedId: string | null)
 /** Display order of tiers in the legend. */
 export const TIER_ORDER: readonly SeatTier[] = ['wide', 'good', 'okay', 'tight', 'full', 'unknown'];
 
+/** Each color as seats left after the standby list; no chance words since round 140 (John). */
 export const TIER_LABEL: Record<SeatTier, string> = {
-  wide: 'Easy',
-  good: 'Likely',
-  okay: 'Maybe',
-  tight: 'Long\u00a0shot',
-  full: 'Full',
-  unknown: 'Unknown',
+  wide: '50+ seats',
+  good: '15 to 49 seats',
+  okay: '6 to 14 seats',
+  tight: '1 to 5 seats',
+  full: 'No seats',
+  unknown: 'No seat info',
 };
 
 /** Row-text qualifier per line source (DECISIONS.md "Map", Q-044). */
@@ -235,9 +232,9 @@ export interface LegendEntry {
   source: LineSource;
   /** Swatch line style: solid = reported, dashed otherwise. */
   dashed: boolean;
-  /** Visible row text, e.g. "Likely (Estimate)". Typical loads carry no tier word. */
+  /** Visible row text, e.g. "15 to 49 seats (Estimate)". Typical loads carry no tier word. */
   label: string;
-  /** Full spoken label, e.g. "Likely, estimate, dashed line". */
+  /** Full spoken label, e.g. "15 to 49 seats, estimate, dashed line". */
   accessibilityLabel: string;
 }
 

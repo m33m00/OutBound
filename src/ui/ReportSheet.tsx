@@ -16,7 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type { Flight } from '@/engine';
 import { afterListText, answerTier, clampReport, departsText, MAX_LISTED, MAX_OPEN } from '@/requests/requests';
-import { forSpeech, TIER_WORD } from '@/search/format';
+import { forSpeech } from '@/search/format';
 import { fonts, minTapTarget, radius, spacing, textStyles, useColors, useColorSchemeName } from '@/theme';
 
 import { Button, PillButton } from './Buttons';
@@ -90,7 +90,7 @@ export function ReportForm({ flight, now, onCancel, onSubmit, focusTitle }: Repo
     setTouched(false);
   }, [flightId]);
   const tier = answerTier({ open, listed });
-  const tierLine = touched ? `${TIER_WORD[tier]} · ${afterListText(open, listed)}` : 'Set the numbers from the board';
+  const tierLine = touched ? afterListText(open, listed) : 'Set the numbers from the board';
   // iOS has no live regions: read the tier once the numbers stop moving.
   useEffect(() => {
     if (!touched) return;
@@ -152,9 +152,6 @@ export function ReportForm({ flight, now, onCancel, onSubmit, focusTitle }: Repo
             <>
               <View style={[styles.dot, { backgroundColor: c[TIER_MARK[tier]] }]} />
               <Text lineBreakStrategyIOS="push-out" style={[textStyles.heading, { color: c[TIER_FG[tier]] }]}>
-                {TIER_WORD[tier]}
-              </Text>
-              <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, styles.after, { color: c.muted }]}>
                 {afterListText(open, listed)}
               </Text>
             </>

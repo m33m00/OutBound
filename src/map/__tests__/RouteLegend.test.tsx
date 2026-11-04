@@ -41,15 +41,15 @@ describe('RouteLegend', () => {
       r = create(<RouteLegend route={route} />);
     });
     // John: the key "just says Map Key with no other context". Folded, each line says what it means.
-    const folded = ['Likely seat, reported', 'Long shot, estimated', 'What the map shows ›'];
+    const folded = ['15 to 49 seats, reported', '1 to 5 seats, estimated', 'What the map shows ›'];
     expect(texts()).toEqual(folded);
     expect(button().props.accessibilityLabel).toBe(
-      'Map key. Likely seat, reported, solid line. Long shot, estimated, dashed line.',
+      'Map key. 15 to 49 seats, reported, solid line. 1 to 5 seats, estimated, dashed line.',
     );
     expect(button().props.accessibilityState).toMatchObject({ expanded: false });
 
     act(() => button().props.onPress());
-    expect(texts()).toContain('Line color is your chance of a seat');
+    expect(texts()).toContain('Line color is seats left after the list');
     expect(button().props.accessibilityState).toMatchObject({ expanded: true });
 
     act(() => button().props.onPress());
@@ -94,9 +94,9 @@ describe('RouteLegend', () => {
     expect(all[0]).toBe('Map key');
     expect(all).toEqual(
       expect.arrayContaining([
-        'Line color is your chance of a seat',
-        'Likely',
-        'Long shot',
+        'Line color is seats left after the list',
+        '15 to 49 seats',
+        '1 to 5 seats',
         'Line style',
         'Solid line: seats someone reported',
         'Dashed line: our estimate',
@@ -107,8 +107,8 @@ describe('RouteLegend', () => {
     );
     expect(r!.root.findAllByProps({ testID: 'legend-color' }).filter((n) => typeof n.type === 'string')).toHaveLength(2);
     const spoken = button().props.accessibilityLabel as string;
-    expect(spoken).toContain('Likely, good odds of a seat.');
-    expect(spoken).toContain('Long shot, only a few seats left.');
+    expect(spoken).toContain('Line color is seats left after the list: 15 to 49 seats. 1 to 5 seats.');
+    expect(spoken).not.toMatch(/Likely|Long shot/);
     expect(spoken).toContain('10 seats left, 4 people listed');
   });
 });

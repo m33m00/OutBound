@@ -69,14 +69,12 @@ describe('request words', () => {
     expect(requestDetail(req, NOW)).toMatch(/^Departs .* · asked \d+m ago$/);
   });
 
-  it('an answer reads as tier word with both numbers (Q-065)', () => {
+  it('an answer reads as both numbers, no tier word (Q-065, round 140)', () => {
     const a = { open: 21, listed: 3, at: NOW - 5 * 60_000 };
     expect(answerTier(a)).toBe('good');
-    expect(answerText(a)).toBe('Likely · 21 seats · 3 listed');
-    expect(requestDetail({ ...req, answer: a }, NOW)).toBe('Likely · 21 seats · 3 listed · answered 5m ago');
-    expect(requestDetail({ ...req, answer: { ...a, byYou: true } }, NOW)).toBe(
-      'Likely · 21 seats · 3 listed · you answered 5m ago',
-    );
+    expect(answerText(a)).toBe('21 seats · 3 listed');
+    expect(requestDetail({ ...req, answer: a }, NOW)).toBe('21 seats · 3 listed · answered 5m ago');
+    expect(requestDetail({ ...req, answer: { ...a, byYou: true } }, NOW)).toBe('21 seats · 3 listed · you answered 5m ago');
   });
 
   it('seats after the standby list', () => {

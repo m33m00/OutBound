@@ -8,6 +8,7 @@ import { colors, inkColors } from '@/theme';
 
 import { connectionText, dotSeats, measurePerfOn, ResultRow } from '../ResultRow';
 import { StatusTag } from '../StatusTag';
+import { TIER_FG } from '../tierColors';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -44,7 +45,7 @@ describe('ResultRow', () => {
   let r: ReactTestRenderer | undefined;
   afterEach(() => act(() => r?.unmount()));
 
-  it('renders tier word and a single accessible label; full routes say Full', async () => {
+  it('renders no chance word, just colored seat numbers on the route line, and one accessible label (round 140)', async () => {
     const it = await fullItinerary();
     const onPress = jest.fn();
     await act(async () => {
@@ -57,19 +58,23 @@ describe('ResultRow', () => {
     // No weather/FAA pill on the row (John, 2026-11-02: "Likely Delays is a dumb callout/container").
     expect(root.findAll((n) => n.props.testID === 'badge-slot')).toHaveLength(0);
     const texts = root.findAll((n) => typeof n.props.children === 'string').map((n) => n.props.children);
-    // Seats lead the top line (Q-059) with their age; the slim row has no per-leg seat chips (Q-062).
-    // Just the chance word on the row; the numbers are in the flight's sheet (John, 2026-10-31).
-    expect(texts).toContain('Full');
+    // Round 140 (John: "Just color and seat availability"): no chance word in the top right; each leg's
+    // seat numbers sit over its stretch of the route line instead.
+    expect(texts).not.toContain('Full');
+    expect(texts.some((t) => /Likely|Long.shot|Maybe|Easy/.test(String(t)))).toBe(false);
+    expect(root.findAll((n) => n.props.testID === 'top-right')).toHaveLength(0);
+    const labels = root.findAll((n) => n.props.testID === 'mini-route-leg-label' && typeof n.type === 'string');
+    expect(labels.map((n) => n.props.children)).toEqual(['4/9']);
     expect(texts.some((t) => / seats · \d+ listed/.test(String(t)))).toBe(false);
     // Seat ages are hidden for now (round 124, John); VoiceOver still hears them.
     expect(root.findAll((n) => n.props.testID === 'seat-age')).toHaveLength(0);
     expect(root.findAll((n) => n.props.testID === 'flights-line' && typeof n.type === 'string').length).toBe(1);
-    expect(root.findAll((n) => n.props.testID === 'seat-summary').length).toBeGreaterThan(0);
+    expect(root.findAll((n) => n.props.testID === 'seat-summary')).toHaveLength(0);
     act(() => button.props.onPress());
     expect(onPress).toHaveBeenCalledWith(it.id);
   });
 
-  it('opens into route card A when selected: chance word up top, one seat age at the bottom (round 66)', async () => {
+  it('opens into route card A when selected: no chance pill up top, no seat age (rounds 66, 140)', async () => {
     const it = await fullItinerary();
     await act(async () => {
       r = create(<ResultRow itinerary={it} selected now={NOW} onPress={jest.fn()} />);
@@ -77,10 +82,10 @@ describe('ResultRow', () => {
     const texts = r!.root.findAll((n) => typeof n.props.children === 'string').map((n) => n.props.children);
     // No seat age on the card while ages are hidden (round 124, John).
     expect(texts.filter((t) => /reported/i.test(String(t)))).toHaveLength(0);
-    const headlineRow = r!.root.findAll((n) => n.props.testID === 'headline-row' && typeof n.type === 'string')[0];
-    expect(headlineRow.findAll((n) => n.props.testID === 'seat-summary').length).toBeGreaterThan(0);
-    // Round 124: the chance sits under the times; the stop count sits on top of the trip length.
-    expect(headlineRow.findAll((n) => n.props.testID === 'row-times')).toHaveLength(0);
+    // Round 140: no chance pill under the times any more; the legs' colors and numbers say it.
+    expect(r!.root.findAll((n) => n.props.testID === 'headline-row')).toHaveLength(0);
+    expect(r!.root.findAll((n) => n.props.testID === 'seat-summary')).toHaveLength(0);
+    // The stop count sits on top of the trip length (round 124).
     const stack = r!.root.findAll((n) => n.props.testID === 'row-stops' && typeof n.type === 'string')[0];
     const stackTexts = stack
       .findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string')
@@ -177,9 +182,8 @@ describe('ResultRow', () => {
     await act(async () => {
       r = create(<ResultRow itinerary={it} selected now={NOW} onPress={jest.fn()} />);
     });
-    const summary = r!.root.findAll((n) => n.props.testID === 'seat-summary' && typeof n.type === 'string')[0];
-    const words = summary.findAll((n) => typeof n.props.children === 'string').map((n) => n.props.children);
-    expect(words[0]).toBe('Long\u00a0shot');
+    // No route-wide chance word (round 140); each leg keeps its own color.
+    expect(r!.root.findAll((n) => n.props.testID === 'seat-summary')).toHaveLength(0);
     const texts = r!.root.findAll((n) => typeof n.props.children === 'string').map((n) => n.props.children as string);
     // No seat age on the card or its legs while ages are hidden (round 124, John).
     expect(texts.filter((t) => t.includes('reported just now'))).toEqual([]);
@@ -192,8 +196,6 @@ describe('ResultRow', () => {
     const timeline = r!.root.findAll((n) => n.props.testID === 'leg-timeline' && typeof n.type === 'string');
     expect(timeline.length).toBe(1);
     expect(timeline[0].findAll((n) => n.props.testID === 'leg-dot' && typeof n.type === 'string').length).toBe(2);
-    const chips = r!.root.findAll((n) => n.props.testID === 'seat-summary' && typeof n.type === 'string');
-    expect(chips.length).toBe(1);
     // Each leg shows its own departure time over its airports, each in a pill (round 132, John).
     expect(all).toContain('8:00\u00a0AM');
     const firstBox = r!.root.findAll((n) => n.props.testID === 'leg-box' && typeof n.type === 'string')[0];
@@ -270,17 +272,18 @@ describe('ResultRow', () => {
     expect(timeline.findAll((n) => n.props.name === 'chevron.right')).toHaveLength(0);
   });
 
-  it('grays the seat summary on a route that already left, keeping its words', async () => {
+  it('grays the route line seat numbers on a route that already left, keeping the numbers', async () => {
     const it = await fullItinerary();
     const status = { legs: [], risks: [], dimmed: true, canceled: false, spoken: ['Departed'] };
     await act(async () => {
       r = create(<ResultRow itinerary={it} selected={false} now={NOW} onPress={jest.fn()} status={status} />);
     });
-    const summary = r!.root.findAll((n) => n.props.testID === 'seat-summary' && typeof n.type === 'string')[0];
-    const text = summary.findAll((n) => typeof n.props.children === 'string')[0];
+    const text = r!.root.findAll((n) => n.props.testID === 'mini-route-leg-label' && typeof n.type === 'string')[0];
     const flat = (style: unknown) => Object.assign({}, ...([style] as unknown[]).flat(3).filter(Boolean));
-    expect(flat(text.props.style).color).toBe(colors.light.muted);
-    expect(text.props.children).toBe('Full');
+    expect(flat(text.props.style).color).toBe(colors.light[TIER_FG.unknown]);
+    expect(text.props.children).toBe('4/9');
+    const seg = r!.root.findAll((n) => n.props.testID === 'mini-route-seg' && typeof n.type === 'string')[0];
+    expect(flat(seg.props.style).backgroundColor).toBe(colors.light.unknown);
   });
 
   it('the slim row renders no stray text outside a Text (a broken comment once leaked into the layout)', async () => {
@@ -814,11 +817,13 @@ describe('ResultRow at big text sizes (design round 26)', () => {
   let r: ReactTestRenderer | undefined;
   afterEach(() => act(() => r?.unmount()));
 
-  it('puts the seat chip under the times, left-aligned, and lets it wrap instead of clipping', async () => {
-    // Jest's default font scale is 2, which is past STACK_TOP_LINE_SCALE.
+  it('puts the not-flyable chip under the times, left-aligned, and lets it wrap instead of clipping', async () => {
+    // Jest's default font scale is 2, which is past STACK_TOP_LINE_SCALE. Since round 140 only a route
+    // that can't be flown as listed has a chip up there.
     const it = await fullItinerary();
+    const status = { legs: [], risks: [], dimmed: false, canceled: true, spoken: ['Canceled'] };
     await act(async () => {
-      r = create(<ResultRow itinerary={it} selected={false} now={NOW} onPress={jest.fn()} />);
+      r = create(<ResultRow itinerary={it} selected={false} now={NOW} onPress={jest.fn()} status={status} />);
     });
     const chip = r!.root.findAll((n) => n.props.testID === 'seat-summary' && typeof n.type === 'string')[0];
     const flat = (style: unknown) => Object.assign({}, ...([style] as unknown[]).flat(3).filter(Boolean));

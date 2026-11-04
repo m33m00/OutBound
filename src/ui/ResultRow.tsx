@@ -10,7 +10,6 @@ import {
   neutralSeatText,
   routeSeatAge,
   SHOW_SEAT_AGE,
-  routeSeatSummary,
   rowAccessibilityLabel,
   rowTimes,
   seatText,
@@ -499,8 +498,6 @@ export const ResultRow = memo(function ResultRow({
         }))
       : []),
   ];
-  // Seats lead the slim row's top line (Q-059); the delay badge sits after them.
-  const summary = routeSeatSummary(it);
   const first = status?.legs[0];
   // Departed rows are dimmed with a gray fill and edge; text keeps 4.5:1.
   const dimmed = !!status?.dimmed;
@@ -521,7 +518,7 @@ export const ResultRow = memo(function ResultRow({
   // Picked and full rows draw a thicker edge; the tear's notches match it.
   const edgeW = highlight || it.isFull ? 2 : StyleSheet.hairlineWidth;
   // Every value shows its age: the summary's comes from the leg that sets it.
-  const summaryAge = summary ? routeSeatAge(it, now) : null;
+  const summaryAge = it.tier !== 'unknown' ? routeSeatAge(it, now) : null;
   // Shown only while seat ages are on (off since round 124, John).
   const shownAge = SHOW_SEAT_AGE ? summaryAge : null;
   // The worst live thing on the route: the slim row's one tag. The route card has no banner for it; each
@@ -581,9 +578,9 @@ export const ResultRow = memo(function ResultRow({
       </Text>
     </View>
   );
-  // The chance word in its tier color; on the route card it's the headline, so it's bigger.
-  // A canceled leg means the route can't be flown as listed, so it says that in grey instead of a
-  // chance (John, 2026-11-02: it said "Likely" with a canceled first flight).
+  // No chance words any more (round 140, John: "Just color and seat availability. Let the user decide on the
+  // likelihood"): each leg's color and numbers say it, on the route line and in the flight boxes. Only a route
+  // that can't be flown as listed (a canceled leg) still says so, in gray.
   const seatSummary = (lead: boolean, pill = false) =>
     notFlyable ? (
       <View
@@ -594,27 +591,7 @@ export const ResultRow = memo(function ResultRow({
           {NOT_FLYABLE}
         </Text>
       </View>
-    ) : summary ? (
-      <View
-        style={[
-          styles.summary,
-          lead && styles.summaryLead,
-          pill && [styles.chancePill, { borderColor: dimmed ? hc.line : hc[it.tier] }],
-        ]}
-        testID="seat-summary">
-        <View style={[styles.summaryDot, { backgroundColor: dimmed ? hc.unknown : hc[it.tier] }]} />
-        <Text
-          lineBreakStrategyIOS="push-out"
-          style={[lead ? styles.badgeLead : styles.badge, { color: dimmed ? hc.muted : hc[TIER_FG[it.tier]] }]}>
-          {summary}
-        </Text>
-      </View>
-    ) : (
-      // Typical loads stay neutral (no tier word or color) but still say what's known.
-      <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: hc.muted }]} testID="seat-neutral">
-        {neutralSeatText(it, now)}
-      </Text>
-    );
+    ) : null;
   // The flights under the perforation; the save tear draws a copy of it too (round 129).
   const ticketBodyView = (
     <View style={large ? styles.ticketBody : styles.stubSlim}>
@@ -665,8 +642,8 @@ export const ResultRow = memo(function ResultRow({
         },
         (highlight || it.isFull) && styles.strongBorder,
       ]}>
-      {/* Route color = weakest leg. */}
-      {large ? null : <View style={[styles.edge, { backgroundColor: dimmed || notFlyable ? c.unknown : c[it.tier] }]} />}
+      {/* No colored edge since round 140: the route line carries each leg's color now, and a full route keeps
+          its red outline. */}
       <View ref={ticketRef} style={large ? styles.ticket : styles.content}>
         {selected ? (
           // Route card A (John, 2026-10-31): the seat chip up top, the times, then one box per flight.
@@ -681,9 +658,11 @@ export const ResultRow = memo(function ResultRow({
                     {/* The seat chance sits above the times as a small pill, like a ticket's class, not
                         under them (round 132, John: "I don't like that the Likely indicator is below the
                         time"). */}
-                    <View style={[styles.line, styles.chanceLine]} testID="headline-row">
-                      {seatSummary(false, !!large)}
-                    </View>
+                    {notFlyable ? (
+                      <View style={[styles.line, styles.chanceLine]} testID="headline-row">
+                        {seatSummary(false, !!large)}
+                      </View>
+                    ) : null}
                     {times}
                   </View>
                   <StopsStack stops={stopCount(it)} length={tripLength(it, status)} color={hc.muted} lead={hc.text} />
@@ -753,14 +732,7 @@ export const ResultRow = memo(function ResultRow({
                 {tearSource ? <TearSwipe source={tearSource} onSave={onSwipeSave} /> : null}
               </View>
             ) : (
-              <TicketTear
-                notch={c.bg}
-                edge={c.line}
-                line={c.line2}
-                left={spacing.rowX + EDGE_W}
-                right={spacing.rowX}
-                edgeWidth={edgeW}
-              />
+              <TicketTear notch={c.bg} edge={c.line} line={c.line2} left={spacing.rowX} right={spacing.rowX} edgeWidth={edgeW} />
             )}
             {ticketBodyView}
           </>
@@ -770,19 +742,14 @@ export const ResultRow = memo(function ResultRow({
                 text the times take the line and the seats go under them. */}
             <View style={[styles.line, !stacked && styles.lineKeep]} testID="top-line">
               {times}
-              <View style={[styles.topRight, stacked ? styles.topRightStacked : styles.topRightKeep]} testID="top-right">
-                {seatSummary(false)}
-              </View>
+              {notFlyable ? (
+                <View style={[styles.topRight, stacked ? styles.topRightStacked : styles.topRightKeep]} testID="top-right">
+                  {seatSummary(false)}
+                </View>
+              ) : null}
             </View>
             {/* A boarding pass perforation between the times and the route (round 121, John). */}
-            <TicketTear
-              notch={c.bg}
-              edge={c.line}
-              line={c.line2}
-              left={spacing.rowX + EDGE_W}
-              right={spacing.rowX}
-              edgeWidth={edgeW}
-            />
+            <TicketTear notch={c.bg} edge={c.line} line={c.line2} left={spacing.rowX} right={spacing.rowX} edgeWidth={edgeW} />
             <View style={styles.line}>
               <View style={styles.path}>
                 {saved ? (
@@ -791,7 +758,21 @@ export const ResultRow = memo(function ResultRow({
                   </View>
                 ) : null}
                 {/* The market as a mini route line (round 119, John picked it): ends big, stops above their dots. */}
-                <MiniRoute airports={[it.origin, ...it.legs.map((l) => l.flight.to)]} dimmed={dimmed} />
+                <MiniRoute
+                  airports={[it.origin, ...it.legs.map((l) => l.flight.to)]}
+                  dimmed={dimmed}
+                  legs={it.legs.map((l, i) => {
+                    // Each leg in its seat color with its numbers over it (round 140, John): no chance word,
+                    // the person weighs the numbers. Typical loads, no data, canceled and departed stay gray.
+                    const gray =
+                      dimmed ||
+                      l.seats.source === 'typical' ||
+                      l.seats.source === 'unknown' ||
+                      status?.legs[i]?.tag?.kind === 'canceled';
+                    const tier = gray ? 'unknown' : l.seats.tier;
+                    return { color: c[tier], text: c[TIER_FG[tier]], label: dotSeats(l.seats) };
+                  })}
+                />
               </View>
               {/* The stop count on top of the trip length (round 124, John), Nonstop too; the route line
                   already names the connections, so the stops line adds only short layovers. */}

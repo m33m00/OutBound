@@ -74,13 +74,18 @@ export function formatAge(asOf: number, now: number): string {
 }
 
 /** Seat labels say your chances of getting on (Q-074, John 2026-10-30). */
+/**
+ * What each seat color means, in seats left after the standby list. No chance words since round 140
+ * (John: "Just color and seat availability. Let the user decide on the likelihood"): the map key and
+ * screen readers say the range, the app shows the numbers.
+ */
 export const TIER_WORD: Record<SeatTier, string> = {
-  wide: 'Easy',
-  good: 'Likely',
-  okay: 'Maybe',
-  tight: 'Long\u00a0shot',
-  full: 'Full',
-  unknown: 'Unknown',
+  wide: '50+ after the list',
+  good: '15 to 49 after the list',
+  okay: '6 to 14 after the list',
+  tight: '1 to 5 after the list',
+  full: 'None after the list',
+  unknown: 'No seat info',
 };
 
 /**
@@ -96,17 +101,7 @@ export function seatText(seats: LegSeats, now: number): string {
   }
   const open = seatCounts(seats);
   const age = seats.asOf == null ? '' : ` · ${seats.source === 'reported' ? 'reported' : 'est.'} ${formatAge(seats.asOf, now)}`;
-  return `${TIER_WORD[seats.tier]} · ${open}${age}`;
-}
-
-/**
- * Route seat summary for the row's top line (Q-059): the route's chance word, e.g. "Long shot".
- * Cards show just the word; the open and listed numbers are in the flight's sheet
- * (John, 2026-10-31). Null when no leg has reported or estimated seats (typical loads stay neutral).
- */
-export function routeSeatSummary(it: Itinerary): string | null {
-  if (it.tier === 'unknown') return null;
-  return TIER_WORD[it.tier];
+  return `${open}${age}`;
 }
 
 /** "1 seat", "20 seats". */
@@ -236,7 +231,7 @@ export function rowAccessibilityLabel(it: Itinerary, now: number): string {
     `arrives ${t.arrive}${t.plusDays ? ' next day' : ''} at ${it.destination}`,
     stopsText(it).replace(' · ', ' via '),
     spokenDuration(it.totalMin),
-    it.isFull ? 'Full route' : `Chances: ${TIER_WORD[it.tier]}`,
+    ...(it.isFull ? ['Full route'] : []),
     ...it.legs.map((l) => `${l.flight.airline} ${l.flight.flightNumber}: ${forSpeech(seatText(l.seats, now))}`),
     ...nearbyNotes(it),
   ];
