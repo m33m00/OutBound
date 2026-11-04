@@ -12,6 +12,7 @@ import {
   rowTimes,
   seatSourceText,
   seatText,
+  shortLayovers,
   slimStops,
   stopCount,
   stopsText,
@@ -59,7 +60,8 @@ describe('time and duration', () => {
 
   it.each([
     [45, '45m'],
-    [60, '1h'],
+    [60, '1h 0m'],
+    [300, '5h 0m'],
     [135, '2h 15m'],
   ])('%i min -> %s', (min, text) => expect(formatDuration(min)).toBe(text));
 
@@ -118,17 +120,27 @@ describe('slim row seat and stop text (design round 22)', () => {
     ).toBe('No Estimate');
   });
 
-  it('adds short connections to the stop count', () => {
-    expect(slimStops(route([seats({})], 'good'))).toBe('Nonstop');
-    expect(slimStops(route([seats({}), seats({})], 'good', [{ airport: 'DEN', layoverMin: 45 }]))).toBe('1 stop · 45m at DEN');
+  it('reads stops, then trip time, then a short connection last (round 149, John)', () => {
+    expect(slimStops(route([seats({})], 'good'), undefined, '5h 0m')).toBe('Nonstop · 5h 0m');
+    expect(slimStops(route([seats({}), seats({})], 'good', [{ airport: 'DEN', layoverMin: 45 }]), undefined, '4h 20m')).toBe(
+      '1 stop · 4h 20m · 45m connection at DEN',
+    );
     expect(slimStops(route([seats({}), seats({})], 'good', [{ airport: 'DEN', layoverMin: 90 }]))).toBe('1 stop');
   });
 
   it('uses live connection minutes when given, and names a missed one (John, 2026-11-02)', () => {
     const r = route([seats({}), seats({})], 'good', [{ airport: 'DEN', layoverMin: 90 }]);
-    expect(slimStops(r, [35])).toBe('1 stop · 35m at DEN');
-    expect(slimStops(r, [-10])).toBe('1 stop · missed at DEN');
+    expect(slimStops(r, [35])).toBe('1 stop · 35m connection at DEN');
+    expect(slimStops(r, [-10])).toBe('1 stop · missed connection at DEN');
     expect(slimStops(r, [NaN])).toBe('1 stop');
+  });
+
+  it('shows only the tightest of several short connections, so the line fits', () => {
+    const r = route([seats({}), seats({}), seats({})], 'good', [
+      { airport: 'ORD', layoverMin: 50 },
+      { airport: 'CLT', layoverMin: 35 },
+    ]);
+    expect(shortLayovers(r)).toBe('35m connection at CLT');
   });
 });
 

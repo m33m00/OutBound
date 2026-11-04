@@ -51,13 +51,13 @@ export function legMinutes(departUtc?: number, arriveUtc?: number): number | nul
   return Math.round(ms / MINUTE);
 }
 
-/** "2h 35m", "45m", "10h 5m", "1h": the same format as the cards' durations. */
+/** "2h 35m", "45m", "10h 5m", "1h 0m": the same format as the cards' durations. */
 export function formatLegDuration(minutes: number): string {
   const m = Math.max(0, Math.round(minutes));
   const h = Math.floor(m / 60);
   const mm = m % 60;
   if (!h) return `${mm}m`;
-  return mm ? `${h}h ${mm}m` : `${h}h`;
+  return `${h}h ${mm}m`;
 }
 
 /** "2 hours 35 minutes", "1 hour", "45 minutes", "1 hour 1 minute". */

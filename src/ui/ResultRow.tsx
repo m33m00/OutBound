@@ -13,7 +13,7 @@ import {
   rowAccessibilityLabel,
   rowTimes,
   seatText,
-  slimStops,
+  shortLayovers,
   stopCount,
 } from '@/search/format';
 import { statusHeadline } from '@/search/headline';
@@ -530,6 +530,10 @@ export const ResultRow = memo(function ResultRow({
   const dimmed = !!status?.dimmed;
   const notFlyable = !!status?.canceled;
   const slimLength = tripLength(it, status);
+  const shortLeft = shortLayovers(
+    it,
+    it.connections.map((_, k) => liveLayoverMin(it, status, k)),
+  );
   // The route card's header panel (round 114 onward): what's drawn on it takes the ink palette, which
   // in the Clean look is just the card itself.
   const hc = large ? inkColors[scheme] : c;
@@ -762,17 +766,20 @@ export const ResultRow = memo(function ResultRow({
             <Text
               lineBreakStrategyIOS="push-out"
               numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.85}
               style={[textStyles.small, styles.stopsLine, { color: c.muted }]}
               testID="row-stops">
+              {/* Always stops, then trip time, then a short connection last (round 149, John). */}
               <Text style={{ color: dimmed ? c.muted : c.text, fontFamily: fonts.bodyMedium }} testID="row-stop-count">
-                <Divided
-                  text={slimStops(
-                    it,
-                    it.connections.map((_, k) => liveLayoverMin(it, status, k)),
-                  )}
-                />
+                {stopCount(it)}
               </Text>
               {slimLength ? <Divided text={` · ${slimLength}`} /> : null}
+              {shortLeft ? (
+                <Text style={{ color: dimmed ? c.muted : c.text, fontFamily: fonts.bodyMedium }} testID="row-short-layover">
+                  <Divided text={` · ${shortLeft}`} />
+                </Text>
+              ) : null}
             </Text>
             {/* A boarding pass perforation between the times and the route (round 121, John). */}
             <TicketTear notch={c.bg} edge={c.line} line={c.line2} left={spacing.rowX} right={spacing.rowX} edgeWidth={edgeW} />

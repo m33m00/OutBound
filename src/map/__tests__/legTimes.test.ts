@@ -64,7 +64,7 @@ describe('duration format (H:MM)', () => {
     expect(formatLegDuration(45)).toBe('45m');
     expect(formatLegDuration(155)).toBe('2h 35m');
     expect(formatLegDuration(605)).toBe('10h 5m');
-    expect(formatLegDuration(60)).toBe('1h');
+    expect(formatLegDuration(60)).toBe('1h 0m');
   });
 
   it('rounds the epoch-ms difference to the nearest minute', () => {

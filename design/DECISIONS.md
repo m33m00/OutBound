@@ -466,3 +466,11 @@ John: "Okay, I really like this. So actually, can the delayed pill sit right abo
 - A delayed or diverted flight's pill now sits under the route line, below the stop codes and right above that leg's airline logo and flight number, still centred on its own leg. The flight moves down a row to make room, only on routes with a delay.
 - At risk and the seat numbers with their icons stay above the line, so the top of the card is one row shorter when a flight is delayed.
 - Short legs (2 or more stops) keep the short form ("+50m", "Diverted").
+
+## Design round 149: every time shows hours and minutes; the stops line reads in one order (John, 2026-11-04)
+
+John: "Can we have it like say 5H and like 0M ... I just want to keep things consistent", "it's always the number of stops, the total time, and then if there's a risk, it's the last thing that's mentioned on that row", and "35M connection at MIA would work".
+
+- Durations always show both once there's an hour: "5h 0m", never "5h". Under an hour stays "45m". This covers trip times, layovers, delays ("Delayed 1h 0m"), leg times on the map and saved trips. Ages ("3h ago") are not durations and stay as they are.
+- The stops line under the times is always: number of stops, total trip time, then a short connection last, only when there is one: "2 stops · 11h 30m · 35m connection at MIA" (or "missed connection at MIA").
+- With more than one short connection, only the tightest shows, so the line stays one line. Measured at 14pt on a 375pt phone: "2 stops · 11h 30m · 35m connection at MIA" is about 283pt and the "missed" form about 301pt, inside the 318pt card. It can shrink a touch at big text sizes instead of cutting off.

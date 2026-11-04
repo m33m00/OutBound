@@ -28,7 +28,8 @@ export function formatDuration(min: number): string {
   const h = Math.floor(min / 60);
   const m = min % 60;
   if (!h) return `${m}m`;
-  return m ? `${h}h ${m}m` : `${h}h`;
+  // Always both once there's an hour, so every time reads the same way ("5h 0m", round 149, John).
+  return `${h}h ${m}m`;
 }
 
 /** "1 hour 20 minutes" for VoiceOver, which can read "20m" as meters. */
@@ -148,15 +149,28 @@ export function neutralSeatText(it: Itinerary, now: number): string {
 /** Connections shorter than this show their length on the slim row. */
 export const SHORT_LAYOVER_MIN = 60;
 
-/** Slim row stops: "Nonstop", "1 stop", or "1 stop · 45m at DEN" when a connection is short. */
-export function slimStops(it: Itinerary, layovers?: readonly number[]): string {
+/**
+ * The route's tightest short connection: "35m connection at MIA", or "missed connection at MIA" (round 149,
+ * John). With more than one short connection only the tightest shows, so the stops line stays one line on
+ * the smallest iPhone. Null when no connection is short.
+ */
+export function shortLayovers(it: Itinerary, layovers?: readonly number[]): string | null {
   // Live layovers when given (a delay moves them, John 2026-11-02); a missed one says so.
   const mins = it.connections.map((c, i) => (layovers && Number.isFinite(layovers[i]) ? layovers[i] : c.layoverMin));
   const short = it.connections.flatMap((c, i) => (mins[i] < SHORT_LAYOVER_MIN ? [{ airport: c.airport, min: mins[i] }] : []));
-  return [
-    stopCount(it),
-    ...short.map((c) => (c.min < 0 ? `missed at ${c.airport}` : `${formatDuration(c.min)} at ${c.airport}`)),
-  ].join(' · ');
+  if (!short.length) return null;
+  const tightest = short.reduce((a, b) => (b.min < a.min ? b : a));
+  return tightest.min < 0
+    ? `missed connection at ${tightest.airport}`
+    : `${formatDuration(tightest.min)} connection at ${tightest.airport}`;
+}
+
+/**
+ * Slim row stops, always in one order (round 149, John: "it's always the number of stops, the total time,
+ * and then if there's a risk, it's the last thing"): "1 stop · 4h 20m · 45m at DEN".
+ */
+export function slimStops(it: Itinerary, layovers?: readonly number[], length?: string | null): string {
+  return [stopCount(it), length, shortLayovers(it, layovers)].filter(Boolean).join(' · ');
 }
 
 /**
