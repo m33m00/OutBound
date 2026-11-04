@@ -27,7 +27,9 @@ export const colors = {
     // A card's header panel: the same white as the card in the Clean look.
     ink: '#ffffff',
 
-    // Primary
+    // Primary. The text rule (round 136, John: "What's with the navy colors and we have black text"):
+    // everything you read is `text` (or `muted` for what's secondary); `accent` navy is only for what
+    // you can press (buttons, links, toggles, arrows) and the one marker of where you are.
     accent: '#1d3d84',
     onAccent: '#ffffff',
     accentSoft: '#e7ecf6',

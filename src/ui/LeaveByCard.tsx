@@ -152,14 +152,14 @@ export function LeaveByCard(p: LeaveByCardProps) {
           )}
         </View>
         {action && inline ? action : null}
-        {/* The chevron is the card's only sign that it opens directions, so it always shows. */}
+        {/* The car is the card's only sign that it opens directions, so it always shows (round 136,
+            John: a car "so people know it's directions", in place of the chevron). */}
         {directions ? (
-          <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+          <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" testID="leave-by-car">
             <Icon
-              name="chevron.right"
-              size={13}
-              weight="semibold"
-              tintColor={c.muted}
+              name="car.fill"
+              size={16}
+              tintColor={atAirport ? c.youText : c.accent}
               fallback={<Text style={{ color: c.muted }}>›</Text>}
             />
           </View>

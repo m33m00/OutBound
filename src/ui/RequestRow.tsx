@@ -91,10 +91,10 @@ export function RequestRow({ request, now, mine, onAnswer, onOpen, leg }: Reques
       </View>
       {status ? (
         <View
-          style={[styles.badge, stacked && styles.selfStart, { backgroundColor: answered ? c.accentSoft : c.surface2 }]}
+          style={[styles.badge, stacked && styles.selfStart, { backgroundColor: answered ? c.goodBg : c.surface2 }]}
           importantForAccessibility="no-hide-descendants"
           accessibilityElementsHidden>
-          <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: answered ? c.accent : c.muted }]}>
+          <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: answered ? c.goodFg : c.muted }]}>
             {status}
           </Text>
         </View>

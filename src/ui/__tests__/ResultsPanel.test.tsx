@@ -144,8 +144,14 @@ describe('ResultsPanel', () => {
     // "2 of 2": next is off at the end, previous picks the first route.
     expect(r!.root.findAll((n) => n.props.accessibilityLabel === 'Route 2 of 2').length).toBeGreaterThan(0);
     // A dot per route under the market, the current one with nothing to press; tapping the other picks it
-    // (round 134, John: the arrows "feel forced" in the top right).
-    expect(r!.root.findAll((n) => n.props.testID === 'route-next' || n.props.testID === 'route-prev')).toHaveLength(0);
+    // (round 134). Small arrows either side of the dots say it pages (round 136, John: "Hard for a user
+    // to know they can swipe"): next is off at the end, previous picks the first route.
+    const arrow = (id: string) => r!.root.findAll((n) => n.props.testID === id && typeof n.props.disabled === 'boolean')[0];
+    expect(arrow('route-next').props.disabled).toBe(true);
+    expect(arrow('route-prev').props.disabled).toBe(false);
+    act(() => arrow('route-prev').props.onPress());
+    expect(onSelect).toHaveBeenCalledWith(list[0].id);
+    onSelect.mockClear();
     const dots = r!.root.findAll(
       (n) => n.props.testID === 'route-dot' && typeof n.type !== 'string' && n.parent?.props.testID !== 'route-dot',
     );
@@ -559,5 +565,22 @@ describe('flipping routes by swiping the route bar (round 134, John)', () => {
     expect(routeFlip(20, 800)).toBe(-1);
     expect(routeFlip(-20, -100)).toBe(0);
     expect(routeFlip(-80, 0, true)).toBe(0);
+  });
+});
+
+describe('the route card shows once that it slides sideways (round 136, John)', () => {
+  it('plays the first time only, and remembers that on the phone', async () => {
+    const { takeFlipHint, resetFlipHintForTests, FLIP_HINT_KEY } = jest.requireActual(
+      '../flipHint',
+    ) as typeof import('../flipHint');
+    const AsyncStorage = require('@react-native-async-storage/async-storage');
+    await AsyncStorage.clear();
+    resetFlipHintForTests();
+    expect(await takeFlipHint()).toBe(true);
+    expect(await takeFlipHint()).toBe(false);
+    expect(await AsyncStorage.getItem(FLIP_HINT_KEY)).toBe('1');
+    // A fresh start reads it back and stays quiet.
+    resetFlipHintForTests();
+    expect(await takeFlipHint()).toBe(false);
   });
 });

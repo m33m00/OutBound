@@ -4,7 +4,6 @@
  */
 import { SETTLE_MS } from '../TearAway';
 import {
-  curlShare,
   dragMs,
   dragProgress,
   poseAt,
@@ -32,7 +31,7 @@ const middle = (pts: { x: number; y: number }[]) => ({
   y: pts.reduce((s, p) => s + p.y, 0) / pts.length,
 });
 
-describe('tearMesh: the route card bent as paper (round 132)', () => {
+describe('tearMesh: the stub torn off along the dashes (round 136, John: "just like a stub")', () => {
   it('stays short with the settle: about a second and a half', () => {
     expect(TEAR_TOTAL_MS + SETTLE_MS).toBeLessThanOrEqual(1700);
   });
@@ -49,10 +48,36 @@ describe('tearMesh: the route card bent as paper (round 132)', () => {
     expect(m.stubOpacity).toBe(1);
   });
 
-  it('curls on an exponential: flat at the line, harder toward the top edge', () => {
-    expect(curlShare(0)).toBe(0);
-    expect(curlShare(1)).toBeCloseTo(1, 9);
-    expect(curlShare(0.5)).toBeLessThan(0.35);
+  it('never bends the card: the part under the dashes stays exactly where it is on screen', () => {
+    for (const p of [
+      {},
+      { pull: 1 },
+      { pull: 1, tear: 0.5 },
+      { pull: 1, tear: 1, free: 1 },
+      { pull: 1, tear: 1, free: 1, fly: 1 },
+    ]) {
+      const m = tearMesh(g, pose(p));
+      m.body.positions.forEach((q, i) => {
+        expect(q.x).toBeCloseTo(m.body.textures[i].x, 6);
+        expect(q.y).toBeCloseTo(m.body.textures[i].y, 6);
+      });
+      expect(m.body.backIndices).toHaveLength(0);
+      expect(m.stub.backIndices).toHaveLength(0);
+    }
+  });
+
+  it('splits the picture on the dashed line, ragged but never more than a few points off it', () => {
+    const m = tearMesh(g, pose({ pull: 1, tear: 0.5 }));
+    const limit = TEAR_MESH.rag + TEAR_MESH.ragJitter / 2;
+    for (const t of m.body.textures.slice(0, TEAR_MESH.cols + 1))
+      expect(Math.abs(t.y - g.perf)).toBeLessThanOrEqual(limit + 1e-9);
+    for (const t of m.stub.textures.slice(TEAR_MESH.stubRows * (TEAR_MESH.cols + 1)))
+      expect(Math.abs(t.y - g.perf)).toBeLessThanOrEqual(limit + 1e-9);
+    // Where it hasn't torn yet the stub is still on the card, right where it was.
+    const edge = row(m.stub, TEAR_MESH.stubRows);
+    const tex = m.stub.textures.slice(TEAR_MESH.stubRows * (TEAR_MESH.cols + 1));
+    expect(edge[0].x).toBeCloseTo(tex[0].x, 6);
+    expect(edge[0].y).toBeCloseTo(tex[0].y, 6);
   });
 
   it('rips from the right notch to the left', () => {
@@ -65,27 +90,19 @@ describe('tearMesh: the route card bent as paper (round 132)', () => {
     const edge = row(m.stub, TEAR_MESH.stubRows);
     const body = row(m.body, 0);
     const gap = (i: number) => body[i].y - edge[i].y;
-    expect(gap(TEAR_MESH.cols)).toBeGreaterThan(gap(0) + 2);
+    // The torn right end has tipped up off the line; the left is still on it.
+    expect(gap(TEAR_MESH.cols)).toBeGreaterThan(gap(0) + 10);
+    expect(gap(0)).toBeCloseTo(0, 6);
+    // The first touch already nicks the right notch.
+    const nicked = tearMesh(g, pose({ pull: 1 }));
+    expect(nicked.edgeTorn[TEAR_MESH.cols]).toBeGreaterThan(0);
+    expect(nicked.edgeTorn[0]).toBe(0);
   });
 
-  it('pulled toward you, the top rolls over so its back shows, and the body stays face up', () => {
-    const pulled = tearMesh(g, pose({ lift: 1, pull: 1, tear: 1 }));
-    expect(pulled.stub.backIndices.length).toBeGreaterThan(0);
-    expect(pulled.body.backIndices).toHaveLength(0);
-    // Where the paper stands on edge in the roll it's turned from the light, so it's darker than the
-    // flat part at the line.
-    const shade = pulled.stub.shade;
-    const n = TEAR_MESH.cols + 1;
-    const rows = Array.from({ length: TEAR_MESH.stubRows + 1 }, (_, j) =>
-      shade.slice(j * n, (j + 1) * n).reduce((a, b) => a + b, 0),
-    );
-    expect(Math.min(...rows)).toBeLessThan(rows[rows.length - 1] - 1);
-  });
-
-  it('once free the stub swings up and out to the right, then flies into My Trips and fades', () => {
+  it('once free the stub carries on up and to the left with the swipe, then flies into My Trips and fades', () => {
     const torn = middle(tearMesh(g, pose({ lift: 1, pull: 1, tear: 1 })).stub.positions);
     const free = middle(tearMesh(g, pose({ lift: 1, pull: 1, tear: 1, free: 1 })).stub.positions);
-    expect(free.x).toBeGreaterThan(torn.x + 10);
+    expect(free.x).toBeLessThan(torn.x - 10);
     expect(free.y).toBeLessThan(torn.y - 10);
     const landed = tearMesh(g, pose({ lift: 1, pull: 1, tear: 1, free: 1, fly: 1 }));
     const at = middle(landed.stub.positions);
@@ -108,7 +125,8 @@ describe('tearMesh: the route card bent as paper (round 132)', () => {
 });
 
 describe('swipe to save drives the same tear (round 133, John)', () => {
-  it('spends the first part of the swipe lifting and pulling, the rest ripping', () => {
+  it('spends a sliver of the swipe nicking the notch, the rest ripping under the finger', () => {
+    expect(TEAR_DRAG.lead).toBeLessThanOrEqual(0.1);
     expect(dragMs(0)).toBe(0);
     expect(dragMs(TEAR_DRAG.lead)).toBeCloseTo(RIP_START_MS);
     expect(dragMs(1)).toBeCloseTo(RIP_END_MS);
@@ -121,7 +139,7 @@ describe('swipe to save drives the same tear (round 133, John)', () => {
     expect(shouldCommit(0.7, 0)).toBe(true);
     expect(shouldCommit(0.4, 0)).toBe(false);
     expect(shouldCommit(0.4, -1)).toBe(true);
-    expect(shouldCommit(0.1, -1)).toBe(false);
+    expect(shouldCommit(0.05, -1)).toBe(false);
   });
 
   it('follows the finger, finishes on its own, and runs back down when cancelled', () => {
@@ -134,7 +152,7 @@ describe('swipe to save drives the same tear (round 133, John)', () => {
     expect(stepDrive(TEAR_TOTAL_MS - 1, null, 16)).toBe(TEAR_TOTAL_MS);
   });
 
-  it('ticks once as the paper goes taut and three times along the rip, only going forward', () => {
+  it('ticks once as the notch gives and three times along the rip, only going forward', () => {
     expect(ticksCrossed(0, TEAR_TOTAL_MS)).toBe(4);
     expect(ticksCrossed(RIP_END_MS, 0)).toBe(0);
     expect(ticksCrossed(0, RIP_START_MS)).toBe(1);

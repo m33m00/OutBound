@@ -97,6 +97,8 @@ export function dotSeats(seats: LegSeats): string {
 
 /** Space above and below a connection label, before any extra that centers it on the line. */
 const CONNECTION_PAD = 6;
+/** How far the airport pills rise when a status pill sits over the line, so the line stays level with them. */
+const ENDS_LIFT = 10;
 
 /**
  * One flight as its two ends (round 132, John: "It just looks like a bunch of text on one row. Is there
@@ -105,7 +107,20 @@ const CONNECTION_PAD = 6;
  * plane between them carrying the flight's length. A nonstop's times are the header's, so its box shows
  * only the airports.
  */
-function LegEnds({ leg, view, dimmed, showTimes }: { leg: Flight; view?: LegStatusView; dimmed: boolean; showTimes: boolean }) {
+function LegEnds({
+  leg,
+  view,
+  dimmed,
+  showTimes,
+  tag,
+}: {
+  leg: Flight;
+  view?: LegStatusView;
+  dimmed: boolean;
+  showTimes: boolean;
+  /** The flight's status pill, centered just above its route line (round 136, John). */
+  tag?: ReactNode;
+}) {
   const c = useColors();
   const t = legTimesText(leg, view);
   const canceled = view?.tag?.kind === 'canceled';
@@ -132,18 +147,29 @@ function LegEnds({ leg, view, dimmed, showTimes }: { leg: Flight; view?: LegStat
       <Text style={[styles.codeText, { color: dimmed ? c.muted : c.text }]}>{text}</Text>
     </View>
   );
+  const length =
+    minutes > 0 ? (
+      <Text style={[styles.endsLength, { color: c.muted }]} numberOfLines={1} testID="leg-length">
+        {formatDuration(minutes)}
+      </Text>
+    ) : null;
+  // With a pill over the line, the flight's length moves under it, and the airport pills rise to
+  // stay level with the line.
+  const lift = tag ? styles.endColLifted : null;
   return (
     <View style={styles.ends} testID="leg-line">
-      <View style={styles.endCol}>
+      <View style={[styles.endCol, lift]}>
         {showTimes ? time(t.depart, departColor, 'leg-clock') : null}
         {code(leg.from)}
       </View>
-      <View style={styles.endsMid} testID="leg-track">
-        {minutes > 0 ? (
-          <Text style={[styles.endsLength, { color: c.muted }]} numberOfLines={1} testID="leg-length">
-            {formatDuration(minutes)}
-          </Text>
-        ) : null}
+      <View style={[styles.endsMid, tag ? styles.endsMidTagged : null]} testID="leg-track">
+        {tag ? (
+          <View style={styles.endsTag} testID="leg-tag">
+            {tag}
+          </View>
+        ) : (
+          length
+        )}
         <View style={styles.endsTrack}>
           <View style={[styles.endsLine, { backgroundColor: c.line2 }]} />
           <Icon
@@ -154,8 +180,9 @@ function LegEnds({ leg, view, dimmed, showTimes }: { leg: Flight; view?: LegStat
           />
           <View style={[styles.endsLine, { backgroundColor: c.line2 }]} />
         </View>
+        {tag ? length : null}
       </View>
-      <View style={[styles.endCol, styles.endColRight]}>
+      <View style={[styles.endCol, styles.endColRight, lift]}>
         {showTimes ? time(t.arrive, arriveColor, 'leg-arrive', true) : null}
         {code(leg.to)}
       </View>
@@ -196,16 +223,6 @@ export function connectionText(c: { airport: string; sameAirline: boolean }, lay
     layoverMin < 0 ? `Misses the connection at ${c.airport}` : `${formatDuration(layoverMin)} connection at ${c.airport}`;
   if (c.sameAirline) return what;
   return `${what}, change airlines${nextAirline ? ` to ${nextAirline}` : ''}`;
-}
-
-/**
- * Width every leg's status tag is widened to, so the flight chips that follow line up: the widest
- * measured tag, once all `tagged` legs have reported. Undefined until then (tags show at their own size).
- */
-export function tagColumnWidth(widths: Record<number, number>, tagged: number): number | undefined {
-  const measured = Object.values(widths);
-  if (tagged < 2 || measured.length < tagged) return undefined;
-  return Math.ceil(Math.max(...measured));
 }
 
 function legSpokenTimes(leg: Flight, view?: LegStatusView): string {
@@ -267,22 +284,6 @@ function LegTimeline({
   // Each box's measured height. Its dot sits at its middle, so the line between two dots runs
   // half of one box, the connection, and half of the next; the label is placed at its middle.
   const [legHeights, setLegHeights] = useState<Record<number, number>>({});
-  // Each leg's status tag is widened to the widest one so the flight chips after them line up
-  // (John, 2026-11-02). Widths are kept per set of labels, so a tag that gets shorter re-measures.
-  // Flight chips first, in one column wide enough for the widest, so the status pills after them
-  // line up top to bottom (John, 2026-11-02: "aligned looking top to bottom").
-  const tagKey = it.legs.map((l) => `${l.flight.airline}${l.flight.flightNumber}`).join('|');
-  const [tagWidths, setTagWidths] = useState<{ key: string; widths: Record<number, number> }>({ key: tagKey, widths: {} });
-  const widths = tagWidths.key === tagKey ? tagWidths.widths : {};
-  const anyTag = it.legs.some((_, i) => status?.legs[i]?.tag);
-  const tagColumn = anyTag ? tagColumnWidth(widths, it.legs.length) : undefined;
-  const measureTag = (i: number) => (e: { nativeEvent: { layout: { width: number } } }) => {
-    const w = e.nativeEvent.layout.width;
-    setTagWidths((prev) => {
-      const base = prev.key === tagKey ? prev.widths : {};
-      return base[i] === w && prev.key === tagKey ? prev : { key: tagKey, widths: { ...base, [i]: w } };
-    });
-  };
   const nonstop = it.legs.length === 1;
   const measure = (i: number) => (e: { nativeEvent: { layout: { height: number } } }) => {
     const h = e.nativeEvent.layout.height;
@@ -302,21 +303,22 @@ function LegTimeline({
         const dotTier = dimmed || typical || view?.tag?.kind === 'canceled' ? 'unknown' : leg.seats.tier;
         // Every box has one layout (John, 2026-11-02): times and airports first, then the flight
         // chip with its status pill after it.
+        // The flight chip on its own row; any status pill sits over the route line (round 136, John).
         const pills = (
           <View style={styles.legMeta} testID="leg-flight">
-            <View
-              style={[styles.chipCol, tagColumn ? { minWidth: tagColumn } : null]}
-              onLayout={tagColumn || !anyTag ? undefined : measureTag(i)}
-              testID="leg-chip-col">
-              <AirlinePill airline={leg.flight.airline} flightNumber={leg.flight.flightNumber} />
-            </View>
-            {view?.tag ? <StatusTag label={view.tag.label} tone={TAG_TONE[view.tag.kind]} /> : null}
+            <AirlinePill airline={leg.flight.airline} flightNumber={leg.flight.flightNumber} />
           </View>
         );
         const content = (
           <>
             {/* The flight's two ends: times over airport pills, a plane between (round 132, John). */}
-            <LegEnds leg={leg.flight} view={view} dimmed={dimmed} showTimes={!nonstop} />
+            <LegEnds
+              leg={leg.flight}
+              view={view}
+              dimmed={dimmed}
+              showTimes={!nonstop}
+              tag={view?.tag ? <StatusTag label={view.tag.label} tone={TAG_TONE[view.tag.kind]} /> : undefined}
+            />
             {/* A diversion goes on to the planned airport, late (John, 2026-11-01). */}
             {view?.tag?.kind === 'diverted' ? (
               <Text style={[textStyles.small, { color: c.muted }]} testID="leg-diverted-note">
@@ -391,16 +393,17 @@ function LegTimeline({
                       paddingBottom: CONNECTION_PAD + Math.max(0, tail - head),
                     },
                   ]}>
+                  {/* The tag marks a connection the live times squeeze or break; it sits on top,
+                      both centered with the flight boxes (round 136, John). */}
+                  {risk ? <StatusTag label={layover < 0 ? 'Missed' : 'At risk'} tone="delayed" /> : null}
                   {connection ? (
                     <Text
                       lineBreakStrategyIOS="push-out"
-                      style={[textStyles.small, styles.shrink, { color: c.muted }]}
+                      style={[textStyles.small, styles.connectionText, { color: c.muted }]}
                       testID="leg-connection-text">
                       {connectionText(connection, layover, it.legs[i + 1]?.flight.airline)}
                     </Text>
                   ) : null}
-                  {/* The tag marks a connection the live times squeeze or break. */}
-                  {risk ? <StatusTag label={layover < 0 ? 'Missed' : 'At risk'} tone="delayed" /> : null}
                 </View>
               </View>
             )}
@@ -409,6 +412,32 @@ function LegTimeline({
       })}
     </View>
   );
+}
+
+type Measurable = {
+  measureInWindow: (cb: (x: number, y: number, w: number, h: number) => void) => void;
+  measureLayout: (to: never, ok: (x: number, y: number, w: number, h: number) => void, fail?: () => void) => void;
+};
+
+/** Where the dashed line is on screen, worked out from where it sits inside the whole card. */
+export function measurePerfOn(
+  perf: unknown,
+  whole: unknown,
+  done: (x: number, y: number, width: number, height: number) => void,
+) {
+  const p = perf as Measurable | null;
+  const w = whole as Measurable | null;
+  if (!p) return done(0, 0, 0, 0);
+  if (!w) return p.measureInWindow(done);
+  try {
+    p.measureLayout(
+      w as never,
+      (x, y, pw, ph) => w.measureInWindow((wx, wy) => done(wx + x, wy + y, pw, ph)),
+      () => p.measureInWindow(done),
+    );
+  } catch {
+    p.measureInWindow(done);
+  }
 }
 
 export const ResultRow = memo(function ResultRow({
@@ -671,7 +700,9 @@ export const ResultRow = memo(function ResultRow({
                 measureCard: (done) => ticketRef.current?.measureInWindow(done),
                 // The whole card as a picture, so the tear bends the real thing (round 132).
                 measureWhole: (done) => wholeRef.current?.measureInWindow(done),
-                measurePerf: (done) => (perfRef.current ? perfRef.current.measureInWindow(done) : done(0, 0, 0, 0)),
+                // Measured inside the card itself, then put on screen with the card, so the dashes'
+                // place on the card picture is exact (round 136, John: "It still doesn't cut along the line").
+                measurePerf: (done) => measurePerfOn(perfRef.current, wholeRef.current, done),
                 snapshot: () => snapshotCard(wholeRef),
                 piece: () => (
                   <InkContext.Provider value>
@@ -933,8 +964,8 @@ const styles = StyleSheet.create({
   },
   // A leg's tag and flight chip, above (first flight) or below (later flights) its time.
   legMeta: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', columnGap: spacing.group, rowGap: 2 },
-  chipCol: { alignItems: 'flex-start' },
-  connection: { flex: 1, flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: spacing.group },
+  connection: { flex: 1, alignItems: 'center', gap: 4 },
+  connectionText: { textAlign: 'center', alignSelf: 'stretch' },
   struck: { textDecorationLine: 'line-through' },
   // A flight's two ends (round 132): time over an airport pill on each side, a plane line between.
   ends: { flexDirection: 'row', alignItems: 'flex-end', columnGap: 8 },
@@ -950,6 +981,10 @@ const styles = StyleSheet.create({
   },
   codeText: { fontFamily: fonts.mono, fontSize: 13, lineHeight: 17, letterSpacing: 0.4 },
   endsMid: { flex: 1, minWidth: 40, alignItems: 'center', paddingBottom: 6, gap: 1 },
+  // Pill, line, then length: the line stays level with the airport pills' middles.
+  endsMidTagged: { paddingBottom: 0, gap: 2 },
+  endsTag: { maxWidth: '100%', marginBottom: 1 },
+  endColLifted: { marginBottom: ENDS_LIFT },
   endsLength: { fontFamily: fonts.body, fontSize: 11, lineHeight: 14 },
   endsTrack: { flexDirection: 'row', alignItems: 'center', alignSelf: 'stretch', gap: 4 },
   endsLine: { flex: 1, height: 1 },

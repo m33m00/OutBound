@@ -110,7 +110,11 @@ describe('TearAway: the route card tears along its perforation when you save (ro
       if (typeof n.instance?.measureInWindow === 'function') n.instance.measureInWindow = measureHeader;
     }
     for (const n of r!.root.findAllByProps({ testID: 'tear-perf' })) {
-      if (typeof n.instance?.measureInWindow === 'function') n.instance.measureInWindow = measurePerf;
+      if (typeof n.instance?.measureInWindow === 'function') {
+        n.instance.measureInWindow = measurePerf;
+        // Inside the card: 90 points down from its top (round 136 measures it this way).
+        n.instance.measureLayout = (_to: unknown, ok: Measured) => ok(0, 90, 358, 14);
+      }
     }
     act(() => r!.root.findByProps({ testID: 'tear-away-layer' }).props.onLayout());
   }

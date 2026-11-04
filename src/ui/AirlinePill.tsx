@@ -128,7 +128,8 @@ export function AirlinePill({
   const known = !!AIRLINE_MARKS[airline];
   return (
     <View
-      style={[styles.pill, { backgroundColor: c.accentSoft }]}
+      // Plain like the airport pills beside it: black text, no navy (round 136, John).
+      style={[styles.pill, { backgroundColor: c.surface, borderColor: c.line }]}
       accessible
       accessibilityLabel={`${airlineName(airline)} ${flightNumber}`}
       testID="airline-pill">
@@ -138,13 +139,11 @@ export function AirlinePill({
         <Icon
           name="airplane"
           size={large ? 13 : 11}
-          tintColor={c.accent}
-          fallback={<Text style={[textStyles.small, { color: c.accent }]}>✈</Text>}
+          tintColor={c.muted}
+          fallback={<Text style={[textStyles.small, { color: c.muted }]}>✈</Text>}
         />
       )}
-      <Text style={[text, { fontFamily: fonts.mono, color: c.accent }]}>
-        {known ? flightNumber : `${airline} ${flightNumber}`}
-      </Text>
+      <Text style={[text, { fontFamily: fonts.mono, color: c.text }]}>{`${airline} ${flightNumber}`}</Text>
     </View>
   );
 }
@@ -158,6 +157,7 @@ const styles = StyleSheet.create({
     paddingRight: 8,
     paddingVertical: 2,
     borderRadius: radius.sm - 2,
+    borderWidth: StyleSheet.hairlineWidth,
   },
   mark: { overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
   stripe: { position: 'absolute', transform: [{ rotate: '-28deg' }] },

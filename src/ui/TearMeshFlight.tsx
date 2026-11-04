@@ -77,7 +77,7 @@ export function recordTearFrame(
   const kx = p.image.width() / p.geometry.width;
   const ky = p.image.height() / p.geometry.height;
 
-  // A soft shadow under the card while it's in your hands, and under the lifted stub.
+  // A soft shadow under the stub as it comes up off the card (round 136: the card itself stays flat).
   const shadow = (part: MeshPart, rows: number, strength: number, dx: number, dy: number) => {
     if (strength <= 0.01) return;
     const pts = outline(part, TEAR_MESH.cols, rows);
@@ -91,8 +91,6 @@ export function recordTearFrame(
     paint.setMaskFilter(Skia.MaskFilter.MakeBlur(BlurStyle.Normal, 10, true));
     canvas.drawPath(path, paint);
   };
-  const held = pose.lift * (1 - pose.fly);
-  shadow(mesh.body, TEAR_MESH.bodyRows, held, 4, 10);
 
   const draw = (part: MeshPart, opacity: number) => {
     const textures = part.textures.map((t) => ({ x: t.x * kx, y: t.y * ky }));
@@ -176,8 +174,8 @@ export function recordTearFrame(
   };
   draw(mesh.body, 1);
   fibres(mesh.body, TEAR_MESH.bodyRows, true, 1);
-  const lifted = Math.max(pose.pull * 0.6, pose.tear) * (1 - pose.fly);
-  shadow(mesh.stub, TEAR_MESH.stubRows, lifted * 0.8, 6, 12);
+  const lifted = Math.max(...mesh.edgeTorn, pose.free) * (1 - pose.fly);
+  shadow(mesh.stub, TEAR_MESH.stubRows, lifted * 0.6, 2, 5);
   draw(mesh.stub, mesh.stubOpacity);
   fibres(mesh.stub, TEAR_MESH.stubRows, false, mesh.stubOpacity);
   return recorder.finishRecordingAsPicture();

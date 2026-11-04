@@ -1,6 +1,8 @@
 import { forwardRef, useCallback, useEffect, useRef, useState, type ComponentRef, type ReactNode } from 'react';
 import {
   AccessibilityInfo,
+  Animated,
+  Easing,
   ActivityIndicator,
   FlatList,
   type NativeScrollEvent,
@@ -27,7 +29,9 @@ import { BackButton } from './BackButton';
 import { CenteredTitleRow } from './CenteredTitleRow';
 import { Button } from './Buttons';
 import { DayStepper } from './DayStepper';
+import { FLIP_NUDGE, takeFlipHint } from './flipHint';
 import { withTick } from './haptics';
+import { useReducedMotion } from './useReducedMotion';
 import { pressStyle } from './press';
 import { Icon } from './Icon';
 import { ResultRow } from './ResultRow';
@@ -278,6 +282,49 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
     },
   });
 
+  // The same swipe on the card itself (round 136, John: hard to know you can swipe). A leftward swipe
+  // that starts on the perforation tears the stub instead: that strip's pan starts sooner and wins.
+  const cardFlipPan = usePanGesture({
+    runOnJS: true,
+    disableReanimated: true,
+    activeOffsetX: [-ROUTE_FLIP.start, ROUTE_FLIP.start],
+    failOffsetY: [-ROUTE_FLIP.scroll, ROUTE_FLIP.scroll],
+    onDeactivate: (e) => {
+      const by = routeFlip(e.translationX, e.velocityX, e.canceled);
+      if (by) flipRef.current(by);
+    },
+  });
+  // The first time a route opens with others beside it, the card slides a little left and back.
+  const nudge = useRef(new Animated.Value(0)).current;
+  const reduceMotion = useReducedMotion();
+  const canFlip = !!focusedId && results.length > 1;
+  useEffect(() => {
+    if (!canFlip || reduceMotion) return;
+    let alive = true;
+    let run: Animated.CompositeAnimation | null = null;
+    const timer = setTimeout(() => {
+      takeFlipHint().then((show) => {
+        if (!alive || !show) return;
+        run = Animated.sequence([
+          Animated.timing(nudge, {
+            toValue: -FLIP_NUDGE.distance,
+            duration: FLIP_NUDGE.out,
+            easing: Easing.out(Easing.cubic),
+            useNativeDriver: true,
+          }),
+          Animated.spring(nudge, { toValue: 0, friction: 5, tension: 70, useNativeDriver: true }),
+        ]);
+        run.start();
+      });
+    }, FLIP_NUDGE.delay);
+    return () => {
+      alive = false;
+      clearTimeout(timer);
+      run?.stop();
+      nudge.setValue(0);
+    };
+  }, [canFlip, reduceMotion, nudge]);
+
   if (p.state.status === 'loading') {
     return (
       <View style={styles.fill}>
@@ -385,39 +432,46 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
             </GestureDetector>
             {/* Flipping to another route fades the card in so the change registers. */}
             <Appear trigger={focused.id}>
-              {/* Keyed by route so each one opens at its top. */}
-              <ScrollView
-                key={focused.id}
-                // The pass sits on the page color, so its torn edge reads as cut out (round 114).
-                style={{ backgroundColor: c.bg }}
-                contentContainerStyle={styles.focus}
-                onScrollEndDrag={pullDown}
-                onContentSizeChange={(_, h) => setContentH(h)}>
-                {/* Keyed by route so paging re-announces the new Leave By time. */}
-                {p.selectedCard ? (
-                  <View testID="selected-card" key={focused.id}>
-                    {p.selectedCard}
-                  </View>
-                ) : null}
-                <ResultRow
-                  itinerary={focused}
-                  selected
-                  large
-                  now={p.now}
-                  onPress={p.onSelect}
-                  impact={p.impacts?.[focused.id]}
-                  impactLoading={p.impactsLoading}
-                  onImpactPress={p.onImpactPress}
-                  onLegPress={p.onLegPress}
-                  status={p.statuses?.[focused.id]}
-                  onSwipeSave={p.onToggleSave && !p.isSaved?.(focused) ? () => p.onToggleSave?.(focused) : undefined}
-                  topAction={
-                    p.onToggleSave ? (
-                      <SaveRouteButton saved={!!p.isSaved?.(focused)} onPress={() => p.onToggleSave?.(focused)} />
-                    ) : undefined
-                  }
-                />
-              </ScrollView>
+              <GestureDetector gesture={cardFlipPan}>
+                <Animated.View
+                  collapsable={false}
+                  style={[styles.fill, { transform: [{ translateX: nudge }] }]}
+                  testID="route-card-slide">
+                  {/* Keyed by route so each one opens at its top. */}
+                  <ScrollView
+                    key={focused.id}
+                    // The pass sits on the page color, so its torn edge reads as cut out (round 114).
+                    style={{ backgroundColor: c.bg }}
+                    contentContainerStyle={styles.focus}
+                    onScrollEndDrag={pullDown}
+                    onContentSizeChange={(_, h) => setContentH(h)}>
+                    {/* Keyed by route so paging re-announces the new Leave By time. */}
+                    {p.selectedCard ? (
+                      <View testID="selected-card" key={focused.id}>
+                        {p.selectedCard}
+                      </View>
+                    ) : null}
+                    <ResultRow
+                      itinerary={focused}
+                      selected
+                      large
+                      now={p.now}
+                      onPress={p.onSelect}
+                      impact={p.impacts?.[focused.id]}
+                      impactLoading={p.impactsLoading}
+                      onImpactPress={p.onImpactPress}
+                      onLegPress={p.onLegPress}
+                      status={p.statuses?.[focused.id]}
+                      onSwipeSave={p.onToggleSave && !p.isSaved?.(focused) ? () => p.onToggleSave?.(focused) : undefined}
+                      topAction={
+                        p.onToggleSave ? (
+                          <SaveRouteButton saved={!!p.isSaved?.(focused)} onPress={() => p.onToggleSave?.(focused)} />
+                        ) : undefined
+                      }
+                    />
+                  </ScrollView>
+                </Animated.View>
+              </GestureDetector>
             </Appear>
           </View>
         </Appear>
@@ -504,8 +558,10 @@ export const PULL_DOWN_VELOCITY = 1;
 function RouteEnds({ from, to }: { from: string; to: string }) {
   const c = useColors();
   const pill = (code: string) => (
-    <View style={[styles.endPill, { backgroundColor: c.accentSoft }]} testID="route-end">
-      <Text style={[styles.endCode, { color: c.accent }]} maxFontSizeMultiplier={1.3}>
+    // Content, not a control, so the same black text and plain pill as the airports in the boxes
+    // (round 136, John: "What's with the navy colors").
+    <View style={[styles.endPill, { backgroundColor: c.surface2, borderColor: c.line }]} testID="route-end">
+      <Text style={[styles.endCode, { color: c.text }]} maxFontSizeMultiplier={1.3}>
         {code}
       </Text>
     </View>
@@ -566,6 +622,41 @@ export const MAX_ROUTE_DOTS = 9;
 function RouteDots({ count, index, onPick }: { count: number; index: number; onPick: (i: number) => void }) {
   const c = useColors();
   if (count < 2) return null;
+  // Small arrows either side say the routes page sideways (round 136, John: "Hard for a user to know
+  // they can swipe"); faint at the ends, where there's nothing that way.
+  const arrow = (by: 1 | -1) => {
+    const to = index + by;
+    const on = to >= 0 && to < count;
+    return (
+      <Pressable
+        onPress={on ? () => onPick(to) : undefined}
+        disabled={!on}
+        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+        accessibilityElementsHidden
+        importantForAccessibility="no-hide-descendants"
+        style={pressStyle(styles.pageArrow)}
+        testID={by > 0 ? 'route-next' : 'route-prev'}>
+        <Icon
+          name={by > 0 ? 'chevron.right' : 'chevron.left'}
+          size={11}
+          weight="semibold"
+          tintColor={on ? c.accent : c.line2}
+          fallback={<Text style={[textStyles.small, { color: on ? c.accent : c.line2 }]}>{by > 0 ? '›' : '‹'}</Text>}
+        />
+      </Pressable>
+    );
+  };
+  return (
+    <View style={styles.pager} testID="route-pager">
+      {arrow(-1)}
+      <PagerMarks count={count} index={index} onPick={onPick} />
+      {arrow(1)}
+    </View>
+  );
+}
+
+function PagerMarks({ count, index, onPick }: { count: number; index: number; onPick: (i: number) => void }) {
+  const c = useColors();
   const a11y = {
     accessible: true,
     accessibilityRole: 'adjustable' as const,
@@ -636,20 +727,20 @@ function NowLine({ time }: { time: string | null }) {
       testID="now-line"
       accessible
       accessibilityLabel={`Now${time ? `, ${time}` : ''}. Flights below haven’t left yet.`}>
-      <View style={[styles.rule, { backgroundColor: c.accent }]} />
+      <View style={[styles.rule, { backgroundColor: c.text }]} />
       {/* "Now" and the time set apart by a thin divider, not a dot (rounds 123 and 124, John). */}
       <View style={styles.nowWords}>
-        <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { fontFamily: fonts.bodySemiBold, color: c.accent }]}>
+        <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { fontFamily: fonts.bodySemiBold, color: c.text }]}>
           Now
         </Text>
-        {time ? <View style={[styles.nowDivider, { backgroundColor: c.accent }]} /> : null}
+        {time ? <View style={[styles.nowDivider, { backgroundColor: c.line2 }]} /> : null}
         {time ? (
-          <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { fontFamily: fonts.bodyMedium, color: c.accent }]}>
+          <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { fontFamily: fonts.bodyMedium, color: c.text }]}>
             {time}
           </Text>
         ) : null}
       </View>
-      <View style={[styles.rule, { backgroundColor: c.accent }]} />
+      <View style={[styles.rule, { backgroundColor: c.text }]} />
     </View>
   );
 }
@@ -674,10 +765,12 @@ const styles = StyleSheet.create({
   routeBar: { paddingTop: 2 },
   routeMiddle: { alignItems: 'center', gap: 6 },
   dots: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 8 },
+  pager: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  pageArrow: { paddingHorizontal: 2, height: 16, justifyContent: 'center' },
   dot: { width: 6, height: 6, borderRadius: 3 },
   dotOn: { width: 16 },
   routeEnds: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  endPill: { borderRadius: 8, paddingHorizontal: 9, paddingVertical: 3 },
+  endPill: { borderRadius: 8, paddingHorizontal: 9, paddingVertical: 3, borderWidth: StyleSheet.hairlineWidth },
   endCode: { fontFamily: fonts.mono, fontSize: 16, lineHeight: 21, letterSpacing: 0.5 },
   routeEndsTrack: { flexDirection: 'row', alignItems: 'center', gap: 4, width: 64 },
   routeEndsLine: { flex: 1, height: 1 },

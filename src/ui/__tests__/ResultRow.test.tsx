@@ -6,7 +6,7 @@ import { flightLookupKey, type FlightStatus } from '@/live';
 import { legLookup, rowStatus } from '@/search/statusTags';
 import { colors, inkColors } from '@/theme';
 
-import { connectionText, dotSeats, ResultRow, tagColumnWidth } from '../ResultRow';
+import { connectionText, dotSeats, measurePerfOn, ResultRow } from '../ResultRow';
 import { StatusTag } from '../StatusTag';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -446,7 +446,7 @@ describe('ResultRow', () => {
     }
   });
 
-  it("route card: a leg's tag sits just right of its flight, in one piece (John, 2026-11-02)", async () => {
+  it("route card: a leg's tag sits centered just above its route line (round 136, John)", async () => {
     const it = await fullItinerary();
     await act(async () => {
       r = create(
@@ -460,26 +460,23 @@ describe('ResultRow', () => {
         />,
       );
     });
-    const group = r!.root.findAll((n) => n.props.testID === 'leg-flight' && typeof n.type === 'string')[0];
-    const words = group.findAll((n) => typeof n.props.children === 'string').map((n) => n.props.children as string);
-    const tagAt = words.indexOf('Delayed 25m');
-    expect(tagAt).toBeGreaterThanOrEqual(0);
-    // The flight chip comes first and the tag after it, inside the same group (John, 2026-11-02).
-    const flat = group
-      .findAll((n) => typeof n.type === 'string' && n.props.children != null)
-      .map((n) => [n.props.children].flat().join(''));
-    // The flight chip shows American's mark and the number, no code (round 132, John).
-    const flightAt = group
-      .findAll((n) => typeof n.type === 'string' && (n.props.testID === 'airline-pill' || n.props.children != null))
-      .findIndex((n) => n.props.testID === 'airline-pill');
+    const box = r!.root.findAll((n) => n.props.testID === 'leg-box' && typeof n.type === 'string')[0];
+    const words = (n: (typeof box)['children'][number] | typeof box) =>
+      typeof n === 'string' ? [] : n.findAll((x) => typeof x.props.children === 'string').map((x) => x.props.children as string);
+    // The pill is in the middle between the airports, on top of the line, the length under it.
+    const track = box.findAll((n) => n.props.testID === 'leg-track' && typeof n.type === 'string')[0];
+    const order = track
+      .findAll((n) => typeof n.type === 'string' && ['leg-tag', 'leg-length'].includes(n.props.testID))
+      .map((n) => n.props.testID);
+    expect(order).toEqual(['leg-tag', 'leg-length']);
+    expect(words(track.findAll((n) => n.props.testID === 'leg-tag' && typeof n.type === 'string')[0])).toContain('Delayed 25m');
+    // Not on the flight chip's row any more.
+    const group = box.findAll((n) => n.props.testID === 'leg-flight' && typeof n.type === 'string')[0];
+    expect(words(group)).not.toContain('Delayed 25m');
+    // The chip shows American's mark and the code with the number again (round 136, John: "like DL, WN").
     expect(group.findAll((n) => n.props.testID === 'airline-mark' && typeof n.type === 'string').length).toBeGreaterThan(0);
+    expect(words(group)).toContain('AA 1');
     expect(group.findAll((n) => n.props.accessibilityLabel === 'American 1' && typeof n.type === 'string').length).toBe(1);
-    expect(flightAt).toBeGreaterThanOrEqual(0);
-    const tagIndex = group
-      .findAll((n) => typeof n.type === 'string' && (n.props.testID === 'airline-pill' || n.props.children != null))
-      .findIndex((n) => [n.props.children].flat().join('') === 'Delayed 25m');
-    expect(flat).toContain('Delayed 25m');
-    expect(flightAt).toBeLessThan(tagIndex);
   });
 
   it('canceled: tag word and spoken text; departed: gray tag', async () => {
@@ -684,12 +681,7 @@ describe('ResultRow', () => {
     expect(dots.map((d) => d.props.children)).toEqual(['4/9']);
   });
 
-  it('flight chips widen to the widest so the status pills after them line up (John, 2026-11-02)', async () => {
-    expect(tagColumnWidth({}, 2)).toBeUndefined();
-    expect(tagColumnWidth({ 0: 80 }, 2)).toBeUndefined(); // waits for every tagged leg
-    expect(tagColumnWidth({ 0: 80 }, 1)).toBeUndefined(); // one tag has nothing to line up with
-    expect(tagColumnWidth({ 0: 80, 1: 109.4 }, 2)).toBe(110);
-
+  it("every leg's status pill sits over its own route line, so they line up top to bottom (round 136, John)", async () => {
     const at = (hhmm: string) => zonedToUtc('2026-10-20', hhmm, 'America/Chicago');
     const provider = createMemoryProvider(
       [
@@ -727,17 +719,12 @@ describe('ResultRow', () => {
     await act(async () => {
       r = create(<ResultRow itinerary={it} selected now={NOW} onPress={jest.fn()} status={status} />);
     });
-    const chips = () => r!.root.findAll((n) => n.props.testID === 'leg-chip-col' && typeof n.type === 'string');
-    const minWidths = () =>
-      chips().map((n) => [n.props.style].flat(3).find((st: { minWidth?: number } | null) => st?.minWidth)?.minWidth);
-    expect(chips()).toHaveLength(2);
-    expect(minWidths()).toEqual([undefined, undefined]);
-    const layout = (width: number) => ({ nativeEvent: { layout: { x: 0, y: 0, width, height: 22 } } });
-    await act(async () => {
-      chips()[0].props.onLayout(layout(80));
-      chips()[1].props.onLayout(layout(104));
-    });
-    expect(minWidths()).toEqual([104, 104]);
+    const tags = r!.root.findAll((n) => n.props.testID === 'leg-tag' && typeof n.type === 'string');
+    expect(tags).toHaveLength(2);
+    // Each inside its leg's route line, centered between the two airports.
+    const tracks = r!.root.findAll((n) => n.props.testID === 'leg-track' && typeof n.type === 'string');
+    for (const t of tracks) expect(t.findAll((n) => n.props.testID === 'leg-tag' && typeof n.type === 'string')).toHaveLength(1);
+    expect(r!.root.findAll((n) => n.props.testID === 'leg-chip-col')).toHaveLength(0);
   });
 
   it('route card: no banner for a canceled leg; its own pill says it and the seat chip stays up top (John, 2026-11-02)', async () => {
@@ -848,5 +835,26 @@ describe('Route card as a boarding pass (round 114)', () => {
     expect(r!.root.findAll((n) => n.props.testID === 'ticket-stub')).toHaveLength(0);
     expect(r!.root.findAll((n) => n.props.testID === 'ticket-tear' && typeof n.type === 'string')).toHaveLength(1);
     r!.unmount();
+  });
+});
+
+describe('measurePerfOn: the tear finds the dashes inside the card itself (round 136, John)', () => {
+  type Cb = (x: number, y: number, w: number, h: number) => void;
+  const view = (win: [number, number, number, number], inCard?: [number, number, number, number]) => ({
+    measureInWindow: (cb: Cb) => cb(...win),
+    measureLayout: (_to: unknown, ok: Cb, fail?: () => void) => (inCard ? ok(...inCard) : fail?.()),
+  });
+  it('puts the dashes where they sit in the card, on top of where the card is on screen', () => {
+    const done = jest.fn();
+    // On screen the strip reports a stale place; inside the card it is 120 points down.
+    measurePerfOn(view([0, 999, 358, 14], [0, 120, 358, 14]), view([16, 200, 358, 400]), done);
+    expect(done).toHaveBeenCalledWith(16, 320, 358, 14);
+  });
+  it("falls back to the screen place, or nothing, when it can't", () => {
+    const done = jest.fn();
+    measurePerfOn(view([0, 310, 358, 14]), view([16, 200, 358, 400]), done);
+    expect(done).toHaveBeenLastCalledWith(0, 310, 358, 14);
+    measurePerfOn(null, null, done);
+    expect(done).toHaveBeenLastCalledWith(0, 0, 0, 0);
   });
 });
