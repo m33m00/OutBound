@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { fonts, useColors } from '@/theme';
 
 import { AIRLINE_MARKS, AirlineMark } from './AirlinePill';
+import { Icon } from './Icon';
 
 /** Room above the line for each leg's seat numbers, and below it for a stop's code. */
 const LABEL_H = 16;
@@ -11,6 +12,11 @@ const DOT = 8;
 const STOP_W = 40;
 /** Room above the seat numbers for a connection's flag ("At risk"), only when a route has one. */
 const FLAG_H = 21;
+/** Room over the seat numbers for the tiny seat and person icons (round 147). */
+const ICON_H = 12;
+const ICON = 11;
+/** The icon over each kind of seat count: open seats and people listed (round 147, John). */
+export const COUNT_ICON = { seats: 'carseat.right.fill', listed: 'person.fill' } as const;
 /** The X on a canceled leg. */
 const X_SIZE = 12;
 /** Room under the stop codes for each leg's flight and aircraft (round 145). */
@@ -25,6 +31,12 @@ export interface MiniRouteLeg {
   /** The numbers' color: the same hue, dark enough to read as small text. */
   text: string;
   label: string;
+  /**
+   * The label's numbers, each with a tiny icon over it: a seat over the open seats, a person over the people
+   * listed (round 147, John: "can you put like a tiny icon above each number ... a little person, and then
+   * the other one being like a seat?"). Drawn in place of `label` when given.
+   */
+  counts?: readonly { kind: keyof typeof COUNT_ICON; value: string }[];
   /** Canceled: drawn red with an X in the middle (round 143, John). */
   canceled?: boolean;
   /**
@@ -79,21 +91,22 @@ export function MiniRoute({
   const legFlagged = !!segs?.some((l) => l.flag);
   const flagged = stopFlagged || legFlagged;
   const withFlights = !!segs?.some((l) => l.flight);
+  const withIcons = !!segs?.some((l) => l.label && l.counts?.length);
   // Short legs (2 or more stops on a small phone) drop the airline code beside a known airline's logo.
   const compact = n >= COMPACT_LEGS;
   // Flags get their own bands above the seat numbers: a flight's (delays) on top, a stop's (At risk)
   // nearest its dot, so a delay and the risk it causes never sit on each other.
   const legFlagTop = 0;
   const stopFlagTop = legFlagged ? FLAG_H : 0;
-  // Everything in the track sits this far lower when there are flags above it.
-  const top = (legFlagged ? FLAG_H : 0) + (stopFlagged ? FLAG_H : 0);
+  // Everything in the track sits this far lower when there are flags or count icons above it.
+  const top = (legFlagged ? FLAG_H : 0) + (stopFlagged ? FLAG_H : 0) + (withIcons ? ICON_H : 0);
   const below = (y: number) => ({ top: top + y });
   return (
     <View
       style={[
         styles.row,
         segs && styles.rowLabeled,
-        flagged && { paddingTop: 6 + top },
+        top > 0 && { paddingTop: 6 + top },
         withFlights && { paddingBottom: 6 + FLIGHT_H },
       ]}
       testID="mini-route"
@@ -201,7 +214,32 @@ export function MiniRoute({
             })}
             {segs.map((leg, i) =>
               // A leg with nothing to say (canceled, no data) shows no label at all (round 142).
-              !leg.label ? null : (
+              !leg.label ? null : leg.counts?.length ? (
+                <View
+                  key={`lab${i}`}
+                  style={[styles.countsSlot, below(-ICON_H), { left: pct(i), width: pct(1) }]}
+                  testID="mini-route-leg-slot">
+                  {leg.counts.map((k, j) => (
+                    <View key={k.kind} style={styles.countRow}>
+                      {j > 0 ? (
+                        <Text style={[styles.legText, { color: leg.text }]} maxFontSizeMultiplier={1.2}>
+                          /
+                        </Text>
+                      ) : null}
+                      <View style={styles.count} testID={`mini-route-count-${k.kind}`}>
+                        <Icon name={COUNT_ICON[k.kind]} size={ICON} tintColor={leg.text} fallback={null} />
+                        <Text
+                          style={[styles.legText, { color: leg.text }]}
+                          numberOfLines={1}
+                          maxFontSizeMultiplier={1.2}
+                          testID="mini-route-count-value">
+                          {k.value}
+                        </Text>
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              ) : (
                 <View
                   key={`lab${i}`}
                   style={[styles.legLabel, below(0), { left: pct(i), width: pct(1) }]}
@@ -305,6 +343,17 @@ const styles = StyleSheet.create({
   // A leg's seat numbers, centred over the middle of its stretch and never wider than it.
   legLabel: { position: 'absolute', height: LABEL_H, alignItems: 'center', paddingHorizontal: 4 },
   legText: { fontFamily: fonts.monoMedium, fontSize: 13, lineHeight: LABEL_H },
+  // Numbers with an icon over each, the slash on the numbers' baseline.
+  countsSlot: {
+    position: 'absolute',
+    height: ICON_H + LABEL_H,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'flex-end',
+    paddingHorizontal: 4,
+  },
+  countRow: { flexDirection: 'row', alignItems: 'flex-end' },
+  count: { alignItems: 'center', height: ICON_H + LABEL_H, justifyContent: 'flex-end', gap: 1 },
   stop: { position: 'absolute', width: STOP_W, marginLeft: -STOP_W / 2, alignItems: 'center' },
   flightSlot: { position: 'absolute', height: FLIGHT_H - 2, alignItems: 'center', paddingHorizontal: 3 },
   flightLine: { flexDirection: 'row', alignItems: 'center', gap: 3, maxWidth: '100%' },

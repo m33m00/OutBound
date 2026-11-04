@@ -6,7 +6,7 @@ import { flightLookupKey, type FlightStatus } from '@/live';
 import { legLookup, rowStatus } from '@/search/statusTags';
 import { colors, inkColors } from '@/theme';
 
-import { connectionText, dotSeats, measurePerfOn, ResultRow } from '../ResultRow';
+import { connectionText, dotSeats, measurePerfOn, ResultRow, seatCounts } from '../ResultRow';
 import { StatusTag } from '../StatusTag';
 import { TIER_FG } from '../tierColors';
 
@@ -74,8 +74,11 @@ describe('ResultRow', () => {
     expect(stopsRow.props.numberOfLines).toBe(1);
     const routeLine = root.find((n) => n.props.testID === 'mini-route' && typeof n.type === 'string');
     expect(routeLine.findAll((n) => n.props.testID === 'row-stops')).toHaveLength(0);
-    const labels = root.findAll((n) => n.props.testID === 'mini-route-leg-label' && typeof n.type === 'string');
-    expect(labels.map((n) => n.props.children)).toEqual(['4/9']);
+    // Each number with its tiny icon over it: a seat over the open seats, a person over the listed (round 147).
+    const counts = root.findAll((n) => n.props.testID === 'mini-route-count-value' && typeof n.type === 'string');
+    expect(counts.map((n) => n.props.children).join('/')).toBe('4/9');
+    expect(root.findAll((n) => n.props.testID === 'mini-route-count-seats' && typeof n.type === 'string')).toHaveLength(1);
+    expect(root.findAll((n) => n.props.testID === 'mini-route-count-listed' && typeof n.type === 'string')).toHaveLength(1);
     expect(texts.some((t) => / seats · \d+ listed/.test(String(t)))).toBe(false);
     // Seat ages are hidden for now (round 124, John); VoiceOver still hears them.
     expect(root.findAll((n) => n.props.testID === 'seat-age')).toHaveLength(0);
@@ -292,10 +295,10 @@ describe('ResultRow', () => {
     await act(async () => {
       r = create(<ResultRow itinerary={it} selected={false} now={NOW} onPress={jest.fn()} status={status} />);
     });
-    const text = r!.root.findAll((n) => n.props.testID === 'mini-route-leg-label' && typeof n.type === 'string')[0];
+    const values = r!.root.findAll((n) => n.props.testID === 'mini-route-count-value' && typeof n.type === 'string');
     const flat = (style: unknown) => Object.assign({}, ...([style] as unknown[]).flat(3).filter(Boolean));
-    expect(flat(text.props.style).color).toBe(colors.light[TIER_FG.unknown]);
-    expect(text.props.children).toBe('4/9');
+    expect(flat(values[0].props.style).color).toBe(colors.light[TIER_FG.unknown]);
+    expect(values.map((n) => n.props.children).join('/')).toBe('4/9');
     const seg = r!.root.findAll((n) => n.props.testID === 'mini-route-seg' && typeof n.type === 'string')[0];
     expect(flat(seg.props.style).backgroundColor).toBe(colors.light.unknown);
   });
@@ -954,5 +957,19 @@ describe('measurePerfOn: the tear finds the dashes inside the card itself (round
     expect(done).toHaveBeenLastCalledWith(0, 310, 358, 14);
     measurePerfOn(null, null, done);
     expect(done).toHaveBeenLastCalledWith(0, 0, 0, 0);
+  });
+});
+
+describe('seatCounts (round 147)', () => {
+  const base = { tier: 'good', asOf: null } as const;
+  it('tags open seats and listed, or a lone number as seats', () => {
+    expect(seatCounts({ ...base, source: 'reported', netSeats: 9, openSeats: 21, listed: 12 } as never)).toEqual([
+      { kind: 'seats', value: '21' },
+      { kind: 'listed', value: '12' },
+    ]);
+    expect(seatCounts({ ...base, source: 'typical', netSeats: 30, openSeats: 40, listed: 10 } as never)).toEqual([
+      { kind: 'seats', value: '30' },
+    ]);
+    expect(seatCounts({ ...base, source: 'unknown', netSeats: null } as never)).toEqual([]);
   });
 });

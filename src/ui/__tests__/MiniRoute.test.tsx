@@ -2,6 +2,7 @@ import React from 'react';
 import { StyleSheet } from 'react-native';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 
+import { Icon } from '../Icon';
 import { MiniRoute } from '../MiniRoute';
 
 describe('MiniRoute (round 119)', () => {
@@ -166,5 +167,35 @@ describe('MiniRoute (round 119)', () => {
     const three = flags(['DFW', 'CLT', 'MIA', 'LGA'], [leg(), leg(), leg('Delayed 50m')]);
     const short = three[0].findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string')[0];
     expect(short.props.children).toBe('+50m');
+  });
+
+  it('puts a tiny seat icon over the open seats and a person over the listed, in the label color (round 147, John)', () => {
+    const counts = [
+      { kind: 'seats' as const, value: '21' },
+      { kind: 'listed' as const, value: '12' },
+    ];
+    act(() => {
+      r = create(
+        <MiniRoute
+          airports={['DFW', 'MIA', 'LGA']}
+          legs={[
+            { color: '#0a0', text: '#060', label: '21/12', counts, flag: 'Delayed 50m' },
+            { color: '#999', text: '#666', label: '' },
+          ]}
+        />,
+      );
+    });
+    const host = (id: string) => r!.root.findAll((n) => n.props.testID === id && typeof n.type === 'string');
+    expect(host('mini-route-count-value').map((n) => n.props.children)).toEqual(['21', '12']);
+    const icons = r!.root.findAll((n) => n.type === Icon);
+    expect(icons.map((n) => [n.props.name, n.props.tintColor])).toEqual([
+      ['carseat.right.fill', '#060'],
+      ['person.fill', '#060'],
+    ]);
+    // The delay pill keeps its own band above the icons, so the two stack instead of overlapping.
+    const slot = StyleSheet.flatten(host('mini-route-leg-slot')[0].props.style);
+    const flag = StyleSheet.flatten(host('mini-route-leg-flag')[0].props.style);
+    expect(flag.top).toBe(0);
+    expect(slot.top as number).toBeGreaterThanOrEqual(17);
   });
 });

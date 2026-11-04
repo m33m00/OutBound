@@ -94,6 +94,20 @@ export function dotSeats(seats: LegSeats): string {
   return `${Math.max(0, seats.netSeats)}`;
 }
 
+/**
+ * The same numbers as `dotSeats`, each tagged with what it counts so the route line can put a tiny seat
+ * or person icon over it (round 147, John). A lone number is seats left after the list.
+ */
+export function seatCounts(seats: LegSeats): { kind: 'seats' | 'listed'; value: string }[] {
+  if (seats.source === 'unknown' || seats.netSeats == null) return [];
+  if (seats.source !== 'typical' && seats.openSeats != null && seats.listed != null)
+    return [
+      { kind: 'seats', value: `${seats.openSeats}` },
+      { kind: 'listed', value: `${seats.listed}` },
+    ];
+  return [{ kind: 'seats', value: `${Math.max(0, seats.netSeats)}` }];
+}
+
 /** Space above and below a connection label, before any extra that centers it on the line. */
 const CONNECTION_PAD = 6;
 /** How far the airport pills rise when a status pill sits over the line, so the line stays level with them. */
@@ -799,7 +813,14 @@ export const ResultRow = memo(function ResultRow({
                     // A delay or diversion rides over its own leg, above the seats (round 146, John).
                     const tag = status?.legs[i]?.tag;
                     const flag = tag && (tag.kind === 'delayed' || tag.kind === 'diverted') ? tag.label : null;
-                    return { color: c[tier], text: c[TIER_FG[tier]], label: blank ? '' : dotSeats(l.seats), flag, flight };
+                    return {
+                      color: c[tier],
+                      text: c[TIER_FG[tier]],
+                      label: blank ? '' : dotSeats(l.seats),
+                      counts: seatCounts(l.seats),
+                      flag,
+                      flight,
+                    };
                   })}
                 />
               </View>

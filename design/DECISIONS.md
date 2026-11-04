@@ -448,3 +448,13 @@ John: "The delayed pill, can that be over on top of that route line, aligned, ce
 - With the bigger numbers, the code beside a known airline logo drops from 2 stops up (was 3), so "1550" fits a 74pt leg; 1-stop routes keep "AA 1550".
 - My Trips saved cards now draw the same route line, with each flight and its aircraft under its leg. Saved trips keep each flight's aircraft from now on; older saves just show the flight.
 - Measured with the app's fonts on a 375pt phone (not rendered): "Delayed 50m" is 88pt in a 113pt leg (1 stop) and 226pt (nonstop); "21/12" is about 47pt in the 55pt leg at 3 stops; the longest stops line is under 290pt of the 318pt card.
+
+## Design round 147: tiny seat and person icons over each leg's numbers (John, 2026-11-04)
+
+John: "for like the seat count ... can you put like a tiny icon above each number, like one representing like a little person, and then the other one being like a seat? That will help people know like what they're looking at."
+
+- Each leg's numbers on the result card ("21/12") now have a tiny icon over each number, in the same color: a seat over the open seats, a person over the people listed. A lone number (a typical load or seats after the list) gets the seat. A leg with no data or a canceled leg still shows nothing.
+- They sit in their own short band, under any Delayed pill and At risk pill, so all three stack cleanly over a leg instead of overlapping. The card grows about 12pt taller only when a row has numbers.
+- iOS draws Apple's seat and person symbols; Android uses Material's airline seat and person.
+- The map key has a new "Numbers over each leg" part with both icons: Open seats, People listed. VoiceOver reads it too.
+- Fit on a 375pt phone (measured, not rendered): "21/12" with its icons is about 47pt, inside the 55pt leg at 3 stops.

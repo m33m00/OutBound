@@ -25,6 +25,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { fonts, textStyles, useColors } from '@/theme';
 import { Icon } from '@/ui/Icon';
+import { COUNT_ICON } from '@/ui/MiniRoute';
 
 import { hexToRgb, rgba } from './globeColors';
 import type { MarkKind } from './marks';
@@ -53,6 +54,8 @@ function CanceledSwatch({ color, disc }: { color: string; disc: string }) {
 
 /** What the red X on a result card's route line means. */
 export const CANCELED_MEANING = 'Red with an X: that flight is canceled';
+/** The two tiny icons over a leg's numbers on the result cards (round 147, John). */
+export const COUNT_MEANING = { seats: 'Open seats', listed: 'People listed' } as const;
 
 function DashedSwatch({ color }: { color: string }) {
   // Scaled-down 8/6 dash so the key matches the map.
@@ -221,6 +224,7 @@ export function RouteLegend({ route, marks, badges, open: openProp, onToggle }: 
     'Map key.',
     'Line color is seats left after the list:',
     ...key.colors.map((r) => `${r.label}${r.meaning ? `, ${r.meaning}` : ''}.`),
+    `Over each leg, a seat icon marks ${COUNT_MEANING.seats.toLowerCase()} and a person icon marks ${COUNT_MEANING.listed.toLowerCase()}.`,
     ...key.lineStyles.map((s) => `${STYLE_MEANING[s]}.`),
     ...marked.map((m) => `${m.text}.`),
     `On the route card, a seat circle like ${SEAT_CIRCLE_EXAMPLE} means ${SEAT_CIRCLE_MEANING}.`,
@@ -244,6 +248,15 @@ export function RouteLegend({ route, marks, badges, open: openProp, onToggle }: 
             <Text style={[styles.strong, { color: c.text }]}>{r.label}</Text>
             {r.meaning ? `  ${r.meaning}` : ''}
           </Text>
+        </View>
+      ))}
+      <Text style={[heading, styles.section]}>Numbers over each leg</Text>
+      {(['seats', 'listed'] as const).map((k) => (
+        <View key={k} style={styles.row} testID={`legend-count-${k}`}>
+          <View style={styles.markSlot}>
+            <Icon name={COUNT_ICON[k]} size={12} tintColor={c.text} fallback={null} />
+          </View>
+          <Text style={[textStyles.small, styles.label, styles.rowText, { color: c.text }]}>{COUNT_MEANING[k]}</Text>
         </View>
       ))}
       <Text style={[heading, styles.section]}>Line style</Text>

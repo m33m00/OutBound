@@ -110,5 +110,11 @@ describe('RouteLegend', () => {
     expect(spoken).toContain('Line color is seats left after the list: 15 to 49 seats. 1 to 5 seats.');
     expect(spoken).not.toMatch(/Likely|Long shot/);
     expect(spoken).toContain('10 seats left, 4 people listed');
+    // The tiny icons over each leg's numbers on the result cards are explained too (round 147, John).
+    expect(all).toEqual(expect.arrayContaining(['Numbers over each leg', 'Open seats', 'People listed']));
+    const host = (id: string) => r!.root.findAllByProps({ testID: id }).filter((n) => typeof n.type === 'string');
+    expect(host('legend-count-seats')).toHaveLength(1);
+    expect(host('legend-count-listed')).toHaveLength(1);
+    expect(spoken).toContain('a seat icon marks open seats and a person icon marks people listed');
   });
 });
