@@ -42,7 +42,7 @@ describe('computeLeaveBy', () => {
     expect(r).toMatchObject({ kind: 'leaveBy', driveMin: 25, leaveUtc: DEP - 100 * MIN });
     expect(leaveByText(r, BNA.tz)).toEqual({
       title: 'Leave by 7:20 AM',
-      sub: '~25m drive · at BNA by 7:45 AM',
+      sub: '25m drive · at BNA by 7:45 AM',
     });
   });
 

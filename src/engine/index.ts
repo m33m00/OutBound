@@ -4,6 +4,7 @@
  */
 export { AIRPORTS, AREA_TABLE, areaFor, endAirports, placeLabel, transferMin, type Area } from './airports';
 export { createMemoryProvider } from './memoryProvider';
+export { aircraftLabel, sampleAircraft } from './aircraft';
 export { createSampleProvider } from './sample/sampleProvider';
 export {
   DEFAULT_SEARCH_OPTIONS,

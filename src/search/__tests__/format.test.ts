@@ -74,14 +74,14 @@ describe('time and duration', () => {
 
 describe('seatText', () => {
   it('always pairs the tier word with the number and age', () => {
-    expect(seatText(seats({ asOf: NOW - 12 * 60_000 }), NOW)).toBe('Likely · 22 open · reported 12m ago');
-    expect(seatText(seats({ source: 'estimate', tier: 'wide', netSeats: 60 }), NOW)).toBe('Easy · 60 open · est. just now');
+    expect(seatText(seats({ asOf: NOW - 12 * 60_000 }), NOW)).toBe('Likely · 22 seats · reported 12m ago');
+    expect(seatText(seats({ source: 'estimate', tier: 'wide', netSeats: 60 }), NOW)).toBe('Easy · 60 seats · est. just now');
   });
   it('says Full with no open seats', () => {
-    expect(seatText(seats({ tier: 'full', netSeats: -3 }), NOW)).toBe('Full · no open seats · reported just now');
+    expect(seatText(seats({ tier: 'full', netSeats: -3 }), NOW)).toBe('Full · no seats left · reported just now');
   });
   it('keeps typical loads neutral (no tier word)', () => {
-    expect(seatText(seats({ source: 'typical', tier: 'unknown', netSeats: 30 }), NOW)).toBe('~30 open seats estimated');
+    expect(seatText(seats({ source: 'typical', tier: 'unknown', netSeats: 30 }), NOW)).toBe('30 seats estimated');
   });
   it('handles no data', () => {
     expect(seatText({ source: 'unknown', tier: 'unknown', netSeats: null, asOf: null }, NOW)).toBe('No Estimate');
@@ -137,7 +137,7 @@ describe('slim row seat and stop text (design round 22)', () => {
       ],
       'unknown',
     );
-    expect(neutralSeatText(r, NOW)).toBe('~12 open seats estimated');
+    expect(neutralSeatText(r, NOW)).toBe('12 seats estimated');
     expect(
       neutralSeatText(route([seats({ source: 'unknown', tier: 'unknown', netSeats: null, asOf: null })], 'unknown'), NOW),
     ).toBe('No Estimate');
@@ -185,7 +185,7 @@ describe('row text', () => {
     });
     expect(rowAccessibilityLabel(it, NOW)).toBe(
       // Spelled out so VoiceOver doesn't read "20m" as meters (design round 26).
-      'Departs 9:00 AM from BNA, arrives 11:20 AM at LAX, Nonstop, 4 hours 20 minutes, Chances: Likely, AA 1: Likely, 30 open, 8 listed, reported 5 minutes ago',
+      'Departs 9:00 AM from BNA, arrives 11:20 AM at LAX, Nonstop, 4 hours 20 minutes, Chances: Likely, AA 1: Likely, 30 seats, 8 listed, reported 5 minutes ago',
     );
   });
 });
@@ -193,11 +193,11 @@ describe('row text', () => {
 describe('seatCounts (Q-065)', () => {
   const base: LegSeats = { source: 'reported', tier: 'tight', netSeats: 3, asOf: 0 };
   it('shows open and listed when the reading has both', () => {
-    expect(seatCounts({ ...base, openSeats: 20, listed: 17 })).toBe('20 open · 17 listed');
+    expect(seatCounts({ ...base, openSeats: 20, listed: 17 })).toBe('20 seats · 17 listed');
   });
   it('falls back to the net count for older data', () => {
-    expect(seatCounts(base)).toBe('3 open');
-    expect(seatCounts({ ...base, netSeats: -2, tier: 'full' })).toBe('no open seats');
+    expect(seatCounts(base)).toBe('3 seats');
+    expect(seatCounts({ ...base, netSeats: -2, tier: 'full' })).toBe('no seats left');
   });
 });
 

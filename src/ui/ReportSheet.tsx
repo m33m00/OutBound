@@ -122,7 +122,7 @@ export function ReportForm({ flight, now, onCancel, onSubmit, focusTitle }: Repo
           </Text>
         ) : null}
         <NumberField
-          label="Open seats"
+          label="Seats left"
           caption="On the departure board"
           value={open}
           max={MAX_OPEN}
@@ -171,7 +171,7 @@ export function ReportForm({ flight, now, onCancel, onSubmit, focusTitle }: Repo
           label="Submit Report"
           haptic="success"
           disabled={!touched}
-          accessibilityHint={touched ? undefined : 'Set open seats or nonrevs listed first'}
+          accessibilityHint={touched ? undefined : 'Set seats left or nonrevs listed first'}
           onPress={() => {
             Keyboard.dismiss();
             onSubmit(open, listed);

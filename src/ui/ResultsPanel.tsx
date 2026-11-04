@@ -35,6 +35,7 @@ import { useReducedMotion } from './useReducedMotion';
 import { pressStyle } from './press';
 import { Icon } from './Icon';
 import { ResultRow } from './ResultRow';
+import { SavedToast } from './SavedToast';
 import { SaveRouteButton } from './SaveRouteButton';
 import { StaggerIn } from './StaggerIn';
 
@@ -255,10 +256,16 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
   // The open route's bar and content heights, reported together once both are known (round 56).
   // Content starts over when the route view closes, so a reopened route reports its own height.
   const [barH, setBarH] = useState(0);
+  // The route a swipe just saved, for the few seconds its Undo shows (round 138, John).
+  const [swipeSaved, setSwipeSaved] = useState<Itinerary | null>(null);
+  const clearSwipeSaved = useCallback(() => setSwipeSaved(null), []);
   const [contentH, setContentH] = useState(0);
   const { onRouteHeight } = p;
   useEffect(() => {
-    if (!focusedId) setContentH(0);
+    if (!focusedId) {
+      setContentH(0);
+      setSwipeSaved(null);
+    }
   }, [focusedId]);
   useEffect(() => {
     if (focusedId && barH > 0 && contentH > 0) onRouteHeight?.(Math.ceil(barH + contentH));
@@ -462,7 +469,14 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
                       onImpactPress={p.onImpactPress}
                       onLegPress={p.onLegPress}
                       status={p.statuses?.[focused.id]}
-                      onSwipeSave={p.onToggleSave && !p.isSaved?.(focused) ? () => p.onToggleSave?.(focused) : undefined}
+                      onSwipeSave={
+                        p.onToggleSave && !p.isSaved?.(focused)
+                          ? () => {
+                              p.onToggleSave?.(focused);
+                              setSwipeSaved(focused);
+                            }
+                          : undefined
+                      }
                       topAction={
                         p.onToggleSave ? (
                           <SaveRouteButton saved={!!p.isSaved?.(focused)} onPress={() => p.onToggleSave?.(focused)} />
@@ -473,6 +487,15 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
                 </Animated.View>
               </GestureDetector>
             </Appear>
+            {swipeSaved ? (
+              <SavedToast
+                key={swipeSaved.id}
+                onUndo={() => {
+                  if (p.isSaved?.(swipeSaved)) p.onToggleSave?.(swipeSaved);
+                }}
+                onDone={clearSwipeSaved}
+              />
+            ) : null}
           </View>
         </Appear>
       ) : null}

@@ -18,7 +18,7 @@
  *
  * Opened, it reads as plain words for a new user (round 126, John): a title, what the line color
  * means (each chance word with a short meaning), what solid and dashed mean, and how to read the
- * seat circles on the route card ("10/4": 10 open seats, 4 people listed).
+ * seat circles on the route card ("10/4": 10 seats left, 4 people listed).
  */
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -80,11 +80,11 @@ export interface RouteLegendProps {
 
 /** What each chance word means, in plain words, for a first-time user (round 126, John). */
 export const TIER_MEANING: Record<SeatTier, string> = {
-  wide: 'lots of open seats',
+  wide: 'lots of seats left',
   good: 'good odds of a seat',
   okay: 'could go either way',
   tight: 'only a few seats left',
-  full: 'no open seats',
+  full: 'no seats left',
   unknown: 'no seat info yet',
 };
 
@@ -132,7 +132,7 @@ const STYLE_MEANING = {
 
 /** The seat circles on the route card, explained by example. */
 export const SEAT_CIRCLE_EXAMPLE = '10/4';
-export const SEAT_CIRCLE_MEANING = '10 open seats, 4 people listed';
+export const SEAT_CIRCLE_MEANING = '10 seats left, 4 people listed';
 
 /** The open key's rows, in order, for the card and for VoiceOver. */
 export function keyRows(route: RouteLine) {

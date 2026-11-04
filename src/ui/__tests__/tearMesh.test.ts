@@ -135,10 +135,13 @@ describe('swipe to save drives the same tear (round 133, John)', () => {
     expect(dragProgress(40, 300)).toBe(0);
   });
 
-  it('tears free past the middle of the rip or on a flick, and lays back down otherwise', () => {
+  it('tears free well past halfway or on a hard flick past the middle, and lays back down otherwise (round 138)', () => {
     expect(shouldCommit(0.7, 0)).toBe(true);
+    expect(shouldCommit(0.6, 0)).toBe(false);
     expect(shouldCommit(0.4, 0)).toBe(false);
-    expect(shouldCommit(0.4, -1)).toBe(true);
+    // A flick only counts once the pull is most of the way to the middle: a brush along the dashes doesn't save.
+    expect(shouldCommit(0.4, -1)).toBe(false);
+    expect(shouldCommit(0.5, -1)).toBe(true);
     expect(shouldCommit(0.05, -1)).toBe(false);
   });
 

@@ -30,7 +30,7 @@ const CORS = {
 const json = (body: unknown, status = 200, extra: Record<string, string> = {}) =>
   new Response(JSON.stringify(body), { status, headers: { ...CORS, 'Content-Type': 'application/json', ...extra } });
 
-const COLUMNS = 'id,airline,flight_number,origin,destination,depart_utc,arrive_utc,pulled_at';
+const COLUMNS = 'id,airline,flight_number,origin,destination,depart_utc,arrive_utc,pulled_at,aircraft';
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: CORS });

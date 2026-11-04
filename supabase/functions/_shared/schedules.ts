@@ -6,7 +6,8 @@
  * Upstream shape (AeroDataBox AirportFidsContract, from public docs; verify against a real response once the key exists):
  *   GET /flights/airports/iata/{code}/{fromLocal}/{toLocal}?withLeg=true&direction=Departure...  (window <= 12 h)
  *   -> { departures: [{ number, status, codeshareStatus, isCargo, airline:{iata},
- *        departure:{ scheduledTime:{utc,local} }, arrival:{ airport:{iata}, scheduledTime:{utc,local} } }] }
+ *        departure:{ scheduledTime:{utc,local} }, arrival:{ airport:{iata}, scheduledTime:{utc,local} },
+ *        aircraft:{ model } }] }
  *   204 = no flights in the window.
  */
 import { monthKey, parseProviderTime, type UsageStore } from './flightStatus.ts';
@@ -29,6 +30,8 @@ export interface ScheduleRow {
   /** Departure date at the origin, "YYYY-MM-DD". */
   local_date: string;
   pulled_at: string;
+  /** Aircraft model as AeroDataBox names it ("Boeing 737-800"), null when the pull had none (round 138). */
+  aircraft?: string | null;
 }
 
 /** A flight as the app's engine wants it (src/engine Flight). Times are UTC epoch ms. */
@@ -40,6 +43,8 @@ export interface ScheduleFlight {
   to: string;
   departUtc: number;
   arriveUtc: number;
+  /** Aircraft model, when known. */
+  aircraft?: string;
 }
 
 /** GET /live-schedules response. */
@@ -94,7 +99,12 @@ export function parseDays(raw: string | null, cfg: ScheduleConfig = SCHEDULE_CON
 /** "DAL,dfw" -> configured airports in config order; null if any code is unknown. Empty/missing = all. */
 export function parseAirports(raw: string | null, cfg: ScheduleConfig = SCHEDULE_CONFIG) {
   if (raw === null || raw.trim() === '') return [...cfg.airports];
-  const want = new Set(raw.split(',').map((c) => c.trim().toUpperCase()).filter(Boolean));
+  const want = new Set(
+    raw
+      .split(',')
+      .map((c) => c.trim().toUpperCase())
+      .filter(Boolean),
+  );
   const known = cfg.airports.filter((a) => want.has(a.code));
   return known.length === want.size ? known : null;
 }
@@ -116,7 +126,8 @@ export function planPull(nowMs: number, days: readonly number[], airports = SCHE
 
 /** Upstream path for one FIDS window (departures only, operating flights, passenger, both ends' times). */
 export function fidsPath(airport: string, date: string, window: { from: string; to: string }): string {
-  const q = 'withLeg=true&direction=Departure&withCancelled=true&withCodeshared=false&withCargo=false&withPrivate=false&withLocation=false';
+  const q =
+    'withLeg=true&direction=Departure&withCancelled=true&withCodeshared=false&withCargo=false&withPrivate=false&withLocation=false';
   return `/flights/airports/iata/${airport}/${date}T${window.from}/${date}T${window.to}?${q}`;
 }
 
@@ -180,6 +191,7 @@ export function parseFidsDepartures(
       arrive_utc: arriveIso,
       local_date: localDate,
       pulled_at: pulledAtIso,
+      aircraft: str(isObj(item.aircraft) ? item.aircraft.model : null)?.slice(0, 40) ?? null,
     });
   }
   return [...rows.values()];
@@ -321,7 +333,17 @@ export function rowsToFlights(rows: readonly Partial<ScheduleRow>[]): ScheduleFl
     const arriveUtc = Date.parse(r.arrive_utc ?? '');
     if (!r.id || !r.airline || !r.flight_number || !r.origin || !r.destination) continue;
     if (!Number.isFinite(departUtc) || !Number.isFinite(arriveUtc)) continue;
-    out.push({ id: r.id, airline: r.airline, flightNumber: r.flight_number, from: r.origin, to: r.destination, departUtc, arriveUtc });
+    const aircraft = typeof r.aircraft === 'string' && r.aircraft.trim() ? r.aircraft.trim() : undefined;
+    out.push({
+      id: r.id,
+      airline: r.airline,
+      flightNumber: r.flight_number,
+      from: r.origin,
+      to: r.destination,
+      departUtc,
+      arriveUtc,
+      ...(aircraft ? { aircraft } : {}),
+    });
   }
   return out.sort((a, b) => a.departUtc - b.departUtc || (a.id < b.id ? -1 : 1));
 }

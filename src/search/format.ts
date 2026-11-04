@@ -91,7 +91,8 @@ export function seatText(seats: LegSeats, now: number): string {
   if (seats.source === 'unknown' || seats.netSeats == null) return 'No Estimate';
   if (seats.source === 'typical') {
     // Typical loads are monthly averages; the month isn't worth the space (John, 2026-11-02).
-    return `~${Math.max(0, seats.netSeats)} open seats estimated`;
+    // No "~" and no "open" (round 138, John): "51 seats estimated".
+    return `${Math.max(0, seats.netSeats)} seats estimated`;
   }
   const open = seatCounts(seats);
   const age = seats.asOf == null ? '' : ` · ${seats.source === 'reported' ? 'reported' : 'est.'} ${formatAge(seats.asOf, now)}`;
@@ -108,14 +109,20 @@ export function routeSeatSummary(it: Itinerary): string | null {
   return TIER_WORD[it.tier];
 }
 
+/** "1 seat", "20 seats". */
+export const seatWord = (n: number) => `${n} ${n === 1 ? 'seat' : 'seats'}`;
+
+/** A seat reading's two numbers, "20 seats · 17 listed" (round 138: no "open"). */
+export const seatPair = (seats: number, listed: number) => `${seatWord(seats)} · ${listed} listed`;
+
 /**
- * Both numbers behind the tier (Q-065, John 2026-10-30): "20 open · 17 listed".
- * A reading without them (older data) falls back to the net count, "3 open".
+ * Both numbers behind the tier (Q-065, John 2026-10-30): "20 seats · 17 listed" (no "open", round 138).
+ * A reading without them (older data) falls back to the net count, "3 seats".
  */
 export function seatCounts(seats: LegSeats): string {
-  if (seats.openSeats != null && seats.listed != null) return `${seats.openSeats} open · ${seats.listed} listed`;
+  if (seats.openSeats != null && seats.listed != null) return seatPair(seats.openSeats, seats.listed);
   const net = seats.netSeats ?? 0;
-  return net > 0 ? `${net} open` : 'no open seats';
+  return net > 0 ? seatWord(net) : 'no seats left';
 }
 
 /** The leg that sets the route tier (fewest open seats among the weakest-tier legs); null when Unknown. */
@@ -134,7 +141,7 @@ export function routeSeatAge(it: Itinerary, now: number): string | null {
 
 /**
  * Neutral seat line when a route has no counted tier (only typical loads or no
- * data): the tightest typical leg, e.g. "~51 open seats estimated", else "No Estimate".
+ * data): the tightest typical leg, e.g. "51 seats estimated", else "No Estimate".
  */
 export function neutralSeatText(it: Itinerary, now: number): string {
   const typical = it.legs.filter((l) => l.seats.source === 'typical' && l.seats.netSeats != null);

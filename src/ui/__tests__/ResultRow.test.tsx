@@ -60,7 +60,7 @@ describe('ResultRow', () => {
     // Seats lead the top line (Q-059) with their age; the slim row has no per-leg seat chips (Q-062).
     // Just the chance word on the row; the numbers are in the flight's sheet (John, 2026-10-31).
     expect(texts).toContain('Full');
-    expect(texts.some((t) => / open · \d+ listed/.test(String(t)))).toBe(false);
+    expect(texts.some((t) => / seats · \d+ listed/.test(String(t)))).toBe(false);
     // Seat ages are hidden for now (round 124, John); VoiceOver still hears them.
     expect(root.findAll((n) => n.props.testID === 'seat-age')).toHaveLength(0);
     expect(root.findAll((n) => n.props.testID === 'flights-line' && typeof n.type === 'string').length).toBe(1);
@@ -479,6 +479,21 @@ describe('ResultRow', () => {
     expect(group.findAll((n) => n.props.accessibilityLabel === 'American 1' && typeof n.type === 'string').length).toBe(1);
   });
 
+  it('route card: each leg box shows its aircraft type beside the flight chip (round 138, John)', async () => {
+    const it = await fullItinerary();
+    const withPlane = { ...it, legs: it.legs.map((l) => ({ ...l, flight: { ...l.flight, aircraft: 'Boeing 737-800' } })) };
+    await act(async () => {
+      r = create(<ResultRow itinerary={withPlane} selected now={NOW} onPress={jest.fn()} onLegPress={jest.fn()} />);
+    });
+    const group = r!.root.findAll((n) => n.props.testID === 'leg-flight' && typeof n.type === 'string')[0];
+    const plane = group.findAll((n) => n.props.testID === 'leg-aircraft' && typeof n.type === 'string');
+    expect(plane).toHaveLength(1);
+    expect(plane[0].findAll((n) => n.props.children === '737-800').length).toBeGreaterThan(0);
+    // No type known: nothing extra.
+    act(() => r!.update(<ResultRow itinerary={it} selected now={NOW} onPress={jest.fn()} onLegPress={jest.fn()} />));
+    expect(r!.root.findAll((n) => n.props.testID === 'leg-aircraft')).toHaveLength(0);
+  });
+
   it('canceled: tag word and spoken text; departed: gray tag', async () => {
     const it = await fullItinerary();
     await act(async () => {
@@ -670,7 +685,7 @@ describe('ResultRow', () => {
     expect(dotSeats({ ...base, source: 'reported', netSeats: 7, openSeats: 10, listed: 3 })).toBe('10/3');
     expect(dotSeats({ ...base, source: 'estimate', netSeats: -15, openSeats: 5, listed: 20 })).toBe('5/20');
     expect(dotSeats({ ...base, source: 'estimate', netSeats: 12 })).toBe('12');
-    expect(dotSeats({ ...base, tier: 'unknown', source: 'typical', netSeats: 20 })).toBe('~20');
+    expect(dotSeats({ ...base, tier: 'unknown', source: 'typical', netSeats: 20 })).toBe('20');
     expect(dotSeats({ tier: 'unknown', source: 'unknown', netSeats: null, asOf: null })).toBe('–');
 
     const it = await fullItinerary();

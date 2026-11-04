@@ -3,9 +3,7 @@ import { AIRPORTS, type Airport } from '@/engine';
 import { distanceKm } from './leaveBy';
 
 /** Airports the search can use, by code. Sample data until the schedule DB. */
-export const SEARCH_AIRPORTS: readonly Airport[] = Object.values(AIRPORTS).sort((a, b) =>
-  a.code.localeCompare(b.code),
-);
+export const SEARCH_AIRPORTS: readonly Airport[] = Object.values(AIRPORTS).sort((a, b) => a.code.localeCompare(b.code));
 
 /**
  * Picker filter: exact code first, then code prefix, then city/airport name
@@ -61,9 +59,15 @@ export interface PickerSection {
  */
 export function pickerSections(
   query: string,
-  quick: { nearest?: string | null; homes?: readonly { code: string; main: boolean }[] } = {},
-  airports: readonly Airport[] = SEARCH_AIRPORTS,
+  quick: {
+    nearest?: string | null;
+    homes?: readonly { code: string; main: boolean }[];
+    /** Codes left out everywhere: the other end's whole area (round 138, John: no Dallas to Dallas). */
+    exclude?: readonly string[];
+  } = {},
+  all: readonly Airport[] = SEARCH_AIRPORTS,
 ): PickerSection[] {
+  const airports = quick.exclude?.length ? all.filter((a) => !quick.exclude!.includes(a.code)) : all;
   const matches = matchAirports(query, airports).map((airport) => ({ airport }));
   if (query.trim()) return [{ title: null, data: matches }];
   const byCode = new Map(airports.map((a) => [a.code, a]));

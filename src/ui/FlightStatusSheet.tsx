@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { AIRPORTS, localDate, type Flight, type LegSeats } from '@/engine';
+import { AIRPORTS, aircraftLabel, localDate, type Flight, type LegSeats } from '@/engine';
 import { useFlightStatus, type FlightLookup, type UseFlightStatusOptions, type Movement } from '@/live';
 import type { FlightStatusEntry } from '@/live/flightStatus';
 import {
@@ -15,7 +15,7 @@ import {
   type ReportWindow,
 } from '@/requests/requests';
 import { shortDate } from '@/search/dates';
-import { formatAge, forSpeech, seatCounts, seatSourceText, seatText, SHOW_SEAT_AGE, TIER_WORD } from '@/search/format';
+import { formatAge, forSpeech, seatCounts, seatPair, seatSourceText, seatText, SHOW_SEAT_AGE, TIER_WORD } from '@/search/format';
 import { radius, spacing, textStyles, useColors } from '@/theme';
 
 import { Button, PillButton } from './Buttons';
@@ -115,7 +115,10 @@ export function FlightStatusSheet({ flight, visible, now, onClose, liveOptions, 
     setRefreshNote(null);
   }, [response]);
   const title = flight ? `${flight.airline} ${flight.flightNumber}` : 'Flight status';
-  const subtitle = flight && lookup ? `${flight.from} → ${flight.to} · ${shortDate(lookup.date)}` : null;
+  // The aircraft type rides on the subtitle when the schedule has it (round 138, John).
+  const plane = flight ? aircraftLabel(flight.aircraft) : null;
+  const subtitle =
+    flight && lookup ? [`${flight.from} → ${flight.to}`, shortDate(lookup.date), plane].filter(Boolean).join(' · ') : null;
   const tone = status ? STATE_TONE[status.state] : null;
   const canRefresh = error !== 'not_configured' && !isSample;
 
@@ -304,7 +307,7 @@ export function FlightStatusSheet({ flight, visible, now, onClose, liveOptions, 
 
 /**
  * What search knows about this flight's seats: the chance word with both numbers, and how
- * old they are ("Likely · 20 open · 7 listed", "Reported 5m ago"). Typical loads stay neutral.
+ * old they are ("Likely · 20 seats · 7 listed", "Reported 5m ago"). Typical loads stay neutral.
  */
 function SearchSeats({ seats, now }: { seats: LegSeats; now: number }) {
   const c = useColors();
@@ -386,7 +389,7 @@ function LoadCard({
             {TIER_WORD[tier]}
           </Text>
           <Divided
-            text={` · ${yourReport.open} open · ${yourReport.listed} listed${SHOW_SEAT_AGE ? ` · ${formatAge(yourReport.at, now)}` : ''}`}
+            text={` · ${seatPair(yourReport.open, yourReport.listed)}${SHOW_SEAT_AGE ? ` · ${formatAge(yourReport.at, now)}` : ''}`}
           />
         </Text>
       ) : null}
@@ -400,7 +403,7 @@ function LoadCard({
             {TIER_WORD[answerTierWord]}
           </Text>
           <Divided
-            text={` · ${askAnswer.open} open · ${askAnswer.listed} listed${SHOW_SEAT_AGE ? ` · ${formatAge(askAnswer.at, now)}` : ''}`}
+            text={` · ${seatPair(askAnswer.open, askAnswer.listed)}${SHOW_SEAT_AGE ? ` · ${formatAge(askAnswer.at, now)}` : ''}`}
           />
         </Text>
       ) : null}

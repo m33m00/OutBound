@@ -1,4 +1,4 @@
-import type { SearchRequest } from '@/engine';
+import { areaFor, type SearchRequest } from '@/engine';
 
 /**
  * Search request from the cards (Q-048): each end uses its remembered area
@@ -29,4 +29,13 @@ export function searchRequest(
 export function showGetHome(homes: readonly { code: string }[], origin: string | null, destination: string | null): boolean {
   const isHome = (code: string | null) => code != null && homes.some((h) => h.code === code);
   return homes.length > 0 && origin != null && !isHome(origin) && !isHome(destination);
+}
+
+/**
+ * Airports the other end's picker leaves out (round 138, John): the picked airport and every airport in its
+ * area, both ways, so Dallas as From means neither DAL nor DFW is offered as To (and the other way round).
+ */
+export function otherEndExcludes(code: string | null | undefined): string[] {
+  if (!code) return [];
+  return areaFor(code)?.airports.slice() ?? [code];
 }

@@ -29,17 +29,17 @@ describe('ReportSheet', () => {
     await act(async () => {
       r = create(<ReportSheet flight={flight} now={NOW} onCancel={jest.fn()} onSubmit={onSubmit} />);
     });
-    expect(hostTexts(r!)).toEqual(expect.arrayContaining(['Report Load', 'Open seats', 'Nonrevs listed']));
+    expect(hostTexts(r!)).toEqual(expect.arrayContaining(['Report Load', 'Seats left', 'Nonrevs listed']));
     const tier = () =>
       r!.root.find((n) => n.props.testID === 'report-tier' && typeof n.type === 'string').props.accessibilityLabel;
     // Nothing set yet: no tier, and Submit is off.
     expect(tier()).toBe('Set the numbers from the board');
     expect(button(r!, 'Submit Report').props.disabled).toBe(true);
     // Minus is off at zero.
-    expect(button(r!, 'Decrease: Open seats').props.disabled).toBe(true);
+    expect(button(r!, 'Decrease: Seats left').props.disabled).toBe(true);
 
     const openInput = r!.root.find(
-      (n) => n.props.accessibilityLabel === 'Open seats, On the departure board' && n.props.onChangeText,
+      (n) => n.props.accessibilityLabel === 'Seats left, On the departure board' && n.props.onChangeText,
     );
     act(() => openInput.props.onChangeText('2x0'));
     expect(tier()).toBe('Likely, 20 seats after the standby list');
@@ -48,12 +48,12 @@ describe('ReportSheet', () => {
     expect(tier()).toBe('Likely, 18 seats after the standby list');
     // The box follows − / + while you're on it.
     expect(openInput.props.value).toBe('20');
-    act(() => button(r!, 'Increase: Open seats').props.onPress());
+    act(() => button(r!, 'Increase: Seats left').props.onPress());
     expect(
-      r!.root.find((n) => n.props.accessibilityLabel === 'Open seats, On the departure board' && n.props.onChangeText).props
+      r!.root.find((n) => n.props.accessibilityLabel === 'Seats left, On the departure board' && n.props.onChangeText).props
         .value,
     ).toBe('21');
-    act(() => button(r!, 'Decrease: Open seats').props.onPress());
+    act(() => button(r!, 'Decrease: Seats left').props.onPress());
 
     act(() => button(r!, 'Submit Report').props.onPress());
     expect(onSubmit).toHaveBeenCalledWith(20, 2);
@@ -184,7 +184,7 @@ describe('RequestRow', () => {
     });
     const texts = hostTexts(r!);
     expect(texts).toEqual(expect.arrayContaining(['Answered', 'Waiting']));
-    expect(lineTexts(r!.root).some((t) => / open \| \d+ listed \| answered /.test(t))).toBe(true);
+    expect(lineTexts(r!.root).some((t) => / seats \| \d+ listed \| answered /.test(t))).toBe(true);
     expect(r!.root.findAll((n) => n.props.testID === 'answer-request')).toHaveLength(0);
     // VoiceOver hears "answered" once (in the detail), and Waiting at the end.
     const labels = r!.root

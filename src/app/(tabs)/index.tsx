@@ -7,7 +7,7 @@ import { AIRPORTS, areaFor, localDate, toRouteLine, type Flight, type Itinerary 
 import { flightLookupKey, sampleRouteImpacts, useDriveTime, useFlightStatuses, useRouteImpacts } from '@/live';
 import { GlobeMap, type LonLat, type MapAirport } from '@/map';
 import { nearestAirport } from '@/search/airports';
-import { searchRequest, showGetHome } from '@/search/areas';
+import { otherEndExcludes, searchRequest, showGetHome } from '@/search/areas';
 import { dateChips } from '@/search/dates';
 import { driveQuery } from '@/search/leaveBy';
 import { chooseOrigin, restSpot, showLocationCard, type RestSpot } from '@/search/origin';
@@ -631,6 +631,8 @@ export default function HomeScreen() {
           current={pickerSheet.shown === 'origin' ? origin : destination}
           nearest={nearest}
           homes={homes}
+          // Neither end offers the other end's area (round 138, John: no Dallas to Dallas).
+          exclude={otherEndExcludes(pickerSheet.shown === 'origin' ? destination : origin)}
           onPick={(code) => {
             if (picking === 'origin') setPickedOrigin(code);
             else setDestination(code);

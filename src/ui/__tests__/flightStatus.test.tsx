@@ -310,7 +310,7 @@ describe('seats card in the flight sheet (design round 32)', () => {
       );
     });
     const box = r!.root.findAll((n) => n.props.testID === 'search-seats' && typeof n.type === 'string')[0];
-    expect(box.props.accessibilityLabel).toBe('Likely, 20 open, 7 listed. Reported 5 minutes ago');
+    expect(box.props.accessibilityLabel).toBe('Likely, 20 seats, 7 listed. Reported 5 minutes ago');
     // The age is spoken but not shown while seat ages are hidden (round 124, John).
     expect(texts()).not.toContain('Reported 5m ago');
   });
@@ -344,7 +344,7 @@ describe('seats card in the flight sheet (design round 32)', () => {
     const load = await render({});
     act(() => btn('Report Load').props.onPress());
     expect(texts()).toContain('Report Load');
-    const box = r!.root.find((n) => n.props.accessibilityLabel === 'Open seats, On the departure board' && n.props.onChangeText);
+    const box = r!.root.find((n) => n.props.accessibilityLabel === 'Seats left, On the departure board' && n.props.onChangeText);
     act(() => box.props.onChangeText('12'));
     act(() => btn('Submit Report').props.onPress());
     expect(load.onReport).toHaveBeenCalledWith(12, 0);
@@ -371,7 +371,7 @@ describe('seats card in the flight sheet (design round 32)', () => {
     expect(btn('Report Again').props.disabled).toBe(true);
     expect(texts()).toContain('Reports closed 2 hours after this flight left.');
     const line = r!.root.find((n) => typeof n.type === 'string' && String(n.props.accessibilityLabel).startsWith('You reported'));
-    expect(line.props.accessibilityLabel).toBe('You reported Likely, 18 open, 3 listed, 5 minutes ago');
+    expect(line.props.accessibilityLabel).toBe('You reported Likely, 18 seats, 3 listed, 5 minutes ago');
   });
 
   it('more than a week out, Report Load says when reports open', async () => {
@@ -433,7 +433,7 @@ describe('ask answered or taken back (round 34)', () => {
     const line = r!.root.find(
       (n) => typeof n.type === 'string' && String(n.props.accessibilityLabel).startsWith('Your request was answered'),
     );
-    expect(line.props.accessibilityLabel).toBe('Your request was answered: Maybe, 12 open, 4 listed, 9 minutes ago');
+    expect(line.props.accessibilityLabel).toBe('Your request was answered: Maybe, 12 seats, 4 listed, 9 minutes ago');
   });
 });
 

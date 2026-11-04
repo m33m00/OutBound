@@ -7,7 +7,11 @@ describe('matchAirports', () => {
   });
   it('puts an exact code first, then prefixes, then names', () => {
     expect(matchAirports('dal').map((a) => a.code)).toEqual(['DAL', 'DFW']); // DFW name has "Dallas"
-    expect(matchAirports('D').map((a) => a.code).slice(0, 3)).toEqual(['DAL', 'DEN', 'DFW']);
+    expect(
+      matchAirports('D')
+        .map((a) => a.code)
+        .slice(0, 3),
+    ).toEqual(['DAL', 'DEN', 'DFW']);
   });
   it('matches city names case-insensitively', () => {
     expect(matchAirports('nash').map((a) => a.code)).toEqual(['BNA']);
@@ -38,12 +42,11 @@ describe('dateChips', () => {
 
 describe('calendar dates', () => {
   it('gives chips to today plus the next three days', () => {
-    expect(dateChips('2026-10-14').slice(0, QUICK_DATE_CHIPS).map((c) => `${c.label} ${c.day}`)).toEqual([
-      'Today Oct 14',
-      'Tomorrow Oct 15',
-      'Fri Oct 16',
-      'Sat Oct 17',
-    ]);
+    expect(
+      dateChips('2026-10-14')
+        .slice(0, QUICK_DATE_CHIPS)
+        .map((c) => `${c.label} ${c.day}`),
+    ).toEqual(['Today Oct 14', 'Tomorrow Oct 15', 'Fri Oct 16', 'Sat Oct 17']);
   });
   it('round-trips picker dates as calendar days', () => {
     expect(fromPickerDate(toPickerDate('2026-11-02'))).toBe('2026-11-02');
@@ -80,5 +83,17 @@ describe('pickerSections (design round 3)', () => {
 
   it('skips codes the app has no data for', () => {
     expect(pickerSections('', { nearest: 'ZZZ' })[0].title).toBeNull();
+  });
+});
+
+describe('pickerSections leaves out the other end’s area (round 138, John)', () => {
+  it('drops excluded airports from the quick picks, the full list and typed matches', () => {
+    const s = pickerSections('', { nearest: 'DAL', homes: [{ code: 'DFW', main: true }], exclude: ['DAL', 'DFW'] });
+    const codes = s.flatMap((x) => x.data.map((d) => d.airport.code));
+    expect(codes).not.toContain('DAL');
+    expect(codes).not.toContain('DFW');
+    expect(codes.length).toBeGreaterThan(0);
+    const typed = pickerSections('Dallas', { exclude: ['DAL', 'DFW'] });
+    expect(typed[0].data.map((d) => d.airport.code)).toEqual([]);
   });
 });

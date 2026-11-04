@@ -102,13 +102,13 @@ describe('RouteLegend', () => {
         'Dashed line: our estimate',
         'Seat circles on the route card',
         '10/4',
-        '10 open seats, 4 people listed',
+        '10 seats left, 4 people listed',
       ]),
     );
     expect(r!.root.findAllByProps({ testID: 'legend-color' }).filter((n) => typeof n.type === 'string')).toHaveLength(2);
     const spoken = button().props.accessibilityLabel as string;
     expect(spoken).toContain('Likely, good odds of a seat.');
     expect(spoken).toContain('Long shot, only a few seats left.');
-    expect(spoken).toContain('10 open seats, 4 people listed');
+    expect(spoken).toContain('10 seats left, 4 people listed');
   });
 });

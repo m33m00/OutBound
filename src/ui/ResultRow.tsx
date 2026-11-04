@@ -1,7 +1,7 @@
 import { type ComponentRef, memo, type ReactNode, useRef, useState } from 'react';
 import { Animated, Pressable, StyleSheet, Text, type TextStyle, useWindowDimensions, View } from 'react-native';
 
-import { AIRPORTS, type Flight, type Itinerary, type LegSeats } from '@/engine';
+import { AIRPORTS, aircraftLabel, type Flight, type Itinerary, type LegSeats } from '@/engine';
 import type { RouteImpact } from '@/live';
 import {
   forSpeech,
@@ -86,11 +86,11 @@ const DOT = 40;
 
 /**
  * The seats inside a leg's dot (John, 2026-11-02): open/listed, "10/3"; the net count when only that's
- * known; "~20" for a typical load; a dash when there's no data.
+ * known; "20" for a typical load (no "~", round 138); a dash when there's no data.
  */
 export function dotSeats(seats: LegSeats): string {
   if (seats.source === 'unknown' || seats.netSeats == null) return '–';
-  if (seats.source === 'typical') return `~${Math.max(0, seats.netSeats)}`;
+  if (seats.source === 'typical') return `${Math.max(0, seats.netSeats)}`;
   if (seats.openSeats != null && seats.listed != null) return `${seats.openSeats}/${seats.listed}`;
   return `${Math.max(0, seats.netSeats)}`;
 }
@@ -307,6 +307,13 @@ function LegTimeline({
         const pills = (
           <View style={styles.legMeta} testID="leg-flight">
             <AirlinePill airline={leg.flight.airline} flightNumber={leg.flight.flightNumber} />
+            {/* Aircraft type beside the chip, when the schedule has it (round 138, John). */}
+            {aircraftLabel(leg.flight.aircraft) ? (
+              <View style={styles.aircraft} testID="leg-aircraft">
+                <Icon name="airplane" size={11} tintColor={c.muted} fallback={null} />
+                <Text style={[textStyles.small, { color: c.muted }]}>{aircraftLabel(leg.flight.aircraft)}</Text>
+              </View>
+            ) : null}
           </View>
         );
         const content = (
@@ -964,6 +971,7 @@ const styles = StyleSheet.create({
   },
   // A leg's tag and flight chip, above (first flight) or below (later flights) its time.
   legMeta: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', columnGap: spacing.group, rowGap: 2 },
+  aircraft: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   connection: { flex: 1, alignItems: 'center', gap: 4 },
   connectionText: { textAlign: 'center', alignSelf: 'stretch' },
   struck: { textDecorationLine: 'line-through' },

@@ -93,7 +93,11 @@ describe('parseDays / parseAirports', () => {
 describe('planPull', () => {
   it('counts days in each airport’s own calendar', () => {
     const lateUtc = Date.UTC(2026, 9, 31, 4, 30); // 23:30 CDT / 21:30 PDT on the 30th, 00:30 EDT on the 31st
-    const plan = planPull(lateUtc, [0, 7], CFG.airports.filter((a) => ['DAL', 'ATL'].includes(a.code)));
+    const plan = planPull(
+      lateUtc,
+      [0, 7],
+      CFG.airports.filter((a) => ['DAL', 'ATL'].includes(a.code)),
+    );
     expect(plan).toEqual([
       { airport: 'ATL', tz: 'America/New_York', date: '2026-10-31' },
       { airport: 'ATL', tz: 'America/New_York', date: '2026-11-07' },
@@ -147,7 +151,27 @@ describe('parseFidsDepartures', () => {
       arrive_utc: '2026-10-30T14:35:00.000Z',
       local_date: '2026-10-30',
       pulled_at: PULLED,
+      aircraft: null,
     });
+  });
+
+  it('keeps the aircraft model when the pull has one, and the app flight carries it (round 138)', () => {
+    const body = {
+      departures: [
+        {
+          number: 'WN 77',
+          codeshareStatus: 'IsOperator',
+          isCargo: false,
+          airline: { iata: 'WN' },
+          aircraft: { model: 'Boeing 737 MAX 8' },
+          departure: { scheduledTime: { utc: '2026-10-30 14:00Z', local: '2026-10-30 09:00-05:00' } },
+          arrival: { airport: { iata: 'DEN' }, scheduledTime: { utc: '2026-10-30 16:00Z' } },
+        },
+      ],
+    };
+    const [row] = parseFidsDepartures(body, 'DAL', KNOWN, '2026-10-30', PULLED);
+    expect(row.aircraft).toBe('Boeing 737 MAX 8');
+    expect(rowsToFlights([row])[0].aircraft).toBe('Boeing 737 MAX 8');
   });
 
   it('takes the local date from the provider, not the UTC date', () => {
@@ -183,9 +207,21 @@ describe('parseFidsDepartures', () => {
   it('skips impossible block times and round trips to the origin', () => {
     const bad = {
       departures: [
-        { number: 'WN 1', departure: { scheduledTime: { utc: '2026-10-30 13:00Z' } }, arrival: { airport: { iata: 'PHX' }, scheduledTime: { utc: '2026-10-30 12:00Z' } } },
-        { number: 'WN 2', departure: { scheduledTime: { utc: '2026-10-30 13:00Z' } }, arrival: { airport: { iata: 'PHX' }, scheduledTime: { utc: '2026-10-31 13:00Z' } } },
-        { number: 'WN 3', departure: { scheduledTime: { utc: '2026-10-30 13:00Z' } }, arrival: { airport: { iata: 'DAL' }, scheduledTime: { utc: '2026-10-30 14:00Z' } } },
+        {
+          number: 'WN 1',
+          departure: { scheduledTime: { utc: '2026-10-30 13:00Z' } },
+          arrival: { airport: { iata: 'PHX' }, scheduledTime: { utc: '2026-10-30 12:00Z' } },
+        },
+        {
+          number: 'WN 2',
+          departure: { scheduledTime: { utc: '2026-10-30 13:00Z' } },
+          arrival: { airport: { iata: 'PHX' }, scheduledTime: { utc: '2026-10-31 13:00Z' } },
+        },
+        {
+          number: 'WN 3',
+          departure: { scheduledTime: { utc: '2026-10-30 13:00Z' } },
+          arrival: { airport: { iata: 'DAL' }, scheduledTime: { utc: '2026-10-30 14:00Z' } },
+        },
       ],
     };
     expect(parseFidsDepartures(bad, 'DAL', KNOWN, '2026-10-30', PULLED)).toEqual([]);
@@ -316,7 +352,10 @@ describe('read side', () => {
 
   it('turns rows into sorted app flights and drops broken rows', () => {
     const rows = parseFidsDepartures(F.FIDS_DAL_NOON_IN_MORNING, 'DAL', KNOWN, '2026-10-30', PULLED).reverse();
-    const flights = rowsToFlights([...rows, { id: 'bad', airline: 'WN', flight_number: '1', origin: 'DAL', destination: 'DEN', depart_utc: 'x', arrive_utc: 'y' }]);
+    const flights = rowsToFlights([
+      ...rows,
+      { id: 'bad', airline: 'WN', flight_number: '1', origin: 'DAL', destination: 'DEN', depart_utc: 'x', arrive_utc: 'y' },
+    ]);
     expect(flights.map((f) => f.id)).toEqual(['WN311-2026-10-30-DAL', 'WN1205-2026-10-30-DAL', 'WN2405-2026-10-30-DAL']);
     expect(flights[0]).toEqual({
       id: 'WN311-2026-10-30-DAL',
@@ -330,7 +369,9 @@ describe('read side', () => {
   });
 
   it('reports the newest pull time', () => {
-    expect(newestPull([{ pulled_at: '2026-10-29T10:00:00Z' }, { pulled_at: '2026-10-30T10:00:00Z' }, {}])).toBe('2026-10-30T10:00:00Z');
+    expect(newestPull([{ pulled_at: '2026-10-29T10:00:00Z' }, { pulled_at: '2026-10-30T10:00:00Z' }, {}])).toBe(
+      '2026-10-30T10:00:00Z',
+    );
     expect(newestPull([])).toBeNull();
   });
 

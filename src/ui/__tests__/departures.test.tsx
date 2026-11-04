@@ -67,7 +67,7 @@ describe('at-airport card and departures (round 33)', () => {
     expect(lineTexts(r!.root).some((t) => t.startsWith('Departed | '))).toBe(true);
     act(() => rows[0].props.onPress());
     expect(texts()).toContain('Report Load');
-    const box = r!.root.find((n) => n.props.accessibilityLabel === 'Open seats, On the departure board' && n.props.onChangeText);
+    const box = r!.root.find((n) => n.props.accessibilityLabel === 'Seats left, On the departure board' && n.props.onChangeText);
     act(() => box.props.onChangeText('9'));
     act(() =>
       r!.root

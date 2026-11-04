@@ -256,10 +256,12 @@ export const TEAR_DRAG = {
   lead: 0.08,
   /** How far left, as a share of the card's width, a full swipe is. */
   span: 0.78,
-  /** Let go at or past this much of the swipe and it tears free. */
-  commitAt: 0.6,
-  /** Or flick left at least this fast (points per ms) once the rip has started. */
+  /** Let go at or past this much of the swipe and it tears free. Well past halfway (round 138, John: page swipes
+   *  saved routes by accident), so a short brush along the dashes lays back down. */
+  commitAt: 0.7,
+  /** Or flick left at least this fast (points per ms) once the pull is this far along. */
   flickVx: -0.5,
+  flickFrom: 0.45,
   /** How fast the paper follows your finger (ms to close most of the gap), and how fast it lays back down. */
   follow: 60,
   backRate: 1.6,
@@ -281,7 +283,7 @@ export function dragMs(p: number): number {
 
 /** Whether letting go here tears it free (true) or lays it back down (false). */
 export function shouldCommit(p: number, vx: number): boolean {
-  return p >= TEAR_DRAG.commitAt || (vx <= TEAR_DRAG.flickVx && p > TEAR_DRAG.lead);
+  return p >= TEAR_DRAG.commitAt || (vx <= TEAR_DRAG.flickVx && p >= TEAR_DRAG.flickFrom);
 }
 
 /** Who moves the paper: your finger, the finish once you let go, or the paper laying back down. */

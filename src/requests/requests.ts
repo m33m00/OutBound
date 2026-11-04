@@ -9,8 +9,9 @@
  * this screen only.
  */
 import { addDays, AIRPORTS, localDate, tierForNetSeats, zonedToUtc, type Flight, type SeatTier } from '@/engine';
+import { sampleAircraft } from '@/engine/aircraft';
 import { SAMPLE_SCHEDULE } from '@/engine/sample/schedule';
-import { formatAge, formatTime, TIER_WORD } from '@/search/format';
+import { formatAge, formatTime, seatPair, TIER_WORD } from '@/search/format';
 
 /** Max open asks per person (DECISIONS.md). */
 export const MAX_OPEN_REQUESTS = 5;
@@ -56,7 +57,17 @@ export function sampleFlightsBetween(now: number, startMs: number, endMs: number
       const departUtc = zonedToUtc(date, time, AIRPORTS[from].tz);
       if (departUtc < now + startMs || departUtc > now + endMs) continue;
       const id = `${airline}${flightNumber}-${date}-${from}`;
-      out.push({ id, airline, flightNumber, from, to, departUtc, arriveUtc: departUtc + blockMin * 60_000 });
+      const aircraft = sampleAircraft(airline, flightNumber, blockMin);
+      out.push({
+        id,
+        airline,
+        flightNumber,
+        from,
+        to,
+        departUtc,
+        arriveUtc: departUtc + blockMin * 60_000,
+        ...(aircraft ? { aircraft } : {}),
+      });
     }
   }
   return out.sort((a, b) => a.departUtc - b.departUtc);
@@ -113,8 +124,8 @@ export function departsText(f: Flight, now: number, atUtc: number = f.departUtc)
   return `Departs ${day}${formatTime(atUtc, tz)}`;
 }
 
-/** "Likely · 18 open · 3 listed": tier word with both numbers (Q-065). */
-export const answerText = (a: LoadAnswer) => `${TIER_WORD[answerTier(a)]} · ${a.open} open · ${a.listed} listed`;
+/** "Likely · 18 seats · 3 listed": tier word with both numbers (Q-065; no "open", round 138). */
+export const answerText = (a: LoadAnswer) => `${TIER_WORD[answerTier(a)]} · ${seatPair(a.open, a.listed)}`;
 
 /** Second line of a request row. */
 export function requestDetail(r: LoadRequest, now: number): string {

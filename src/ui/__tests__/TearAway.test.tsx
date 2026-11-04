@@ -2,7 +2,7 @@
  * Saving a route tears the route card's own header off along its perforation and drops it into My
  * Trips (round 126, John: "Can you have it actually tear off the perforated line on the flight card").
  */
-import { AccessibilityInfo, Animated, Text } from 'react-native';
+import { AccessibilityInfo, Animated, StyleSheet, Text } from 'react-native';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 
 import { createMemoryProvider, searchItineraries, zonedToUtc, type Itinerary } from '@/engine';
@@ -10,6 +10,7 @@ import { dragMs, TEAR_DRAG, type TearDrive } from '../tearMesh';
 
 import { ResultRow } from '../ResultRow';
 import { SaveRouteButton } from '../SaveRouteButton';
+import { GRAB_WIDTH } from '../TearSwipe';
 import {
   CURL_MS,
   CURL_SLICES,
@@ -368,6 +369,17 @@ describe('TearAway: the route card tears along its perforation when you save (ro
           cfg.onDeactivate!(ev(dx, vx, canceled));
         });
 
+      it('only the scissors tab at the right notch takes the pull; the rest of the strip lets page swipes through (round 138)', async () => {
+        useMesh({ picture: true });
+        await swipeMount();
+        const strip = r!.root.findAll((n) => n.props.testID === 'tear-swipe' && typeof n.type === 'string')[0];
+        expect(strip.props.pointerEvents).toBe('box-none');
+        const grab = strip.findAll((n) => n.props.testID === 'tear-grab' && typeof n.type === 'string')[0];
+        const style = StyleSheet.flatten(grab.props.style);
+        expect(style).toMatchObject({ position: 'absolute', right: 0, width: GRAB_WIDTH });
+        expect(GRAB_WIDTH).toBeLessThanOrEqual(W / 4);
+      });
+
       it('starts only on a swipe to the left, and leaves up and down to the scroll (round 134)', async () => {
         useMesh({ picture: true });
         const { cfg } = await swipeMount();
@@ -411,7 +423,7 @@ describe('TearAway: the route card tears along its perforation when you save (ro
         expect(r!.root.findAllByProps({ testID: 'paper-tear' }).length).toBeGreaterThan(0);
       });
 
-      it('saves on a quick flick left once the rip has started, but not when the touch is cancelled', async () => {
+      it('saves on a quick flick left past the middle, but not when the touch is cancelled', async () => {
         useMesh({ picture: true });
         const { cfg, onSwipeSave } = await swipeMount();
         await activate(cfg);
@@ -419,7 +431,7 @@ describe('TearAway: the route card tears along its perforation when you save (ro
         expect(onSwipeSave).not.toHaveBeenCalled();
         await activate(cfg);
         // 1200 points a second to the left.
-        letGo(cfg, at(0.35), -1200);
+        letGo(cfg, at(0.5), -1200);
         expect(onSwipeSave).toHaveBeenCalledTimes(1);
       });
 

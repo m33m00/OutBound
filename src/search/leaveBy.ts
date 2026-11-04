@@ -116,10 +116,10 @@ export function leaveByText(r: LeaveBy, tz: string): LeaveByText {
       // The airport's name too, and "Flight departs at" (John, 2026-11-02).
       return { title: youreAt(r.airport), sub: `Flight departs at ${t(r.departUtc)}` };
     case 'leaveBy':
-      // A maps-service time is said plainly; the straight-line guess keeps its "~".
+      // No "~" on the guess (round 138, John); a maps-service time adds "with traffic".
       return {
         title: `Leave by ${t(r.leaveUtc)}`,
-        sub: `${r.live ? '' : '~'}${formatDuration(r.driveMin)} drive${r.live ? ' with traffic' : ''} · at ${r.airport} by ${t(r.beAtUtc)}`,
+        sub: `${formatDuration(r.driveMin)} drive${r.live ? ' with traffic' : ''} · at ${r.airport} by ${t(r.beAtUtc)}`,
       };
     case 'leaveNow':
       return { title: 'Leave now', sub: `Be at ${r.airport} by ${t(r.beAtUtc)}` };
@@ -143,7 +143,7 @@ export function leaveByShort(r: LeaveBy, tz: string): string {
     case 'atAirport':
       return `Flight departs at ${t(r.departUtc)}`;
     case 'leaveBy':
-      return `${r.live ? '' : '~'}${formatDuration(r.driveMin)} drive`;
+      return `${formatDuration(r.driveMin)} drive`;
     case 'leaveNow':
       // Spelled out (John, 2026-11-03: "Arrive at DFW by 2:40 PM" instead of just "At DFW").
       return `Arrive at ${r.airport} by ${t(r.beAtUtc)}`;

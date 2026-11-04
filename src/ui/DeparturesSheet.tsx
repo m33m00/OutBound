@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AIRPORTS, type Flight } from '@/engine';
 import { answerText, answerTier, flightKey, type LoadAnswer } from '@/requests/requests';
-import { formatAge, formatTime, forSpeech, TIER_WORD, SHOW_SEAT_AGE } from '@/search/format';
+import { formatAge, formatTime, forSpeech, seatPair, TIER_WORD, SHOW_SEAT_AGE } from '@/search/format';
 import { minTapTarget, spacing, textStyles, useColors } from '@/theme';
 
 import { Icon } from './Icon';
@@ -85,7 +85,7 @@ export function DeparturesSheet({ code, visible, flights, now, reportFor, onRepo
               <Text style={{ color: c.youText }}>You reported </Text>
               <Text style={{ color: c[TIER_FG[tier]], fontFamily: textStyles.bodyStrong.fontFamily }}>{TIER_WORD[tier]}</Text>
               <Divided
-                text={` · ${yours.open} open · ${yours.listed} listed${SHOW_SEAT_AGE ? ` · ${formatAge(yours.at, now)}` : ''}`}
+                text={` · ${seatPair(yours.open, yours.listed)}${SHOW_SEAT_AGE ? ` · ${formatAge(yours.at, now)}` : ''}`}
               />
             </Text>
           ) : (

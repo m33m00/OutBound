@@ -1,7 +1,7 @@
 import { createMemoryProvider, searchItineraries, zonedToUtc, type Flight } from '@/engine';
 import { homeAirports } from '@/settings/settings';
 
-import { searchRequest, showGetHome } from '../areas';
+import { otherEndExcludes, searchRequest, showGetHome } from '../areas';
 
 const DATE = '2026-10-20';
 const NOW = Date.UTC(2026, 9, 19, 12);
@@ -40,5 +40,14 @@ describe('searchRequest (Q-048)', () => {
     expect(showGetHome(homes, 'DFW', null)).toBe(false);
     expect(showGetHome([], 'LAX', null)).toBe(false);
     expect(showGetHome(homes, null, null)).toBe(false);
+  });
+});
+
+describe('the other end leaves out this end’s area (round 138, John: no Dallas to Dallas)', () => {
+  it('leaves out every airport in the area, both ways', () => {
+    expect(otherEndExcludes('DAL').sort()).toEqual(['DAL', 'DFW']);
+    expect(otherEndExcludes('DFW').sort()).toEqual(['DAL', 'DFW']);
+    expect(otherEndExcludes('BNA')).toEqual(['BNA']);
+    expect(otherEndExcludes(null)).toEqual([]);
   });
 });
