@@ -55,8 +55,8 @@ function DashedSwatch({ color }: { color: string }) {
 /** The map's own marks, drawn small: the same shapes and colors as on the globe. */
 function MarkSwatch({ kind }: { kind: (typeof MARK_MEANING)[number]['kind'] }) {
   const c = useColors();
-  if (kind === 'origin') return <View style={[styles.markDot, { backgroundColor: c.accent, borderColor: c.surface }]} />;
-  if (kind === 'destination') return <View style={[styles.markRing, { borderColor: c.accent }]} />;
+  if (kind === 'origin') return <View style={[styles.markDot, { backgroundColor: c.text, borderColor: c.surface }]} />;
+  if (kind === 'destination') return <View style={[styles.markRing, { borderColor: c.text }]} />;
   if (kind === 'stop') return <View style={[styles.markStop, { borderColor: c.muted }]} />;
   if (kind === 'badge-caution') return <View style={[styles.markDiamond, { backgroundColor: c.caution }]} />;
   if (kind === 'badge-likelyDelays') return <Text style={[styles.markTriangle, { color: c.likelyDelays }]}>▲</Text>;

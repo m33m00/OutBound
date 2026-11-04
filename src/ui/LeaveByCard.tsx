@@ -88,12 +88,12 @@ export function LeaveByCard(p: LeaveByCardProps) {
         ? 'Finding your location…'
         : null;
 
-  // Outlined so it stands out on the tinted card (it used to be gray on light blue).
-  const outline = [styles.action, styles.outline, inline && styles.inline, { backgroundColor: c.surface, borderColor: c.accent }];
+  // The plain secondary tint: the card is a quiet gray box now, so it stands out without an outline (round 139).
+  const actionStyle = [styles.action, inline && styles.inline];
   const action = departed ? null : p.locationStatus === 'denied' ? (
-    <Button label="Open Settings" kind="secondary" onPress={() => Linking.openSettings()} style={outline} />
+    <Button label="Open Settings" kind="secondary" onPress={() => Linking.openSettings()} style={actionStyle} />
   ) : offerLocation ? (
-    <Button label="Use Location" kind="secondary" onPress={p.onUseLocation} style={outline} />
+    <Button label="Use Location" kind="secondary" onPress={p.onUseLocation} style={actionStyle} />
   ) : null;
 
   return (
@@ -107,7 +107,8 @@ export function LeaveByCard(p: LeaveByCardProps) {
       style={pressStyle([
         styles.card,
         {
-          backgroundColor: atAirport ? c.youBg : departed ? c.surface2 : c.accentSoft,
+          // Gray, not the accent tint: the card is something you read; the car is what says tap (round 139).
+          backgroundColor: atAirport ? c.youBg : c.surface2,
         },
       ])}>
       <View style={styles.top} testID="leave-by-top">
@@ -206,7 +207,6 @@ const styles = StyleSheet.create({
   },
   top: { flexDirection: 'row', alignItems: 'center', gap: spacing.group },
   action: { alignSelf: 'flex-start', paddingHorizontal: spacing.section },
-  outline: { borderWidth: 1 },
   inline: { alignSelf: 'center' },
   text: { flex: 1 },
   // Pulled up under the title so it reads as the title's caption. No icon tile (design audit,

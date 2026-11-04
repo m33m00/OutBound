@@ -38,7 +38,8 @@ export function Button({
   const c = useColors();
   const primary = kind === 'primary';
   const feel = HAPTIC[haptic ?? (primary ? 'impact' : 'none')];
-  const fg = primary ? c.onAccent : c.text;
+  // Secondary is the accent tint with accent words, the same as a soft pill (round 139: one look per kind).
+  const fg = primary ? c.onAccent : c.accent;
   return (
     <ScalePressable
       onPress={() => {
@@ -50,7 +51,7 @@ export function Button({
       accessibilityLabel={accessibilityLabel ?? label}
       accessibilityHint={accessibilityHint}
       accessibilityState={{ disabled }}
-      style={[styles.button, { backgroundColor: primary ? c.accent : c.surface2, opacity: disabled ? 0.5 : 1 }, style]}>
+      style={[styles.button, { backgroundColor: primary ? c.accent : c.accentSoft, opacity: disabled ? 0.5 : 1 }, style]}>
       {icon ? <Icon name={icon} size={18} tintColor={fg} fallback={null} /> : null}
       {label ? (
         <Text lineBreakStrategyIOS="push-out" style={[textStyles.button, { color: fg }]}>

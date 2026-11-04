@@ -39,7 +39,7 @@ export function SavedToast({ onUndo, onDone }: { onUndo: () => void; onDone: () 
             accessibilityLabel="Undo save"
             hitSlop={8}
             testID="saved-toast-undo"
-            style={pressStyle([styles.undo, { borderColor: c.accent }])}>
+            style={pressStyle([styles.undo, { backgroundColor: c.accentSoft }])}>
             <Text style={[textStyles.bodyStrong, { color: c.accent }]}>Undo</Text>
           </Pressable>
         </View>
@@ -61,5 +61,5 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
   },
   words: { flexShrink: 1 },
-  undo: { borderWidth: 1, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 6 },
+  undo: { borderRadius: 999, paddingHorizontal: 14, paddingVertical: 6 },
 });

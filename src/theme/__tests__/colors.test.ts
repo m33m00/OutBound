@@ -45,8 +45,8 @@ const textPairs: [ColorToken, ColorToken][] = [
 
 describe('Ice Mix colors', () => {
   it('keeps the confirmed DECISIONS.md values', () => {
-    expect(colors.light.accent).toBe('#1d3d84');
-    expect(colors.dark.accent).toBe('#9bb8ef');
+    expect(colors.light.accent).toBe('#1c5fd4');
+    expect(colors.dark.accent).toBe('#7aa7ff');
     expect(colors.light.youText).toBe('#9a5200');
     expect(colors.dark.youText).toBe('#ffc27a');
   });

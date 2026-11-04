@@ -122,14 +122,14 @@ function drawMark(canvas: SkCanvas, m: ScreenMark, c: MarkColors) {
     case 'altHome':
       return drawHomePin(canvas, m, c, true);
     case 'origin':
-      canvas.drawCircle(m.x, m.y, MARK.origin.r, paint(c.accent, PaintStyle.Fill));
+      canvas.drawCircle(m.x, m.y, MARK.origin.r, paint(c.ink, PaintStyle.Fill));
       canvas.drawCircle(m.x, m.y, MARK.origin.r, paint(c.halo, PaintStyle.Stroke, MARK.origin.stroke));
       return;
     case 'destination':
     case 'stop': {
       const s = MARK[m.kind];
       canvas.drawCircle(m.x, m.y, s.r, paint(c.halo, PaintStyle.Fill));
-      canvas.drawCircle(m.x, m.y, s.r, paint(m.kind === 'destination' ? c.accent : c.label, PaintStyle.Stroke, s.stroke));
+      canvas.drawCircle(m.x, m.y, s.r, paint(m.kind === 'destination' ? c.ink : c.label, PaintStyle.Stroke, s.stroke));
       return;
     }
   }

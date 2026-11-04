@@ -15,7 +15,7 @@ export interface LocationOptInCardProps {
 export function LocationOptInCard({ onAllow, onNotNow }: LocationOptInCardProps) {
   const c = useColors();
   return (
-    <View style={[styles.card, { backgroundColor: c.accentSoft }]}>
+    <View style={[styles.card, { backgroundColor: c.surface, borderColor: c.line }]}>
       <Text lineBreakStrategyIOS="push-out" style={[textStyles.heading, { color: c.text }]} accessibilityRole="header">
         Start searches from the airport nearest you?
       </Text>
@@ -25,22 +25,14 @@ export function LocationOptInCard({ onAllow, onNotNow }: LocationOptInCardProps)
       </Text>
       <View style={styles.buttons}>
         <Button label="Allow" onPress={onAllow} accessibilityLabel="Allow location access" style={styles.button} />
-        {/* Outlined: the usual secondary fill (surface2) disappears on accentSoft. */}
-        <Button
-          label="Not Now"
-          kind="secondary"
-          onPress={onNotNow}
-          accessibilityLabel="Not now"
-          style={[styles.button, styles.outline, { backgroundColor: c.surface, borderColor: c.accent }]}
-        />
+        <Button label="Not Now" kind="secondary" onPress={onNotNow} accessibilityLabel="Not now" style={styles.button} />
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  card: { gap: spacing.group, padding: spacing.rowX, borderRadius: radius.md },
+  card: { gap: spacing.group, padding: spacing.rowX, borderRadius: radius.md, borderWidth: StyleSheet.hairlineWidth },
   buttons: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.group },
   button: { flexGrow: 1 },
-  outline: { borderWidth: 1 },
 });

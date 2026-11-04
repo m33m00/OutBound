@@ -11,7 +11,7 @@ export const colors = {
   light: {
     // Surfaces
     // The Clean look (round 120, John picked look B on 2026-11-03): a pale page, white floating
-    // cards, quiet tinted boxes inside them and the Ice Mix navy as the one accent.
+    // cards, quiet tinted boxes inside them and one accent: boarding blue since round 139.
     bg: '#f4f6f9',
     surface: '#ffffff',
     surface2: '#f3f6fa',
@@ -30,9 +30,12 @@ export const colors = {
     // Primary. The text rule (round 136, John: "What's with the navy colors and we have black text"):
     // everything you read is `text` (or `muted` for what's secondary); `accent` navy is only for what
     // you can press (buttons, links, toggles, arrows) and the one marker of where you are.
-    accent: '#1d3d84',
+    // Boarding blue (round 139, John picked B over the Ice Mix navy #1d3d84): the navy sat at 1.7:1
+    // against the text black, so taps and text read as one color. This blue is 5.8:1 on white and 3.1:1
+    // against the text, so what you can press stands apart. accentSoft is the tint behind secondary buttons.
+    accent: '#1c5fd4',
     onAccent: '#ffffff',
-    accentSoft: '#e7ecf6',
+    accentSoft: '#e6eefc',
 
     // "You" only
     you: '#c46a10',
@@ -93,9 +96,9 @@ export const colors = {
     // A card's header panel: the same as the card in the Clean look (round 120).
     ink: '#111a25',
 
-    accent: '#9bb8ef',
+    accent: '#7aa7ff',
     onAccent: '#0a1530',
-    accentSoft: '#17233b',
+    accentSoft: '#15233f',
 
     you: '#ffb25a',
     youText: '#ffc27a',

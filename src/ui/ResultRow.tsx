@@ -787,7 +787,7 @@ export const ResultRow = memo(function ResultRow({
               <View style={styles.path}>
                 {saved ? (
                   <View testID="row-saved">
-                    <Icon name="bookmark.fill" size={13} tintColor={c.accent} fallback={null} />
+                    <Icon name="bookmark.fill" size={13} tintColor={c.muted} fallback={null} />
                   </View>
                 ) : null}
                 {/* The market as a mini route line (round 119, John picked it): ends big, stops above their dots. */}

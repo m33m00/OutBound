@@ -29,12 +29,13 @@ export function AtAirportCard({ code, upcoming, onBoard, onReport, onDismiss }: 
     <View
       style={[styles.card, elevation.card, { backgroundColor: c.surface, borderColor: c.line, shadowColor: c.text }]}
       testID="at-airport-card">
-      <View style={[styles.icon, { backgroundColor: c.accentSoft }]}>
+      {/* Gray, not the accent: the icon isn't the tap (round 139). */}
+      <View style={[styles.icon, { backgroundColor: c.surface2 }]}>
         <Icon
           name="airplane.departure"
           size={16}
-          tintColor={c.accent}
-          fallback={<Text style={[textStyles.bodyStrong, { color: c.accent }]}>✈</Text>}
+          tintColor={c.muted}
+          fallback={<Text style={[textStyles.bodyStrong, { color: c.muted }]}>✈</Text>}
         />
       </View>
       <View style={styles.text} accessible accessibilityRole="header" accessibilityLabel={`At ${code}? Report a load. ${note}`}>

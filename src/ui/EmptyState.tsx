@@ -28,17 +28,24 @@ export function EmptyState({ icon, title, body, points, action }: EmptyStateProp
   return (
     <View style={[styles.card, { backgroundColor: c.surface, borderColor: c.line }]}>
       <View accessible accessibilityLabel={label} style={styles.text}>
-        <View style={[styles.icon, { backgroundColor: c.accentSoft }]}>
-          <Icon name={icon} size={26} tintColor={c.accent} fallback={null} />
+        {/* Gray, not the accent: nothing here is tappable (round 139). */}
+        <View style={[styles.icon, { backgroundColor: c.surface2 }]}>
+          <Icon name={icon} size={26} tintColor={c.muted} fallback={null} />
         </View>
-        <Text lineBreakStrategyIOS="push-out" style={[textStyles.heading, styles.center, { color: c.text }]}>{title}</Text>
-        <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, styles.center, { color: c.muted }]}>{body}</Text>
+        <Text lineBreakStrategyIOS="push-out" style={[textStyles.heading, styles.center, { color: c.text }]}>
+          {title}
+        </Text>
+        <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, styles.center, { color: c.muted }]}>
+          {body}
+        </Text>
         {points?.length ? (
           <View style={styles.points}>
             {points.map((point) => (
               <View key={point} style={styles.point}>
-                <View style={[styles.dot, { backgroundColor: c.accent }]} />
-                <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, styles.pointText, { color: c.text }]}>{point}</Text>
+                <View style={[styles.dot, { backgroundColor: c.muted }]} />
+                <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, styles.pointText, { color: c.text }]}>
+                  {point}
+                </Text>
               </View>
             ))}
           </View>

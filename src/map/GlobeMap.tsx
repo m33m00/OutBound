@@ -742,7 +742,7 @@ export function GlobeMap({
                   return (
                     <Group key={name}>
                       {previewRuns ? (
-                        <PreviewArc runs={previewRuns} pairKey={previewKey} color={markColorSet.accent} animate={!reduceMotion} />
+                        <PreviewArc runs={previewRuns} pairKey={previewKey} color={markColorSet.ink} animate={!reduceMotion} />
                       ) : null}
                       {ripple ? <HomeRipple x={ripple.x} y={ripple.y} r={ripple.r} color={markColorSet.you} /> : null}
                       <Picture picture={picture} />

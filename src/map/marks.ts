@@ -6,8 +6,8 @@
  * - Home: amber house pin (the first home); further homes are an outline
  *   variant. Homes close together (same metro) share one pin and label,
  *   "JFK/LGA". Amber = "you" only, so only home pins use the `you` token.
- * - Origin: filled accent dot with a halo ring.
- * - Destination(s): hollow accent ring.
+ * - Origin: filled ink dot with a halo ring.
+ * - Destination(s): hollow ink ring (round 139: the accent is only for what you press).
  * - Selected route only: small rings + labels on its other airports
  *   (connections, nearby-airport ends).
  * - A code shown as a home pin gets no other mark (the pin is on top).
@@ -413,8 +413,8 @@ export interface MarkColors {
   homeRing: string;
   /** Fill of hollow marks (alt home, rings) and the halo under labels/chevrons. */
   halo: string;
-  /** Origin fill, destination ring. */
-  accent: string;
+  /** Origin fill, destination ring: the text ink (round 139). */
+  ink: string;
   /** Stop ring and label text. */
   label: string;
   /** Halo under chevrons (alpha CHEVRON.haloAlpha). */
@@ -439,7 +439,7 @@ export function markColors(_scheme: ColorScheme, palette: Palette): MarkColors {
     homeGlyph: palette.onAccent,
     homeRing: palette.onAccent,
     halo,
-    accent: palette.accent,
+    ink: palette.text,
     label: palette.text,
     chevronHalo: rgba(hexToRgb(palette.surface), CHEVRON.haloAlpha),
     homeShadow: 'rgba(0,0,0,0.25)',

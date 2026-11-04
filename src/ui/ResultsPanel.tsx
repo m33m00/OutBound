@@ -340,7 +340,7 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
           {header}
           <View style={styles.loadingBlock} accessible accessibilityLabel="Finding routes">
             <View style={styles.loading}>
-              <ActivityIndicator color={c.accent} />
+              <ActivityIndicator color={c.muted} />
               <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, { color: c.muted }]}>
                 Finding routes…
               </Text>

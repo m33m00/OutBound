@@ -11,7 +11,7 @@ const STOP_W = 36;
 /**
  * A market at a glance on a result card (round 119, John picked the mini route line on
  * 2026-11-03; Clean styling since round 120): the origin and destination bold at the ends, a soft
- * line between them like the route card's timeline, hollow accent rings at the start and each
+ * line between them like the route card's timeline, hollow ink rings at the start and each
  * connection, a filled dot at the end, and each connecting airport small above its own ring:
  * DFW ○──○──● LAX. Drawn only; the row's own label says the route for VoiceOver.
  */
@@ -21,7 +21,8 @@ export function MiniRoute({ airports, dimmed }: { airports: readonly string[]; d
   const stops = airports.slice(1, -1);
   const first = airports[0];
   const last = airports[airports.length - 1];
-  const ring = dimmed ? c.muted : c.accent;
+  // Ink, not the accent: the mini route is read, not pressed (round 139).
+  const ring = dimmed ? c.muted : c.text;
   const dot = (filled: boolean) => [styles.dot, { borderColor: ring, backgroundColor: filled ? ring : c.surface }];
   return (
     <View style={styles.row} testID="mini-route" importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>

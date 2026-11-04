@@ -293,7 +293,7 @@ describe('mark colors', () => {
     });
 
     it(`${scheme}: other colors come from theme tokens`, () => {
-      expect(c.accent).toBe(p.accent);
+      expect(c.ink).toBe(p.text);
       expect(c.label).toBe(p.text);
       expect(c.homeGlyph).toBe(p.onAccent);
       expect(c.halo).toBe(`rgba(${hexToRgb(p.surface).join(',')},${LABEL_HALO_ALPHA})`);
