@@ -16,7 +16,17 @@ import { useEffect, useState } from 'react';
 import { StyleSheet } from 'react-native';
 
 import { impactTick } from './haptics';
-import { poseAt, TEAR_MESH, TEAR_STEPS, TEAR_TOTAL_MS, tearMesh, type MeshPart, type TearGeometry } from './tearMesh';
+import {
+  poseAt,
+  stepDrive,
+  TEAR_MESH,
+  TEAR_TOTAL_MS,
+  tearMesh,
+  ticksCrossed,
+  type MeshPart,
+  type TearDrive,
+  type TearGeometry,
+} from './tearMesh';
 
 /**
  * The save tear drawn as real bent paper (round 132): a picture of the route card, laid on the mesh
@@ -32,6 +42,10 @@ export interface MeshFlightProps {
   width: number;
   height: number;
   onDone: () => void;
+  /** Swipe to save (round 133): your finger drives the tear; without it the tear plays by itself. */
+  drive?: TearDrive;
+  /** The paper laid back down after a swipe let go too soon. */
+  onCancel?: () => void;
 }
 
 /** The plain back of the paper, seen once the curl rolls over. */
@@ -49,7 +63,7 @@ function outline(part: MeshPart, cols: number, rows: number): { x: number; y: nu
 }
 
 export function recordTearFrame(
-  p: Omit<MeshFlightProps, 'onDone'> & { canvasWidth: number; canvasHeight: number },
+  p: Omit<MeshFlightProps, 'onDone' | 'onCancel' | 'drive'> & { canvasWidth: number; canvasHeight: number },
   ms: number,
 ): SkPicture {
   const pose = poseAt(ms);
@@ -110,27 +124,33 @@ export function TearMeshFlight(p: MeshFlightProps & { canvasWidth: number; canva
   useEffect(() => {
     let frame = 0;
     let alive = true;
-    const start = Date.now();
-    // A tick as the paper comes up, then light ticks along the rip.
-    const ripAt = TEAR_STEPS.lift + TEAR_STEPS.pull + TEAR_STEPS.hold;
-    const ticks = [
-      setTimeout(impactTick, ripAt - TEAR_STEPS.hold - 20),
-      ...[0, 1, 2].map((i) => setTimeout(impactTick, ripAt + (i * TEAR_STEPS.tear) / 3 + 40)),
-    ];
+    let last = Date.now();
+    // Swiping starts where the finger already has the paper; a played tear starts at the start.
+    let ms = p.drive?.mode === 'drag' ? 0 : (p.drive?.target ?? 0);
     const tick = () => {
       if (!alive) return;
-      const ms = Date.now() - start;
+      const now = Date.now();
+      const next = stepDrive(ms, p.drive, now - last);
+      last = now;
+      // A tick as the paper comes up taut, then light ticks along the rip, wherever it's driven from.
+      for (let i = ticksCrossed(ms, next); i > 0; i--) impactTick();
+      ms = next;
       if (ms >= TEAR_TOTAL_MS) {
         alive = false;
         p.onDone();
         return;
       }
+      if (p.drive?.mode === 'cancel' && ms <= 0) {
+        alive = false;
+        (p.onCancel ?? p.onDone)();
+        return;
+      }
       try {
         setPicture(recordTearFrame(p, ms));
       } catch {
-        // A drawing error ends the tear; the save itself already happened.
+        // A drawing error ends the tear; the save itself already happened (or never will).
         alive = false;
-        p.onDone();
+        (p.drive?.mode === 'drag' || p.drive?.mode === 'cancel' ? (p.onCancel ?? p.onDone) : p.onDone)();
         return;
       }
       frame = requestAnimationFrame(tick);
@@ -139,7 +159,6 @@ export function TearMeshFlight(p: MeshFlightProps & { canvasWidth: number; canva
     return () => {
       alive = false;
       cancelAnimationFrame(frame);
-      ticks.forEach(clearTimeout);
     };
     // One run per flight; the host keys this by flight.
     // eslint-disable-next-line react-hooks/exhaustive-deps

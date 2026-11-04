@@ -316,3 +316,71 @@ export function poseAt(ms: number, s: typeof TEAR_STEPS = TEAR_STEPS): TearPose 
     fly,
   };
 }
+
+/**
+ * Swipe to save (round 133, John: "can it be swipe left on the perforation to save the flight? It rips
+ * away and looks realistic"). Your finger runs the same tear: the first part of the swipe picks the card
+ * up and pulls the stub toward you, the rest rips it along the perforation from the right notch, right
+ * under your finger. Let go past the middle of the rip (or flick left) and it tears free and flies to
+ * My Trips; let go sooner and the paper lays back down.
+ */
+export const RIP_START_MS = TEAR_STEPS.lift + TEAR_STEPS.pull + TEAR_STEPS.hold;
+export const RIP_END_MS = RIP_START_MS + TEAR_STEPS.tear;
+export const TEAR_DRAG = {
+  /** The share of the swipe that lifts and pulls before the rip starts. */
+  lead: 0.22,
+  /** How far left, as a share of the card's width, a full swipe is. */
+  span: 0.78,
+  /** Let go at or past this much of the swipe and it tears free. */
+  commitAt: 0.6,
+  /** Or flick left at least this fast (points per ms) once the rip has started. */
+  flickVx: -0.5,
+  /** How fast the paper follows your finger (ms to close most of the gap), and how fast it lays back down. */
+  follow: 60,
+  backRate: 1.6,
+} as const;
+
+/** How far through the swipe a finger is, 0 to 1, from how far it moved left across a card `width` wide. */
+export function dragProgress(dx: number, width: number): number {
+  if (width <= 0) return 0;
+  return clamp01(-dx / (width * TEAR_DRAG.span));
+}
+
+/** The point in the tear a swipe this far through shows. */
+export function dragMs(p: number): number {
+  const q = clamp01(p);
+  return q <= TEAR_DRAG.lead
+    ? (q / TEAR_DRAG.lead) * RIP_START_MS
+    : RIP_START_MS + ((q - TEAR_DRAG.lead) / (1 - TEAR_DRAG.lead)) * TEAR_STEPS.tear;
+}
+
+/** Whether letting go here tears it free (true) or lays it back down (false). */
+export function shouldCommit(p: number, vx: number): boolean {
+  return p >= TEAR_DRAG.commitAt || (vx <= TEAR_DRAG.flickVx && p > TEAR_DRAG.lead);
+}
+
+/** Who moves the paper: your finger, the finish once you let go, or the paper laying back down. */
+export interface TearDrive {
+  mode: 'drag' | 'finish' | 'cancel';
+  /** Where your finger has the tear, in ms (drag only). */
+  target: number;
+}
+
+/** The next frame's point in the tear, `dt` ms after one at `ms`. */
+export function stepDrive(ms: number, drive: TearDrive | null | undefined, dt: number): number {
+  if (!drive || drive.mode === 'finish') return Math.min(TEAR_TOTAL_MS, ms + dt);
+  if (drive.mode === 'cancel') return Math.max(0, ms - dt * TEAR_DRAG.backRate);
+  const k = Math.min(1, dt / TEAR_DRAG.follow);
+  return ms + (drive.target - ms) * k;
+}
+
+/** Haptic ticks: one as the paper comes up taut, then three along the rip. */
+export const TEAR_TICKS = [
+  RIP_START_MS - TEAR_STEPS.hold - 20,
+  ...[0, 1, 2].map((i) => RIP_START_MS + (i * TEAR_STEPS.tear) / 3 + 40),
+];
+
+/** How many ticks the tear passed going forward from `from` to `to`. */
+export function ticksCrossed(from: number, to: number): number {
+  return to <= from ? 0 : TEAR_TICKS.filter((t) => t > from && t <= to).length;
+}

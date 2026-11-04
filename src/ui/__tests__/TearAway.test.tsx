@@ -2,10 +2,11 @@
  * Saving a route tears the route card's own header off along its perforation and drops it into My
  * Trips (round 126, John: "Can you have it actually tear off the perforated line on the flight card").
  */
-import { AccessibilityInfo, Animated, Text } from 'react-native';
+import { AccessibilityInfo, Animated, PanResponder, Text, type PanResponderCallbacks } from 'react-native';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 
 import { createMemoryProvider, searchItineraries, zonedToUtc, type Itinerary } from '@/engine';
+import { dragMs, TEAR_DRAG, type TearDrive } from '../tearMesh';
 
 import { ResultRow } from '../ResultRow';
 import { SaveRouteButton } from '../SaveRouteButton';
@@ -63,7 +64,7 @@ describe('TearAway: the route card tears along its perforation when you save (ro
     jest.restoreAllMocks();
   });
 
-  async function mount(saved: boolean, reduceMotion: boolean, onPress = jest.fn()) {
+  async function mount(saved: boolean, reduceMotion: boolean, onPress = jest.fn(), onSwipeSave?: () => void) {
     jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(reduceMotion);
     await act(async () => {
       r = create(
@@ -75,6 +76,7 @@ describe('TearAway: the route card tears along its perforation when you save (ro
             now={NOW}
             onPress={jest.fn()}
             topAction={<SaveRouteButton saved={saved} onPress={onPress} />}
+            onSwipeSave={onSwipeSave}
           />
         </TearAwayHost>,
       );
@@ -312,6 +314,106 @@ describe('TearAway: the route card tears along its perforation when you save (ro
       await act(async () => {});
       expect(r!.root.findAllByProps({ testID: 'paper-tear' })).toHaveLength(0);
       expect(flying().length).toBeGreaterThan(0);
+    });
+
+    describe('swipe left on the perforation to save (round 133, John)', () => {
+      type Cfg = PanResponderCallbacks;
+      const e = {} as never;
+      const g = (dx: number, vx = 0, dy = 0) => ({ dx, dy, vx, vy: 0 }) as never;
+      const W = 358;
+      async function swipeMount(onSwipeSave = jest.fn(), reduceMotion = false) {
+        const create$ = jest.spyOn(PanResponder, 'create');
+        await mount(false, reduceMotion, jest.fn(), onSwipeSave);
+        const strip = r!.root.findAll((n) => n.props.testID === 'tear-swipe' && typeof n.props.onLayout === 'function')[0];
+        act(() => strip.props.onLayout({ nativeEvent: { layout: { width: W } } }));
+        const cfg = create$.mock.calls[create$.mock.calls.length - 1][0] as Cfg;
+        return { cfg, onSwipeSave };
+      }
+      const drive = () => paperProps.current!.drive as TearDrive;
+      // A swipe this far through, as the finger's move left.
+      const at = (p: number) => -p * W * TEAR_DRAG.span;
+
+      it('takes only a clear sideways swipe to the left, so the card still scrolls', async () => {
+        useMesh({ picture: true });
+        const { cfg } = await swipeMount();
+        expect(cfg.onMoveShouldSetPanResponder!(e, g(-20))).toBe(true);
+        expect(cfg.onMoveShouldSetPanResponder!(e, g(20))).toBe(false);
+        expect(cfg.onMoveShouldSetPanResponder!(e, g(-20, 0, 30))).toBe(false);
+        expect(cfg.onPanResponderTerminationRequest!(e, g(-20))).toBe(false);
+      });
+
+      it('lets the finger drive the paper tear, and tears it free and saves when let go past the middle', async () => {
+        useMesh({ picture: true });
+        const { cfg, onSwipeSave } = await swipeMount();
+        await act(async () => {
+          cfg.onPanResponderGrant!(e, g(-10));
+        });
+        expect(r!.root.findAllByProps({ testID: 'paper-tear' }).length).toBeGreaterThan(0);
+        expect(cardOpacity()).toBe(0);
+        expect(drive().mode).toBe('drag');
+        act(() => {
+          cfg.onPanResponderMove!(e, g(at(0.5)));
+        });
+        expect(drive().target).toBeCloseTo(dragMs(0.5));
+        act(() => {
+          cfg.onPanResponderRelease!(e, g(at(0.7)));
+        });
+        expect(drive().mode).toBe('finish');
+        expect(onSwipeSave).toHaveBeenCalledTimes(1);
+        act(() => (paperProps.current!.onDone as () => void)());
+        expect(cardOpacity()).toBe(1);
+      });
+
+      it('lays the paper back down and saves nothing when let go too soon', async () => {
+        useMesh({ picture: true });
+        const { cfg, onSwipeSave } = await swipeMount();
+        await act(async () => {
+          cfg.onPanResponderGrant!(e, g(-10));
+        });
+        act(() => {
+          cfg.onPanResponderRelease!(e, g(at(0.3)));
+        });
+        expect(drive().mode).toBe('cancel');
+        expect(onSwipeSave).not.toHaveBeenCalled();
+        act(() => (paperProps.current!.onCancel as () => void)());
+        expect(r!.root.findAllByProps({ testID: 'paper-tear' })).toHaveLength(0);
+        expect(cardOpacity()).toBe(1);
+        // And the card can tear again.
+        await act(async () => {
+          cfg.onPanResponderGrant!(e, g(-10));
+        });
+        expect(r!.root.findAllByProps({ testID: 'paper-tear' }).length).toBeGreaterThan(0);
+      });
+
+      it('saves on a quick flick left once the rip has started', async () => {
+        useMesh({ picture: true });
+        const { cfg, onSwipeSave } = await swipeMount();
+        await act(async () => {
+          cfg.onPanResponderGrant!(e, g(-10));
+        });
+        act(() => {
+          cfg.onPanResponderRelease!(e, g(at(0.35), -1.2));
+        });
+        expect(onSwipeSave).toHaveBeenCalledTimes(1);
+      });
+
+      it('still saves with Reduce Motion on, without the tear', async () => {
+        useMesh({ picture: true });
+        const { cfg, onSwipeSave } = await swipeMount(jest.fn(), true);
+        await act(async () => {
+          cfg.onPanResponderGrant!(e, g(-10));
+        });
+        act(() => {
+          cfg.onPanResponderRelease!(e, g(at(0.8)));
+        });
+        expect(onSwipeSave).toHaveBeenCalledTimes(1);
+        expect(r!.root.findAllByProps({ testID: 'paper-tear' })).toHaveLength(0);
+      });
+
+      it('has no swipe once the route is saved', async () => {
+        await mount(true, false);
+        expect(r!.root.findAll((n) => n.props.testID === 'tear-swipe')).toHaveLength(0);
+      });
     });
   });
 });

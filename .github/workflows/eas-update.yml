@@ -74,6 +74,8 @@ jobs:
           COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
           EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          # Real airline logos (round 133). Without this secret the app shows its own tail marks.
+          EXPO_PUBLIC_LOGO_DEV_KEY: ${{ secrets.LOGO_DEV_KEY }}
         run: |
           MESSAGE=$(printf '%s' "${COMMIT_MESSAGE:-Manual publish}" | head -n 1)
           eas update --branch "$BRANCH" --message "$MESSAGE" --environment preview --non-interactive

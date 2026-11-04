@@ -3,7 +3,24 @@
  * horizontally the paper would pull back (arc) and tear").
  */
 import { SETTLE_MS } from '../TearAway';
-import { curlShare, poseAt, TEAR_MESH, TEAR_TOTAL_MS, tearMesh, tornAt, type TearPose } from '../tearMesh';
+import {
+  curlShare,
+  dragMs,
+  dragProgress,
+  poseAt,
+  RIP_END_MS,
+  RIP_START_MS,
+  shouldCommit,
+  stepDrive,
+  TEAR_DRAG,
+  TEAR_MESH,
+  TEAR_TOTAL_MS,
+  tearMesh,
+  ticksCrossed,
+  tornAt,
+  type TearDrive,
+  type TearPose,
+} from '../tearMesh';
 
 const g = { width: 358, height: 330, perf: 96, toX: 179, toY: 600 };
 const pose = (p: Partial<TearPose>): TearPose => ({ lift: 0, pull: 0, tear: 0, free: 0, fly: 0, ...p });
@@ -86,5 +103,39 @@ describe('tearMesh: the route card bent as paper (round 132)', () => {
     expect(mid.lift).toBe(1);
     expect(mid.pull).toBe(1);
     expect(mid.fly).toBe(0);
+  });
+});
+
+describe('swipe to save drives the same tear (round 133, John)', () => {
+  it('spends the first part of the swipe lifting and pulling, the rest ripping', () => {
+    expect(dragMs(0)).toBe(0);
+    expect(dragMs(TEAR_DRAG.lead)).toBeCloseTo(RIP_START_MS);
+    expect(dragMs(1)).toBeCloseTo(RIP_END_MS);
+    for (let p = 0.05; p <= 1; p += 0.05) expect(dragMs(p)).toBeGreaterThan(dragMs(p - 0.05));
+    expect(dragProgress(-1000, 300)).toBe(1);
+    expect(dragProgress(40, 300)).toBe(0);
+  });
+
+  it('tears free past the middle of the rip or on a flick, and lays back down otherwise', () => {
+    expect(shouldCommit(0.7, 0)).toBe(true);
+    expect(shouldCommit(0.4, 0)).toBe(false);
+    expect(shouldCommit(0.4, -1)).toBe(true);
+    expect(shouldCommit(0.1, -1)).toBe(false);
+  });
+
+  it('follows the finger, finishes on its own, and runs back down when cancelled', () => {
+    const drag: TearDrive = { mode: 'drag', target: 500 };
+    const a = stepDrive(0, drag, 16);
+    expect(a).toBeGreaterThan(0);
+    expect(a).toBeLessThan(500);
+    expect(stepDrive(100, { mode: 'finish', target: 0 }, 16)).toBe(116);
+    expect(stepDrive(10, { mode: 'cancel', target: 0 }, 16)).toBe(0);
+    expect(stepDrive(TEAR_TOTAL_MS - 1, null, 16)).toBe(TEAR_TOTAL_MS);
+  });
+
+  it('ticks once as the paper goes taut and three times along the rip, only going forward', () => {
+    expect(ticksCrossed(0, TEAR_TOTAL_MS)).toBe(4);
+    expect(ticksCrossed(RIP_END_MS, 0)).toBe(0);
+    expect(ticksCrossed(0, RIP_START_MS)).toBe(1);
   });
 });

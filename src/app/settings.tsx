@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useRef, useState, type ComponentRef } from 'react';
-import { Platform, Pressable, ScrollView, StyleSheet, Switch, Text, View, type LayoutChangeEvent } from 'react-native';
+import { Linking, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, View, type LayoutChangeEvent } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useSettings } from '@/settings/SettingsProvider';
@@ -11,6 +11,7 @@ import { MAPS_APP_NAME, type MapsApp } from '@/search/directions';
 import { formatDuration } from '@/search/format';
 import { homeAirports, LIMITS } from '@/settings/settings';
 import { minTapTarget, radius, spacing, textStyles, useColors } from '@/theme';
+import { logosOn } from '@/ui/AirlinePill';
 import { AirportPicker } from '@/ui/AirportPicker';
 import { BackButton } from '@/ui/BackButton';
 import { SectionFooter, SectionHeader } from '@/ui/ListGroup';
@@ -189,6 +190,19 @@ export default function SettingsScreen() {
         <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>
           Saved on this phone.
         </Text>
+        {/* Logo.dev's free plan asks for a visible link wherever its logos show (round 133). */}
+        {logosOn() ? (
+          <Pressable
+            accessibilityRole="link"
+            accessibilityLabel="Airline logos provided by Logo.dev"
+            onPress={() => Linking.openURL('https://logo.dev')}
+            style={pressStyle(null, 'link')}
+            testID="logo-credit">
+            <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>
+              Airline logos provided by <Text style={{ color: c.accent }}>Logo.dev</Text>. Each logo belongs to its airline.
+            </Text>
+          </Pressable>
+        ) : null}
       </ScrollView>
       <AirportPicker
         visible={pickerSheet.visible}

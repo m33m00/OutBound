@@ -38,6 +38,7 @@ import { Icon } from './Icon';
 import { MetaLine } from './MetaLine';
 import { MiniRoute } from './MiniRoute';
 import { snapshotCard, TearSourceProvider, type TearSource } from './TearAway';
+import { TearSwipe } from './TearSwipe';
 import { TicketTear } from './TicketTear';
 import { pressStyle } from './press';
 import { ScalePressable } from './ScalePressable';
@@ -66,6 +67,8 @@ export interface ResultRowProps {
   saved?: boolean;
   /** Route card only: a control pinned top right, beside the headline (Save, John 2026-11-01). */
   topAction?: ReactNode;
+  /** Route card only: swiping left on the perforation tears it off and calls this (round 133, John). */
+  onSwipeSave?: () => void;
 }
 
 /** From this text size the seat chip and delay badge sit left-aligned under the times. */
@@ -420,6 +423,7 @@ export const ResultRow = memo(function ResultRow({
   large,
   saved,
   topAction,
+  onSwipeSave,
 }: ResultRowProps) {
   const c = useColors();
   const scheme = useColorSchemeName();
@@ -585,6 +589,8 @@ export const ResultRow = memo(function ResultRow({
       ) : null}
     </View>
   );
+  // Set while the route card draws its stub, so the swipe strip on the perforation tears the same card.
+  let tearSource: TearSource | null = null;
   const card = (
     // Soft depth and a gentle press: the card shrinks a hair and dims a little (round 113). The
     // route view's big card stays still under the finger.
@@ -659,7 +665,7 @@ export const ResultRow = memo(function ResultRow({
                 </InkContext.Provider>
               );
               if (!large) return stub;
-              const source: TearSource = {
+              const source: TearSource = (tearSource = {
                 measure: (done) => stubRef.current?.measureInWindow(done),
                 measureCard: (done) => ticketRef.current?.measureInWindow(done),
                 // The whole card as a picture, so the tear bends the real thing (round 132).
@@ -682,7 +688,7 @@ export const ResultRow = memo(function ResultRow({
                 bodyPaper: it.isFull ? c.surface2 : c.surface,
                 edge: it.isFull ? c.full : c.line,
                 edgeWidth: edgeW,
-              };
+              });
               return (
                 <TearSourceProvider value={source}>
                   <Animated.View
@@ -698,7 +704,11 @@ export const ResultRow = memo(function ResultRow({
             })()}
             {/* The route card tears like a boarding pass between its header and the flights (round 121). */}
             {large ? (
-              <TicketTear notch={c.bg} edge={c.line} line={c.line2} />
+              <View>
+                <TicketTear notch={c.bg} edge={c.line} line={c.line2} />
+                {/* Swipe left along the perforation to tear the stub off and save (round 133, John). */}
+                {tearSource ? <TearSwipe source={tearSource} onSave={onSwipeSave} /> : null}
+              </View>
             ) : (
               <TicketTear
                 notch={c.bg}

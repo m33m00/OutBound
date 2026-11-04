@@ -1,3 +1,5 @@
+import { Image } from 'expo-image';
+import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { fonts, radius, textStyles, useColors } from '@/theme';
@@ -16,29 +18,70 @@ export interface AirlineMarkStyle {
   tail: string;
   stripe: string;
   glyph: string;
+  /** The airline's web domain, which is how the logo service finds its logo. */
+  domain: string;
 }
 
 export const AIRLINE_MARKS: Record<string, AirlineMarkStyle> = {
-  AA: { name: 'American', tail: '#0078D2', stripe: '#C30019', glyph: '#FFFFFF' },
-  AC: { name: 'Air Canada', tail: '#1A1A1A', stripe: '#F01428', glyph: '#FFFFFF' },
-  AS: { name: 'Alaska', tail: '#01426A', stripe: '#48A9C5', glyph: '#FFFFFF' },
-  B6: { name: 'JetBlue', tail: '#003876', stripe: '#1E90FF', glyph: '#FFFFFF' },
-  DL: { name: 'Delta', tail: '#003366', stripe: '#C8102E', glyph: '#FFFFFF' },
-  F9: { name: 'Frontier', tail: '#248168', stripe: '#9BD3AE', glyph: '#FFFFFF' },
-  NK: { name: 'Spirit', tail: '#FFE500', stripe: '#1A1A1A', glyph: '#1A1A1A' },
-  UA: { name: 'United', tail: '#0033A0', stripe: '#6CACE4', glyph: '#FFFFFF' },
-  WN: { name: 'Southwest', tail: '#304CB2', stripe: '#FFBF27', glyph: '#FFFFFF' },
+  AA: { name: 'American', tail: '#0078D2', stripe: '#C30019', glyph: '#FFFFFF', domain: 'aa.com' },
+  AC: { name: 'Air Canada', tail: '#1A1A1A', stripe: '#F01428', glyph: '#FFFFFF', domain: 'aircanada.com' },
+  AS: { name: 'Alaska', tail: '#01426A', stripe: '#48A9C5', glyph: '#FFFFFF', domain: 'alaskaair.com' },
+  B6: { name: 'JetBlue', tail: '#003876', stripe: '#1E90FF', glyph: '#FFFFFF', domain: 'jetblue.com' },
+  DL: { name: 'Delta', tail: '#003366', stripe: '#C8102E', glyph: '#FFFFFF', domain: 'delta.com' },
+  F9: { name: 'Frontier', tail: '#248168', stripe: '#9BD3AE', glyph: '#FFFFFF', domain: 'flyfrontier.com' },
+  NK: { name: 'Spirit', tail: '#FFE500', stripe: '#1A1A1A', glyph: '#1A1A1A', domain: 'spirit.com' },
+  UA: { name: 'United', tail: '#0033A0', stripe: '#6CACE4', glyph: '#FFFFFF', domain: 'united.com' },
+  WN: { name: 'Southwest', tail: '#304CB2', stripe: '#FFBF27', glyph: '#FFFFFF', domain: 'southwest.com' },
 };
+
+/**
+ * Real airline logos (round 133, John: "Yes, find real logos") come from Logo.dev, whose terms allow
+ * showing logos in an app to identify a brand, with a visible "Logos provided by Logo.dev" link on
+ * the free plan. Its publishable key is public by design (like the Supabase anon key) and comes from
+ * the build env, never from git. With no key, or when a logo fails to load, the tail mark shows.
+ */
+const LOGO_KEY = process.env.EXPO_PUBLIC_LOGO_DEV_KEY;
+
+/** True when real logos are switched on, so Settings shows the Logo.dev credit. */
+export function logosOn(key = LOGO_KEY): boolean {
+  return !!key;
+}
+
+/** The logo's address for an airline at `size` points, or null when logos are off or unknown. */
+export function airlineLogoUrl(code: string, size: number, key = LOGO_KEY): string | null {
+  const m = AIRLINE_MARKS[code];
+  if (!key || !m) return null;
+  const px = Math.round(size * 2);
+  return `https://img.logo.dev/${m.domain}?token=${encodeURIComponent(key)}&size=${px}&format=png&retina=true&fallback=404`;
+}
 
 /** The airline's name for speech and labels, or its code when we don't know it. */
 export function airlineName(code: string): string {
   return AIRLINE_MARKS[code]?.name ?? code;
 }
 
-/** The tail mark alone, `size` points square. */
-export function AirlineMark({ airline, size = 18 }: { airline: string; size?: number }) {
+/** The airline's logo on a white tile, or its tail mark when there's no logo. `size` points square. */
+export function AirlineMark({ airline, size = 18, logoKey = LOGO_KEY }: { airline: string; size?: number; logoKey?: string }) {
   const m = AIRLINE_MARKS[airline];
+  const [failed, setFailed] = useState(false);
   if (!m) return null;
+  const url = failed ? null : airlineLogoUrl(airline, size, logoKey);
+  if (url) {
+    return (
+      <View
+        style={[styles.mark, styles.logoTile, { width: size, height: size, borderRadius: size * 0.28 }]}
+        testID="airline-logo">
+        <Image
+          source={{ uri: url }}
+          style={{ width: size - 2, height: size - 2 }}
+          contentFit="contain"
+          cachePolicy="disk"
+          accessibilityIgnoresInvertColors
+          onError={() => setFailed(true)}
+        />
+      </View>
+    );
+  }
   return (
     <View
       style={[styles.mark, { width: size, height: size, borderRadius: size * 0.28, backgroundColor: m.tail }]}
@@ -111,5 +154,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.sm - 2,
   },
   mark: { overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
+  // Logos are drawn for light backgrounds, so each sits on its own white tile in dark mode too.
+  logoTile: { backgroundColor: '#FFFFFF', borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(0,0,0,0.12)' },
   stripe: { position: 'absolute', transform: [{ rotate: '-28deg' }] },
 });

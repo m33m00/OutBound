@@ -401,6 +401,7 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
                   onImpactPress={p.onImpactPress}
                   onLegPress={p.onLegPress}
                   status={p.statuses?.[focused.id]}
+                  onSwipeSave={p.onToggleSave && !p.isSaved?.(focused) ? () => p.onToggleSave?.(focused) : undefined}
                   topAction={
                     p.onToggleSave ? (
                       <SaveRouteButton saved={!!p.isSaved?.(focused)} onPress={() => p.onToggleSave?.(focused)} />

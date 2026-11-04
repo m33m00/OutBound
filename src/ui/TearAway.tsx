@@ -4,6 +4,7 @@ import { Animated, Easing, StyleSheet, View } from 'react-native';
 import { radius } from '@/theme';
 
 import { impactTick } from './haptics';
+import { dragMs, type TearDrive } from './tearMesh';
 import { useReducedMotion } from './useReducedMotion';
 
 /**
@@ -52,6 +53,22 @@ export function useIsTearCopy(): boolean {
 
 type Launch = (source: TearSource) => void;
 const TearAwayContext = createContext<Launch | null>(null);
+
+/**
+ * A swipe on the perforation (round 133): `move` takes how far through the swipe the finger is (0 to 1),
+ * `release` tears it free (true) or lays it back down (false).
+ */
+export interface TearDrag {
+  move: (progress: number) => void;
+  release: (commit: boolean) => void;
+}
+type StartDrag = (source: TearSource) => TearDrag | null;
+const TearDragContext = createContext<StartDrag | null>(null);
+
+/** Starts a swipe-driven tear, or null where no screen hosts it. */
+export function useTearDrag(): StartDrag | null {
+  return useContext(TearDragContext);
+}
 
 /** Starts the tear, or null where no screen hosts it. */
 export function useTearAway(): Launch | null {
@@ -266,6 +283,77 @@ export function TearAwayHost({ children }: { children: ReactNode }) {
     [reduceMotion, frame, sliced],
   );
 
+  // Swipe to save (round 133): the same paper tear, driven by the finger until it lets go.
+  const startDrag = useCallback<StartDrag>(
+    (source) => {
+      if (reduceMotion || frame.width === 0 || flying.current) return null;
+      const { measureWhole, snapshot } = source;
+      const mesh = loadMesh();
+      const drive: TearDrive = { mode: 'drag', target: 0 };
+      // shown: the paper is on screen; dead: nothing more will draw (let go early, or no picture).
+      const state = { shown: false, dead: false, committed: false };
+      flying.current = true;
+      const giveUp = () => {
+        state.dead = true;
+        flying.current = false;
+        // Let go and tearing, but the paper never came: play the sliced tear so Save still shows it.
+        if (state.committed) sliced(source);
+      };
+      if (!measureWhole || !snapshot || !mesh) giveUp();
+      else {
+        measureWhole((wx, wy, ww, wh) =>
+          source.measure((_hx, hy, _hw, hh) => {
+            if (state.dead) return;
+            if (!ww || !wh || !hh) return giveUp();
+            snapshot()
+              .then((image) => {
+                if (state.dead) return;
+                if (!image) return giveUp();
+                state.shown = true;
+                seq.current += 1;
+                const x = wx - frame.x;
+                const y = wy - frame.y;
+                source.cardHold.setValue(0);
+                setPaper({
+                  id: seq.current,
+                  x,
+                  y,
+                  width: ww,
+                  height: wh,
+                  perf: Math.min(wh, hy + hh - wy),
+                  toX: frame.width / 2 - x,
+                  toY: frame.height + 10 - y,
+                  image,
+                  source,
+                  drive,
+                });
+              })
+              .catch(() => !state.dead && giveUp());
+          }),
+        );
+      }
+      return {
+        move: (progress) => {
+          drive.target = dragMs(progress);
+        },
+        release: (commit) => {
+          state.committed = commit;
+          drive.mode = commit ? 'finish' : 'cancel';
+          if (state.shown || state.dead) {
+            if (state.dead && commit && !flying.current) sliced(source);
+            return;
+          }
+          // Let go before the picture came: a short swipe is just dropped; a tear waits for the paper.
+          if (!commit) {
+            state.dead = true;
+            flying.current = false;
+          }
+        },
+      };
+    },
+    [reduceMotion, frame, sliced],
+  );
+
   const landed = useCallback((source: TearSource) => {
     flying.current = false;
     // The card comes back without its header, which then settles back on with a small bounce.
@@ -282,7 +370,7 @@ export function TearAwayHost({ children }: { children: ReactNode }) {
 
   return (
     <TearAwayContext.Provider value={launch}>
-      {children}
+      <TearDragContext.Provider value={startDrag}>{children}</TearDragContext.Provider>
       {/* A layer over the whole screen that never takes a touch; the torn piece flies on it. */}
       <View
         ref={host}
@@ -303,6 +391,12 @@ export function TearAwayHost({ children }: { children: ReactNode }) {
               setPaper(null);
               landed(paper.source);
             }}
+            onCancel={() => {
+              // Laid back down: the real card shows again, nothing saved.
+              setPaper(null);
+              flying.current = false;
+              paper.source.cardHold.setValue(1);
+            }}
           />
         ) : null}
       </View>
@@ -321,6 +415,8 @@ interface PaperFlight {
   toY: number;
   image: unknown;
   source: TearSource;
+  /** Set when a swipe drives this tear (round 133). */
+  drive?: TearDrive;
 }
 
 type MeshModule = typeof import('./TearMeshFlight');
@@ -355,11 +451,13 @@ function PaperTear({
   canvasWidth,
   canvasHeight,
   onDone,
+  onCancel,
 }: {
   paper: PaperFlight;
   canvasWidth: number;
   canvasHeight: number;
   onDone: () => void;
+  onCancel?: () => void;
 }) {
   const mod = loadMesh();
   useEffect(() => {
@@ -381,6 +479,8 @@ function PaperTear({
       canvasWidth={canvasWidth}
       canvasHeight={canvasHeight}
       onDone={onDone}
+      onCancel={onCancel}
+      drive={paper.drive}
     />
   );
 }
