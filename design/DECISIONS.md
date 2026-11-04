@@ -483,3 +483,12 @@ John: "Can you add like a more obvious ticket border when I'm like scanning thro
 - Light mode gets a slightly firmer, tighter shadow. Dark mode drops the shadow, which only showed as a faint glow, and leans on the edge.
 - A little more space between tickets (12pt, was 8pt).
 - The tear notches match the new edge. Picked routes keep their blue outline and full routes their red one, both still 2pt. The tear itself is unchanged.
+
+## Design round 151: save from the result tickets; a Canceled pill over the X (John, 2026-11-04)
+
+John: "saving a flight and or swiping to save shouldn't actually be when you select a flight to view more details. It should be on that flight summary page instead ... We already have the space to put a save icon on the top right. And I think because you're scrolling up and down, it's very unlikely that you would swipe left unless you're intentional about it." And: "add like the canceled pill for on top of the small X ... some people may not understand what the small red X means."
+
+- Each result ticket in the list has the Save bookmark at its top right, beside the times. Filled once it's in My Trips; tap again to take it out. The small bookmark that used to sit by the route line on saved rows is gone, since the corner one shows it.
+- A swipe left anywhere on a result ticket tears it along its perforation and saves it, with the same tear (approved round 136) and the Undo bar after. The whole ticket takes the swipe, not only a small tab: in the list, a sideways move is deliberate. Up or down first is a scroll, and a tap still opens the route. Tapping Save tears it the same way. Reduce Motion saves without the tear.
+- The opened route card no longer has Save or the swipe-to-tear, so reading the details can't save by accident.
+- A canceled leg on the route line now has a small red "Canceled" pill above its X, centred on that leg. The X stays.

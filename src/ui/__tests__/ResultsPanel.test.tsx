@@ -432,14 +432,14 @@ describe('results bar at big text sizes', () => {
     expect(title.props.numberOfLines).toBe(2);
   });
 
-  it('saves a picked route to My Trips and shows when it is saved (Q-043)', async () => {
+  it('saves a route from its ticket in the list, not the opened route, and shows when it is saved (Q-043, round 151)', async () => {
     const { request, list } = await results();
     const state = { status: 'done' as const, request, results: list, hiddenCount: 0, hiddenResults: [], searchedAt: NOW };
     const onToggleSave = jest.fn();
-    const panel = (saved: boolean) => (
+    const panel = (saved: boolean, selectedId: string | null = null) => (
       <ResultsPanel
         state={state}
-        selectedId={list[0].id}
+        selectedId={selectedId}
         now={NOW}
         onSelect={jest.fn()}
         onBack={jest.fn()}
@@ -451,23 +451,32 @@ describe('results bar at big text sizes', () => {
     await act(async () => {
       r = create(panel(false));
     });
-    const button = () => r!.root.findAll((n) => n.props.testID === 'save-route' && n.props.accessibilityRole === 'button')[0];
+    const buttons = () =>
+      r!.root.findAll(
+        (n) => n.props.testID === 'save-route' && n.props.accessibilityRole === 'button' && typeof n.type === 'string',
+      );
+    const button = () => buttons()[0];
+    // One on each ticket, top right (round 151, John: "We already have the space to put a save icon on the top right").
+    expect(buttons()).toHaveLength(list.length);
     expect(button().props.accessibilityLabel).toBe('Save Route');
-    // Top right of the route card, not crowding the header (John, 2026-11-01).
-    const slot = r!.root.findAll((n) => n.props.testID === 'route-card-action' && typeof n.type === 'string');
-    expect(slot).toHaveLength(1);
-    expect(slot[0].findAll((n) => n.props.testID === 'save-route').length).toBeGreaterThan(0);
-    const header = r!.root.findAll((n) => n.props.testID === 'route-view' && typeof n.type === 'string')[0].children[0];
-    expect(typeof header !== 'string' && header.findAll((n) => n.props.testID === 'save-route').length).toBe(0);
+    const slots = r!.root.findAll((n) => n.props.testID === 'row-action' && typeof n.type === 'string');
+    expect(slots).toHaveLength(list.length);
     expect(button().props.accessibilityHint).toBe('Keeps it in My Trips');
     const announce = jest.spyOn(AccessibilityInfo, 'announceForAccessibility').mockImplementation(() => {});
-    act(() => button().props.onPress());
+    const pressable = r!.root.findAll((n) => n.props.testID === 'save-route' && typeof n.props.onPress === 'function')[0];
+    act(() => pressable.props.onPress());
     expect(onToggleSave).toHaveBeenCalledWith(list[0]);
     expect(announce).toHaveBeenCalledWith('Saved to My Trips');
     announce.mockRestore();
     await act(async () => r!.update(panel(true)));
     expect(button().props.accessibilityLabel).toBe('Saved to My Trips');
     expect(button().props.accessibilityHint).toBe('Removes it from My Trips');
+    // The opened route has no Save and no swipe of its own any more.
+    await act(async () => r!.update(panel(false, list[0].id)));
+    const card = r!.root.findAll((n) => n.props.testID === 'route-card' && typeof n.type === 'string')[0];
+    expect(card.findAll((n) => n.props.testID === 'save-route')).toHaveLength(0);
+    expect(card.findAll((n) => n.props.testID === 'route-card-action')).toHaveLength(0);
+    expect(card.findAll((n) => n.props.testID === 'tear-swipe')).toHaveLength(0);
   });
 
   it('has no Save Route without a handler, and shows a note under the count', async () => {
@@ -508,8 +517,12 @@ describe('results bar at big text sizes', () => {
         />,
       );
     });
-    const marks = r!.root.findAll((n) => n.props.testID === 'row-saved' && typeof n.type === 'string');
-    expect(marks.length).toBe(1);
+    // The ticket's own bookmark shows it filled, so the small mark by the route line isn't needed (round 151).
+    expect(r!.root.findAll((n) => n.props.testID === 'row-saved')).toHaveLength(0);
+    const saves = r!.root.findAll(
+      (n) => n.props.testID === 'save-route' && n.props.accessibilityRole === 'button' && typeof n.type === 'string',
+    );
+    expect(saves.map((n) => n.props.accessibilityLabel)).toEqual(['Save Route', 'Saved to My Trips']);
     const rows = r!.root.findAll(
       (n) =>
         n.props.accessibilityRole === 'button' &&

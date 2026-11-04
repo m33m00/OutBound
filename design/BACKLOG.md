@@ -183,3 +183,4 @@ Each item names its owner. One item per work session. spec-keeper runs a pre-fli
 | 176 | Design round 148: Delayed pill under the route line, right above its flight number (John) | main | P2 | Built (design round 148, branch claude/project-thread-fzqwou) |
 | 177 | Design round 149: durations always "Xh Ym"; stops line reads stops, trip time, then "35m connection at MIA" last (John) | main | P2 | Built (design round 149, branch claude/project-thread-fzqwou) |
 | 178 | Design round 150: clearer result ticket edge in light and dark, more space between tickets (John) | main | P2 | Built (design round 150, branch claude/project-thread-fzqwou) |
+| 179 | Design round 151: Save and swipe-to-tear on the result tickets, off the opened route; Canceled pill over the X (John) | main | P2 | Built (design round 151, branch claude/project-thread-fzqwou) |

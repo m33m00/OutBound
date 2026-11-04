@@ -10,7 +10,7 @@ import { dragMs, TEAR_DRAG, type TearDrive } from '../tearMesh';
 
 import { ResultRow } from '../ResultRow';
 import { SaveRouteButton } from '../SaveRouteButton';
-import { GRAB_WIDTH } from '../TearSwipe';
+import { GRAB_WIDTH, SWIPE_SCROLL } from '../TearSwipe';
 import {
   CURL_MS,
   CURL_SLICES,
@@ -447,6 +447,71 @@ describe('TearAway: the route card tears along its perforation when you save (ro
       it('has no swipe once the route is saved', async () => {
         await mount(true, false);
         expect(r!.root.findAll((n) => n.props.testID === 'tear-swipe')).toHaveLength(0);
+      });
+
+      describe('on a result ticket in the list (round 151, John: save from the summary, not the opened route)', () => {
+        async function slimMount(onSwipeSave: (() => void) | undefined, onPress = jest.fn(), saved = false) {
+          mockPans.length = 0;
+          jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(false);
+          await act(async () => {
+            r = create(
+              <TearAwayHost>
+                <ResultRow
+                  itinerary={route}
+                  selected={false}
+                  now={NOW}
+                  onPress={jest.fn()}
+                  topAction={<SaveRouteButton saved={saved} onPress={onPress} />}
+                  onSwipeSave={onSwipeSave}
+                />
+              </TearAwayHost>,
+            );
+          });
+          for (const n of r!.root.findAll((x) => typeof x.instance?.measureInWindow === 'function')) {
+            n.instance.measureInWindow = measureCard;
+            n.instance.measureLayout = (_to: unknown, ok: Measured) => ok(0, 90, 358, 14);
+          }
+          act(() => r!.root.findByProps({ testID: 'tear-away-layer' }).props.onLayout());
+        }
+        const ticketOpacity = () => {
+          const o = r!.root.findAllByProps({ testID: 'row-card-hold' })[0].props.style.opacity as { __getValue: () => number };
+          return o.__getValue();
+        };
+
+        it('has Save top right on the ticket, and a swipe left anywhere on it tears and saves', async () => {
+          useMesh({ picture: true });
+          const onSwipeSave = jest.fn();
+          await slimMount(onSwipeSave);
+          const action = r!.root.findAll((n) => n.props.testID === 'row-action' && typeof n.type === 'string');
+          expect(action).toHaveLength(1);
+          expect(action[0].findAll((n) => n.props.testID === 'save-route').length).toBeGreaterThan(0);
+          // The whole ticket takes the swipe, not a small tab, and an up or down move first is a scroll.
+          const card = r!.root.findAll((n) => n.props.testID === 'tear-swipe-card' && typeof n.type === 'string');
+          expect(card).toHaveLength(1);
+          act(() => card[0].props.onLayout({ nativeEvent: { layout: { width: W } } }));
+          const cfg = mockPans.filter((p) => p.enabled)[mockPans.filter((p) => p.enabled).length - 1];
+          expect(cfg.failOffsetY).toEqual([-SWIPE_SCROLL, SWIPE_SCROLL]);
+          await activate(cfg);
+          expect(r!.root.findAllByProps({ testID: 'paper-tear' }).length).toBeGreaterThan(0);
+          expect(ticketOpacity()).toBe(0);
+          letGo(cfg, at(0.8));
+          expect(onSwipeSave).toHaveBeenCalledTimes(1);
+          act(() => (paperProps.current!.onDone as () => void)());
+          expect(ticketOpacity()).toBe(1);
+        });
+
+        it('tapping Save on the ticket tears it too, and a saved ticket has no swipe', async () => {
+          useMesh({ picture: true });
+          const onPress = jest.fn();
+          await slimMount(jest.fn(), onPress);
+          act(() => r!.root.findByProps({ testID: 'save-route' }).props.onPress());
+          expect(onPress).toHaveBeenCalledTimes(1);
+          await act(async () => {});
+          expect(r!.root.findAllByProps({ testID: 'paper-tear' }).length).toBeGreaterThan(0);
+          act(() => r?.unmount());
+          await slimMount(undefined, jest.fn(), true);
+          expect(r!.root.findAll((n) => n.props.testID === 'tear-swipe-card')).toHaveLength(0);
+        });
       });
     });
   });

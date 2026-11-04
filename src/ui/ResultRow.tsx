@@ -37,7 +37,7 @@ import { Icon } from './Icon';
 import { Divided, MetaLine } from './MetaLine';
 import { MiniRoute } from './MiniRoute';
 import { snapshotCard, TearSourceProvider, type TearSource } from './TearAway';
-import { TearSwipe } from './TearSwipe';
+import { TearSwipe, TearSwipeCard } from './TearSwipe';
 import { TicketTear } from './TicketTear';
 import { pressStyle } from './press';
 import { ScalePressable } from './ScalePressable';
@@ -64,9 +64,9 @@ export interface ResultRowProps {
   large?: boolean;
   /** In My Trips (Q-043): a small bookmark before the route line in the list. */
   saved?: boolean;
-  /** Route card only: a control pinned top right, beside the headline (Save, John 2026-11-01). */
+  /** A control pinned top right: Save on each result ticket since round 151 (John). */
   topAction?: ReactNode;
-  /** Route card only: swiping left on the perforation tears it off and calls this (round 133, John). */
+  /** Swiping left tears the ticket along its perforation and calls this: on a result ticket since round 151. */
   onSwipeSave?: () => void;
 }
 
@@ -628,6 +628,147 @@ export const ResultRow = memo(function ResultRow({
       ) : null}
     </View>
   );
+  // The slim ticket (rounds 119 to 151): the times and stops above the perforation, the route line under it.
+  // It tears along its perforation to save, like the route card did before round 151.
+  const slimStub = (
+    <>
+      {/* The seat chip stays beside the times on every row, struck or moved (John, 2026-11-02); at big
+            text the times take the line and the seats go under them. */}
+      <View style={styles.slimTopRow}>
+        <View style={[styles.line, styles.slimTopMain, !stacked && styles.lineKeep]} testID="top-line">
+          {times}
+        </View>
+        {/* Save sits on the ticket itself now (round 151, John: "We already have the space to put a save
+              icon on the top right"). */}
+        {topAction ? (
+          <View style={styles.topAction} testID="row-action">
+            {topAction}
+          </View>
+        ) : null}
+      </View>
+      {/* Stops, a short layover and the trip length on one line of their own under the times, so the
+            times keep their width and the route line below gets the whole card at any stop count
+            (round 142, after round 141 squeezed them beside the times). No verdict word: a canceled
+            leg's own red tag says it. */}
+      <Text
+        lineBreakStrategyIOS="push-out"
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.85}
+        style={[textStyles.small, styles.stopsLine, { color: c.muted }]}
+        testID="row-stops">
+        {/* Always stops, then trip time, then a short connection last (round 149, John). */}
+        <Text style={{ color: dimmed ? c.muted : c.text, fontFamily: fonts.bodyMedium }} testID="row-stop-count">
+          {stopCount(it)}
+        </Text>
+        {slimLength ? <Divided text={` · ${slimLength}`} /> : null}
+        {shortLeft ? (
+          <Text style={{ color: dimmed ? c.muted : c.text, fontFamily: fonts.bodyMedium }} testID="row-short-layover">
+            <Divided text={` · ${shortLeft}`} />
+          </Text>
+        ) : null}
+      </Text>
+    </>
+  );
+  const slimBody = (
+    <>
+      <View style={styles.line}>
+        <View style={styles.path}>
+          {saved && !topAction ? (
+            <View testID="row-saved">
+              <Icon name="bookmark.fill" size={13} tintColor={c.muted} fallback={null} />
+            </View>
+          ) : null}
+          {/* The market as a mini route line (round 119, John picked it): ends big, stops above their dots. */}
+          <MiniRoute
+            airports={[it.origin, ...it.legs.map((l) => l.flight.to)]}
+            dimmed={dimmed}
+            stopFlags={it.connections.map((_, k) =>
+              status?.risks.some((r) => r.index === k) ? (liveLayoverMin(it, status, k) < 0 ? 'Missed' : 'At risk') : null,
+            )}
+            legs={it.legs.map((l, i) => {
+              // Each leg in its seat color with its numbers over it (round 140, John): no chance word,
+              // the person weighs the numbers. Typical loads, no data, canceled and departed stay gray.
+              const gray =
+                dimmed ||
+                l.seats.source === 'typical' ||
+                l.seats.source === 'unknown' ||
+                status?.legs[i]?.tag?.kind === 'canceled';
+              const tier = gray ? 'unknown' : l.seats.tier;
+              // A canceled leg is red with an X on it (round 143, John), with no numbers over it; a
+              // no-data leg shows no label either (a lone dash said nothing, round 142).
+              const canceled = status?.legs[i]?.tag?.kind === 'canceled';
+              // The leg's flight and aircraft sit under its stretch of line (round 145, John).
+              const flight = {
+                airline: l.flight.airline,
+                number: l.flight.flightNumber,
+                aircraft: aircraftLabel(l.flight.aircraft),
+              };
+              if (canceled) return { color: c.canceled, text: c.canceledFg, label: '', canceled: true, flight };
+              const blank = l.seats.source === 'unknown';
+              // A delay or diversion rides over its own leg, above the seats (round 146, John).
+              const tag = status?.legs[i]?.tag;
+              const flag = tag && (tag.kind === 'delayed' || tag.kind === 'diverted') ? tag.label : null;
+              return {
+                color: c[tier],
+                text: c[TIER_FG[tier]],
+                label: blank ? '' : dotSeats(l.seats),
+                counts: seatCounts(l.seats),
+                flag,
+                flight,
+              };
+            })}
+          />
+        </View>
+      </View>
+      {/* Slim row: who flies it and anything live; seats per leg live in the route card. One line of
+            flights and at most one tag, which names the flight it means ("PHX → LAX delayed 40m"), so the
+            row never stacks (John, 2026-10-31). */}
+      {/* The flights live under their legs on the route line now (round 145, John); this line keeps only
+            a live tag (delays, a diversion) and the seat age when ages are on. */}
+      {rowTag || shownAge ? (
+        <View style={styles.legLine} testID="flights-line">
+          {/* A connection at risk is flagged on its stop and a canceled leg is drawn red with an X on the
+              route line now (round 143, John), so the row's tag skips both ("Drop the tag", round 144).
+              VoiceOver still says it. */}
+          {rowTag ? (
+            <View style={styles.flight} testID="row-tag">
+              <StatusTag label={rowTag.label} tone={rowTag.tone} />
+            </View>
+          ) : null}
+          {shownAge ? (
+            <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]} testID="seat-age">
+              {shownAge}
+            </Text>
+          ) : null}
+        </View>
+      ) : null}
+    </>
+  );
+  const slimPaper = it.isFull || dimmed ? c.surface2 : c.surface;
+  const slimSource: TearSource | null =
+    large || selected
+      ? null
+      : {
+          measure: (done) => stubRef.current?.measureInWindow(done),
+          measureCard: (done) => ticketRef.current?.measureInWindow(done),
+          measureWhole: (done) => wholeRef.current?.measureInWindow(done),
+          measurePerf: (done) => measurePerfOn(perfRef.current, wholeRef.current, done),
+          snapshot: () => snapshotCard(wholeRef),
+          piece: () => <View style={[styles.slimStub, styles.tornCopy]}>{slimStub}</View>,
+          body: () => (
+            <>
+              <TicketTear notch={c.bg} edge={c.cardEdge} line={c.line2} edgeWidth={edgeW} />
+              <View style={styles.slimBody}>{slimBody}</View>
+            </>
+          ),
+          hold,
+          cardHold,
+          paper: slimPaper,
+          bodyPaper: slimPaper,
+          edge: it.isFull ? c.full : c.cardEdge,
+          edgeWidth: edgeW,
+        };
   // Set while the route card draws its stub, so the swipe strip on the perforation tears the same card.
   let tearSource: TearSource | null = null;
   const card = (
@@ -767,125 +908,47 @@ export const ResultRow = memo(function ResultRow({
           </>
         ) : (
           <>
-            {/* The seat chip stays beside the times on every row, struck or moved (John, 2026-11-02); at big
-                text the times take the line and the seats go under them. */}
-            <View style={[styles.line, !stacked && styles.lineKeep]} testID="top-line">
-              {times}
-            </View>
-            {/* Stops, a short layover and the trip length on one line of their own under the times, so the
-                times keep their width and the route line below gets the whole card at any stop count
-                (round 142, after round 141 squeezed them beside the times). No verdict word: a canceled
-                leg's own red tag says it. */}
-            <Text
-              lineBreakStrategyIOS="push-out"
-              numberOfLines={1}
-              adjustsFontSizeToFit
-              minimumFontScale={0.85}
-              style={[textStyles.small, styles.stopsLine, { color: c.muted }]}
-              testID="row-stops">
-              {/* Always stops, then trip time, then a short connection last (round 149, John). */}
-              <Text style={{ color: dimmed ? c.muted : c.text, fontFamily: fonts.bodyMedium }} testID="row-stop-count">
-                {stopCount(it)}
-              </Text>
-              {slimLength ? <Divided text={` · ${slimLength}`} /> : null}
-              {shortLeft ? (
-                <Text style={{ color: dimmed ? c.muted : c.text, fontFamily: fonts.bodyMedium }} testID="row-short-layover">
-                  <Divided text={` · ${shortLeft}`} />
-                </Text>
-              ) : null}
-            </Text>
-            {/* A boarding pass perforation between the times and the route (round 121, John). */}
-            <TicketTear
-              notch={c.bg}
-              edge={c.cardEdge}
-              line={c.line2}
-              left={spacing.rowX}
-              right={spacing.rowX}
-              edgeWidth={edgeW}
-            />
-            <View style={styles.line}>
-              <View style={styles.path}>
-                {saved ? (
-                  <View testID="row-saved">
-                    <Icon name="bookmark.fill" size={13} tintColor={c.muted} fallback={null} />
-                  </View>
-                ) : null}
-                {/* The market as a mini route line (round 119, John picked it): ends big, stops above their dots. */}
-                <MiniRoute
-                  airports={[it.origin, ...it.legs.map((l) => l.flight.to)]}
-                  dimmed={dimmed}
-                  stopFlags={it.connections.map((_, k) =>
-                    status?.risks.some((r) => r.index === k) ? (liveLayoverMin(it, status, k) < 0 ? 'Missed' : 'At risk') : null,
-                  )}
-                  legs={it.legs.map((l, i) => {
-                    // Each leg in its seat color with its numbers over it (round 140, John): no chance word,
-                    // the person weighs the numbers. Typical loads, no data, canceled and departed stay gray.
-                    const gray =
-                      dimmed ||
-                      l.seats.source === 'typical' ||
-                      l.seats.source === 'unknown' ||
-                      status?.legs[i]?.tag?.kind === 'canceled';
-                    const tier = gray ? 'unknown' : l.seats.tier;
-                    // A canceled leg is red with an X on it (round 143, John), with no numbers over it; a
-                    // no-data leg shows no label either (a lone dash said nothing, round 142).
-                    const canceled = status?.legs[i]?.tag?.kind === 'canceled';
-                    // The leg's flight and aircraft sit under its stretch of line (round 145, John).
-                    const flight = {
-                      airline: l.flight.airline,
-                      number: l.flight.flightNumber,
-                      aircraft: aircraftLabel(l.flight.aircraft),
-                    };
-                    if (canceled) return { color: c.canceled, text: c.canceledFg, label: '', canceled: true, flight };
-                    const blank = l.seats.source === 'unknown';
-                    // A delay or diversion rides over its own leg, above the seats (round 146, John).
-                    const tag = status?.legs[i]?.tag;
-                    const flag = tag && (tag.kind === 'delayed' || tag.kind === 'diverted') ? tag.label : null;
-                    return {
-                      color: c[tier],
-                      text: c[TIER_FG[tier]],
-                      label: blank ? '' : dotSeats(l.seats),
-                      counts: seatCounts(l.seats),
-                      flag,
-                      flight,
-                    };
-                  })}
+            <TearSourceProvider value={slimSource}>
+              <Animated.View
+                testID="row-stub-hold"
+                style={{
+                  opacity: hold,
+                  transform: [{ translateY: hold.interpolate({ inputRange: [0, 1], outputRange: [-6, 0] }) }],
+                }}>
+                <View ref={stubRef} collapsable={false} style={styles.slimStub}>
+                  {slimStub}
+                </View>
+              </Animated.View>
+              {/* A boarding pass perforation between the times and the route (round 121, John). */}
+              <View ref={perfRef} collapsable={false}>
+                <TicketTear
+                  notch={c.bg}
+                  edge={c.cardEdge}
+                  line={c.line2}
+                  left={spacing.rowX}
+                  right={spacing.rowX}
+                  edgeWidth={edgeW}
                 />
               </View>
-            </View>
-            {/* Slim row: who flies it and anything live; seats per leg live in the route card. One line of
-                flights and at most one tag, which names the flight it means ("PHX → LAX delayed 40m"), so the
-                row never stacks (John, 2026-10-31). */}
-            {/* The flights live under their legs on the route line now (round 145, John); this line keeps only
-                a live tag (delays, a diversion) and the seat age when ages are on. */}
-            {rowTag || shownAge ? (
-              <View style={styles.legLine} testID="flights-line">
-                {/* A connection at risk is flagged on its stop and a canceled leg is drawn red with an X on the
-                  route line now (round 143, John), so the row's tag skips both ("Drop the tag", round 144).
-                  VoiceOver still says it. */}
-                {rowTag ? (
-                  <View style={styles.flight} testID="row-tag">
-                    <StatusTag label={rowTag.label} tone={rowTag.tone} />
-                  </View>
-                ) : null}
-                {shownAge ? (
-                  <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]} testID="seat-age">
-                    {shownAge}
-                  </Text>
-                ) : null}
-              </View>
-            ) : null}
+              {slimBody}
+            </TearSourceProvider>
           </>
         )}
       </View>
     </ScalePressable>
   );
   // The route card hides while its 3D copy bends and tears on the flying layer (round 129).
+  // Since round 151 a result ticket tears and saves too, on a swipe left anywhere on it.
   return large ? (
     <Animated.View ref={wholeRef} collapsable={false} style={{ opacity: cardHold }} testID="route-card-hold">
       {card}
     </Animated.View>
   ) : (
-    card
+    <Animated.View ref={wholeRef} collapsable={false} style={{ opacity: cardHold }} testID="row-card-hold">
+      <TearSwipeCard source={slimSource} onSave={slimSource ? onSwipeSave : undefined}>
+        {card}
+      </TearSwipeCard>
+    </Animated.View>
   );
 });
 
@@ -932,6 +995,11 @@ const styles = StyleSheet.create({
   stubSlim: { gap: spacing.group },
   // The flying copy of the header fills the piece that tore off.
   tornCopy: { flex: 1 },
+  // The slim ticket's parts keep the gap the card's content had between them.
+  slimStub: { gap: spacing.group },
+  slimBody: { gap: spacing.group },
+  slimTopRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.group },
+  slimTopMain: { flex: 1, minWidth: 0 },
   ticketBody: {
     paddingTop: 4,
     paddingBottom: spacing.rowY,

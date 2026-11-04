@@ -91,7 +91,8 @@ export function MiniRoute({
   const legFlagged = !!segs?.some((l) => l.flag);
   const flagged = stopFlagged || legFlagged;
   const withFlights = !!segs?.some((l) => l.flight);
-  const withIcons = !!segs?.some((l) => l.label && l.counts?.length);
+  // Room above the line for count icons, and for a canceled leg's pill (round 151).
+  const withIcons = !!segs?.some((l) => (l.label && l.counts?.length) || l.canceled);
   // Short legs (2 or more stops on a small phone) drop the airline code beside a known airline's logo.
   const compact = n >= COMPACT_LEGS;
   // A stop's flag (At risk) sits above the line over its stop. A flight's flag (a delay) sits under the
@@ -149,6 +150,25 @@ export function MiniRoute({
                     <View style={[styles.xBar, { backgroundColor: leg.color, transform: [{ rotate: '45deg' }] }]} />
                     <View style={[styles.xBar, { backgroundColor: leg.color, transform: [{ rotate: '-45deg' }] }]} />
                   </View>
+                </View>
+              ) : null,
+            )}
+            {segs.map((leg, i) =>
+              // A small red pill over the X says what it means (round 151, John: "some people may not
+              // understand what the small red X means").
+              leg.canceled ? (
+                <View
+                  key={`cx${i}`}
+                  style={[styles.countsSlot, below(-ICON_H), { left: pct(i), width: pct(1) }]}
+                  testID="mini-route-canceled-pill">
+                  <Text
+                    style={[styles.flagText, styles.canceledPill, { color: c.canceledFg, backgroundColor: c.canceledBg }]}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.8}
+                    maxFontSizeMultiplier={1.2}>
+                    Canceled
+                  </Text>
                 </View>
               ) : null,
             )}
@@ -328,6 +348,8 @@ const styles = StyleSheet.create({
   xBar: { position: 'absolute', width: X_SIZE - 5, height: 1.5, borderRadius: 1 },
   // A connection's flag, centred over its stop, in the room above the seat numbers.
   flagSlot: { position: 'absolute', width: 80, marginLeft: -40, height: FLAG_H, alignItems: 'center' },
+  // Clear of the X's disc just under it.
+  canceledPill: { marginBottom: 3 },
   // A flight's flag spans its own leg instead of centring on a point.
   legFlagSlot: { marginLeft: 0, paddingHorizontal: 2 },
   flagText: {

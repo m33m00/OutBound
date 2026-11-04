@@ -469,19 +469,6 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
                       onImpactPress={p.onImpactPress}
                       onLegPress={p.onLegPress}
                       status={p.statuses?.[focused.id]}
-                      onSwipeSave={
-                        p.onToggleSave && !p.isSaved?.(focused)
-                          ? () => {
-                              p.onToggleSave?.(focused);
-                              setSwipeSaved(focused);
-                            }
-                          : undefined
-                      }
-                      topAction={
-                        p.onToggleSave ? (
-                          <SaveRouteButton saved={!!p.isSaved?.(focused)} onPress={() => p.onToggleSave?.(focused)} />
-                        ) : undefined
-                      }
                     />
                   </ScrollView>
                 </Animated.View>
@@ -531,6 +518,21 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
                 onLegPress={p.onLegPress}
                 status={p.statuses?.[item.id]}
                 saved={p.isSaved?.(item)}
+                // Saving lives on the ticket in the list now, not the opened route (round 151, John): the
+                // bookmark top right, or a swipe left that tears it along the perforation, with Undo after.
+                onSwipeSave={
+                  p.onToggleSave && !p.isSaved?.(item)
+                    ? () => {
+                        p.onToggleSave?.(item);
+                        setSwipeSaved(item);
+                      }
+                    : undefined
+                }
+                topAction={
+                  p.onToggleSave ? (
+                    <SaveRouteButton saved={!!p.isSaved?.(item)} onPress={() => p.onToggleSave?.(item)} />
+                  ) : undefined
+                }
               />
             );
             // A fresh list's rows rise in one after another from the top of what you see (round 113).
@@ -563,6 +565,15 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
             </Text>
           }
         />
+        {!focused && swipeSaved ? (
+          <SavedToast
+            key={swipeSaved.id}
+            onUndo={() => {
+              if (p.isSaved?.(swipeSaved)) p.onToggleSave?.(swipeSaved);
+            }}
+            onDone={clearSwipeSaved}
+          />
+        ) : null}
       </Appear>
     </View>
   );

@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { type ReactNode, useRef } from 'react';
 import { AccessibilityInfo, StyleSheet, Text, View } from 'react-native';
 import { GestureDetector, usePanGesture } from 'react-native-gesture-handler';
 
@@ -34,8 +34,7 @@ export const GRAB_WIDTH = 64;
  * paper starts to give, and has to go well past halfway (or be a hard flick past the middle). The tear itself
  * is unchanged.
  */
-export function TearSwipe({ source, onSave }: { source: TearSource; onSave?: () => void }) {
-  const c = useColors();
+function useTearPan(source: TearSource | null, onSave?: () => void) {
   const startDrag = useTearDrag();
   const width = useRef(0);
   const drag = useRef<TearDrag | null>(null);
@@ -51,7 +50,8 @@ export function TearSwipe({ source, onSave }: { source: TearSource; onSave?: () 
     failOffsetY: [-SWIPE_SCROLL, SWIPE_SCROLL],
     onActivate: () => {
       impactTick();
-      drag.current = live.current.startDrag?.(live.current.source) ?? null;
+      const src = live.current.source;
+      drag.current = src ? (live.current.startDrag?.(src) ?? null) : null;
     },
     onUpdate: (e) => {
       drag.current?.move(dragProgress(e.translationX, width.current));
@@ -67,7 +67,12 @@ export function TearSwipe({ source, onSave }: { source: TearSource; onSave?: () 
       AccessibilityInfo.announceForAccessibility('Saved to My Trips');
     },
   });
+  return { pan, width };
+}
 
+export function TearSwipe({ source, onSave }: { source: TearSource; onSave?: () => void }) {
+  const c = useColors();
+  const { pan, width } = useTearPan(source, onSave);
   if (!onSave) return null;
   return (
     // The full strip only measures the card's width (the pull's length); touches pass through to the card.
@@ -102,3 +107,35 @@ const styles = StyleSheet.create({
   // Just inside the right notch, sitting on the dashes like a "cut here" mark.
   mark: { position: 'absolute', right: 12, paddingHorizontal: 3, paddingVertical: 1 },
 });
+
+/**
+ * Round 151 (John: "saving a flight and or swiping to save shouldn't actually be when you select a flight
+ * ... It should be on that flight summary page instead ... because you're scrolling up and down, it's very
+ * unlikely that you would swipe left unless you're intentional about it"): on a result ticket in the list,
+ * a swipe left anywhere on the card tears it along its perforation and saves it. Up or down first is a
+ * scroll, and a tap still opens the route. VoiceOver saves with the bookmark in the corner instead.
+ */
+export function TearSwipeCard({
+  source,
+  onSave,
+  children,
+}: {
+  source: TearSource | null;
+  onSave?: () => void;
+  children: ReactNode;
+}) {
+  const { pan, width } = useTearPan(source, onSave);
+  if (!onSave) return <>{children}</>;
+  return (
+    <GestureDetector gesture={pan}>
+      <View
+        collapsable={false}
+        onLayout={(e) => {
+          width.current = e.nativeEvent.layout.width;
+        }}
+        testID="tear-swipe-card">
+        {children}
+      </View>
+    </GestureDetector>
+  );
+}

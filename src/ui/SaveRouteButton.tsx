@@ -8,9 +8,8 @@ import { pressStyle } from './press';
 import { useIsTearCopy, useTearAway, useTearSource } from './TearAway';
 
 /**
- * Bookmark in a picked route's header (Q-043), where iOS puts bookmark
- * actions, so it's in view at any panel height. Filled once the route is in
- * My Trips; tapping again takes it back out.
+ * Bookmark at the top right of each result ticket (Q-043; on the tickets since round 151, John, after
+ * living in the opened route's header). Filled once the route is in My Trips; tapping again takes it back out.
  */
 export function SaveRouteButton({ saved, onPress }: { saved: boolean; onPress: () => void }) {
   const c = useColors();

@@ -201,4 +201,28 @@ describe('MiniRoute (round 119)', () => {
     const flag = StyleSheet.flatten(host('mini-route-leg-flag')[0].props.style);
     expect(flag.top as number).toBeGreaterThan(slot.top as number);
   });
+
+  it('puts a red Canceled pill over the X on a canceled leg, so the X explains itself (round 151, John)', () => {
+    act(() => {
+      r = create(
+        <MiniRoute
+          airports={['DFW', 'MIA', 'LGA']}
+          legs={[
+            { color: '#0a0', text: '#060', label: '21/12' },
+            { color: '#c00', text: '#900', label: '', canceled: true },
+          ]}
+        />,
+      );
+    });
+    const host = (id: string) => r!.root.findAll((n) => n.props.testID === id && typeof n.type === 'string');
+    const pill = host('mini-route-canceled-pill');
+    expect(pill).toHaveLength(1);
+    expect(StyleSheet.flatten(pill[0].props.style)).toMatchObject({ left: '50%', width: '50%' });
+    const word = pill[0].findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string')[0];
+    expect(word.props.children).toBe('Canceled');
+    // Above the line, and the X stays on it.
+    expect(StyleSheet.flatten(pill[0].props.style).top as number).toBeLessThan(
+      StyleSheet.flatten(host('mini-route-canceled')[0].props.style).top as number,
+    );
+  });
 });
