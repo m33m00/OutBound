@@ -538,6 +538,7 @@ export const ResultRow = memo(function ResultRow({
   // The worst live thing on the route: the slim row's one tag. The route card has no banner for it; each
   // leg's own pill says it (John, 2026-11-02).
   const headline = statusHeadline(it, status);
+  const riskOnLine = !!headline && !!status?.risks[0] && headline.label === `Connection at risk at ${status.risks[0].airport}`;
   const ageWords = summaryAge ? summaryAge[0].toLowerCase() + summaryAge.slice(1) : null;
   const cardAge = ageWords ? `Seats ${ageWords}` : null;
   // A moved time (John, 2026-11-02): the schedule sits small and struck on its own line above, and the big
@@ -770,6 +771,9 @@ export const ResultRow = memo(function ResultRow({
                 <MiniRoute
                   airports={[it.origin, ...it.legs.map((l) => l.flight.to)]}
                   dimmed={dimmed}
+                  stopFlags={it.connections.map((_, k) =>
+                    status?.risks.some((r) => r.index === k) ? (liveLayoverMin(it, status, k) < 0 ? 'Missed' : 'At risk') : null,
+                  )}
                   legs={it.legs.map((l, i) => {
                     // Each leg in its seat color with its numbers over it (round 140, John): no chance word,
                     // the person weighs the numbers. Typical loads, no data, canceled and departed stay gray.
@@ -779,8 +783,11 @@ export const ResultRow = memo(function ResultRow({
                       l.seats.source === 'unknown' ||
                       status?.legs[i]?.tag?.kind === 'canceled';
                     const tier = gray ? 'unknown' : l.seats.tier;
-                    // No label over a canceled or no-data leg: a lone dash said nothing (round 142, John).
-                    const blank = status?.legs[i]?.tag?.kind === 'canceled' || l.seats.source === 'unknown';
+                    // A canceled leg is red with an X on it (round 143, John), with no numbers over it; a
+                    // no-data leg shows no label either (a lone dash said nothing, round 142).
+                    const canceled = status?.legs[i]?.tag?.kind === 'canceled';
+                    if (canceled) return { color: c.canceled, text: c.canceledFg, label: '', canceled: true };
+                    const blank = l.seats.source === 'unknown';
                     return { color: c[tier], text: c[TIER_FG[tier]], label: blank ? '' : dotSeats(l.seats) };
                   })}
                 />
@@ -790,12 +797,28 @@ export const ResultRow = memo(function ResultRow({
                 flights and at most one tag, which names the flight it means ("PHX → LAX delayed 40m"), so the
                 row never stacks (John, 2026-10-31). */}
             <View style={styles.legLine} testID="flights-line">
-              {it.legs.map((leg) => (
-                <View key={leg.flight.id} style={styles.flight} testID="flight-item">
-                  <AirlinePill airline={leg.flight.airline} flightNumber={leg.flight.flightNumber} />
-                </View>
-              ))}
-              {headline ? (
+              {it.legs.map((leg) => {
+                const plane = aircraftLabel(leg.flight.aircraft);
+                return (
+                  <View key={leg.flight.id} style={styles.flightStack} testID="flight-item">
+                    <AirlinePill airline={leg.flight.airline} flightNumber={leg.flight.flightNumber} />
+                    {/* Each flight's aircraft under its chip, so the results show it without opening the
+                        flight (round 143, John). */}
+                    {plane ? (
+                      <Text
+                        lineBreakStrategyIOS="push-out"
+                        numberOfLines={1}
+                        style={[textStyles.small, styles.chipAircraft, { color: c.muted }]}
+                        testID="row-aircraft">
+                        {plane}
+                      </Text>
+                    ) : null}
+                  </View>
+                );
+              })}
+              {/* A connection at risk is flagged on its stop on the route line now (round 143, John), so the
+                  row's tag skips it. */}
+              {headline && !riskOnLine ? (
                 <View style={styles.flight} testID="row-tag">
                   <StatusTag label={headline.label} tone={headline.tone} />
                 </View>
@@ -918,10 +941,13 @@ const styles = StyleSheet.create({
   badgeLead: { flexShrink: 1, fontFamily: fonts.bodySemiBold, fontSize: 16, lineHeight: 22 },
   legLine: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: spacing.group,
     flexWrap: 'wrap',
   },
+  // A chip with its aircraft under it, left-aligned with the chip.
+  flightStack: { alignItems: 'flex-start', gap: 2 },
+  chipAircraft: { paddingLeft: 6 },
   flight: {
     flexDirection: 'row',
     alignItems: 'center',

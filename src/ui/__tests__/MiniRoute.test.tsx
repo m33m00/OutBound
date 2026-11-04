@@ -80,4 +80,43 @@ describe('MiniRoute (round 119)', () => {
     expect(r!.root.findAll((n) => n.props.testID === 'mini-route-seg')).toHaveLength(0);
     expect(r!.root.findAll((n) => n.props.testID === 'mini-route-leg-label')).toHaveLength(0);
   });
+
+  it('draws a canceled leg with an X dead centre on its stretch (round 143, John)', () => {
+    const legs = [
+      { color: '#0a0', text: '#060', label: '15/0' },
+      { color: '#c8102e', text: '#9e0d24', label: '', canceled: true },
+    ];
+    act(() => {
+      r = create(<MiniRoute airports={['DAL', 'DEN', 'LAX']} legs={legs} />);
+    });
+    const xs = r!.root.findAll((n) => n.props.testID === 'mini-route-canceled' && typeof n.type === 'string');
+    expect(xs).toHaveLength(1);
+    const st = Object.assign({}, ...[xs[0].props.style].flat(3).filter(Boolean));
+    expect(st.left).toBe('75%');
+    expect(r!.root.findAll((n) => n.props.testID === 'mini-route-leg-label' && typeof n.type === 'string')).toHaveLength(1);
+  });
+
+  it('flags a risky connection right on top of its stop, above the seat numbers (round 143, John)', () => {
+    const legs = [
+      { color: '#0a0', text: '#060', label: '40/2' },
+      { color: '#0a0', text: '#060', label: '20/4' },
+      { color: '#0a0', text: '#060', label: '9/1' },
+    ];
+    act(() => {
+      r = create(<MiniRoute airports={['DFW', 'CLT', 'MIA', 'LGA']} legs={legs} stopFlags={[null, 'At risk']} />);
+    });
+    const flat = (style: unknown) => Object.assign({}, ...[style].flat(3).filter(Boolean));
+    const flags = r!.root.findAll((n) => n.props.testID === 'mini-route-stop-flag' && typeof n.type === 'string');
+    expect(flags).toHaveLength(1);
+    const flag = flat(flags[0].props.style);
+    const stops = r!.root
+      .findAll((n) => n.props.testID === 'mini-route-stop-slot' && typeof n.type === 'string')
+      .map((n) => flat(n.props.style));
+    // Same spot along the line as MIA's dot, and above the seat numbers' row.
+    expect(flag.left).toBe(stops[1].left);
+    const label = flat(
+      r!.root.findAll((n) => n.props.testID === 'mini-route-leg-slot' && typeof n.type === 'string')[0].props.style,
+    );
+    expect(flag.top + flag.height).toBeLessThanOrEqual(label.top);
+  });
 });

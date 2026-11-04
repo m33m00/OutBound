@@ -7,6 +7,10 @@ const LABEL_H = 13;
 const DOT = 8;
 /** Each stop's slot, centred on its dot, wide enough for a three-letter code. */
 const STOP_W = 36;
+/** Room above the seat numbers for a connection's flag ("At risk"), only when a route has one. */
+const FLAG_H = 17;
+/** The X on a canceled leg. */
+const X_SIZE = 12;
 
 /** One leg of the line: the color it's drawn in and the seat numbers shown above it (round 140). */
 export interface MiniRouteLeg {
@@ -15,6 +19,8 @@ export interface MiniRouteLeg {
   /** The numbers' color: the same hue, dark enough to read as small text. */
   text: string;
   label: string;
+  /** Canceled: drawn red with an X in the middle (round 143, John). */
+  canceled?: boolean;
 }
 
 /**
@@ -33,10 +39,17 @@ export function MiniRoute({
   airports,
   legs,
   dimmed,
+  stopFlags,
 }: {
   airports: readonly string[];
   legs?: readonly MiniRouteLeg[];
   dimmed?: boolean;
+  /**
+   * One per connecting airport: a short word ("At risk", "Missed") shown in a small pill right on top of
+   * that stop, above the seat numbers so they never collide (round 143, John: "Connection risk label
+   * should sit on top of the connection station on the route line"). Null for a stop with nothing to say.
+   */
+  stopFlags?: readonly (string | null)[];
 }) {
   const c = useColors();
   const ends = dimmed ? c.muted : c.text;
@@ -49,9 +62,13 @@ export function MiniRoute({
   const n = Math.max(1, stops.length + 1);
   const segs = legs && legs.length === n ? legs : null;
   const pct = (i: number) => `${(i * 100) / n}%` as const;
+  const flagged = !!stopFlags?.some(Boolean);
+  // Everything in the track sits this far lower when a stop has a flag above it.
+  const top = flagged ? FLAG_H : 0;
+  const below = (y: number) => ({ top: top + y });
   return (
     <View
-      style={[styles.row, segs && styles.rowLabeled]}
+      style={[styles.row, segs && styles.rowLabeled, flagged && { paddingTop: 6 + FLAG_H }]}
       testID="mini-route"
       importantForAccessibility="no-hide-descendants"
       accessibilityElementsHidden>
@@ -60,21 +77,45 @@ export function MiniRoute({
       </Text>
       {/* Stops sit at even steps between the end dots (1 stop dead centre, 2 at thirds), each code
           centred under its own dot, whatever the codes' widths (round 122, John: the dot sat left). */}
-      <View style={[styles.track, { minWidth: 40 + stops.length * STOP_W }]} testID="mini-route-track">
-        {segs ? null : <View style={[styles.line, { backgroundColor: c.line }]} />}
+      <View
+        style={[
+          styles.track,
+          { minWidth: 40 + stops.length * STOP_W },
+          flagged && { height: FLAG_H + LABEL_H + DOT + LABEL_H, marginTop: -(FLAG_H + LABEL_H) },
+        ]}
+        testID="mini-route-track">
+        {segs ? null : <View style={[styles.line, below(LABEL_H + DOT / 2 - 1), { backgroundColor: c.line }]} />}
         {segs ? (
           <View style={styles.rail}>
             {segs.map((leg, i) => (
               <View
                 key={`seg${i}`}
-                style={[styles.seg, { left: pct(i), width: pct(1), backgroundColor: leg.color }]}
+                style={[styles.seg, below(LABEL_H + DOT / 2 - 1.5), { left: pct(i), width: pct(1), backgroundColor: leg.color }]}
                 testID="mini-route-seg"
               />
             ))}
             {segs.map((leg, i) =>
+              // A canceled leg: an X dead centre on its red stretch (round 143, John: "Maybe an X indicator in
+              // the middle with a red colored line?"). Drawn from two bars, on a small disc that hides the line.
+              leg.canceled ? (
+                <View
+                  key={`x${i}`}
+                  style={[styles.xSlot, below(LABEL_H + DOT / 2 - X_SIZE / 2), { left: pct(i + 0.5) }]}
+                  testID="mini-route-canceled">
+                  <View style={[styles.xDisc, { backgroundColor: c.surface, borderColor: leg.color }]}>
+                    <View style={[styles.xBar, { backgroundColor: leg.color, transform: [{ rotate: '45deg' }] }]} />
+                    <View style={[styles.xBar, { backgroundColor: leg.color, transform: [{ rotate: '-45deg' }] }]} />
+                  </View>
+                </View>
+              ) : null,
+            )}
+            {segs.map((leg, i) =>
               // A leg with nothing to say (canceled, no data) shows no label at all (round 142).
               !leg.label ? null : (
-                <View key={`lab${i}`} style={[styles.legLabel, { left: pct(i), width: pct(1) }]} testID="mini-route-leg-slot">
+                <View
+                  key={`lab${i}`}
+                  style={[styles.legLabel, below(0), { left: pct(i), width: pct(1) }]}
+                  testID="mini-route-leg-slot">
                   <Text
                     style={[styles.legText, { color: leg.text }]}
                     numberOfLines={1}
@@ -89,15 +130,30 @@ export function MiniRoute({
             )}
           </View>
         ) : null}
-        <View style={[dot(false), styles.startDot]} />
-        <View style={[dot(true), styles.endDot]} />
+        <View style={[dot(false), styles.startDot, below(LABEL_H)]} />
+        <View style={[dot(true), styles.endDot, below(LABEL_H)]} />
         <View style={styles.rail}>
+          {stops.map((code, i) =>
+            stopFlags?.[i] ? (
+              <View
+                key={`flag${code}${i}`}
+                style={[styles.flagSlot, { left: `${((i + 1) * 100) / (stops.length + 1)}%` }]}
+                testID="mini-route-stop-flag">
+                <Text
+                  style={[styles.flagText, { color: c.caution, backgroundColor: c.cautionBg }]}
+                  numberOfLines={1}
+                  maxFontSizeMultiplier={1.2}>
+                  {stopFlags[i]}
+                </Text>
+              </View>
+            ) : null,
+          )}
           {stops.map((code, i) => (
             <View
               key={`${code}${i}`}
-              style={[styles.stop, { left: `${((i + 1) * 100) / (stops.length + 1)}%` }]}
+              style={[styles.stop, below(LABEL_H), { left: `${((i + 1) * 100) / (stops.length + 1)}%` }]}
               testID="mini-route-stop-slot">
-              <View style={dot(false)} />
+              <View style={[dot(false), stopFlags?.[i] ? { borderColor: c.caution } : null]} />
               <Text
                 style={[styles.stopCode, { color: c.muted }]}
                 numberOfLines={1}
@@ -126,17 +182,37 @@ const styles = StyleSheet.create({
   // so the dots stay centred on the end codes.
   track: { flex: 1, height: LABEL_H + DOT + LABEL_H, marginTop: -LABEL_H, marginBottom: -LABEL_H },
   // The line runs from the start dot's centre to the end dot's centre.
-  line: { position: 'absolute', left: DOT / 2, right: DOT / 2, top: LABEL_H + DOT / 2 - 1, height: 2, borderRadius: 1 },
-  startDot: { position: 'absolute', left: 0, top: LABEL_H },
-  endDot: { position: 'absolute', right: 0, top: LABEL_H },
+  line: { position: 'absolute', left: DOT / 2, right: DOT / 2, height: 2, borderRadius: 1 },
+  startDot: { position: 'absolute', left: 0 },
+  endDot: { position: 'absolute', right: 0 },
   // Between the two end dots' centres; a stop's slot and each leg are placed by percent along it.
   rail: { position: 'absolute', left: DOT / 2, right: DOT / 2, top: 0, bottom: 0 },
   // One leg's stretch of line, a touch thicker than the plain line so its color reads.
-  seg: { position: 'absolute', top: LABEL_H + DOT / 2 - 1.5, height: 3 },
+  seg: { position: 'absolute', height: 3 },
+  xSlot: { position: 'absolute', width: X_SIZE, height: X_SIZE, marginLeft: -X_SIZE / 2 },
+  xDisc: {
+    width: X_SIZE,
+    height: X_SIZE,
+    borderRadius: X_SIZE / 2,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  xBar: { position: 'absolute', width: X_SIZE - 5, height: 1.5, borderRadius: 1 },
+  // A connection's flag, centred over its stop, in the room above the seat numbers.
+  flagSlot: { position: 'absolute', top: 0, width: 64, marginLeft: -32, height: FLAG_H, alignItems: 'center' },
+  flagText: {
+    fontFamily: fonts.bodySemiBold,
+    fontSize: 10,
+    lineHeight: 14,
+    paddingHorizontal: 5,
+    borderRadius: 7,
+    overflow: 'hidden',
+  },
   // A leg's seat numbers, centred over the middle of its stretch and never wider than it.
-  legLabel: { position: 'absolute', top: 0, height: LABEL_H, alignItems: 'center', paddingHorizontal: DOT },
+  legLabel: { position: 'absolute', height: LABEL_H, alignItems: 'center', paddingHorizontal: DOT },
   legText: { fontFamily: fonts.monoMedium, fontSize: 11, lineHeight: LABEL_H },
-  stop: { position: 'absolute', top: LABEL_H, width: STOP_W, marginLeft: -STOP_W / 2, alignItems: 'center' },
+  stop: { position: 'absolute', width: STOP_W, marginLeft: -STOP_W / 2, alignItems: 'center' },
   stopCode: { fontFamily: fonts.monoMedium, fontSize: 10, lineHeight: LABEL_H, letterSpacing: 0.3 },
   dot: { width: DOT, height: DOT, borderRadius: DOT / 2, borderWidth: 2 },
 });

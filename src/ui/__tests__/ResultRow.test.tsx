@@ -843,7 +843,41 @@ describe('ResultRow at big text sizes (design round 26)', () => {
     expect(r!.root.findAll((n) => n.props.testID === 'top-right')).toHaveLength(0);
   });
 
-  it('shows no label over a canceled leg, not a lone dash (round 142, John)', async () => {
+  it('flags a risky connection on its stop on the route line, not as a tag under the flights (round 143, John)', async () => {
+    const it = await twoLegItinerary();
+    const status = {
+      legs: [{}, {}],
+      risks: [{ index: 0, airport: 'DEN', layoverMin: 20, minConnectMin: 60 }],
+      dimmed: false,
+      canceled: false,
+      spoken: ['Connection at risk at DEN'],
+    } as unknown as Parameters<typeof ResultRow>[0]['status'];
+    await act(async () => {
+      r = create(<ResultRow itinerary={it} selected={false} now={NOW} onPress={jest.fn()} status={status} />);
+    });
+    const flags = r!.root.findAll((n) => n.props.testID === 'mini-route-stop-flag' && typeof n.type === 'string');
+    expect(flags.map(allText)).toEqual(['At risk']);
+    expect(r!.root.findAll((n) => n.props.testID === 'row-tag')).toHaveLength(0);
+  });
+
+  it("shows each flight's aircraft under its chip on the results card (round 143, John)", async () => {
+    const it = await twoLegItinerary();
+    const withPlanes = {
+      ...it,
+      legs: it.legs.map((l, i) => ({ ...l, flight: { ...l.flight, aircraft: i === 0 ? 'Boeing 737-800' : 'Airbus A321 NEO' } })),
+    };
+    await act(async () => {
+      r = create(<ResultRow itinerary={withPlanes} selected={false} now={NOW} onPress={jest.fn()} />);
+    });
+    const items = r!.root.findAll((n) => n.props.testID === 'flight-item' && typeof n.type === 'string');
+    expect(
+      items.map((n) => n.findAll((m) => m.props.testID === 'row-aircraft' && typeof m.type === 'string').map(allText)),
+    ).toEqual([['737-800'], ['A321neo']]);
+    const plane = items[0].find((m) => m.props.testID === 'row-aircraft' && typeof m.type === 'string');
+    expect(plane.props.numberOfLines).toBe(1);
+  });
+
+  it('draws a canceled leg red with an X on the route line and no numbers over it (rounds 142, 143, John)', async () => {
     const it = await fullItinerary();
     const status = {
       legs: [{ tag: { kind: 'canceled' } }],
@@ -857,6 +891,9 @@ describe('ResultRow at big text sizes (design round 26)', () => {
     });
     expect(r!.root.findAll((n) => n.props.testID === 'mini-route-leg-label')).toHaveLength(0);
     expect(r!.root.findAll((n) => n.props.testID === 'mini-route-seg' && typeof n.type === 'string')).toHaveLength(1);
+    const seg = r!.root.find((n) => n.props.testID === 'mini-route-seg' && typeof n.type === 'string');
+    expect(Object.assign({}, ...[seg.props.style].flat(3).filter(Boolean)).backgroundColor).toBe(colors.light.canceled);
+    expect(r!.root.findAll((n) => n.props.testID === 'mini-route-canceled' && typeof n.type === 'string')).toHaveLength(1);
   });
 });
 

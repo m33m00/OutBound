@@ -38,6 +38,22 @@ function SolidSwatch({ color }: { color: string }) {
   return <View style={[styles.swatch, { backgroundColor: color }]} />;
 }
 
+/** A canceled flight as the result cards draw it: a red stretch with an X on it (round 143). */
+function CanceledSwatch({ color, disc }: { color: string; disc: string }) {
+  return (
+    <View style={styles.canceledSwatch} testID="legend-canceled-swatch">
+      <View style={[styles.swatch, { backgroundColor: color }]} />
+      <View style={[styles.xDisc, { backgroundColor: disc, borderColor: color }]}>
+        <View style={[styles.xBar, { backgroundColor: color, transform: [{ rotate: '45deg' }] }]} />
+        <View style={[styles.xBar, { backgroundColor: color, transform: [{ rotate: '-45deg' }] }]} />
+      </View>
+    </View>
+  );
+}
+
+/** What the red X on a result card's route line means. */
+export const CANCELED_MEANING = 'Red with an X: that flight is canceled';
+
 function DashedSwatch({ color }: { color: string }) {
   // Scaled-down 8/6 dash so the key matches the map.
   const on = DASH_PATTERN[0] * 0.5;
@@ -208,6 +224,7 @@ export function RouteLegend({ route, marks, badges, open: openProp, onToggle }: 
     ...key.lineStyles.map((s) => `${STYLE_MEANING[s]}.`),
     ...marked.map((m) => `${m.text}.`),
     `On the route card, a seat circle like ${SEAT_CIRCLE_EXAMPLE} means ${SEAT_CIRCLE_MEANING}.`,
+    `${CANCELED_MEANING}.`,
   ].join(' ');
   return (
     <Pressable
@@ -252,6 +269,10 @@ export function RouteLegend({ route, marks, badges, open: openProp, onToggle }: 
         </View>
         <Text style={[textStyles.small, styles.label, styles.rowText, { color: c.text }]}>{SEAT_CIRCLE_MEANING}</Text>
       </View>
+      <View style={styles.row} testID="legend-canceled">
+        <CanceledSwatch color={c.canceled} disc={c.surface} />
+        <Text style={[textStyles.small, styles.label, styles.rowText, { color: c.text }]}>{CANCELED_MEANING}</Text>
+      </View>
     </Pressable>
   );
 }
@@ -275,6 +296,18 @@ const styles = StyleSheet.create({
   markTriangle: { fontSize: 10, lineHeight: 12 },
   markHome: { width: 13, height: 13, borderRadius: 6.5, alignItems: 'center', justifyContent: 'center' },
   pressed: { opacity: 0.8 },
+  canceledSwatch: { width: SWATCH_W, height: 10, justifyContent: 'center' },
+  xDisc: {
+    position: 'absolute',
+    left: SWATCH_W / 2 - 5,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    borderWidth: 1.2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  xBar: { position: 'absolute', width: 5, height: 1.2, borderRadius: 1 },
   // The open key wraps its words rather than running across the map.
   open: { maxWidth: 236, paddingVertical: 8, gap: 4 },
   title: { fontFamily: fonts.bodyBold, fontSize: 13, lineHeight: 17 },

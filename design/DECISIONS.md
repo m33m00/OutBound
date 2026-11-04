@@ -409,3 +409,14 @@ John: "No what happened. It's all messed up now" (screenshot: "Nonstop 3h 25m" w
 - Cause: round 141 put the stops block beside the big times with a percent max width inside a box sized by its contents, so it collapsed to almost nothing.
 - Fix: the stops, short layover and trip length are one line of their own under the times ("1 stop | 35m at DEN | 6h 40m"), left-aligned, never wrapping. The times keep the full width, and the route line below still spans the card at any stop count. Widest case measured (3 stops, a layover, a 23h trip) is about 270pt at the largest text size before stacking, inside the smallest iPhone card.
 - A canceled or no-data leg shows no label over its gray stretch (it showed a lone dash).
+
+## Round 143: canceled legs, connection risk and aircraft on the result cards (2026-11-04)
+
+John: "Can you point out on the route line if a flight is canceled? Maybe an X indicator in the middle with a red colored line?", "Connection risk label should sit ontop of the connection station on the route line. Not to the bottom left below the airlines and flight numbers.", "I don't see the aircraft equipment type on the summary page with all the flights. I don't want to have to select flight just to see the equipment type."
+
+- Canceled leg: its stretch of the route line is canceled red with a small X on a disc dead centre, and no seat numbers over it (was gray).
+- The red "DEN → LAX canceled" tag under the flights stays: it says the word and names the flight, so the X is never read as "no seats". At risk no longer uses that slot.
+- Connection at risk: a small "At risk" pill (caution violet; "Missed" when the live times break the connection) sits right on top of that stop, in its own room above the seat numbers so they never touch, and the stop's ring turns the same color. The row's tag no longer repeats it.
+- Aircraft: each flight chip on the results card has its aircraft under it in small gray ("737-800", "A321neo"), one line.
+- Map key: under the seat circles, a red-with-X swatch reads "Red with an X: that flight is canceled".
+- Sizes measured for a 375pt phone: legs are 55pt each at 3 stops, the widest seat label needs about 49pt and the At risk pill about 41pt, so nothing overlaps. Four flight chips (3 stops) wrap whole onto a second line rather than squeeze.
