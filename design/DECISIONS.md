@@ -520,3 +520,7 @@ John: "It's not aligned center underneath the route line when I open more detail
 - Map: no map key, no dashed lines, no direction chevrons. Every selected leg is a plain solid line in its seat color. The route pulse stays.
 - A leg with no seat reading shows a dash over it on the route line instead of nothing.
 - Departed and Arrived pills: sky cyan (light #0b6782 on #dcf1f7, 5.5:1; dark #8adcf0 on #0e2a33). No other meaning uses cyan: blue is for things you tap, green to red for seats and lateness, violet for delays, amber for you.
+
+## Design round 157: logo above the delay pill, "25m late" (John, Nov 5)
+
+John: "Can the logos sit on top of the delayed pill and delay pill sits underneath the logo? Also +25m doesn't really say much." Under each leg of a ticket's route line the order is now: stop codes, the airline logo, then the delay pill. A delay reads "25m late" everywhere (tickets, the opened route, the flight sheet already used it), which fits even a 2-stop ticket's short legs (about 63pt, measured with Geist SemiBold 12, against about 69pt per leg on a 375pt phone), so the "+25m" short form is gone. VoiceOver still says "Delayed 25 minutes, was ..., now ...".

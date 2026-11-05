@@ -22,7 +22,7 @@ const X_SIZE = 12;
 /** Room under the stop codes for each leg's airline logo (round 156: logo only, the number and aircraft
  * open from it). */
 const FLIGHT_H = PEEK_LOGO + 6;
-/** With this many legs or more, a delay pill says "+50m" to fit its short stretch. */
+/** With this many legs or more, a diversion pill says just "Diverted" to fit its short stretch. */
 const COMPACT_LEGS = 3;
 
 /** One leg of the line: the color it's drawn in and the seat numbers shown above it (round 140). */
@@ -41,8 +41,9 @@ export interface MiniRouteLeg {
   /** Canceled: drawn red with an X in the middle (round 143, John). */
   canceled?: boolean;
   /**
-   * A live word for this flight ("Delayed 50m"), in a pill centred over its own stretch of line (round 146,
-   * John: "The delayed pill, can that be over on top of that route line ... centered on that route line").
+   * A live word for this flight ("50m late"), in a pill centred on its own stretch of line, under its airline
+   * logo (rounds 146, 148, 157, John: "Can the logos sit on top of the delayed pill and delay pill sits
+   * underneath the logo?").
    */
   flag?: string | null;
   /**
@@ -97,16 +98,16 @@ export function MiniRoute({
   const withFlights = !!segs?.some((l) => l.flight);
   // Room above the line for count icons, and for a canceled leg's pill (round 151).
   const withIcons = !!segs?.some((l) => (l.label && l.counts?.length) || l.canceled);
-  // Short legs (2 or more stops on a small phone) drop the airline code beside a known airline's logo.
+  // Short legs (2 or more stops on a small phone) shorten a diversion's pill.
   const compact = n >= COMPACT_LEGS;
   // A stop's flag (At risk) sits above the line over its stop. A flight's flag (a delay) sits under the
-  // line, below the stop codes and right over that flight's number (round 148, John: "can the delayed pill
-  // sit right above the airline and the flight number, but underneath the route line?").
+  // line: the stop codes, then the airline logo, then the delay under the logo (round 157, John: "Can the
+  // logos sit on top of the delayed pill and delay pill sits underneath the logo?").
   const stopFlagTop = 0;
   // Everything in the track sits this far lower when there are flags or count icons above it.
   const top = (stopFlagged ? FLAG_H : 0) + (withIcons ? ICON_H : 0);
   const below = (y: number) => ({ top: top + y });
-  // Room under the stop codes for the delay pills, then each flight.
+  // Room under the stop codes for each flight's logo, then the delay pills.
   const under = legFlagged ? FLAG_H : 0;
   const tail = under + (withFlights ? FLIGHT_H : 0);
   const legFlagY = LABEL_H + DOT + LABEL_H + 2;
@@ -180,11 +181,16 @@ export function MiniRoute({
             {segs.map((leg, i) => {
               if (!leg.flag) return null;
               // On a short leg the delay reads "+50m" so it stays inside its own stretch.
-              const word = compact ? leg.flag.replace(/^Delayed /, '+').replace(/^Diverted.*/, 'Diverted') : leg.flag;
+              const word = compact ? leg.flag.replace(/^Diverted.*/, 'Diverted') : leg.flag;
               return (
                 <View
                   key={`lf${i}`}
-                  style={[styles.flagSlot, styles.legFlagSlot, below(legFlagY), { left: pct(i), width: pct(1) }]}
+                  style={[
+                    styles.flagSlot,
+                    styles.legFlagSlot,
+                    below(legFlagY + (withFlights ? FLIGHT_H : 0)),
+                    { left: pct(i), width: pct(1) },
+                  ]}
                   testID="mini-route-leg-flag">
                   <Text
                     style={[styles.flagText, { color: c.caution, backgroundColor: c.cautionBg }]}
@@ -206,7 +212,7 @@ export function MiniRoute({
                 <View
                   key={`fl${i}`}
                   pointerEvents="box-none"
-                  style={[styles.flightSlot, below(legFlagY + under), { left: pct(i), width: pct(1) }]}
+                  style={[styles.flightSlot, below(legFlagY), { left: pct(i), width: pct(1) }]}
                   testID="mini-route-flight">
                   <FlightPeek airline={f.airline} number={f.number} aircraft={f.aircraft} />
                 </View>

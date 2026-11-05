@@ -392,7 +392,7 @@ describe('ResultRow', () => {
       );
     });
     const root = r!.root;
-    expect(strings(root)).toContain('Delayed 25m');
+    expect(strings(root)).toContain('25m late');
     const struck = root.findAll(
       (n) =>
         (n.type as unknown) === 'Text' &&
@@ -421,7 +421,7 @@ describe('ResultRow', () => {
     expect(root.findAll((n) => n.props.testID === 'row-tag' && typeof n.type === 'string')).toHaveLength(0);
     const flags = root.findAll((n) => n.props.testID === 'mini-route-leg-flag' && typeof n.type === 'string');
     expect(flags).toHaveLength(1);
-    expect(flat(flags[0].props.children)).toBe('Delayed 25m');
+    expect(flat(flags[0].props.children)).toBe('25m late');
     const row = root.findAll((n) => n.props.accessibilityRole === 'button')[0];
     expect(row.props.accessibilityLabel).toContain('Delayed 25 minutes, was 9:00 AM, now 9:25 AM');
   });
@@ -491,10 +491,10 @@ describe('ResultRow', () => {
       .findAll((n) => typeof n.type === 'string' && ['leg-tag', 'leg-length'].includes(n.props.testID))
       .map((n) => n.props.testID);
     expect(order).toEqual(['leg-tag', 'leg-length']);
-    expect(words(track.findAll((n) => n.props.testID === 'leg-tag' && typeof n.type === 'string')[0])).toContain('Delayed 25m');
+    expect(words(track.findAll((n) => n.props.testID === 'leg-tag' && typeof n.type === 'string')[0])).toContain('25m late');
     // Not on the flight chip's row any more.
     const group = box.findAll((n) => n.props.testID === 'leg-flight' && typeof n.type === 'string')[0];
-    expect(words(group)).not.toContain('Delayed 25m');
+    expect(words(group)).not.toContain('25m late');
     // The chip shows American's mark and the code with the number again (round 136, John: "like DL, WN").
     expect(group.findAll((n) => n.props.testID === 'airline-mark' && typeof n.type === 'string').length).toBeGreaterThan(0);
     expect(words(group)).toContain('AA 1');

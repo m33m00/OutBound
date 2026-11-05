@@ -156,7 +156,7 @@ describe('MiniRoute (round 119)', () => {
     expect(texts()).toContain('ZZ 7');
   });
 
-  it("centres a flight's delay over its own leg, above the seat numbers (round 146, John)", () => {
+  it("centres a flight's delay on its own leg, under its airline logo (rounds 146, 157, John)", () => {
     const leg = (flag?: string) => ({
       color: '#0a0',
       text: '#060',
@@ -170,27 +170,29 @@ describe('MiniRoute (round 119)', () => {
       });
       return r!.root.findAll((n) => n.props.testID === 'mini-route-leg-flag' && typeof n.type === 'string');
     };
-    const two = flags(['DFW', 'MIA', 'LGA'], [leg(), leg('Delayed 50m')]);
+    const two = flags(['DFW', 'MIA', 'LGA'], [leg(), leg('50m late')]);
     expect(two).toHaveLength(1);
     const slot = StyleSheet.flatten(two[0].props.style);
     // The slot spans the second leg, so the pill centres on it.
     expect(slot).toMatchObject({ left: '50%', width: '50%' });
     const text = two[0].findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string')[0];
-    expect(text.props.children).toBe('Delayed 50m');
-    // Under the line (round 148, John): below the stop codes and right above that leg's flight number,
-    // while At risk and the seats stay above the line.
+    expect(text.props.children).toBe('50m late');
+    // Under the line: below the stop codes and right under that leg's airline logo (round 157, John: "Can
+    // the logos sit on top of the delayed pill"), while At risk and the seats stay above the line.
     const host = (id: string) => r!.root.findAll((n) => n.props.testID === id && typeof n.type === 'string');
     const topOf = (n: { props: { [k: string]: unknown } }) => StyleSheet.flatten(n.props.style as never).top as number;
     const stopSlot = topOf(host('mini-route-stop-slot')[0]);
     const flights = host('mini-route-flight');
     expect(topOf(two[0])).toBeGreaterThan(stopSlot);
-    expect(topOf(flights[1])).toBeGreaterThanOrEqual(topOf(two[0]) + 17);
+    expect(topOf(flights[1])).toBeGreaterThan(stopSlot);
+    expect(topOf(two[0])).toBeGreaterThanOrEqual(topOf(flights[1]) + 24);
     expect(topOf(host('mini-route-stop-flag')[0])).toBeLessThan(topOf(host('mini-route-leg-slot')[0]));
     expect(topOf(host('mini-route-leg-slot')[0])).toBeLessThan(stopSlot);
-    // On a short leg the delay shortens so it stays inside its own stretch.
-    const three = flags(['DFW', 'CLT', 'MIA', 'LGA'], [leg(), leg(), leg('Delayed 50m')]);
+    // The same words on a short leg: "50m late" fits a 2-stop ticket (round 157, John: "+25m doesn't
+    // really say much").
+    const three = flags(['DFW', 'CLT', 'MIA', 'LGA'], [leg(), leg(), leg('50m late')]);
     const short = three[0].findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string')[0];
-    expect(short.props.children).toBe('+50m');
+    expect(short.props.children).toBe('50m late');
   });
 
   it('puts a tiny seat icon over the open seats and a person over the listed, in the label color (round 147, John)', () => {
@@ -203,7 +205,7 @@ describe('MiniRoute (round 119)', () => {
         <MiniRoute
           airports={['DFW', 'MIA', 'LGA']}
           legs={[
-            { color: '#0a0', text: '#060', label: '21/12', counts, flag: 'Delayed 50m' },
+            { color: '#0a0', text: '#060', label: '21/12', counts, flag: '50m late' },
             { color: '#999', text: '#666', label: '' },
           ]}
         />,
