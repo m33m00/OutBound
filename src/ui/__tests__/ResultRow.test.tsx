@@ -991,3 +991,73 @@ describe('ticket edge (round 150)', () => {
     expect(tear.props).toMatchObject({ edge: colors.light.cardEdge, edgeWidth: CARD_EDGE_W });
   });
 });
+
+describe('canceled ticket (round 152)', () => {
+  const live = (it: Awaited<ReturnType<typeof fullItinerary>>, state: FlightStatus['state'], lateMin = 0): FlightStatus => {
+    const f = it.legs[0].flight;
+    const d = new Date(f.departUtc).toISOString();
+    return {
+      flightNumber: 'AA1',
+      state,
+      departure: {
+        airport: 'BNA',
+        scheduledUtc: d,
+        estimatedUtc: lateMin ? new Date(f.departUtc + lateMin * 60_000).toISOString() : null,
+        actualUtc: null,
+        delayMin: lateMin || null,
+        terminal: null,
+        gate: null,
+      },
+      arrival: {
+        airport: 'LAX',
+        scheduledUtc: null,
+        estimatedUtc: null,
+        actualUtc: null,
+        delayMin: null,
+        terminal: null,
+        gate: null,
+      },
+      providerUpdatedAt: null,
+    };
+  };
+  const statusFor = (it: Awaited<ReturnType<typeof fullItinerary>>, s: FlightStatus) =>
+    rowStatus(
+      it,
+      { [flightLookupKey(legLookup(it.legs[0].flight))]: s },
+      { minConnectSameAirlineMin: 60, minConnectSwitchMin: 90 },
+    );
+  it('fades to gray with a dashed gray edge, even on a full route, and keeps the red X and pill', async () => {
+    const it = await fullItinerary();
+    expect(it.isFull).toBe(true);
+    let r: ReactTestRenderer;
+    await act(async () => {
+      r = create(
+        <ResultRow itinerary={it} selected={false} now={NOW} onPress={jest.fn()} status={statusFor(it, live(it, 'canceled'))} />,
+      );
+    });
+    const card = r!.root.findAll((n) => n.props.accessibilityRole === 'button' && typeof n.type === 'string')[0];
+    const style = Object.assign({}, ...([card.props.style] as unknown[]).flat(5).filter(Boolean));
+    // Red stays for full flights; a canceled one is gray and dashed instead.
+    expect(style).toMatchObject({ borderColor: colors.light.faint, borderStyle: 'dashed', borderWidth: CARD_EDGE_W });
+    expect(style.backgroundColor).toBe(colors.light.surface2);
+    const host = (id: string) => r!.root.findAll((n) => n.props.testID === id && typeof n.type === 'string');
+    expect(host('mini-route-canceled')).toHaveLength(1);
+    expect(host('mini-route-canceled-pill')).toHaveLength(1);
+    const seg = host('mini-route-seg')[0];
+    expect(Object.assign({}, ...([seg.props.style] as unknown[]).flat(3).filter(Boolean)).backgroundColor).toBe(
+      colors.light.canceled,
+    );
+  });
+
+  it('keeps the red edge on a full route that is not canceled', async () => {
+    const it = await fullItinerary();
+    let r: ReactTestRenderer;
+    await act(async () => {
+      r = create(<ResultRow itinerary={it} selected={false} now={NOW} onPress={jest.fn()} />);
+    });
+    const card = r!.root.findAll((n) => n.props.accessibilityRole === 'button' && typeof n.type === 'string')[0];
+    const style = Object.assign({}, ...([card.props.style] as unknown[]).flat(5).filter(Boolean));
+    expect(style).toMatchObject({ borderColor: colors.light.full, borderWidth: 2 });
+    expect(style.borderStyle).toBeUndefined();
+  });
+});

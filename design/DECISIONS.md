@@ -492,3 +492,12 @@ John: "saving a flight and or swiping to save shouldn't actually be when you sel
 - A swipe left anywhere on a result ticket tears it along its perforation and saves it, with the same tear (approved round 136) and the Undo bar after. The whole ticket takes the swipe, not only a small tab: in the list, a sideways move is deliberate. Up or down first is a scroll, and a tap still opens the route. Tapping Save tears it the same way. Reduce Motion saves without the tear.
 - The opened route card no longer has Save or the swipe-to-tear, so reading the details can't save by accident.
 - A canceled leg on the route line now has a small red "Canceled" pill above its X, centred on that leg. The X stays.
+
+## Design round 152: a canceled ticket fades to gray (John, 2026-11-05)
+
+John: "Canceled flights should have the red border on the card. Not when it's full with no seats. Or maybe.. something else when it's cancelled and keep the red border for a full flight." Offered a gray fade, he picked it: "Do the gray fade".
+
+- A route with a canceled flight fades to gray like a departed one: the gray card fill, muted times and stops, the other legs' line and numbers in gray, and no shadow.
+- Its edge is a dashed gray line (the faint text gray, 1pt), and the tear's notches match.
+- The canceled leg keeps its red line, red X and red Canceled pill, so the one thing in color is what went wrong.
+- Red still means full: a full route keeps its 2pt red edge. A route that is both full and canceled shows as canceled.
