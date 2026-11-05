@@ -21,11 +21,27 @@ export function airportQuery(a: Airport): string {
  * Google Maps web page so a tap never does nothing. Other platforms always
  * use Google.
  */
-export function directionsUrls(a: Airport, app: MapsApp, ios = true): string[] {
-  const q = encodeURIComponent(airportQuery(a));
+export function directionsUrls(a: Airport, app: MapsApp, ios = true, walkTo?: GateTarget): string[] {
+  const q = encodeURIComponent(walkTo ? gateQuery(a, walkTo) : airportQuery(a));
   const near = `${a.lat},${a.lon}`;
-  const web = `https://www.google.com/maps/dir/?api=1&destination=${q}&travelmode=driving`;
+  const mode = walkTo ? 'walking' : 'driving';
+  const web = `https://www.google.com/maps/dir/?api=1&destination=${q}&travelmode=${mode}`;
   if (!ios) return [web];
-  if (app === 'google') return [`comgooglemaps://?daddr=${q}&center=${near}&directionsmode=driving`, web];
-  return [`https://maps.apple.com/?daddr=${q}&sll=${near}&dirflg=d`, web];
+  if (app === 'google') return [`comgooglemaps://?daddr=${q}&center=${near}&directionsmode=${mode}`, web];
+  return [`https://maps.apple.com/?daddr=${q}&sll=${near}&dirflg=${walkTo ? 'w' : 'd'}`, web];
+}
+
+/** Where to walk once you're at the airport: the departure gate and terminal from live status, when posted. */
+export interface GateTarget {
+  gate: string | null;
+  terminal: string | null;
+}
+
+/**
+ * "DFW Terminal C Gate C12" (round 159, John: walk me to the gate). Maps apps with indoor airport maps can
+ * find a gate by name; with no gate posted yet it falls back to the terminal, then the airport.
+ */
+export function gateQuery(a: Airport, t: GateTarget): string {
+  const parts = [t.terminal ? `Terminal ${t.terminal}` : null, t.gate ? `Gate ${t.gate}` : null].filter(Boolean);
+  return parts.length ? `${a.code} ${parts.join(' ')}` : airportQuery(a);
 }

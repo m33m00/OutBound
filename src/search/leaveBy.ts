@@ -101,6 +101,16 @@ function youreAt(code: string): string {
   return name ? `You’re at ${code} (${name})` : `You’re at ${code}`;
 }
 
+/** "Arrive at DFW by 10:10 AM to begin boarding" (round 159, John). */
+function arriveBy(code: string, time: string): string {
+  return `Arrive at ${code} by ${time} to begin boarding`;
+}
+
+/** "Your flight begins boarding at 11:40 AM" (round 159, John), with the departure time we have. */
+function boardingAt(time: string): string {
+  return `Your flight begins boarding at ${time}`;
+}
+
 export interface LeaveByText {
   title: string;
   sub: string;
@@ -113,19 +123,20 @@ export function leaveByText(r: LeaveBy, tz: string): LeaveByText {
     case 'departed':
       return { title: 'Departed', sub: `This flight has left ${r.airport}. Pick a later route.` };
     case 'atAirport':
-      // The airport's name too, and "Flight departs at" (John, 2026-11-02).
-      return { title: youreAt(r.airport), sub: `Flight departs at ${t(r.departUtc)}` };
+      // The airport's name too (John, 2026-11-02), and boarding in his words (round 159, John).
+      return { title: youreAt(r.airport), sub: boardingAt(t(r.departUtc)) };
     case 'leaveBy':
       // No "~" on the guess (round 138, John); a maps-service time adds "with traffic".
       return {
         title: `Leave by ${t(r.leaveUtc)}`,
-        sub: `${formatDuration(r.driveMin)} drive${r.live ? ' with traffic' : ''} · at ${r.airport} by ${t(r.beAtUtc)}`,
+        sub: `${formatDuration(r.driveMin)} drive${r.live ? ' with traffic' : ''}. ${arriveBy(r.airport, t(r.beAtUtc))}`,
       };
     case 'leaveNow':
-      return { title: 'Leave now', sub: `Be at ${r.airport} by ${t(r.beAtUtc)}` };
+      return { title: 'Leave now', sub: arriveBy(r.airport, t(r.beAtUtc)) };
     case 'beAt':
+      // John's words (round 159): "Arrive at DFW by 10:10 AM to begin boarding".
       return {
-        title: `Be at ${r.airport} by ${t(r.beAtUtc)}`,
+        title: arriveBy(r.airport, t(r.beAtUtc)),
         sub: `${formatDuration(r.bufferMin)} early to list and clear security`,
       };
   }
@@ -141,13 +152,14 @@ export function leaveByShort(r: LeaveBy, tz: string): string {
     case 'departed':
       return 'Pick a later route';
     case 'atAirport':
-      return `Flight departs at ${t(r.departUtc)}`;
+      return boardingAt(t(r.departUtc));
     case 'leaveBy':
       return `${formatDuration(r.driveMin)} drive`;
     case 'leaveNow':
-      // Spelled out (John, 2026-11-03: "Arrive at DFW by 2:40 PM" instead of just "At DFW").
-      return `Arrive at ${r.airport} by ${t(r.beAtUtc)}`;
+      // Spelled out (John, 2026-11-03), ending "to begin boarding" (round 159, John).
+      return arriveBy(r.airport, t(r.beAtUtc));
     case 'beAt':
-      return `${formatDuration(r.bufferMin)} early`;
+      // The title already says it all (round 159), so no second detail beside it.
+      return '';
   }
 }

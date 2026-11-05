@@ -530,3 +530,10 @@ John: "Can the logos sit on top of the delayed pill and delay pill sits undernea
 - Opened route: each flight box shows only the airline's logo (28pt, no pill) centred under its route line, with the same tap-or-hold window as the tickets for the flight number and aircraft type. The box's spoken label now includes the aircraft. Tapping elsewhere in the box still opens the flight sheet.
 - Tickets: each leg's logo moved up to sit just under the line, level with the stop codes beside it (a logo centred on its leg clears the codes centred on the dots, even on a 2-stop ticket); a delay pill sits right under the logo.
 - Leave By card: the "Flight delayed to 5:35 PM" line is gone; the route's own times show the change. VoiceOver still hears it with the title.
+
+## Round 159 (2026-11-05, John)
+
+- Opened route: no "Continuing to SEA" note on a diverted leg. Every leg box now has one layout: both airport columns are a fixed 74pt (the width of "10:40 AM"), the line is always raised the same amount, any status pill sits over the line and the flight's length is always under it. So lines start, end and sit at the same height in every box.
+- Leave By before the airport: "Arrive at DFW by 10:10 AM to begin boarding" (airport and time from the data), with nothing beside it. Leave now's detail ends the same way.
+- At the airport: "Your flight begins boarding at 11:40 AM". The time is still the scheduled departure, since we have no boarding time data.
+- At the airport the card opens walking directions (Apple Maps dirflg=w, Google walking) to "DFW Terminal C Gate C12", built from the first flight's live gate and terminal. The car becomes a walking person with the gate under it. No gate posted yet: the person alone, routed to the terminal or airport. Whether the maps app finds the gate depends on its indoor map for that airport.

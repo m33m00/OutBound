@@ -116,8 +116,13 @@ export const CARD_EDGE_W = 1;
 
 /** Space above and below a connection label, before any extra that centers it on the line. */
 const CONNECTION_PAD = 6;
-/** How far the airport pills rise when a status pill sits over the line, so the line stays level with them. */
+/** How far the airport pills rise so the line, with the flight's length under it, stays level with their middles. */
 const ENDS_LIFT = 10;
+/**
+ * Each end's column is this wide, the width of "10:40 AM" in the times' font, so every flight box's line
+ * starts and ends in the same place whatever its times say (round 159, John: "Just aligned the route line").
+ */
+const END_W = 74;
 
 /**
  * One flight as its two ends (round 132, John: "It just looks like a bunch of text on one row. Is there
@@ -141,6 +146,8 @@ function LegEnds({
   tag?: ReactNode;
 }) {
   const c = useColors();
+  const { fontScale } = useWindowDimensions();
+  const endW = { width: END_W * Math.min(Math.max(fontScale, 1), 1.4) };
   const t = legTimesText(leg, view);
   const canceled = view?.tag?.kind === 'canceled';
   const tint = (min: number | null) => {
@@ -172,23 +179,20 @@ function LegEnds({
         {formatDuration(minutes)}
       </Text>
     ) : null;
-  // With a pill over the line, the flight's length moves under it, and the airport pills rise to
-  // stay level with the line.
-  const lift = tag ? styles.endColLifted : null;
+  // One layout for every flight (round 159, John): any status pill over the line, the flight's length
+  // always under it, and the airport pills raised to stay level with the line.
   return (
     <View style={styles.ends} testID="leg-line">
-      <View style={[styles.endCol, lift]}>
+      <View style={[styles.endCol, endW, styles.endColLifted]}>
         {showTimes ? time(t.depart, departColor, 'leg-clock') : null}
         {code(leg.from)}
       </View>
-      <View style={[styles.endsMid, tag ? styles.endsMidTagged : null]} testID="leg-track">
+      <View style={styles.endsMid} testID="leg-track">
         {tag ? (
           <View style={styles.endsTag} testID="leg-tag">
             {tag}
           </View>
-        ) : (
-          length
-        )}
+        ) : null}
         <View style={styles.endsTrack}>
           <View style={[styles.endsLine, { backgroundColor: c.line2 }]} />
           <Icon
@@ -199,9 +203,9 @@ function LegEnds({
           />
           <View style={[styles.endsLine, { backgroundColor: c.line2 }]} />
         </View>
-        {tag ? length : null}
+        {length}
       </View>
-      <View style={[styles.endCol, styles.endColRight, lift]}>
+      <View style={[styles.endCol, styles.endColRight, endW, styles.endColLifted]}>
         {showTimes ? time(t.arrive, arriveColor, 'leg-arrive', true) : null}
         {code(leg.to)}
       </View>
@@ -357,12 +361,7 @@ function LegTimeline({
               showTimes={!nonstop}
               tag={view?.tag ? <StatusTag label={view.tag.label} tone={TAG_TONE[view.tag.kind]} /> : undefined}
             />
-            {/* A diversion goes on to the planned airport, late (John, 2026-11-01). */}
-            {view?.tag?.kind === 'diverted' ? (
-              <Text style={[textStyles.small, { color: c.muted }]} testID="leg-diverted-note">
-                {`Continuing to ${leg.flight.to}`}
-              </Text>
-            ) : null}
+            {/* No "Continuing to" note on a diverted leg (round 159, John: "I don't care it's continuing to SEA"). */}
             {pills}
           </>
         );
@@ -1111,7 +1110,7 @@ const styles = StyleSheet.create({
   struck: { textDecorationLine: 'line-through' },
   // A flight's two ends (round 132): time over an airport pill on each side, a plane line between.
   ends: { flexDirection: 'row', alignItems: 'flex-end', columnGap: 8 },
-  endCol: { alignItems: 'flex-start', gap: 4, flexShrink: 1 },
+  endCol: { alignItems: 'flex-start', gap: 4 },
   endColRight: { alignItems: 'flex-end' },
   endTime: { fontSize: 15, lineHeight: 20 },
   endRight: { textAlign: 'right' },
@@ -1122,9 +1121,8 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   codeText: { fontFamily: fonts.mono, fontSize: 13, lineHeight: 17, letterSpacing: 0.4 },
-  endsMid: { flex: 1, minWidth: 40, alignItems: 'center', paddingBottom: 6, gap: 1 },
-  // Pill, line, then length: the line stays level with the airport pills' middles.
-  endsMidTagged: { paddingBottom: 0, gap: 2 },
+  // Pill (if any), line, then length: the line stays level with the airport pills' middles.
+  endsMid: { flex: 1, minWidth: 40, alignItems: 'center', gap: 2 },
   endsTag: { maxWidth: '100%', marginBottom: 1 },
   endColLifted: { marginBottom: ENDS_LIFT },
   endsLength: { fontFamily: fonts.body, fontSize: 11, lineHeight: 14 },

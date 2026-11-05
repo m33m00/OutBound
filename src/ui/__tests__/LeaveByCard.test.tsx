@@ -124,10 +124,13 @@ describe('LeaveByCard location button', () => {
       .map((n) => n.props.children as string);
     expect(texts).not.toContain('Flight delayed to 2:40 PM');
     // The title still counts back from the schedule: 4 h out minus the 60 min buffer.
-    expect(lineText(r!)).toMatch(/^Be at DFW by /);
+    // John's words, with nothing beside them (round 159).
+    expect(lineText(r!)).toMatch(/^Arrive at DFW by \d{1,2}:\d\d\u00a0[AP]M to begin boarding$/);
     const label = r!.root.find(
       (n) =>
-        n.props.accessible && typeof n.props.accessibilityLabel === 'string' && n.props.accessibilityLabel.startsWith('Be at'),
+        n.props.accessible &&
+        typeof n.props.accessibilityLabel === 'string' &&
+        n.props.accessibilityLabel.startsWith('Arrive at'),
     ).props.accessibilityLabel as string;
     expect(label).toContain('Flight delayed to 2:40 PM');
   });
@@ -152,7 +155,7 @@ describe('LeaveByCard location button', () => {
     });
     const card = r!.root.find((n) => n.props.testID === 'leave-by-card' && typeof n.props.onPress === 'function');
     act(() => card.props.onPress());
-    expect(open).toHaveBeenCalledWith(AIRPORTS.DFW, 'google');
+    expect(open).toHaveBeenCalledWith(AIRPORTS.DFW, 'google', undefined);
     const title = r!.root.find((n) => n.props.accessibilityRole === 'button' && typeof n.props.onAccessibilityTap === 'function');
     expect(title.props.accessibilityHint).toBe('Opens directions in Google Maps');
     act(() => title.props.onAccessibilityTap());
@@ -222,11 +225,51 @@ describe('LeaveByCard location button', () => {
         />,
       );
     });
-    expect(lineText(r!)).toMatch(/^You’re at DAL \(Dallas Love Field\)\u2002\|\u2002Flight departs at /);
+    expect(lineText(r!)).toMatch(/^You’re at DAL \(Dallas Love Field\)\u2002\|\u2002Your flight begins boarding at /);
     const line = r!.root.find((n) => n.props.testID === 'leave-by-line' && typeof n.type === 'string');
     act(() => line.props.onTextLayout({ nativeEvent: { lines: [{}, {}] } }));
     expect(lineText(r!)).toBe('You’re at DAL (Dallas Love Field)');
     const detail = r!.root.find((n) => n.props.testID === 'leave-by-detail' && typeof n.type === 'string');
-    expect([detail.props.children].flat().join('')).toMatch(/^Flight departs at /);
+    expect([detail.props.children].flat().join('')).toMatch(/^Your flight begins boarding at /);
+  });
+
+  it('at the airport: a walking person with the gate under it, walking directions to the gate (round 159, John)', () => {
+    mockFontScale = 1;
+    const open = openDirections as jest.Mock;
+    open.mockClear();
+    const atDal = (gate: string | null, terminal: string | null) =>
+      act(() => {
+        r = create(
+          <LeaveByCard
+            airport={AIRPORTS.DAL}
+            departUtc={NOW + 2 * 3600_000}
+            bufferMin={60}
+            now={NOW}
+            location={{ lat: AIRPORTS.DAL.lat, lon: AIRPORTS.DAL.lon, at: NOW }}
+            locationStatus="idle"
+            onUseLocation={jest.fn()}
+            gate={gate}
+            terminal={terminal}
+          />,
+        );
+      });
+    atDal('12', null);
+    expect(r!.root.findAll((n) => n.props.testID === 'leave-by-car')).toHaveLength(0);
+    const walk = r!.root.find((n) => n.props.testID === 'leave-by-walk' && typeof n.type === 'string');
+    const gate = walk.find((n) => n.props.testID === 'leave-by-gate' && typeof n.type === 'string');
+    expect(gate.props.children).toBe('12');
+    const card = r!.root.find((n) => n.props.testID === 'leave-by-card' && typeof n.props.onPress === 'function');
+    expect(card.props.disabled).toBe(false);
+    act(() => card.props.onPress());
+    expect(open).toHaveBeenCalledWith(AIRPORTS.DAL, 'apple', { gate: '12', terminal: null });
+    const title = r!.root.find((n) => n.props.accessibilityRole === 'button' && typeof n.props.onAccessibilityTap === 'function');
+    expect(title.props.accessibilityHint).toBe('Opens walking directions to gate 12 in Apple Maps');
+    expect(title.props.accessibilityLabel).toContain('Gate 12');
+    // No gate posted yet: the walking person alone, routing to the terminal.
+    atDal(null, null);
+    expect(r!.root.findAll((n) => n.props.testID === 'leave-by-walk' && typeof n.type === 'string')).toHaveLength(1);
+    expect(r!.root.findAll((n) => n.props.testID === 'leave-by-gate')).toHaveLength(0);
+    const t2 = r!.root.find((n) => n.props.accessibilityRole === 'button' && typeof n.props.onAccessibilityTap === 'function');
+    expect(t2.props.accessibilityHint).toBe('Opens walking directions to your terminal in Apple Maps');
   });
 });

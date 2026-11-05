@@ -468,6 +468,36 @@ describe('ResultRow', () => {
     }
   });
 
+  it('route card: every leg box has one layout, length always under the line, same-width ends (round 159, John)', async () => {
+    const it = await fullItinerary();
+    const flat = (st: unknown) => Object.assign({}, ...[st].flat(Infinity).filter(Boolean));
+    for (const status of [undefined, statusFor(it, live(it, 'delayed', 25))]) {
+      await act(async () => {
+        r = create(<ResultRow itinerary={it} selected now={NOW} onPress={jest.fn()} onLegPress={jest.fn()} status={status} />);
+      });
+      const lines = r!.root.findAll((n) => n.props.testID === 'leg-line' && typeof n.type === 'string');
+      expect(lines.length).toBeGreaterThan(0);
+      for (const line of lines) {
+        const track = line.findAll((n) => n.props.testID === 'leg-track' && typeof n.type === 'string')[0];
+        const ids = track
+          .findAll((n) => typeof n.type === 'string' && ['leg-tag', 'leg-length'].includes(n.props.testID))
+          .map((n) => n.props.testID);
+        // The length is always the last thing, under the line, tagged or not.
+        expect(ids[ids.length - 1]).toBe('leg-length');
+        // Both end columns are the same fixed width and raised the same amount in every box.
+        const ends = (line.children as ReactTestInstance[]).filter(
+          (n) => typeof n !== 'string' && n.props.testID !== 'leg-track',
+        );
+        expect(ends).toHaveLength(2);
+        const [left, right] = ends.map((n) => flat(n.props.style));
+        expect(left.width).toBeGreaterThanOrEqual(72);
+        expect(right.width).toBe(left.width);
+        expect(left.marginBottom).toBe(right.marginBottom);
+        expect(left.marginBottom).toBeGreaterThan(0);
+      }
+    }
+  });
+
   it("route card: a leg's tag sits centered just above its route line (round 136, John)", async () => {
     const it = await fullItinerary();
     await act(async () => {
@@ -698,9 +728,9 @@ describe('ResultRow', () => {
     });
     const strings = (n: ReactTestInstance) =>
       n.findAll((x) => typeof x.props.children === 'string').map((x) => x.props.children as string);
-    const notes = r!.root.findAll((n) => n.props.testID === 'leg-diverted-note' && typeof n.type === 'string');
-    expect(notes).toHaveLength(1);
-    expect(strings(notes[0]).join('')).toBe('Continuing to DEN');
+    // No "Continuing to" note (round 159, John: "I don't care it's continuing to SEA").
+    expect(r!.root.findAll((n) => n.props.testID === 'leg-diverted-note')).toHaveLength(0);
+    expect(strings(r!.root).some((x) => x.startsWith('Continuing to'))).toBe(false);
     // Its arrival slot reads TBD, in the same place as every other leg's arrival (John, 2026-11-02).
     const arrives = r!.root.findAll((n) => n.props.testID === 'leg-arrive' && typeof n.type === 'string');
     expect(arrives.map((n) => [n.props.children].flat().join(''))).toContain('TBD');

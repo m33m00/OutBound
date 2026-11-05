@@ -437,6 +437,8 @@ export default function HomeScreen() {
   const filtersChanged = changedFilters(filters, settings.search);
   const selected = results.find((r) => r.id === selectedId);
   const firstLeg = selected?.legs[0].flight;
+  // Where to walk once you're at the airport (round 159): the first flight's posted gate, from live status.
+  const firstGate = firstLeg ? (flightStatuses.byKey[flightLookupKey(legLookup(firstLeg))]?.departure ?? null) : null;
   // Real drive time with traffic for the Leave By card (John, 2026-11-01); the rough guess until it answers.
   const trip = firstLeg
     ? driveQuery({
@@ -612,6 +614,8 @@ export default function HomeScreen() {
                           locationStatus={locationStatus}
                           mapsApp={settings.mapsApp}
                           liveDriveMin={liveDrive?.minutes ?? null}
+                          gate={firstGate?.gate ?? null}
+                          terminal={firstGate?.terminal ?? null}
                           onUseLocation={async () => {
                             if (await requestLocation()) updateSettings({ useLocation: true });
                           }}

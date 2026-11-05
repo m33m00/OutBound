@@ -28,7 +28,8 @@ describe('computeLeaveBy', () => {
     const r = run();
     expect(r).toEqual({ kind: 'beAt', airport: 'BNA', beAtUtc: DEP - 75 * MIN, bufferMin: 75 });
     expect(leaveByText(r, BNA.tz)).toEqual({
-      title: 'Be at BNA by 7:45 AM',
+      // John's words (round 159).
+      title: 'Arrive at BNA by 7:45 AM to begin boarding',
       sub: '1h 15m early to list and clear security',
     });
   });
@@ -42,14 +43,17 @@ describe('computeLeaveBy', () => {
     expect(r).toMatchObject({ kind: 'leaveBy', driveMin: 25, leaveUtc: DEP - 100 * MIN });
     expect(leaveByText(r, BNA.tz)).toEqual({
       title: 'Leave by 7:20 AM',
-      sub: '25m drive · at BNA by 7:45 AM',
+      sub: '25m drive. Arrive at BNA by 7:45 AM to begin boarding',
     });
   });
 
   it('uses a maps drive time with traffic when one came back (John, 2026-11-01)', () => {
     const r = run({ location: { ...downtown, at: EARLY - 5 * MIN }, liveDriveMin: 32 });
     expect(r).toMatchObject({ kind: 'leaveBy', driveMin: 32, live: true, leaveUtc: DEP - 107 * MIN });
-    expect(leaveByText(r, BNA.tz)).toEqual({ title: 'Leave by 7:13 AM', sub: '32m drive with traffic · at BNA by 7:45 AM' });
+    expect(leaveByText(r, BNA.tz)).toEqual({
+      title: 'Leave by 7:13 AM',
+      sub: '32m drive with traffic. Arrive at BNA by 7:45 AM to begin boarding',
+    });
     expect(leaveByShort(r, BNA.tz)).toBe('32m drive');
     // No live answer: the rough guess, marked with ~.
     expect(run({ location: { ...downtown, at: EARLY - 5 * MIN }, liveDriveMin: null })).toMatchObject({
@@ -85,9 +89,12 @@ describe('computeLeaveBy', () => {
 
   it('says you are at the airport within 3 km', () => {
     const r = run({ location: { lat: BNA.lat + 0.01, lon: BNA.lon, at: EARLY } });
-    // The airport's name too, and "Flight departs at" (John, 2026-11-02).
-    expect(leaveByText(r, BNA.tz)).toEqual({ title: `You’re at BNA (${AIRPORTS.BNA.name})`, sub: 'Flight departs at 9:00 AM' });
-    expect(leaveByShort(r, BNA.tz)).toBe('Flight departs at 9:00 AM');
+    // The airport's name too (John, 2026-11-02), and boarding in his words (round 159).
+    expect(leaveByText(r, BNA.tz)).toEqual({
+      title: `You’re at BNA (${AIRPORTS.BNA.name})`,
+      sub: 'Your flight begins boarding at 9:00 AM',
+    });
+    expect(leaveByShort(r, BNA.tz)).toBe('Your flight begins boarding at 9:00 AM');
   });
 
   it('says leave now when it is already too late', () => {
@@ -95,10 +102,12 @@ describe('computeLeaveBy', () => {
     expect(run({ now: late, location: { ...downtown, at: late } })).toMatchObject({ kind: 'leaveNow' });
     expect(leaveByText(run({ now: DEP - 30 * MIN }), BNA.tz)).toEqual({
       title: 'Leave now',
-      sub: 'Be at BNA by 7:45 AM',
+      sub: 'Arrive at BNA by 7:45 AM to begin boarding',
     });
-    // Beside Leave now on the slim row, spelled out (John, 2026-11-03).
-    expect(leaveByShort(run({ now: DEP - 30 * MIN }), BNA.tz)).toBe('Arrive at BNA by 7:45 AM');
+    // Beside Leave now on the slim row, spelled out (John, 2026-11-03), ending "to begin boarding" (round 159).
+    expect(leaveByShort(run({ now: DEP - 30 * MIN }), BNA.tz)).toBe('Arrive at BNA by 7:45 AM to begin boarding');
+    // The arrive-by title already says everything, so no detail beside it (round 159).
+    expect(leaveByShort(run(), BNA.tz)).toBe('');
   });
 
   it('says departed only when live status says so, never from the schedule (round 42, Q-050)', () => {
