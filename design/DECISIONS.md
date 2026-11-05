@@ -501,3 +501,7 @@ John: "Canceled flights should have the red border on the card. Not when it's fu
 - Its edge is a dashed gray line (the faint text gray, 1pt), and the tear's notches match.
 - The canceled leg keeps its red line, red X and red Canceled pill, so the one thing in color is what went wrong.
 - Red still means full: a full route keeps its 2pt red edge. A route that is both full and canceled shows as canceled.
+
+## Design round 153: solid gray edge on canceled tickets (John, Nov 5)
+
+John didn't like the dashed border after all. A canceled ticket now has a solid gray edge, the same 1pt weight as every other ticket, and keeps the gray fade, the red X on its canceled leg and the Canceled pill. Red stays for full flights.

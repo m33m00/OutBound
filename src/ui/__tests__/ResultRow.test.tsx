@@ -1026,7 +1026,7 @@ describe('canceled ticket (round 152)', () => {
       { [flightLookupKey(legLookup(it.legs[0].flight))]: s },
       { minConnectSameAirlineMin: 60, minConnectSwitchMin: 90 },
     );
-  it('fades to gray with a dashed gray edge, even on a full route, and keeps the red X and pill', async () => {
+  it('fades to gray with a solid gray edge, even on a full route, and keeps the red X and pill (rounds 152, 153)', async () => {
     const it = await fullItinerary();
     expect(it.isFull).toBe(true);
     let r: ReactTestRenderer;
@@ -1037,8 +1037,9 @@ describe('canceled ticket (round 152)', () => {
     });
     const card = r!.root.findAll((n) => n.props.accessibilityRole === 'button' && typeof n.type === 'string')[0];
     const style = Object.assign({}, ...([card.props.style] as unknown[]).flat(5).filter(Boolean));
-    // Red stays for full flights; a canceled one is gray and dashed instead.
-    expect(style).toMatchObject({ borderColor: colors.light.faint, borderStyle: 'dashed', borderWidth: CARD_EDGE_W });
+    // Red stays for full flights; a canceled one is gray instead, solid and the same weight as any ticket.
+    expect(style).toMatchObject({ borderColor: colors.light.faint, borderWidth: CARD_EDGE_W });
+    expect(style.borderStyle).toBeUndefined();
     expect(style.backgroundColor).toBe(colors.light.surface2);
     const host = (id: string) => r!.root.findAll((n) => n.props.testID === id && typeof n.type === 'string');
     expect(host('mini-route-canceled')).toHaveLength(1);

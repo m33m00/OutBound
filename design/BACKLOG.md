@@ -185,3 +185,4 @@ Each item names its owner. One item per work session. spec-keeper runs a pre-fli
 | 178 | Design round 150: clearer result ticket edge in light and dark, more space between tickets (John) | main | P2 | Built (design round 150, branch claude/project-thread-fzqwou) |
 | 179 | Design round 151: Save and swipe-to-tear on the result tickets, off the opened route; Canceled pill over the X (John) | main | P2 | Built (design round 151, branch claude/project-thread-fzqwou) |
 | 180 | Design round 152: canceled tickets fade to gray with a dashed gray edge; red edge stays for full routes (John) | main | P2 | Built (design round 152, branch claude/project-thread-fzqwou) |
+| 181 | Design round 153: canceled tickets get a solid gray edge at the normal weight, no dashes (John) | main | P2 | Built (design round 153, branch claude/project-thread-fzqwou) |

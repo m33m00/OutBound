@@ -530,8 +530,8 @@ export const ResultRow = memo(function ResultRow({
   ];
   const first = status?.legs[0];
   // Departed rows are dimmed with a gray fill and edge; text keeps 4.5:1. A canceled route fades to gray the
-  // same way, with a dashed gray edge, while its canceled leg keeps the red X and pill (round 152, John
-  // picked the gray fade: red stays for full flights).
+  // same way, with a solid gray edge like any ticket's (round 153, John: no dashes), while its canceled leg
+  // keeps the red X and pill (round 152, John picked the gray fade: red stays for full flights).
   const canceledRoute = !!status?.canceled;
   const dimmed = !!status?.dimmed || canceledRoute;
   const notFlyable = !!status?.canceled;
@@ -814,7 +814,6 @@ export const ResultRow = memo(function ResultRow({
         // A touch more lift in light mode; dark mode leans on the edge, where a shadow can't show.
         !dimmed && (scheme === 'dark' ? styles.flatDark : styles.liftLight),
         (highlight || (it.isFull && !canceledRoute)) && styles.strongBorder,
-        canceledRoute && !highlight && styles.dashedBorder,
       ]}>
       {/* No colored edge since round 140: the route line carries each leg's color now, and a full route keeps
           its red outline. */}
@@ -974,7 +973,6 @@ const styles = StyleSheet.create({
   strongBorder: {
     borderWidth: 2,
   },
-  dashedBorder: { borderStyle: 'dashed' },
   liftLight: { shadowOpacity: 0.1, shadowRadius: 10, shadowOffset: { width: 0, height: 3 } },
   flatDark: { shadowOpacity: 0 },
   edge: {
