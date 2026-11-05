@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useRef, useState, type ComponentRef } from 'react';
-import { Platform, Pressable, ScrollView, StyleSheet, Switch, Text, View, type LayoutChangeEvent } from 'react-native';
+import { Linking, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, View, type LayoutChangeEvent } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useSettings } from '@/settings/SettingsProvider';
@@ -8,8 +8,10 @@ import { AIRPORTS } from '@/engine';
 import { confirmReset } from '@/settings/confirmReset';
 import { parseSettingsSection, type SettingsSection } from '@/settings/profileSummary';
 import { MAPS_APP_NAME, type MapsApp } from '@/search/directions';
+import { formatDuration } from '@/search/format';
 import { homeAirports, LIMITS } from '@/settings/settings';
 import { minTapTarget, radius, spacing, textStyles, useColors } from '@/theme';
+import { logosOn } from '@/ui/AirlinePill';
 import { AirportPicker } from '@/ui/AirportPicker';
 import { BackButton } from '@/ui/BackButton';
 import { SectionFooter, SectionHeader } from '@/ui/ListGroup';
@@ -56,7 +58,11 @@ export default function SettingsScreen() {
       </View>
       <ScrollView ref={scrollRef} contentContainerStyle={styles.body}>
         {/* Capped like every other screen title, so it never breaks mid-word at big text. */}
-        <Text lineBreakStrategyIOS="push-out" style={[textStyles.title, { color: c.text }]} accessibilityRole="header" maxFontSizeMultiplier={TITLE_MAX_SCALE}>
+        <Text
+          lineBreakStrategyIOS="push-out"
+          style={[textStyles.title, { color: c.text }]}
+          accessibilityRole="header"
+          maxFontSizeMultiplier={TITLE_MAX_SCALE}>
           Settings
         </Text>
 
@@ -64,15 +70,17 @@ export default function SettingsScreen() {
           <SectionHeader title="Homes" />
           <View style={[styles.group, { backgroundColor: c.surface, borderColor: c.line }]}>
             {homeList.length === 0 ? (
-              <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, styles.empty, { color: c.muted }]}>No main home yet. Set one to show Get Home when you’re away.</Text>
+              <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, styles.empty, { color: c.muted }]}>
+                No main home yet. Set one to show Get Home when you’re away.
+              </Text>
             ) : (
               homeList.map((h, i) => (
-                <View
-                  key={h.code}
-                  style={[styles.row, i > 0 ? [styles.divided, { borderTopColor: c.line }] : null]}>
-                  <Text style={[textStyles.number, styles.code, { color: c.text }]}>{h.code}</Text>
+                <View key={h.code} style={[styles.row, i > 0 ? [styles.divided, { borderTopColor: c.line }] : null]}>
+                  <Text style={[textStyles.code, styles.code, { color: c.text }]}>{h.code}</Text>
                   <View style={styles.label}>
-                    <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, { color: c.text }]}>{AIRPORTS[h.code]?.name}</Text>
+                    <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, { color: c.text }]}>
+                      {AIRPORTS[h.code]?.name}
+                    </Text>
                     <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.youText }]}>
                       {h.main ? 'Main home' : h.auto ? 'Same area, added automatically' : 'Also home'}
                     </Text>
@@ -159,13 +167,11 @@ export default function SettingsScreen() {
               label="Be at the airport before departure"
               value={settings.bufferMin}
               {...LIMITS.bufferMin}
-              format={(v) => `${v} min`}
+              format={formatDuration}
               onChange={(v) => update({ bufferMin: v })}
             />
             {/* Android always uses Google Maps, so there's nothing to pick there. */}
-            {Platform.OS === 'ios' ? (
-              <MapsChoice value={settings.mapsApp} onChange={(mapsApp) => update({ mapsApp })} />
-            ) : null}
+            {Platform.OS === 'ios' ? <MapsChoice value={settings.mapsApp} onChange={(mapsApp) => update({ mapsApp })} /> : null}
           </View>
           {/* The Leave By card's chevron already shows it opens directions (round 78). */}
           <SectionFooter>Time to list and clear security.</SectionFooter>
@@ -181,7 +187,22 @@ export default function SettingsScreen() {
 
         {/* Clears homes too, so it asks first (what it should clear is Q-064). */}
         <Button label="Reset All Settings" kind="secondary" onPress={() => confirmReset(reset)} />
-        <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>Saved on this phone.</Text>
+        <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>
+          Saved on this phone.
+        </Text>
+        {/* Logo.dev's free plan asks for a visible link wherever its logos show (round 133). */}
+        {logosOn() ? (
+          <Pressable
+            accessibilityRole="link"
+            accessibilityLabel="Airline logos provided by Logo.dev"
+            onPress={() => Linking.openURL('https://logo.dev')}
+            style={pressStyle(null, 'link')}
+            testID="logo-credit">
+            <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>
+              Airline logos provided by <Text style={{ color: c.accent }}>Logo.dev</Text>. Each logo belongs to its airline.
+            </Text>
+          </Pressable>
+        ) : null}
       </ScrollView>
       <AirportPicker
         visible={pickerSheet.visible}
@@ -230,8 +251,14 @@ function SwitchRow({
       accessibilityHint={hint ?? caption}
       style={pressStyle([styles.row, divided && [styles.divided, { borderTopColor: c.line }]])}>
       <View style={styles.label}>
-        <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, { color: c.text }]}>{label}</Text>
-        {caption ? <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>{caption}</Text> : null}
+        <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, { color: c.text }]}>
+          {label}
+        </Text>
+        {caption ? (
+          <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>
+            {caption}
+          </Text>
+        ) : null}
       </View>
       {/* The row takes the tap and speaks for it. */}
       <View pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
@@ -246,7 +273,9 @@ function MapsChoice({ value, onChange }: { value: MapsApp; onChange: (app: MapsA
   const c = useColors();
   return (
     <View style={[styles.divided, styles.maps, { borderTopColor: c.line }]}>
-      <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, { color: c.text }]}>Directions open in</Text>
+      <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, { color: c.text }]}>
+        Directions open in
+      </Text>
       <View style={styles.segments} accessibilityRole="radiogroup" accessibilityLabel="Directions open in">
         {(['apple', 'google'] as const).map((app) => {
           const on = value === app;

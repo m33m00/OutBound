@@ -74,7 +74,15 @@ jobs:
           COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
           EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          # Real airline logos (round 133). Without this secret the app shows its own tail marks.
+          LOGO_DEV_KEY: ${{ secrets.LOGO_DEV_KEY }}
         run: |
+          # Only a publishable key (pk_) goes into the app; a secret key (sk_) never does.
+          case "$LOGO_DEV_KEY" in
+            pk_*) export EXPO_PUBLIC_LOGO_DEV_KEY="$LOGO_DEV_KEY" ;;
+            "") ;;
+            *) echo "::warning::LOGO_DEV_KEY isn't a publishable key (pk_...), so logos stay off." ;;
+          esac
           MESSAGE=$(printf '%s' "${COMMIT_MESSAGE:-Manual publish}" | head -n 1)
           eas update --branch "$BRANCH" --message "$MESSAGE" --environment preview --non-interactive
           {

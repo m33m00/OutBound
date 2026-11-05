@@ -18,13 +18,18 @@ jest.mock('react-native/Libraries/Utilities/useWindowDimensions', () => ({
 
 const NOW = Date.UTC(2026, 9, 30, 15);
 
-
 /** The slim row's whole text: the title and its one detail (round 87). */
 function lineText(r: ReactTestRenderer): string {
   const line = r.root.find((n) => n.props.testID === 'leave-by-line' && typeof n.type === 'string');
   const flat = (c: unknown): string =>
-    typeof c === 'string' ? c : Array.isArray(c) ? c.map(flat).join('') : c && typeof c === 'object' && 'props' in c ? flat((c as { props: { children?: unknown } }).props.children) : '';
-  return flat(line.props.children);
+    typeof c === 'string'
+      ? c
+      : Array.isArray(c)
+        ? c.map(flat).join('')
+        : c && typeof c === 'object' && 'children' in c
+          ? flat((c as { children: unknown }).children)
+          : '';
+  return flat(line.children);
 }
 
 describe('LeaveByCard location button', () => {
@@ -57,10 +62,11 @@ describe('LeaveByCard location button', () => {
     mockFontScale = 1;
     render();
     expect(placement()).toBe('inline');
-    // No icon tile (round 69); the chevron still says the card opens directions, button or not.
+    // No icon tile (round 69); a car says the card opens directions, button or not (round 136, John).
     const top = r!.root.findAll((n) => n.props.testID === 'leave-by-top' && typeof n.type === 'string')[0];
     const icons = top.findAll((n) => typeof n.props.name === 'string').map((n) => n.props.name);
-    expect(icons).toContain('chevron.right');
+    expect(icons).toContain('car.fill');
+    expect(icons).not.toContain('chevron.right');
     expect(icons).not.toContain('arrow.triangle.turn.up.right.diamond.fill');
   });
 
@@ -87,7 +93,9 @@ describe('LeaveByCard location button', () => {
         />,
       );
     });
-    const texts = r!.root.findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string').map((n) => n.props.children as string);
+    const texts = r!.root
+      .findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string')
+      .map((n) => n.props.children as string);
     expect(lineText(r!)).toMatch(/^Departed/);
     expect(r!.root.findAll((n) => /Use Location|Open Settings/.test(String(n.props.accessibilityLabel)))).toHaveLength(0);
     expect(texts.some((t) => t.startsWith('Location is off'))).toBe(false);
@@ -111,12 +119,16 @@ describe('LeaveByCard location button', () => {
         />,
       );
     });
-    const texts = r!.root.findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string').map((n) => n.props.children as string);
+    const texts = r!.root
+      .findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string')
+      .map((n) => n.props.children as string);
     expect(texts).toContain('Flight delayed to 2:40 PM');
     // The title still counts back from the schedule: 4 h out minus the 60 min buffer.
     expect(lineText(r!)).toMatch(/^Be at DFW by /);
-    const label = r!.root.find((n) => n.props.accessible && typeof n.props.accessibilityLabel === 'string' && n.props.accessibilityLabel.startsWith('Be at')).props
-      .accessibilityLabel as string;
+    const label = r!.root.find(
+      (n) =>
+        n.props.accessible && typeof n.props.accessibilityLabel === 'string' && n.props.accessibilityLabel.startsWith('Be at'),
+    ).props.accessibilityLabel as string;
     expect(label).toContain('Flight delayed to 2:40 PM');
   });
 
@@ -184,10 +196,37 @@ describe('LeaveByCard location button', () => {
         />,
       );
     });
-    expect(lineText(r!)).toMatch(/^Leave by .+ · {2}32 min drive$/);
-    const texts = r!.root.findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string').map((n) => n.props.children as string);
+    expect(lineText(r!)).toMatch(/^Leave by .+\u2002\|\u200232m drive$/);
+    expect(lineText(r!)).not.toContain('·');
+    const texts = r!.root
+      .findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string')
+      .map((n) => n.props.children as string);
     expect(texts.some((t) => t.includes('at DFW by'))).toBe(false);
-    const label = r!.root.find((n) => n.props.accessible && String(n.props.accessibilityLabel).startsWith('Leave by')).props.accessibilityLabel as string;
+    const label = r!.root.find((n) => n.props.accessible && String(n.props.accessibilityLabel).startsWith('Leave by')).props
+      .accessibilityLabel as string;
     expect(label).toContain('at DFW by');
+  });
+
+  it('puts the detail on its own line, with no dot, when the row would wrap (John, 2026-11-02)', () => {
+    mockFontScale = 1;
+    act(() => {
+      r = create(
+        <LeaveByCard
+          airport={AIRPORTS.DAL}
+          departUtc={NOW + 2 * 3600_000}
+          bufferMin={60}
+          now={NOW}
+          location={{ lat: AIRPORTS.DAL.lat, lon: AIRPORTS.DAL.lon, at: NOW }}
+          locationStatus="idle"
+          onUseLocation={jest.fn()}
+        />,
+      );
+    });
+    expect(lineText(r!)).toMatch(/^You’re at DAL \(Dallas Love Field\)\u2002\|\u2002Flight departs at /);
+    const line = r!.root.find((n) => n.props.testID === 'leave-by-line' && typeof n.type === 'string');
+    act(() => line.props.onTextLayout({ nativeEvent: { lines: [{}, {}] } }));
+    expect(lineText(r!)).toBe('You’re at DAL (Dallas Love Field)');
+    const detail = r!.root.find((n) => n.props.testID === 'leave-by-detail' && typeof n.type === 'string');
+    expect([detail.props.children].flat().join('')).toMatch(/^Flight departs at /);
   });
 });

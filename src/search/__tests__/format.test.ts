@@ -8,11 +8,11 @@ import {
   nearbyNotes,
   neutralSeatText,
   routeSeatAge,
-  routeSeatSummary,
   rowAccessibilityLabel,
   rowTimes,
   seatSourceText,
   seatText,
+  shortLayovers,
   slimStops,
   stopCount,
   stopsText,
@@ -60,7 +60,8 @@ describe('time and duration', () => {
 
   it.each([
     [45, '45m'],
-    [60, '1h'],
+    [60, '1h 0m'],
+    [300, '5h 0m'],
     [135, '2h 15m'],
   ])('%i min -> %s', (min, text) => expect(formatDuration(min)).toBe(text));
 
@@ -73,42 +74,18 @@ describe('time and duration', () => {
 });
 
 describe('seatText', () => {
-  it('always pairs the tier word with the number and age', () => {
-    expect(seatText(seats({ asOf: NOW - 12 * 60_000 }), NOW)).toBe('Likely · 22 open · reported 12m ago');
-    expect(seatText(seats({ source: 'estimate', tier: 'wide', netSeats: 60 }), NOW)).toBe('Easy · 60 open · est. just now');
+  it('shows the number and age with no chance word (round 140, John)', () => {
+    expect(seatText(seats({ asOf: NOW - 12 * 60_000 }), NOW)).toBe('22 seats · reported 12m ago');
+    expect(seatText(seats({ source: 'estimate', tier: 'wide', netSeats: 60 }), NOW)).toBe('60 seats · est. just now');
   });
   it('says Full with no open seats', () => {
-    expect(seatText(seats({ tier: 'full', netSeats: -3 }), NOW)).toBe('Full · no open seats · reported just now');
+    expect(seatText(seats({ tier: 'full', netSeats: -3 }), NOW)).toBe('no seats left · reported just now');
   });
   it('keeps typical loads neutral (no tier word)', () => {
-    expect(seatText(seats({ source: 'typical', tier: 'unknown', netSeats: 30 }), NOW)).toBe('~30 open seats estimated');
+    expect(seatText(seats({ source: 'typical', tier: 'unknown', netSeats: 30 }), NOW)).toBe('30 seats estimated');
   });
   it('handles no data', () => {
-    expect(seatText({ source: 'unknown', tier: 'unknown', netSeats: null, asOf: null }, NOW)).toBe('No data yet');
-  });
-});
-
-describe('seat summary (Q-059)', () => {
-  const NOW = Date.UTC(2026, 9, 19, 12);
-  const seats = (p: Partial<LegSeats>): LegSeats => ({ source: 'reported', tier: 'good', netSeats: 8, asOf: NOW, ...p });
-  const route = (legs: LegSeats[], tier: LegSeats['tier']) =>
-    ({ tier, legs: legs.map((s) => ({ seats: s })) }) as unknown as Parameters<typeof routeSeatSummary>[0];
-
-  it('is just the route chance word; the numbers live in the flight sheet (John, 2026-10-31)', () => {
-    expect(routeSeatSummary(route([seats({ tier: 'good', netSeats: 9 }), seats({ tier: 'tight', netSeats: 2 })], 'tight'))).toBe(
-      'Long\u00a0shot',
-    );
-    expect(routeSeatSummary(route([seats({ tier: 'full', netSeats: -3 })], 'full'))).toBe('Full');
-  });
-
-  it('stays off when no leg has reported or estimated seats', () => {
-    expect(routeSeatSummary(route([seats({ source: 'typical', tier: 'unknown', netSeats: 12 })], 'unknown'))).toBeNull();
-  });
-
-  it('says where a number came from and its age', () => {
-    expect(seatSourceText(seats({}), NOW)).toBe('Reported just now');
-    expect(seatSourceText(seats({ source: 'estimate', asOf: NOW - 2 * 3_600_000 }), NOW)).toBe('Est. 2h ago');
-    expect(seatSourceText(seats({ source: 'typical' }), NOW)).toBeNull();
+    expect(seatText({ source: 'unknown', tier: 'unknown', netSeats: null, asOf: null }, NOW)).toBe('No Estimate');
   });
 });
 
@@ -117,7 +94,7 @@ describe('slim row seat and stop text (design round 22)', () => {
   const seats = (p: Partial<LegSeats>): LegSeats => ({ source: 'reported', tier: 'good', netSeats: 8, asOf: NOW, ...p });
   const route = (legs: LegSeats[], tier: LegSeats['tier'], connections: { airport: string; layoverMin: number }[] = []) =>
     ({ tier, stops: connections.length, connections, legs: legs.map((s) => ({ seats: s })) }) as unknown as Parameters<
-      typeof routeSeatSummary
+      typeof routeSeatAge
     >[0];
 
   it('gives the summary the age of the leg that sets it', () => {
@@ -137,16 +114,33 @@ describe('slim row seat and stop text (design round 22)', () => {
       ],
       'unknown',
     );
-    expect(neutralSeatText(r, NOW)).toBe('~12 open seats estimated');
+    expect(neutralSeatText(r, NOW)).toBe('12 seats estimated');
     expect(
       neutralSeatText(route([seats({ source: 'unknown', tier: 'unknown', netSeats: null, asOf: null })], 'unknown'), NOW),
-    ).toBe('No data yet');
+    ).toBe('No Estimate');
   });
 
-  it('adds short connections to the stop count', () => {
-    expect(slimStops(route([seats({})], 'good'))).toBe('Nonstop');
-    expect(slimStops(route([seats({}), seats({})], 'good', [{ airport: 'DEN', layoverMin: 45 }]))).toBe('1 stop · 45m at DEN');
+  it('reads stops, then trip time, then a short connection last (round 149, John)', () => {
+    expect(slimStops(route([seats({})], 'good'), undefined, '5h 0m')).toBe('Nonstop · 5h 0m');
+    expect(slimStops(route([seats({}), seats({})], 'good', [{ airport: 'DEN', layoverMin: 45 }]), undefined, '4h 20m')).toBe(
+      '1 stop · 4h 20m · 45m connection at DEN',
+    );
     expect(slimStops(route([seats({}), seats({})], 'good', [{ airport: 'DEN', layoverMin: 90 }]))).toBe('1 stop');
+  });
+
+  it('uses live connection minutes when given, and names a missed one (John, 2026-11-02)', () => {
+    const r = route([seats({}), seats({})], 'good', [{ airport: 'DEN', layoverMin: 90 }]);
+    expect(slimStops(r, [35])).toBe('1 stop · 35m connection at DEN');
+    expect(slimStops(r, [-10])).toBe('1 stop · missed connection at DEN');
+    expect(slimStops(r, [NaN])).toBe('1 stop');
+  });
+
+  it('shows only the tightest of several short connections, so the line fits', () => {
+    const r = route([seats({}), seats({}), seats({})], 'good', [
+      { airport: 'ORD', layoverMin: 50 },
+      { airport: 'CLT', layoverMin: 35 },
+    ]);
+    expect(shortLayovers(r)).toBe('35m connection at CLT');
   });
 });
 
@@ -164,7 +158,7 @@ describe('row text', () => {
 
   it('notes area airports', async () => {
     const it = await itinerary([flight('1', 'DAL', 'LAX', '09:00', 200)], 'DFW', 'LAX', {}, true);
-    expect(nearbyNotes(it)).toEqual(['Leaves from DAL, 35 min from DFW']);
+    expect(nearbyNotes(it)).toEqual(['Leaves from DAL, 35m from DFW']);
   });
 
   it('says "near" when an area pair has no transfer time yet', async () => {
@@ -178,7 +172,7 @@ describe('row text', () => {
     });
     expect(rowAccessibilityLabel(it, NOW)).toBe(
       // Spelled out so VoiceOver doesn't read "20m" as meters (design round 26).
-      'Departs 9:00 AM from BNA, arrives 11:20 AM at LAX, Nonstop, 4 hours 20 minutes, Chances: Likely, AA 1: Likely, 30 open, 8 listed, reported 5 minutes ago',
+      'Departs 9:00 AM from BNA, arrives 11:20 AM at LAX, Nonstop, 4 hours 20 minutes, AA 1: 30 seats, 8 listed, reported 5 minutes ago',
     );
   });
 });
@@ -186,11 +180,11 @@ describe('row text', () => {
 describe('seatCounts (Q-065)', () => {
   const base: LegSeats = { source: 'reported', tier: 'tight', netSeats: 3, asOf: 0 };
   it('shows open and listed when the reading has both', () => {
-    expect(seatCounts({ ...base, openSeats: 20, listed: 17 })).toBe('20 open · 17 listed');
+    expect(seatCounts({ ...base, openSeats: 20, listed: 17 })).toBe('20 seats · 17 listed');
   });
   it('falls back to the net count for older data', () => {
-    expect(seatCounts(base)).toBe('3 open');
-    expect(seatCounts({ ...base, netSeats: -2, tier: 'full' })).toBe('no open seats');
+    expect(seatCounts(base)).toBe('3 seats');
+    expect(seatCounts({ ...base, netSeats: -2, tier: 'full' })).toBe('no seats left');
   });
 });
 
@@ -201,6 +195,12 @@ describe('forSpeech (design round 26)', () => {
     expect(forSpeech('Est. 2h ago')).toBe('Estimated 2 hours ago');
     expect(forSpeech('DAL → PHX → LAX')).toBe('DAL to PHX to LAX');
     expect(forSpeech('Updated 3d ago')).toBe('Updated 3 days ago');
+  });
+  it('says short durations in words, not meters (round 110)', () => {
+    expect(forSpeech('2h 5m connection at DEN')).toBe('2 hours 5 minutes connection at DEN');
+    expect(forSpeech('~25m drive')).toBe('about 25 minutes drive');
+    expect(forSpeech('1h 15m')).toBe('1 hour 15 minutes');
+    expect(forSpeech('Longest: 1,240 mi')).toBe('Longest: 1,240 mi');
   });
   it('leaves clock times alone', () => {
     expect(forSpeech('Departs 9:00 AM')).toBe('Departs 9:00 AM');

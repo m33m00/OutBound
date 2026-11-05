@@ -11,6 +11,7 @@ import {
   reportClosedNote,
   reportWindow,
   openRequestCount,
+  upcomingRequests,
   type LoadRequest,
   answerText,
   answerTier,
@@ -68,12 +69,12 @@ describe('request words', () => {
     expect(requestDetail(req, NOW)).toMatch(/^Departs .* · asked \d+m ago$/);
   });
 
-  it('an answer reads as tier word with both numbers (Q-065)', () => {
+  it('an answer reads as both numbers, no tier word (Q-065, round 140)', () => {
     const a = { open: 21, listed: 3, at: NOW - 5 * 60_000 };
     expect(answerTier(a)).toBe('good');
-    expect(answerText(a)).toBe('Likely · 21 open · 3 listed');
-    expect(requestDetail({ ...req, answer: a }, NOW)).toBe('Likely · 21 open · 3 listed · answered 5m ago');
-    expect(requestDetail({ ...req, answer: { ...a, byYou: true } }, NOW)).toBe('Likely · 21 open · 3 listed · you answered 5m ago');
+    expect(answerText(a)).toBe('21 seats · 3 listed');
+    expect(requestDetail({ ...req, answer: a }, NOW)).toBe('21 seats · 3 listed · answered 5m ago');
+    expect(requestDetail({ ...req, answer: { ...a, byYou: true } }, NOW)).toBe('21 seats · 3 listed · you answered 5m ago');
   });
 
   it('seats after the standby list', () => {
@@ -141,6 +142,17 @@ describe('asking and reporting from a flight (round 32)', () => {
     expect(askNote('left')).toMatch(/left/);
     expect(askNote('full')).toContain('5 requests waiting');
     expect(askNote('asked')).toContain('My Trips');
+  });
+
+  it('your requests list only flights still to leave, soonest first; a left one frees its slot (John, 2026-11-02)', () => {
+    const later = { id: 'a', flight: flight(1, NOW2 + 3 * 3600_000), askedAt: NOW2 };
+    const soon = { id: 'b', flight: flight(2, NOW2 + 3600_000), askedAt: NOW2 };
+    const left = { id: 'c', flight: flight(3, NOW2 - 60_000), askedAt: NOW2 - 3600_000 };
+    expect(upcomingRequests([later, left, soon], NOW2).map((r) => r.id)).toEqual(['b', 'a']);
+    // Live data can say one already left before its time.
+    expect(upcomingRequests([later, soon], NOW2, (r) => r.id === 'b').map((r) => r.id)).toEqual(['a']);
+    expect(openRequestCount([later, left, soon], NOW2)).toBe(2);
+    expect(openRequestCount([later, left, soon])).toBe(3);
   });
 });
 

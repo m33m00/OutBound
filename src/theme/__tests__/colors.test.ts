@@ -45,8 +45,8 @@ const textPairs: [ColorToken, ColorToken][] = [
 
 describe('Ice Mix colors', () => {
   it('keeps the confirmed DECISIONS.md values', () => {
-    expect(colors.light.accent).toBe('#1d3d84');
-    expect(colors.dark.accent).toBe('#9bb8ef');
+    expect(colors.light.accent).toBe('#1c5fd4');
+    expect(colors.dark.accent).toBe('#7aa7ff');
     expect(colors.light.youText).toBe('#9a5200');
     expect(colors.dark.youText).toBe('#ffc27a');
   });
@@ -68,5 +68,20 @@ describe('Ice Mix colors', () => {
       const p = colors[scheme];
       expect(contrast(p[fg], p[bg])).toBeGreaterThanOrEqual(4.5);
     });
+  });
+});
+
+describe('Card header panel (round 114, plain card since round 120)', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { inkColors } = require('../colors') as typeof import('../colors');
+  it.each(['light', 'dark'] as const)('%s: every text pair reads on the raised panel', (scheme) => {
+    const p = inkColors[scheme];
+    for (const [fg, bg] of textPairs) {
+      expect({ pair: `${fg} on ${bg}`, ok: contrast(p[fg], p[bg]) >= 4.5 }).toEqual({ pair: `${fg} on ${bg}`, ok: true });
+    }
+  });
+
+  it('keeps the same tokens as the main palettes', () => {
+    expect(Object.keys(inkColors.light).sort()).toEqual(Object.keys(colors.light).sort());
   });
 });

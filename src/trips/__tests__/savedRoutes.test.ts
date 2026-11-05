@@ -26,9 +26,33 @@ const request = { origin: 'DFW', destination: 'LAX', date: DATE, originArea: fal
 async function routes(date = DATE, now = NOW): Promise<Itinerary[]> {
   const provider = createMemoryProvider(
     [
-      { id: `A${date}`, airline: 'AA', flightNumber: '1234', from: 'DFW', to: 'ORD', departUtc: at('07:05', date), arriveUtc: at('09:20', date) },
-      { id: `B${date}`, airline: 'AA', flightNumber: '88', from: 'ORD', to: 'LAX', departUtc: at('10:45', date), arriveUtc: at('15:20', date) },
-      { id: `C${date}`, airline: 'UA', flightNumber: '9', from: 'DFW', to: 'LAX', departUtc: at('12:00', date), arriveUtc: at('15:30', date) },
+      {
+        id: `A${date}`,
+        airline: 'AA',
+        flightNumber: '1234',
+        from: 'DFW',
+        to: 'ORD',
+        departUtc: at('07:05', date),
+        arriveUtc: at('09:20', date),
+      },
+      {
+        id: `B${date}`,
+        airline: 'AA',
+        flightNumber: '88',
+        from: 'ORD',
+        to: 'LAX',
+        departUtc: at('10:45', date),
+        arriveUtc: at('15:20', date),
+      },
+      {
+        id: `C${date}`,
+        airline: 'UA',
+        flightNumber: '9',
+        from: 'DFW',
+        to: 'LAX',
+        departUtc: at('12:00', date),
+        arriveUtc: at('15:30', date),
+      },
     ],
     {},
   );
@@ -49,6 +73,20 @@ describe('saved routes (Q-043)', () => {
     expect(saved.savedAt).toBe(NOW);
   });
 
+  it("keeps each flight's aircraft so the saved card can show it under its leg (round 146)", async () => {
+    const it = twoLeg(await routes());
+    const withPlane = {
+      ...it,
+      legs: it.legs.map((l, i) => ({ ...l, flight: { ...l.flight, aircraft: i ? undefined : '738' } })),
+    };
+    const saved = savedRouteFrom(withPlane, request, NOW);
+    expect(saved.legs.map((l) => l.aircraft)).toEqual(['738', undefined]);
+    // It reads back, and a bad value is dropped instead of the whole trip.
+    expect(parseSavedRoutes(JSON.parse(JSON.stringify([saved])))[0].legs[0].aircraft).toBe('738');
+    const bad = { ...saved, legs: [{ ...saved.legs[0], aircraft: 'x'.repeat(41) }, saved.legs[1]] };
+    expect(parseSavedRoutes([bad])[0].legs[0].aircraft).toBeUndefined();
+  });
+
   it('adds a route once and removes it by key; no limit', async () => {
     const list = await routes();
     const a = savedRouteFrom(twoLeg(list), request, NOW);
@@ -62,7 +100,15 @@ describe('saved routes (Q-043)', () => {
 
   it('reads back what it wrote and drops bad entries and repeats', async () => {
     const a = savedRouteFrom(twoLeg(await routes()), request, NOW);
-    const stored = JSON.parse(JSON.stringify([a, a, { request: { origin: 'XXX', destination: 'LAX', date: DATE }, legs: a.legs }, 'junk', { request, legs: [] }]));
+    const stored = JSON.parse(
+      JSON.stringify([
+        a,
+        a,
+        { request: { origin: 'XXX', destination: 'LAX', date: DATE }, legs: a.legs },
+        'junk',
+        { request, legs: [] },
+      ]),
+    );
     expect(parseSavedRoutes(stored)).toEqual([a]);
     expect(parseSavedRoutes(null)).toEqual([]);
     expect(parseSavedRoutes({})).toEqual([]);
@@ -83,7 +129,11 @@ describe('saved routes (Q-043)', () => {
     const list = await routes();
     const early = savedRouteFrom(twoLeg(list), request, NOW);
     const noon = savedRouteFrom(nonstop(list), request, NOW);
-    const old = savedRouteFrom(nonstop(await routes('2026-10-18', Date.UTC(2026, 9, 17, 12))), { ...request, date: '2026-10-18' }, NOW);
+    const old = savedRouteFrom(
+      nonstop(await routes('2026-10-18', Date.UTC(2026, 9, 17, 12))),
+      { ...request, date: '2026-10-18' },
+      NOW,
+    );
     expect(sortSaved([old, noon, early], NOW).map((r) => r.key)).toEqual([early.key, noon.key, old.key]);
   });
 
@@ -91,7 +141,12 @@ describe('saved routes (Q-043)', () => {
     const a = savedRouteFrom(twoLeg(await routes()), request, NOW);
     const fresh = (await routes()).map((it) => ({ ...it, id: `new-${it.id}` }));
     expect(findSaved(fresh, a)?.id).toBe(twoLeg(fresh).id);
-    expect(findSaved(fresh.filter((it) => it.legs.length === 1), a)).toBeUndefined();
+    expect(
+      findSaved(
+        fresh.filter((it) => it.legs.length === 1),
+        a,
+      ),
+    ).toBeUndefined();
     expect(routeSignature(a.legs)).toBe('AA1234:DFW-ORD+AA88:ORD-LAX');
   });
 
@@ -107,8 +162,16 @@ describe('saved routes (Q-043)', () => {
   it('opens the same flights, from hidden routes if filters hide them, else notes why not', async () => {
     const list = await routes();
     const a = savedRouteFrom(twoLeg(list), request, NOW);
-    expect(reopenOutcome({ results: list, hiddenResults: [] }, a, false)).toEqual({ kind: 'open', id: twoLeg(list).id, hidden: false });
-    expect(reopenOutcome({ results: [], hiddenResults: list }, a, false)).toEqual({ kind: 'open', id: twoLeg(list).id, hidden: true });
+    expect(reopenOutcome({ results: list, hiddenResults: [] }, a, false)).toEqual({
+      kind: 'open',
+      id: twoLeg(list).id,
+      hidden: false,
+    });
+    expect(reopenOutcome({ results: [], hiddenResults: list }, a, false)).toEqual({
+      kind: 'open',
+      id: twoLeg(list).id,
+      hidden: true,
+    });
     expect(reopenOutcome({ results: [nonstop(list)], hiddenResults: [] }, a, false)).toEqual({
       kind: 'note',
       text: 'Your saved flights aren’t in this search anymore. Here’s what’s flying that day.',

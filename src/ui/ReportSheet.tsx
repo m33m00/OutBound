@@ -16,7 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type { Flight } from '@/engine';
 import { afterListText, answerTier, clampReport, departsText, MAX_LISTED, MAX_OPEN } from '@/requests/requests';
-import { forSpeech, TIER_WORD } from '@/search/format';
+import { forSpeech } from '@/search/format';
 import { fonts, minTapTarget, radius, spacing, textStyles, useColors, useColorSchemeName } from '@/theme';
 
 import { Button, PillButton } from './Buttons';
@@ -90,7 +90,7 @@ export function ReportForm({ flight, now, onCancel, onSubmit, focusTitle }: Repo
     setTouched(false);
   }, [flightId]);
   const tier = answerTier({ open, listed });
-  const tierLine = touched ? `${TIER_WORD[tier]} · ${afterListText(open, listed)}` : 'Set the numbers from the board';
+  const tierLine = touched ? afterListText(open, listed) : 'Set the numbers from the board';
   // iOS has no live regions: read the tier once the numbers stop moving.
   useEffect(() => {
     if (!touched) return;
@@ -116,9 +116,13 @@ export function ReportForm({ flight, now, onCancel, onSubmit, focusTitle }: Repo
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="interactive"
         automaticallyAdjustKeyboardInsets>
-        {flight ? <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, { color: c.muted }]}>{departsText(flight, now)}</Text> : null}
+        {flight ? (
+          <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, { color: c.muted }]}>
+            {departsText(flight, now)}
+          </Text>
+        ) : null}
         <NumberField
-          label="Open seats"
+          label="Seats left"
           caption="On the departure board"
           value={open}
           max={MAX_OPEN}
@@ -147,11 +151,14 @@ export function ReportForm({ flight, now, onCancel, onSubmit, focusTitle }: Repo
           {touched ? (
             <>
               <View style={[styles.dot, { backgroundColor: c[TIER_MARK[tier]] }]} />
-              <Text lineBreakStrategyIOS="push-out" style={[textStyles.heading, { color: c[TIER_FG[tier]] }]}>{TIER_WORD[tier]}</Text>
-              <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, styles.after, { color: c.muted }]}>{afterListText(open, listed)}</Text>
+              <Text lineBreakStrategyIOS="push-out" style={[textStyles.heading, { color: c[TIER_FG[tier]] }]}>
+                {afterListText(open, listed)}
+              </Text>
             </>
           ) : (
-            <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, styles.after, { color: c.muted }]}>{tierLine}</Text>
+            <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, styles.after, { color: c.muted }]}>
+              {tierLine}
+            </Text>
           )}
         </View>
         <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>
@@ -159,8 +166,9 @@ export function ReportForm({ flight, now, onCancel, onSubmit, focusTitle }: Repo
         </Text>
         <Button
           label="Submit Report"
+          haptic="success"
           disabled={!touched}
-          accessibilityHint={touched ? undefined : 'Set open seats or nonrevs listed first'}
+          accessibilityHint={touched ? undefined : 'Set seats left or nonrevs listed first'}
           onPress={() => {
             Keyboard.dismiss();
             onSubmit(open, listed);
@@ -249,8 +257,12 @@ function NumberField({
     <View style={[styles.field, { backgroundColor: c.surface, borderColor: c.line }]}>
       {/* The number box says the label and caption, so VoiceOver skips them here. */}
       <View style={styles.fieldLabel} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-        <Text lineBreakStrategyIOS="push-out" style={[textStyles.heading, { color: c.text }]}>{label}</Text>
-        <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>{caption}</Text>
+        <Text lineBreakStrategyIOS="push-out" style={[textStyles.heading, { color: c.text }]}>
+          {label}
+        </Text>
+        <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>
+          {caption}
+        </Text>
       </View>
       <View style={styles.stepper}>
         {btn(-1)}
@@ -270,7 +282,7 @@ function NumberField({
           maxFontSizeMultiplier={BIG_TEXT_MAX_SCALE}
           accessibilityLabel={forSpeech(`${label}, ${caption}`)}
           accessibilityHint={`Type a number from 0 to ${max}`}
-          style={[styles.bignum, { fontFamily: fonts.displayHeavy, color: c.text, borderColor: c.line }]}
+          style={[styles.bignum, { fontFamily: fonts.mono, color: c.text, borderColor: c.line }]}
         />
         {btn(1)}
       </View>
@@ -303,6 +315,8 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 40,
     lineHeight: 46,
+    letterSpacing: -1,
+    fontVariant: ['tabular-nums'],
     borderRadius: radius.sm,
     borderWidth: StyleSheet.hairlineWidth,
     paddingVertical: 0,

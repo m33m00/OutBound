@@ -25,8 +25,20 @@ const keyLaxB = weatherKey({ station: 'LAX', fromMs: T0 + 3 * H, toMs: T0 + 5 * 
 const keyDfwC = weatherKey({ station: 'DFW', fromMs: T0 + H, toMs: T0 + 3 * H });
 
 const wx = (key: string, over: Partial<StationWeather> = {}): StationWeather => ({
-  key, station: key.split(':')[0], icao: 'K', windowStart: 0, windowEnd: 0, state: 'ok', level: 'none', reasons: [],
-  observedAt: null, issuedAt: null, asOf: '2026-10-15T10:00:00.000Z', raw: null, stale: false, ...over,
+  key,
+  station: key.split(':')[0],
+  icao: 'K',
+  windowStart: 0,
+  windowEnd: 0,
+  state: 'ok',
+  level: 'none',
+  reasons: [],
+  observedAt: null,
+  issuedAt: null,
+  asOf: '2026-10-15T10:00:00.000Z',
+  raw: null,
+  stale: false,
+  ...over,
 });
 const faaOf = (status: Record<string, { level: 'caution' | 'likelyDelays'; text?: string }>, over = {}) => ({
   status: Object.fromEntries(
@@ -45,31 +57,37 @@ const noWx = { results: {}, stale: false };
 describe('routeImpacts (pure)', () => {
   it('evaluates connections and destination only, never the origin', () => {
     const r = routeImpacts([A, B], faaOf({ BNA: { level: 'likelyDelays', text: 'stop' } }), noWx);
-    expect(r.byId.A.stations.map((s) => [s.code, s.role])).toEqual([['DFW', 'connection'], ['LAX', 'destination']]);
+    expect(r.byId.A.stations.map((s) => [s.code, s.role])).toEqual([
+      ['DFW', 'connection'],
+      ['LAX', 'destination'],
+    ]);
     expect(r.byId.B.stations.map((s) => [s.code, s.role])).toEqual([['LAX', 'destination']]);
     expect(r.byId.A.level).toBe('none');
     expect(r.airports).toEqual([]);
   });
 
   it('worst of FAA and weather per station; row level is the worst station', () => {
-    const r = routeImpacts(
-      [A],
-      faaOf({ DFW: { level: 'caution' } }),
-      { results: { [keyDfwConn]: wx(keyDfwConn, { level: 'likelyDelays', reasons: ['Thunderstorms'] }) }, stale: false },
-    );
+    const r = routeImpacts([A], faaOf({ DFW: { level: 'caution' } }), {
+      results: { [keyDfwConn]: wx(keyDfwConn, { level: 'likelyDelays', reasons: ['Thunderstorms'] }) },
+      stale: false,
+    });
     const dfw = r.byId.A.stations[0];
     expect(dfw.level).toBe('likelyDelays');
-    expect(dfw.reasons.map((x) => [x.source, x.text])).toEqual([['Weather', 'Thunderstorms'], ['FAA', 'Delays up to 30 min']]);
+    expect(dfw.reasons.map((x) => [x.source, x.text])).toEqual([
+      ['Weather', 'Thunderstorms'],
+      ['FAA', 'Delays up to 30m'],
+    ]);
     expect(r.byId.A.stations[1].level).toBe('none');
     expect(r.byId.A.level).toBe('likelyDelays');
   });
 
   it('asOf is the oldest input; stale if any input is stale', () => {
-    const r = routeImpacts(
-      [A],
-      faaOf({ DFW: { level: 'caution' } }),
-      { results: { [keyLaxA]: wx(keyLaxA, { level: 'caution', reasons: ['Low clouds'], asOf: '2026-10-15T09:00:00.000Z', stale: true }) }, stale: true },
-    );
+    const r = routeImpacts([A], faaOf({ DFW: { level: 'caution' } }), {
+      results: {
+        [keyLaxA]: wx(keyLaxA, { level: 'caution', reasons: ['Low clouds'], asOf: '2026-10-15T09:00:00.000Z', stale: true }),
+      },
+      stale: true,
+    });
     expect(r.byId.A.stations[0].asOf).toBe('2026-10-15T11:00:00.000Z');
     expect(r.byId.A.stations[0].stale).toBe(false);
     expect(r.byId.A.stations[1].asOf).toBe('2026-10-15T09:00:00.000Z');
@@ -84,30 +102,38 @@ describe('routeImpacts (pure)', () => {
   });
 
   it('noForecast, noData and missing results contribute nothing', () => {
-    const r = routeImpacts(
-      [A],
-      noFaa,
-      { results: { [keyDfwConn]: wx(keyDfwConn, { state: 'noForecast', level: 'none', asOf: null }), [keyLaxA]: wx(keyLaxA, { state: 'noData', asOf: null }) }, stale: false },
-    );
-    expect(r.byId.A.stations.map((s) => [s.level, s.noForecast])).toEqual([['none', true], ['none', false]]);
+    const r = routeImpacts([A], noFaa, {
+      results: {
+        [keyDfwConn]: wx(keyDfwConn, { state: 'noForecast', level: 'none', asOf: null }),
+        [keyLaxA]: wx(keyLaxA, { state: 'noData', asOf: null }),
+      },
+      stale: false,
+    });
+    expect(r.byId.A.stations.map((s) => [s.level, s.noForecast])).toEqual([
+      ['none', true],
+      ['none', false],
+    ]);
     expect(r.byId.A.level).toBe('none');
     expect(r.byId.A.asOf).toBeNull();
   });
 
   it('noForecast station still shows an FAA impact', () => {
     const r = routeImpacts([A], faaOf({ DFW: { level: 'likelyDelays', text: 'stop' } }), {
-      results: { [keyDfwConn]: wx(keyDfwConn, { state: 'noForecast', asOf: null }) }, stale: false,
+      results: { [keyDfwConn]: wx(keyDfwConn, { state: 'noForecast', asOf: null }) },
+      stale: false,
     });
     expect(r.byId.A.stations[0]).toMatchObject({ level: 'likelyDelays', noForecast: true });
   });
 
   it('airports are deduped across routes and keep the worst level', () => {
-    const r = routeImpacts(
-      [A, B, C],
-      faaOf({ DFW: { level: 'caution' }, LAX: { level: 'caution' } }),
-      { results: { [keyLaxB]: wx(keyLaxB, { level: 'likelyDelays', reasons: ['Thunderstorms'] }), [keyDfwC]: wx(keyDfwC) }, stale: false },
-    );
-    expect(r.airports).toEqual([{ code: 'DFW', level: 'caution' }, { code: 'LAX', level: 'likelyDelays' }]);
+    const r = routeImpacts([A, B, C], faaOf({ DFW: { level: 'caution' }, LAX: { level: 'caution' } }), {
+      results: { [keyLaxB]: wx(keyLaxB, { level: 'likelyDelays', reasons: ['Thunderstorms'] }), [keyDfwC]: wx(keyDfwC) },
+      stale: false,
+    });
+    expect(r.airports).toEqual([
+      { code: 'DFW', level: 'caution' },
+      { code: 'LAX', level: 'likelyDelays' },
+    ]);
     expect(r.byId.A.stations[1].level).toBe('caution'); // LAX in A's window has only the FAA caution
     expect(r.byId.B.level).toBe('likelyDelays');
   });
@@ -157,11 +183,14 @@ describe('useRouteImpacts', () => {
 
   it('makes one batched call per source and returns impacts', async () => {
     const faaF = json({
-      fetchedAt: 'x', asOf: '2026-10-15T11:00:00.000Z', stale: false,
+      fetchedAt: 'x',
+      asOf: '2026-10-15T11:00:00.000Z',
+      stale: false,
       airports: { DFW: { code: 'DFW', level: 'likelyDelays', events: [{ type: 'groundStop', reason: 'x' }] } },
     });
     const wxF = json({
-      fetchedAt: 'x', stale: false,
+      fetchedAt: 'x',
+      stale: false,
       results: [wx(keyLaxA, { level: 'caution', reasons: ['Low clouds'] })],
     });
     const seen = await render([A, B], { config, faaFetcher: faaF, weatherFetcher: wxF, refreshMs: 0 });
@@ -171,12 +200,19 @@ describe('useRouteImpacts', () => {
     const last = seen[seen.length - 1];
     expect(last.state).toBe('ready');
     expect(last.byId.A.level).toBe('likelyDelays');
-    expect(last.airports).toEqual([{ code: 'DFW', level: 'likelyDelays' }, { code: 'LAX', level: 'caution' }]);
+    expect(last.airports).toEqual([
+      { code: 'DFW', level: 'likelyDelays' },
+      { code: 'LAX', level: 'caution' },
+    ]);
     expect(seen[0].state).toBe('loading');
   });
 
   it('both fetches failing -> error', async () => {
-    const bad = jest.fn<ReturnType<Fetcher>, Parameters<Fetcher>>(async () => ({ ok: false, status: 500, json: async () => ({}) }));
+    const bad = jest.fn<ReturnType<Fetcher>, Parameters<Fetcher>>(async () => ({
+      ok: false,
+      status: 500,
+      json: async () => ({}),
+    }));
     const seen = await render([A], { config, faaFetcher: bad, weatherFetcher: bad, refreshMs: 0 });
     expect(seen[seen.length - 1].state).toBe('error');
   });

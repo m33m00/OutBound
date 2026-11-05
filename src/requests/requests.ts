@@ -9,8 +9,9 @@
  * this screen only.
  */
 import { addDays, AIRPORTS, localDate, tierForNetSeats, zonedToUtc, type Flight, type SeatTier } from '@/engine';
+import { sampleAircraft } from '@/engine/aircraft';
 import { SAMPLE_SCHEDULE } from '@/engine/sample/schedule';
-import { formatAge, formatTime, TIER_WORD } from '@/search/format';
+import { formatAge, formatTime, seatPair } from '@/search/format';
 
 /** Max open asks per person (DECISIONS.md). */
 export const MAX_OPEN_REQUESTS = 5;
@@ -56,7 +57,17 @@ export function sampleFlightsBetween(now: number, startMs: number, endMs: number
       const departUtc = zonedToUtc(date, time, AIRPORTS[from].tz);
       if (departUtc < now + startMs || departUtc > now + endMs) continue;
       const id = `${airline}${flightNumber}-${date}-${from}`;
-      out.push({ id, airline, flightNumber, from, to, departUtc, arriveUtc: departUtc + blockMin * 60_000 });
+      const aircraft = sampleAircraft(airline, flightNumber, blockMin);
+      out.push({
+        id,
+        airline,
+        flightNumber,
+        from,
+        to,
+        departUtc,
+        arriveUtc: departUtc + blockMin * 60_000,
+        ...(aircraft ? { aircraft } : {}),
+      });
     }
   }
   return out.sort((a, b) => a.departUtc - b.departUtc);
@@ -113,8 +124,9 @@ export function departsText(f: Flight, now: number, atUtc: number = f.departUtc)
   return `Departs ${day}${formatTime(atUtc, tz)}`;
 }
 
-/** "Likely · 18 open · 3 listed": tier word with both numbers (Q-065). */
-export const answerText = (a: LoadAnswer) => `${TIER_WORD[answerTier(a)]} · ${a.open} open · ${a.listed} listed`;
+/** "18 seats · 3 listed": both numbers (Q-065; no "open", round 138; no tier word, round 140). */
+// Just the numbers since round 140; the color says the rest.
+export const answerText = (a: LoadAnswer) => seatPair(a.open, a.listed);
 
 /** Second line of a request row. */
 export function requestDetail(r: LoadRequest, now: number): string {
@@ -224,8 +236,17 @@ export function reportClosedNote(w: ReportWindow): string | null {
 /** One flight on one day, whichever list it came from. */
 export const flightKey = (f: Flight) => `${f.airline}${f.flightNumber}-${f.from}-${f.departUtc}`;
 
-/** Asks still waiting for an answer. */
-export const openRequestCount = (mine: LoadRequest[]) => mine.filter((r) => !r.answer).length;
+/** Asks still waiting for an answer; with `now`, only for flights that haven't left (they drop off at departure). */
+export const openRequestCount = (mine: LoadRequest[], now?: number) =>
+  mine.filter((r) => !r.answer && (now == null || r.flight.departUtc > now)).length;
+
+/**
+ * Your asks for flights still to leave, soonest first (John, 2026-11-02: nothing that departed or
+ * arrived). Each drops off at its departure time; `gone` drops one live data says already left.
+ */
+export function upcomingRequests(mine: LoadRequest[], now: number, gone?: (r: LoadRequest) => boolean): LoadRequest[] {
+  return mine.filter((r) => r.flight.departUtc > now && !gone?.(r)).sort((a, b) => a.flight.departUtc - b.flight.departUtc);
+}
 
 /** ready: can ask; asked: already asked about this flight; full: 5 asks still waiting; left: the flight has gone. */
 export type AskState = 'ready' | 'asked' | 'full' | 'left';
@@ -234,7 +255,7 @@ export function askState(mine: LoadRequest[], flight: Flight, now: number): AskS
   const key = flightKey(flight);
   if (mine.some((r) => flightKey(r.flight) === key)) return 'asked';
   if (flight.departUtc <= now) return 'left';
-  if (openRequestCount(mine) >= MAX_OPEN_REQUESTS) return 'full';
+  if (openRequestCount(mine, now) >= MAX_OPEN_REQUESTS) return 'full';
   return 'ready';
 }
 

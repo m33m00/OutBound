@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
-import { formatDuration } from '@/search/format';
+import { formatDuration, forSpeech } from '@/search/format';
 import { minTapTarget, radius, spacing, textStyles, useColors } from '@/theme';
 import { pressStyle } from './press';
 import { withTick } from './haptics';
@@ -35,17 +35,22 @@ export function Stepper({
         disabled={disabled}
         accessibilityRole="button"
         accessibilityLabel={`${sign > 0 ? 'Increase' : 'Decrease'}: ${label}`}
-        accessibilityValue={{ text: format(value) }}
+        accessibilityValue={{ text: forSpeech(format(value)) }}
         accessibilityState={{ disabled }}
         style={pressStyle([styles.stepBtn, { backgroundColor: c.surface2, opacity: disabled ? 0.4 : 1 }])}>
-        <Text lineBreakStrategyIOS="push-out" style={[textStyles.heading, { color: c.text }]}>{sign > 0 ? '+' : '−'}</Text>
+        <Text lineBreakStrategyIOS="push-out" style={[textStyles.heading, { color: c.text }]}>
+          {sign > 0 ? '+' : '−'}
+        </Text>
       </Pressable>
     );
   };
   const controls = (
     <>
       {btn(-1)}
-      <Text lineBreakStrategyIOS="push-out" style={[textStyles.bodyStrong, styles.value, { color: c.text }]} accessibilityLiveRegion="polite">
+      <Text
+        lineBreakStrategyIOS="push-out"
+        style={[textStyles.bodyStrong, styles.value, { color: c.text }]}
+        accessibilityLiveRegion="polite">
         {format(value)}
       </Text>
       {btn(1)}
@@ -55,16 +60,24 @@ export function Stepper({
     return (
       <View style={styles.stack}>
         {/* The buttons already say the label, so VoiceOver skips it here. */}
-        <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, { color: c.text }]} accessibilityElementsHidden importantForAccessibility="no">
+        <Text
+          lineBreakStrategyIOS="push-out"
+          style={[textStyles.body, { color: c.text }]}
+          accessibilityElementsHidden
+          importantForAccessibility="no">
           {label}
         </Text>
-        <View style={[styles.row, styles.end]} testID="stepper-row">{controls}</View>
+        <View style={[styles.row, styles.end]} testID="stepper-row">
+          {controls}
+        </View>
       </View>
     );
   }
   return (
     <View style={styles.row} testID="stepper-row">
-      <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, styles.label, { color: c.text }]}>{label}</Text>
+      <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, styles.label, { color: c.text }]}>
+        {label}
+      </Text>
       {controls}
     </View>
   );

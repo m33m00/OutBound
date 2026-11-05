@@ -19,7 +19,7 @@ The globe. Screens import only from `@/map` (`GlobeMap` and its types), never Sk
 - `RouteLegend.tsx`: line legend shown while a route is selected.
 - `marks.ts`: pure mark logic (item 9): which marks show, label placement (flip/nudge), chevron geometry, mark colors, accessibility summary.
 - `legTimes.ts`: pure leg flight-time labels (item 15): H:MM format, spoken text, t = 0.5 anchor, placement/visibility, colors.
-- `markFonts.ts`: loads Big Shoulders Display (600/700) and Manrope 600 (leg time pills) into Skia from the bundled theme font files.
+- `markFonts.ts`: loads Geist (map labels) and Geist Mono (leg time pills) into Skia from the bundled theme font files.
 - `marksLayer.ts`: records marks and labels as a Skia Picture.
 - `useReduceMotion.ts`: live Reduce Motion setting (plus `known`, so the spin-in waits for it).
 - `sun.ts`: pure sun position, night/dusk alpha curve, sun keying and sky throttle (item 11).
@@ -48,7 +48,7 @@ While a finger is moving or the camera is flying, the base layer is recorded in 
 ## Leg flight times (item 15)
 - Selected route only (Q-041): one pill per leg with both `departUtc` and `arriveUtc`, text "H:MM" (`2:35`, `0:45`, `10:05`), rounded to the nearest minute. Overview lines, ghosts and no selection: none.
 - At t = 0.5 of the leg's lifted arc (chevrons: 0.2 / 0.66 / 0.88). Hidden when that point is on the far side, outside the visible area (insets, 66pt button margin), or when centered, nudged up (-20) and down (+20) all overlap an IATA label, mark, status badge, the legend (measured) or another pill. IATA labels always win.
-- Manrope 600 12/16, `muted` text on a `surface` 85% pill (h 16, pad 5, fully rounded). No tier colors. No animation.
+- Geist Mono 500 12/16, `muted` text on a `surface` 85% pill (h 16, pad 5, fully rounded). No tier colors. No animation.
 - Not interactive: not part of hit testing; the 28pt line hit area and tap-empty-to-deselect are unchanged.
 - Hidden while a flight preview plays, back when it ends.
 - Accessibility: the selected-route value adds "DFW to ORD, flight time 2 hours 35 minutes." per leg.

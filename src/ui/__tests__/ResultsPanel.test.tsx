@@ -5,7 +5,7 @@ import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import { createMemoryProvider, searchItineraries, zonedToUtc } from '@/engine';
 import { dateChips } from '@/search/dates';
 
-import { areaLines, isHardPullDown, nowLineIndex, ResultsPanel, routeEnds } from '../ResultsPanel';
+import { areaLines, isHardPullDown, nowLineIndex, ResultsPanel, routeEnds, routeFlip } from '../ResultsPanel';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -44,11 +44,24 @@ describe('ResultsPanel', () => {
     const state = { status: 'done' as const, request, results: list, hiddenCount: 0, hiddenResults: [], searchedAt: NOW };
     const raf = jest.spyOn(globalThis, 'requestAnimationFrame').mockImplementation(() => 0);
     await act(async () => {
-      r = create(<ResultsPanel state={state} selectedId={list[0].id} now={NOW} onSelect={jest.fn()} onBack={jest.fn()} onRetry={jest.fn()} />);
+      r = create(
+        <ResultsPanel
+          state={state}
+          selectedId={list[0].id}
+          now={NOW}
+          onSelect={jest.fn()}
+          onBack={jest.fn()}
+          onRetry={jest.fn()}
+        />,
+      );
     });
     const view = r!.root.findAll((n) => n.props.testID === 'route-view' && typeof n.type === 'string')[0];
     const header = view.find((n) => n.props.accessibilityRole === 'header' && typeof n.type === 'string');
-    expect(header.props.children).toBe('BNA → LAX');
+    // The title is two airport pills, the route's own ends (round 132).
+    const codes = header
+      .findAll((n) => n.props.testID === 'route-end' && typeof n.type === 'string')
+      .map((n) => n.findAll((x) => typeof x.props.children === 'string')[0].props.children);
+    expect(codes).toEqual(['BNA', 'LAX']);
     expect(header.props.accessibilityLabel).toBe('BNA to LAX');
     expect(routeEnds({ legs: [] })).toBeNull();
     raf.mockRestore();
@@ -130,9 +143,21 @@ describe('ResultsPanel', () => {
     expect(r!.root.findAll((n) => n.props.testID === 'card' && typeof n.type === 'string').length).toBe(1);
     // "2 of 2": next is off at the end, previous picks the first route.
     expect(r!.root.findAll((n) => n.props.accessibilityLabel === 'Route 2 of 2').length).toBeGreaterThan(0);
-    const arrow = (dir: string) => r!.root.findAll((n) => n.props.testID === `route-${dir}` && n.props.accessibilityRole === 'button')[0];
-    expect(arrow('next').props.accessibilityState).toEqual({ disabled: true });
-    act(() => arrow('prev').props.onPress());
+    // A dot per route under the market, the current one with nothing to press; tapping the other picks it
+    // (round 134). Small arrows either side of the dots say it pages (round 136, John: "Hard for a user
+    // to know they can swipe"): next is off at the end, previous picks the first route.
+    const arrow = (id: string) => r!.root.findAll((n) => n.props.testID === id && typeof n.props.disabled === 'boolean')[0];
+    expect(arrow('route-next').props.disabled).toBe(true);
+    expect(arrow('route-prev').props.disabled).toBe(false);
+    act(() => arrow('route-prev').props.onPress());
+    expect(onSelect).toHaveBeenCalledWith(list[0].id);
+    onSelect.mockClear();
+    const dots = r!.root.findAll(
+      (n) => n.props.testID === 'route-dot' && typeof n.type !== 'string' && n.parent?.props.testID !== 'route-dot',
+    );
+    expect(dots).toHaveLength(2);
+    expect(dots[1].props.onPress).toBeUndefined();
+    act(() => dots[0].props.onPress());
     expect(onSelect).toHaveBeenCalledWith(list[0].id);
     // VoiceOver flips routes by swiping on the count; nothing past the end.
     const count = r!.root.findAll((n) => n.props.testID === 'route-count' && n.props.accessibilityRole === 'adjustable')[0];
@@ -141,6 +166,14 @@ describe('ResultsPanel', () => {
     expect(onSelect).not.toHaveBeenCalled();
     act(() => count.props.onAccessibilityAction({ nativeEvent: { actionName: 'decrement' } }));
     expect(onSelect).toHaveBeenCalledWith(list[0].id);
+    // The market is two airport pills with a plane between (round 132, John); back is a bare chevron (round 122).
+    const title = r!.root.findAll((n) => n.props.testID === 'route-title' && typeof n.type === 'string')[0];
+    expect(title.props.accessibilityRole).toBe('header');
+    const ends = title.findAll((n) => n.props.testID === 'route-end' && typeof n.type === 'string');
+    expect(ends).toHaveLength(2);
+    const bar = r!.root.findAll((n) => n.props.testID === 'route-bar' && typeof n.type === 'string')[0];
+    const barTexts = bar.findAll((n) => typeof n.props.children === 'string').map((n) => n.props.children);
+    expect(barTexts).not.toContain('Routes');
     // Back to all routes closes the view.
     const back = r!.root.findAll((n) => n.props.accessibilityLabel === 'Back to all routes' && n.props.onPress)[0];
     act(() => back.props.onPress());
@@ -235,7 +268,7 @@ describe('ResultsPanel day and filters (Q-057)', () => {
       );
     });
     const summary = r!.root.findAll((n) => n.props.testID === 'results-summary' && typeof n.type === 'string')[0];
-    expect(summary.props.children).toBe('Tue, Oct 20 · 2 routes');
+    expect(summary.props.children).toBe('Tue, Oct 20\n2 routes');
     expect(r!.root.findAll((n) => n.props.testID === 'day-next').length).toBe(0);
   });
 });
@@ -253,12 +286,33 @@ describe('Now line', () => {
     const state = { status: 'done' as const, request, results: list, hiddenCount: 0, hiddenResults: [], searchedAt: NOW };
     await act(async () => {
       r = create(
-        <ResultsPanel state={state} selectedId={null} now={between} onSelect={jest.fn()} onBack={jest.fn()} onRetry={jest.fn()} />,
+        <ResultsPanel
+          state={state}
+          selectedId={null}
+          now={between}
+          onSelect={jest.fn()}
+          onBack={jest.fn()}
+          onRetry={jest.fn()}
+        />,
       );
     });
     const lines = r!.root.findAll((n) => n.props.testID === 'now-line' && typeof n.type === 'string');
     expect(lines.length).toBe(1);
     expect(lines[0].props.accessibilityLabel).toBe('Now, 12:00 PM. Flights below haven’t left yet.');
+    // Another day's flights get no Now line, even with some routes above (John, 2026-11-02).
+    await act(async () => {
+      r!.update(
+        <ResultsPanel
+          state={{ ...state, request: { ...request, date: '2026-10-21' } }}
+          selectedId={null}
+          now={between}
+          onSelect={jest.fn()}
+          onBack={jest.fn()}
+          onRetry={jest.fn()}
+        />,
+      );
+    });
+    expect(r!.root.findAll((n) => n.props.testID === 'now-line' && typeof n.type === 'string')).toHaveLength(0);
   });
 
   it('opens the list at the Now line, with routes that left a scroll up (John, 2026-10-30)', async () => {
@@ -272,10 +326,26 @@ describe('Now line', () => {
     const state = { status: 'done' as const, request, results: list, hiddenCount: 0, hiddenResults: [], searchedAt: NOW };
     await act(async () => {
       r = create(
-        <ResultsPanel state={state} selectedId={null} now={between} onSelect={jest.fn()} onBack={jest.fn()} onRetry={jest.fn()} />,
+        <ResultsPanel
+          state={state}
+          selectedId={null}
+          now={between}
+          onSelect={jest.fn()}
+          onBack={jest.fn()}
+          onRetry={jest.fn()}
+        />,
       );
     });
     expect(scroll).toHaveBeenCalledWith({ index: 1, viewPosition: 0, animated: false });
+    // Rows measure in and the panel grows: it pins to the Now line again until you scroll (John, 2026-11-02).
+    const flat = r!.root.findByType(FlatList);
+    scroll.mockClear();
+    act(() => flat.props.onContentSizeChange(390, 1200));
+    expect(scroll).toHaveBeenCalledWith({ index: 1, viewPosition: 0, animated: false });
+    scroll.mockClear();
+    act(() => flat.props.onScrollBeginDrag());
+    act(() => flat.props.onContentSizeChange(390, 1300));
+    expect(scroll).not.toHaveBeenCalled();
     scroll.mockClear();
     // Nothing has left yet the day before: the list starts at the top as usual.
     await act(async () => {
@@ -291,6 +361,37 @@ describe('Now line', () => {
       );
     });
     expect(scroll).not.toHaveBeenCalled();
+    scroll.mockRestore();
+    raf.mockRestore();
+  });
+
+  it('coming back from a route lands on the Now line again, even after a scroll (John, 2026-11-02)', async () => {
+    const { request, list } = await results();
+    const between = zonedToUtc('2026-10-20', '12:00', 'America/Chicago');
+    const raf = jest.spyOn(globalThis, 'requestAnimationFrame').mockImplementation((cb) => {
+      cb(0);
+      return 0;
+    });
+    const scroll = jest.spyOn(FlatList.prototype, 'scrollToIndex').mockImplementation(() => {});
+    const state = { status: 'done' as const, request, results: list, hiddenCount: 0, hiddenResults: [], searchedAt: NOW };
+    const panel = (selectedId: string | null) => (
+      <ResultsPanel
+        state={state}
+        selectedId={selectedId}
+        now={between}
+        onSelect={jest.fn()}
+        onBack={jest.fn()}
+        onRetry={jest.fn()}
+      />
+    );
+    await act(async () => {
+      r = create(panel(null));
+    });
+    act(() => r!.root.findByType(FlatList).props.onScrollBeginDrag());
+    await act(async () => r!.update(panel(list[0].id)));
+    scroll.mockClear();
+    await act(async () => r!.update(panel(null)));
+    expect(scroll).toHaveBeenCalledWith({ index: 1, viewPosition: 0, animated: false });
     scroll.mockRestore();
     raf.mockRestore();
   });
@@ -331,14 +432,14 @@ describe('results bar at big text sizes', () => {
     expect(title.props.numberOfLines).toBe(2);
   });
 
-  it('saves a picked route to My Trips and shows when it is saved (Q-043)', async () => {
+  it('saves a route from its ticket in the list, not the opened route, and shows when it is saved (Q-043, round 151)', async () => {
     const { request, list } = await results();
     const state = { status: 'done' as const, request, results: list, hiddenCount: 0, hiddenResults: [], searchedAt: NOW };
     const onToggleSave = jest.fn();
-    const panel = (saved: boolean) => (
+    const panel = (saved: boolean, selectedId: string | null = null) => (
       <ResultsPanel
         state={state}
-        selectedId={list[0].id}
+        selectedId={selectedId}
         now={NOW}
         onSelect={jest.fn()}
         onBack={jest.fn()}
@@ -350,23 +451,32 @@ describe('results bar at big text sizes', () => {
     await act(async () => {
       r = create(panel(false));
     });
-    const button = () => r!.root.findAll((n) => n.props.testID === 'save-route' && n.props.accessibilityRole === 'button')[0];
+    const buttons = () =>
+      r!.root.findAll(
+        (n) => n.props.testID === 'save-route' && n.props.accessibilityRole === 'button' && typeof n.type === 'string',
+      );
+    const button = () => buttons()[0];
+    // One on each ticket, top right (round 151, John: "We already have the space to put a save icon on the top right").
+    expect(buttons()).toHaveLength(list.length);
     expect(button().props.accessibilityLabel).toBe('Save Route');
-    // Top right of the route card, not crowding the header (John, 2026-11-01).
-    const slot = r!.root.findAll((n) => n.props.testID === 'route-card-action' && typeof n.type === 'string');
-    expect(slot).toHaveLength(1);
-    expect(slot[0].findAll((n) => n.props.testID === 'save-route').length).toBeGreaterThan(0);
-    const header = r!.root.findAll((n) => n.props.testID === 'route-view' && typeof n.type === 'string')[0].children[0];
-    expect(typeof header !== 'string' && header.findAll((n) => n.props.testID === 'save-route').length).toBe(0);
+    const slots = r!.root.findAll((n) => n.props.testID === 'row-action' && typeof n.type === 'string');
+    expect(slots).toHaveLength(list.length);
     expect(button().props.accessibilityHint).toBe('Keeps it in My Trips');
     const announce = jest.spyOn(AccessibilityInfo, 'announceForAccessibility').mockImplementation(() => {});
-    act(() => button().props.onPress());
+    const pressable = r!.root.findAll((n) => n.props.testID === 'save-route' && typeof n.props.onPress === 'function')[0];
+    act(() => pressable.props.onPress());
     expect(onToggleSave).toHaveBeenCalledWith(list[0]);
     expect(announce).toHaveBeenCalledWith('Saved to My Trips');
     announce.mockRestore();
     await act(async () => r!.update(panel(true)));
     expect(button().props.accessibilityLabel).toBe('Saved to My Trips');
     expect(button().props.accessibilityHint).toBe('Removes it from My Trips');
+    // The opened route has no Save and no swipe of its own any more.
+    await act(async () => r!.update(panel(false, list[0].id)));
+    const card = r!.root.findAll((n) => n.props.testID === 'route-card' && typeof n.type === 'string')[0];
+    expect(card.findAll((n) => n.props.testID === 'save-route')).toHaveLength(0);
+    expect(card.findAll((n) => n.props.testID === 'route-card-action')).toHaveLength(0);
+    expect(card.findAll((n) => n.props.testID === 'tear-swipe')).toHaveLength(0);
   });
 
   it('has no Save Route without a handler, and shows a note under the count', async () => {
@@ -407,9 +517,18 @@ describe('results bar at big text sizes', () => {
         />,
       );
     });
-    const marks = r!.root.findAll((n) => n.props.testID === 'row-saved' && typeof n.type === 'string');
-    expect(marks.length).toBe(1);
-    const rows = r!.root.findAll((n) => n.props.accessibilityRole === 'button' && typeof n.type === 'string' && n.props.accessibilityHint?.startsWith('Opens the route card'));
+    // The ticket's own bookmark shows it filled, so the small mark by the route line isn't needed (round 151).
+    expect(r!.root.findAll((n) => n.props.testID === 'row-saved')).toHaveLength(0);
+    const saves = r!.root.findAll(
+      (n) => n.props.testID === 'save-route' && n.props.accessibilityRole === 'button' && typeof n.type === 'string',
+    );
+    expect(saves.map((n) => n.props.accessibilityLabel)).toEqual(['Save Route', 'Saved to My Trips']);
+    const rows = r!.root.findAll(
+      (n) =>
+        n.props.accessibilityRole === 'button' &&
+        typeof n.type === 'string' &&
+        n.props.accessibilityHint?.startsWith('Opens the route card'),
+    );
     const saidSaved = rows.map((n) => (n.props.accessibilityLabel as string).endsWith('Saved to My Trips'));
     expect(saidSaved).toEqual([false, true]);
   });
@@ -418,6 +537,8 @@ describe('results bar at big text sizes', () => {
     const { request, list } = await results();
     const state = { status: 'done' as const, request, results: list, hiddenCount: 0, hiddenResults: [], searchedAt: NOW };
     const send = jest.spyOn(AccessibilityInfo, 'sendAccessibilityEvent').mockImplementation(() => {});
+    // React Native's test setup makes this a shared mock, so drop calls from earlier tests.
+    send.mockClear();
     const raf = jest.spyOn(globalThis, 'requestAnimationFrame').mockImplementation((cb: FrameRequestCallback) => {
       cb(0);
       return 0;
@@ -446,5 +567,33 @@ describe('hard pull down (round 58)', () => {
     expect(isHardPullDown({ contentOffset: { x: 0, y: 0 }, velocity: { x: 0, y: -1.5 } })).toBe(true);
     expect(isHardPullDown({ contentOffset: { x: 0, y: 120 }, velocity: { x: 0, y: -3 } })).toBe(false);
     expect(isHardPullDown({ contentOffset: { x: 0, y: 0 }, velocity: { x: 0, y: 2 } })).toBe(false);
+  });
+});
+
+describe('flipping routes by swiping the route bar (round 134, John)', () => {
+  it('flips to the next route on a swipe left and back on a swipe right, far or fast enough', () => {
+    expect(routeFlip(-60, 0)).toBe(1);
+    expect(routeFlip(60, 0)).toBe(-1);
+    expect(routeFlip(-20, -800)).toBe(1);
+    expect(routeFlip(20, 800)).toBe(-1);
+    expect(routeFlip(-20, -100)).toBe(0);
+    expect(routeFlip(-80, 0, true)).toBe(0);
+  });
+});
+
+describe('the route card shows once that it slides sideways (round 136, John)', () => {
+  it('plays the first time only, and remembers that on the phone', async () => {
+    const { takeFlipHint, resetFlipHintForTests, FLIP_HINT_KEY } = jest.requireActual(
+      '../flipHint',
+    ) as typeof import('../flipHint');
+    const AsyncStorage = require('@react-native-async-storage/async-storage');
+    await AsyncStorage.clear();
+    resetFlipHintForTests();
+    expect(await takeFlipHint()).toBe(true);
+    expect(await takeFlipHint()).toBe(false);
+    expect(await AsyncStorage.getItem(FLIP_HINT_KEY)).toBe('1');
+    // A fresh start reads it back and stays quiet.
+    resetFlipHintForTests();
+    expect(await takeFlipHint()).toBe(false);
   });
 });

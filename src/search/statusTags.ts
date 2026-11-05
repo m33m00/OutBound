@@ -41,6 +41,9 @@ export interface LegStatusView {
   /** New departure for a delay (UTC ms); null otherwise. */
   newUtc: number | null;
   newText: string | null;
+  /** Expected arrival when live data moves it 5+ min (actual, estimated, or the departure delay carried
+   * through); absent otherwise and for a canceled or diverted leg (John, 2026-11-02). */
+  arrival?: { newUtc: number; newText: string };
 }
 
 export interface ConnectionRisk {
@@ -185,6 +188,13 @@ function expectedDeparture(f: Flight, status: FlightStatus | undefined, view: Le
 /** Under this, an arrival counts as on time (matches "On time" in the flight sheet). */
 const ARRIVAL_SHIFT_MIN = 5;
 
+function withLegArrival(f: Flight, status: FlightStatus | undefined, view: LegStatusView): LegStatusView {
+  if (!status || view.tag?.kind === 'canceled') return view;
+  const expected = expectedArrival(f, status, view);
+  if (!Number.isFinite(expected) || Math.abs(expected - f.arriveUtc) < ARRIVAL_SHIFT_MIN * MIN) return view;
+  return { ...view, arrival: { newUtc: expected, newText: formatTime(expected, tz(f.to)) } };
+}
+
 const GONE: ReadonlySet<LegTagKind> = new Set(['departed', 'arrived']);
 const BROKEN: ReadonlySet<LegTagKind> = new Set(['canceled']);
 
@@ -196,7 +206,8 @@ const BROKEN: ReadonlySet<LegTagKind> = new Set(['canceled']);
  */
 export function rowStatus(it: Itinerary, byKey: Readonly<Record<string, FlightStatus>>, mins: ConnectionMins): RowStatus {
   const statuses = it.legs.map((l) => byKey[flightLookupKey(legLookup(l.flight))]);
-  const legs = it.legs.map((l, i) => legStatus(l.flight, statuses[i]));
+  // Each leg's own new arrival, so its box can show both times (John, 2026-11-02).
+  const legs = it.legs.map((l, i) => withLegArrival(l.flight, statuses[i], legStatus(l.flight, statuses[i])));
   const risks: ConnectionRisk[] = [];
   it.connections.forEach((c, i) => {
     const inbound = legs[i];
@@ -269,4 +280,35 @@ export function resultsBanner(out: { results: readonly unknown[]; hiddenCount: n
   if (!out.hiddenCount) return { kind: 'noFlights', text: 'No Flights Found on Selected Date' };
   const n = out.hiddenCount;
   return { kind: 'hidden', text: `${n} ${n === 1 ? 'route' : 'routes'} hidden by your filters`, action: 'Show Them', count: n };
+}
+
+const brokenLeg = (v: LegStatusView | undefined) => v?.tag?.kind === 'canceled' || v?.tag?.kind === 'diverted';
+
+/**
+ * Minutes on the ground at connection `i` with the times the card shows: the inbound's new arrival
+ * and the onward flight's new departure when they moved (John, 2026-11-02: "connection time should
+ * adjust to a delay"). Negative when the onward flight now leaves before the inbound lands. The
+ * schedule when there's no live data, or a leg on either side is canceled or diverted.
+ */
+export function liveLayoverMin(it: Itinerary, status: RowStatus | undefined, i: number): number {
+  const c = it.connections[i];
+  const inbound = it.legs[i]?.flight;
+  const onward = it.legs[i + 1]?.flight;
+  if (!c || !inbound || !onward) return NaN;
+  const inV = status?.legs[i];
+  const outV = status?.legs[i + 1];
+  if (!status || brokenLeg(inV) || brokenLeg(outV)) return c.layoverMin;
+  const arrive = inV?.arrival?.newUtc ?? inbound.arriveUtc;
+  const depart = outV?.newUtc ?? onward.departUtc;
+  return Math.round((depart - arrive) / MIN);
+}
+
+/** The whole trip's minutes with the times shown (new first departure to new last arrival); the schedule otherwise. */
+export function liveTotalMin(it: Itinerary, status: RowStatus | undefined): number {
+  const first = it.legs[0]?.flight;
+  const last = it.legs[it.legs.length - 1]?.flight;
+  if (!status || !first || !last || status.canceled || status.arrivalPending) return it.totalMin;
+  const depart = status.legs[0]?.newUtc ?? first.departUtc;
+  const arrive = status.arrival?.newUtc ?? last.arriveUtc;
+  return Math.round((arrive - depart) / MIN);
 }

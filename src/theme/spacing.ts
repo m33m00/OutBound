@@ -8,9 +8,10 @@ export const spacing = {
   rowX: 12,
 } as const;
 
+/** Soft, rounder corners for the Clean look (round 120): leg boxes and chips 12, cards 18, sheets 26. */
 export const radius = {
   sm: 12,
-  md: 14,
+  md: 18,
   lg: 26,
 } as const;
 

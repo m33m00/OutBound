@@ -3,34 +3,50 @@ import type { TextStyle } from 'react-native';
 import { fonts } from './fonts';
 
 /**
- * Type scale, confirmed in DECISIONS.md (Q-004; from the Ice Mix prototype).
- * Display styles are always uppercase (Big Shoulders rule in DECISIONS.md).
+ * Type scale for the Clean look (round 120, John switched to look B on 2026-11-03), closest to
+ * Flighty: Geist throughout, bold and tightly tracked for titles, Geist Mono for times so digits
+ * line up row to row. Reading sizes stay where round 112 had them (body 14, heading 16).
  */
 export const textStyles = {
-  /** Screen titles. Prototype Ice Mix h2: 29px, uppercase, .02em tracking. */
+  /** Screen and sheet titles. */
   title: {
-    fontFamily: fonts.display,
-    fontSize: 29,
-    lineHeight: 32,
-    letterSpacing: 0.58,
-    textTransform: 'uppercase',
+    fontFamily: fonts.title,
+    fontSize: 30,
+    lineHeight: 34,
+    letterSpacing: -1,
   },
-  /** Big numbers: times, seat counts. Prototype uses weight 800. */
-  number: {
-    fontFamily: fonts.displayHeavy,
+  /** A route's name in a bar ("DFW → LGA"). */
+  routeTitle: {
+    fontFamily: fonts.title,
     fontSize: 22,
     lineHeight: 26,
+    letterSpacing: -0.6,
   },
-  /** Wordmark in the top bar. Prototype .brand b: 17px, 700, .16em tracking. */
-  wordmark: {
+  /** An airport code shown big. */
+  code: {
     fontFamily: fonts.display,
+    fontSize: 24,
+    lineHeight: 28,
+    letterSpacing: -0.5,
+  },
+  /** Big numbers: times, seat counts. */
+  number: {
+    fontFamily: fonts.mono,
+    fontSize: 20,
+    lineHeight: 26,
+    letterSpacing: -0.6,
+    fontVariant: ['tabular-nums'],
+  },
+  /** Wordmark in the top bar: the brand face, wide tracking. */
+  wordmark: {
+    fontFamily: fonts.brand,
     fontSize: 17,
     lineHeight: 20,
     letterSpacing: 2.72,
     textTransform: 'uppercase',
   },
   heading: {
-    fontFamily: fonts.bodyBold,
+    fontFamily: fonts.bodySemiBold,
     fontSize: 16,
     lineHeight: 22,
   },
@@ -46,7 +62,7 @@ export const textStyles = {
   },
   /** Buttons use Title Case copy (Find Routes, Get Home). */
   button: {
-    fontFamily: fonts.bodyBold,
+    fontFamily: fonts.bodySemiBold,
     fontSize: 15,
     lineHeight: 20,
   },
@@ -54,6 +70,12 @@ export const textStyles = {
     fontFamily: fonts.bodyMedium,
     fontSize: 12,
     lineHeight: 16,
+  },
+  /** A small label beside or above a value ("Arrives"): quiet, sentence case. */
+  eyebrow: {
+    fontFamily: fonts.bodyMedium,
+    fontSize: 13,
+    lineHeight: 18,
   },
 } as const satisfies Record<string, TextStyle>;
 

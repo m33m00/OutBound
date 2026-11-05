@@ -52,7 +52,7 @@ export interface SearchPanelProps {
   banner?: ReactNode;
   /** "At DAL? Report a load" (round 33), under the search buttons: searching stays the main job. */
   airportCard?: ReactNode;
-  /** How tall the panel is down to the bottom of Find Routes, so the drawer can open that far. */
+  /** How tall the whole panel is, so the drawer can open that far with nothing under the fold. */
   onFitHeight?: (height: number) => void;
 }
 
@@ -182,13 +182,13 @@ export function AirportCard({
           {label}
         </Text>
         <Animated.View style={slide} testID="card-code">
-          <Text lineBreakStrategyIOS="push-out" style={[textStyles.title, { color: code ? c.text : c.faint }]}>
+          <Text lineBreakStrategyIOS="push-out" style={[textStyles.code, styles.bigCode, { color: code ? c.text : c.faint }]}>
             {code ?? '—'}
           </Text>
         </Animated.View>
         {whole ? (
           <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.text }]}>
-            {area.airports.join(' · ')}
+            {area.airports.join(', ')}
           </Text>
         ) : null}
         {/* Two lines so long names ("Dallas/Fort Worth International") show at big text sizes. */}
@@ -283,7 +283,13 @@ export function SearchPanel(p: SearchPanelProps) {
   };
   const { hx, hw, litAt } = useChipHighlight(slider ? boxes[selectedKey] : undefined, boxes, reduce);
   return (
-    <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
+    <ScrollView
+      contentContainerStyle={styles.body}
+      keyboardShouldPersistTaps="handled"
+      testID="search-scroll"
+      // The drawer's middle stop opens down to the bottom of everything here, the "At DAL? Report a
+      // load" card included, so nothing on the home page needs a scroll (John, 2026-11-02).
+      onContentSizeChange={p.onFitHeight ? (_w, h) => p.onFitHeight!(Math.ceil(h)) : undefined}>
       {p.locationCard}
       {/* At the top, not under Find Routes: away from home the Get Home row pushed it out of view. */}
       {p.banner}
@@ -420,7 +426,7 @@ export function SearchPanel(p: SearchPanelProps) {
           once To is already home, so there's one main button (John, 2026-11-01). */}
       {p.onGetHome ? (
         <Button
-          label={p.homeName ? `Get Home · ${p.homeName}` : 'Get Home'}
+          label={p.homeName ? `Get Home to ${p.homeName}` : 'Get Home'}
           icon="house.fill"
           onPress={p.onGetHome}
           accessibilityLabel={`Get Home: find routes to your main home${p.homeName ? `, ${p.homeName}` : ''}`}
@@ -431,16 +437,8 @@ export function SearchPanel(p: SearchPanelProps) {
           From and To are the same airport. Change one to find routes.
         </Text>
       ) : null}
-      {/* The main action sits right under From/To so it's in view at half height; the drawer opens
-          down to here, so Filters and Find Routes are never under the fold (John, 2026-11-01). */}
-      <View
-        style={styles.actions}
-        testID="search-actions"
-        onLayout={
-          p.onFitHeight
-            ? (e) => p.onFitHeight!(Math.ceil(e.nativeEvent.layout.y + e.nativeEvent.layout.height + spacing.page))
-            : undefined
-        }>
+      {/* The main action sits right under From/To (John, 2026-11-01). */}
+      <View style={styles.actions} testID="search-actions">
         <Button
           label={p.filtersChanged ? `Filters (${p.filtersChanged})` : 'Filters'}
           icon="line.3.horizontal.decrease.circle"
@@ -548,6 +546,8 @@ function useChipHighlight(target: ChipBox | undefined, boxes: Record<string, Chi
 }
 
 const styles = StyleSheet.create({
+  // The From and To codes are the hero of the search card, a little bigger than codes elsewhere (round 114).
+  bigCode: { fontSize: 30, lineHeight: 34, letterSpacing: -0.5 },
   chipDate: { alignItems: 'center' },
   chipBack: { position: 'absolute', borderRadius: radius.sm },
   body: { paddingHorizontal: spacing.page, paddingBottom: spacing.page, gap: spacing.section },

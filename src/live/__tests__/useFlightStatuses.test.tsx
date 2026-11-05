@@ -152,7 +152,7 @@ async function render(l: readonly FlightLookup[], opts: UseFlightStatusesOptions
 describe('useFlightStatuses', () => {
   it('no config: deterministic sample statuses, sample true, no network', async () => {
     const f = batchFetcher();
-    const h = await render(lookups(30), { config: null, fetcher: f, now: () => 1_000 });
+    const h = await render(lookups(30), { config: null, fetcher: f, now: () => DEP + 86_400_000 });
     expect(h.get().sample).toBe(true);
     expect(h.get().state).toBe('ready');
     expect(Object.keys(h.get().byKey)).toHaveLength(30);
@@ -160,7 +160,7 @@ describe('useFlightStatuses', () => {
     const states = new Set(Object.values(h.get().byKey).map((s) => s.state));
     expect(states.size).toBeGreaterThanOrEqual(4);
     // same ids -> same statuses
-    const h2 = await render(lookups(30), { config: null, now: () => 5_000 });
+    const h2 = await render(lookups(30), { config: null, now: () => DEP + 86_404_000 });
     for (const k of Object.keys(h.get().byKey)) expect(h2.get().byKey[k].state).toBe(h.get().byKey[k].state);
     expect(sampleFlightStatus(mkLookup(3), 0).state).toBe(sampleFlightStatus(mkLookup(3), 99).state);
   });
@@ -170,7 +170,8 @@ describe('useFlightStatuses', () => {
     const delays = new Set<number | null>();
     const earlyArrivals = new Set<number>();
     for (let i = 0; i < 400; i++) {
-      const s = sampleFlightStatus(mkLookup(i), 0);
+      // A day later, so every flight has had time to leave and land.
+      const s = sampleFlightStatus(mkLookup(i), DEP + 24 * 3_600_000);
       seen[s.state] = s.delayMin;
       if (s.state === 'delayed') delays.add(s.delayMin);
       if (s.state === 'scheduled' && (s.arrival.delayMin ?? 0) < 0) earlyArrivals.add(s.arrival.delayMin!);
@@ -180,6 +181,19 @@ describe('useFlightStatuses', () => {
     expect([...delays].sort((a, b) => a! - b!)).toEqual([10, 25, 50, 80]);
     // Some land early (green), by 8 to 18 minutes.
     expect([...earlyArrivals].sort((a, b) => a - b)).toEqual([-18, -12, -8]);
+  });
+
+  it('sample statuses follow the clock: nothing ahead reads gone, nothing in the air reads arrived', () => {
+    const before = new Set<string>();
+    const midAir = new Set<string>();
+    for (let i = 0; i < 400; i++) {
+      before.add(sampleFlightStatus(mkLookup(i), DEP - 3_600_000).state);
+      // An hour after departure, well before the 150-minute sample arrival.
+      midAir.add(sampleFlightStatus(mkLookup(i), DEP + 3_600_000).state);
+    }
+    expect([...before].sort()).toEqual(['canceled', 'delayed', 'scheduled']);
+    expect(midAir.has('arrived')).toBe(false);
+    expect(midAir.has('departed')).toBe(true);
   });
 
   it("sample arrivals keep the flight's own arrival time when the lookup has it", () => {

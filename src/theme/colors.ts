@@ -10,22 +10,34 @@ export type ColorScheme = 'light' | 'dark';
 export const colors = {
   light: {
     // Surfaces
-    bg: '#f6f8fb',
+    // The Clean look (round 120, John picked look B on 2026-11-03): a pale page, white floating
+    // cards, quiet tinted boxes inside them and one accent: boarding blue since round 139.
+    bg: '#f4f6f9',
     surface: '#ffffff',
-    surface2: '#eef2f7',
+    surface2: '#f3f6fa',
     line: '#dfe5ec',
     line2: '#cbd4de',
+    // A result card's own edge, darker than the lines inside it so each ticket stands apart (round 150, John).
+    cardEdge: '#bfcad6',
 
     // Text
     text: '#101824',
     muted: '#56657a',
     // Darker than the prototype #66758a to meet 4.5:1 (Q-006).
-    faint: '#606f84',
+    faint: '#5f6e83',
 
-    // Primary
-    accent: '#1d3d84',
+    // A card's header panel: the same white as the card in the Clean look.
+    ink: '#ffffff',
+
+    // Primary. The text rule (round 136, John: "What's with the navy colors and we have black text"):
+    // everything you read is `text` (or `muted` for what's secondary); `accent` navy is only for what
+    // you can press (buttons, links, toggles, arrows) and the one marker of where you are.
+    // Boarding blue (round 139, John picked B over the Ice Mix navy #1d3d84): the navy sat at 1.7:1
+    // against the text black, so taps and text read as one color. This blue is 5.8:1 on white and 3.1:1
+    // against the text, so what you can press stands apart. accentSoft is the tint behind secondary buttons.
+    accent: '#1c5fd4',
     onAccent: '#ffffff',
-    accentSoft: '#e7ecf6',
+    accentSoft: '#e6eefc',
 
     // "You" only
     you: '#c46a10',
@@ -78,14 +90,18 @@ export const colors = {
     surface2: '#172231',
     line: '#1f2c3b',
     line2: '#2a3a4d',
+    cardEdge: '#3a4e66',
 
     text: '#e8eef5',
     muted: '#9cadc0',
     faint: '#8d9db0',
 
-    accent: '#9bb8ef',
+    // A card's header panel: the same as the card in the Clean look (round 120).
+    ink: '#111a25',
+
+    accent: '#7aa7ff',
     onAccent: '#0a1530',
-    accentSoft: '#17233b',
+    accentSoft: '#15233f',
 
     you: '#ffb25a',
     youText: '#ffc27a',
@@ -129,3 +145,12 @@ export const colors = {
 
 export type ColorToken = keyof typeof colors.light;
 export type Palette = Record<ColorToken, string>;
+
+/**
+ * Colors for a card's header panel (rounds 117 to 120): the palette with the surfaces moved onto the
+ * panel. Kept as its own palette so a panel can be tinted apart from the page later.
+ */
+export const inkColors: Record<ColorScheme, Palette> = {
+  light: { ...colors.light, bg: colors.light.ink, surface: colors.light.ink },
+  dark: { ...colors.dark, bg: colors.dark.ink, surface: colors.dark.ink, surface2: colors.dark.surface2 },
+};

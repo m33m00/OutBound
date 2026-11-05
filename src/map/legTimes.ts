@@ -2,8 +2,8 @@
  * Leg flight-time labels on the selected route (pure, no Skia, no React).
  * Backlog item 15, DECISIONS.md "Map" (Q-041, John: A).
  *
- * - Selected route only, one label per leg, "H:MM" (no leading zero on
- *   hours) from arriveUtc - departUtc, rounded to the nearest minute.
+ * - Selected route only, one label per leg, "2h 5m" like every other duration in the app
+ *   (John, 2026-11-02 audit; was "2:05"), from arriveUtc - departUtc, rounded to the minute.
  *   Overview lines and ghosts get none; no selection = no labels.
  * - Placed at t = 0.5 of the leg's drawn (lifted) arc; chevrons sit at
  *   0.2 / 0.66 / 0.88. Hidden when that point is on the far side.
@@ -23,7 +23,7 @@ import type { MapInsets, RouteLine } from './types';
 export const LEG_TIME_T = 0.5;
 
 /**
- * Pill style (provisional spec-keeper defaults, DECISIONS.md "Map"): Manrope
+ * Pill style (provisional spec-keeper defaults, DECISIONS.md "Map"): Geist Mono
  * 600 12/16, `muted` text on a `surface` pill at 0.85.
  */
 export const LEG_TIME_PILL = {
@@ -51,12 +51,13 @@ export function legMinutes(departUtc?: number, arriveUtc?: number): number | nul
   return Math.round(ms / MINUTE);
 }
 
-/** "2:35", "0:45", "10:05". */
+/** "2h 35m", "45m", "10h 5m", "1h 0m": the same format as the cards' durations. */
 export function formatLegDuration(minutes: number): string {
   const m = Math.max(0, Math.round(minutes));
   const h = Math.floor(m / 60);
   const mm = m % 60;
-  return `${h}:${mm < 10 ? '0' : ''}${mm}`;
+  if (!h) return `${mm}m`;
+  return `${h}h ${mm}m`;
 }
 
 /** "2 hours 35 minutes", "1 hour", "45 minutes", "1 hour 1 minute". */

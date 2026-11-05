@@ -17,6 +17,10 @@ export interface Airport {
   lat: number;
   /** IANA time zone, e.g. "America/Chicago". */
   tz: string;
+  /** The city it serves ("Dallas"), its state or province ("TX") and country ("US"), for place labels. */
+  city?: string;
+  region?: string;
+  country?: string;
 }
 
 /** One scheduled flight leg. */
@@ -30,6 +34,8 @@ export interface Flight {
   to: string;
   departUtc: number;
   arriveUtc: number;
+  /** Aircraft type as the provider names it ("Boeing 737-800"); shown short via aircraftLabel. Absent when unknown. */
+  aircraft?: string;
 }
 
 /** Seat data source a provider can hold. 'unknown' means none of these. */

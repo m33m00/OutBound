@@ -5,7 +5,7 @@ import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import { outermost, restingStyle } from '@/testing/pressables';
 
 import { PRESSED_OPACITY } from '../press';
-import { PRESS_IN_MS, PRESS_OUT_MS, PRESS_SCALE, ScalePressable } from '../ScalePressable';
+import { PRESS_IN_MS, PRESS_SCALE, PRESS_SPRING, ScalePressable } from '../ScalePressable';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -46,8 +46,12 @@ describe('ScalePressable (John, 2026-11-01: buttons shrink a hair when pressed)'
     act(() => value.setValue(1));
     expect(scale()).toBeCloseTo(PRESS_SCALE, 3);
     expect(restingStyle(btn).opacity).toBeCloseTo(0.5 * PRESSED_OPACITY.fill, 3);
+    const spring = jest.spyOn(Animated, 'spring');
     act(() => btn.props.onPressOut({}));
-    expect(timing.mock.calls[1][1]).toMatchObject({ toValue: 0, duration: PRESS_OUT_MS, useNativeDriver: true });
+    // The release springs back, with only a whisper of overshoot.
+    expect(spring.mock.calls[0][1]).toMatchObject({ toValue: 0, ...PRESS_SPRING, useNativeDriver: true });
+    expect(PRESS_SPRING.bounciness).toBeLessThanOrEqual(6);
+    spring.mockRestore();
     timing.mockRestore();
     expect(PRESS_SCALE).toBeGreaterThanOrEqual(0.95);
   });

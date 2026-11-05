@@ -2,7 +2,17 @@ import { createMemoryProvider, searchItineraries, type Flight, type Itinerary } 
 import { DATE, NOW, flight } from '@/engine/testHelpers';
 import { flightLookupKey, type FlightState, type FlightStatus, type Movement } from '@/live';
 
-import { departedFirst, legLookup, legStatus, resultsBanner, rowStatus, spokenDuration, statusLookups } from '../statusTags';
+import {
+  departedFirst,
+  legLookup,
+  legStatus,
+  liveLayoverMin,
+  liveTotalMin,
+  resultsBanner,
+  rowStatus,
+  spokenDuration,
+  statusLookups,
+} from '../statusTags';
 
 const MIN = 60_000;
 const MINS = { minConnectSameAirlineMin: 60, minConnectSwitchMin: 90 };
@@ -272,5 +282,34 @@ describe('departedFirst (John, 2026-10-30)', () => {
     expect(departedFirst(list, { a: row(false) })).toBe(list);
     expect(departedFirst(list, { a: row(true), b: row(true), c: row(true), d: row(true) })).toBe(list);
     expect(departedFirst(list)).toBe(list);
+  });
+});
+
+describe('liveLayoverMin and liveTotalMin (John, 2026-11-02: connections follow delays)', () => {
+  it('uses the schedule with no live times', async () => {
+    const it = await oneStop();
+    expect(liveLayoverMin(it, undefined, 0)).toBe(70);
+    expect(liveTotalMin(it, undefined)).toBe(it.totalMin);
+  });
+
+  it('a late inbound flight shortens the connection; a late onward flight lengthens it', async () => {
+    const it = await oneStop();
+    expect(liveLayoverMin(it, rowStatus(it, { [keyOf(a)]: status(a, 'delayed', 25) }, MINS), 0)).toBe(45);
+    const onwardLate = rowStatus(it, { [keyOf(b)]: status(b, 'delayed', 30) }, MINS);
+    expect(liveLayoverMin(it, onwardLate, 0)).toBe(100);
+    expect(liveTotalMin(it, onwardLate)).toBe(it.totalMin + 30);
+  });
+
+  it('goes below zero when the onward flight leaves before the inbound one lands', async () => {
+    const it = await oneStop();
+    const s = rowStatus(it, { [keyOf(a)]: status(a, 'delayed', 100) }, MINS);
+    expect(liveLayoverMin(it, s, 0)).toBe(-30);
+  });
+
+  it('keeps the schedule when a leg is canceled', async () => {
+    const it = await oneStop();
+    const s = rowStatus(it, { [keyOf(a)]: status(a, 'canceled') }, MINS);
+    expect(liveLayoverMin(it, s, 0)).toBe(70);
+    expect(liveTotalMin(it, s)).toBe(it.totalMin);
   });
 });

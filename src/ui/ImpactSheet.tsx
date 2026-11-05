@@ -9,6 +9,7 @@ import { radius, spacing, textStyles, useColors } from '@/theme';
 import { Icon } from './Icon';
 import { IMPACT_ICON } from './ImpactBadge';
 import { SheetHeader } from './SheetHeader';
+import { Divided } from './MetaLine';
 
 export interface ImpactSheetProps {
   visible: boolean;
@@ -30,11 +31,15 @@ export function ImpactSheet({ visible, title, subtitle, impact, now, onClose }: 
         <SheetHeader title={title} subtitle={subtitle || undefined} action="Done" onAction={onClose} />
         <ScrollView contentContainerStyle={styles.body}>
           {!impact?.stations.length ? (
-            <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, { color: c.text }]}>No delay or weather data for this route yet.</Text>
+            <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, { color: c.text }]}>
+              No delay or weather data for this route yet.
+            </Text>
           ) : null}
           {/* Worst first, so the airport to worry about is on top; route order otherwise. */}
           {sorted.length > 1 && sorted.some((s, i) => s !== impact?.stations[i]) ? (
-            <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>Worst first</Text>
+            <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>
+              Worst first
+            </Text>
           ) : null}
           {sorted.map((s) => {
             const likely = s.level === 'likelyDelays';
@@ -46,7 +51,7 @@ export function ImpactSheet({ visible, title, subtitle, impact, now, onClose }: 
                 : 'No weather forecast'
               : s.asOf
                 ? 'No known disruption'
-                : 'No data yet';
+                : 'No Estimate';
             // The forecast line under the badge, unless the trailing word already says it.
             const forecastLine = s.noForecast && (badge || s.asOf);
             // One spoken line per station, in words (design round 26).
@@ -67,7 +72,7 @@ export function ImpactSheet({ visible, title, subtitle, impact, now, onClose }: 
                 accessibilityLabel={spoken}
                 style={[styles.station, { backgroundColor: c.surface, borderColor: c.line }]}>
                 <View style={styles.stationTop}>
-                  <Text style={[textStyles.number, { color: c.text }]}>{s.code}</Text>
+                  <Text style={[textStyles.code, { color: c.text }]}>{s.code}</Text>
                   <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>
                     {s.role === 'destination' ? 'Destination' : 'Connection'}
                   </Text>
@@ -78,21 +83,29 @@ export function ImpactSheet({ visible, title, subtitle, impact, now, onClose }: 
                         size={13}
                         tintColor={likely ? c.likelyDelays : c.caution}
                       />
-                      <Text lineBreakStrategyIOS="push-out" style={[textStyles.bodyStrong, { color: likely ? c.likelyDelays : c.caution }]}>
+                      <Text
+                        lineBreakStrategyIOS="push-out"
+                        style={[textStyles.bodyStrong, { color: likely ? c.likelyDelays : c.caution }]}>
                         {IMPACT_WORD[s.level as 'caution' | 'likelyDelays']}
                       </Text>
                     </View>
                   ) : (
-                    <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, styles.trailing, { color: c.muted }]}>{clearWord}</Text>
+                    <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, styles.trailing, { color: c.muted }]}>
+                      {clearWord}
+                    </Text>
                   )}
                 </View>
                 {s.reasons.map((r) => (
                   <Text key={`${r.source}-${r.text}`} style={[textStyles.body, { color: c.text }]}>
-                    {r.text} <Text style={{ color: c.muted }}>· {r.source === 'FAA' ? 'FAA' : 'Weather'}</Text>
+                    {r.text}
+                    <Divided text=" · " />
+                    <Text style={{ color: c.muted }}>{r.source === 'FAA' ? 'FAA' : 'Weather'}</Text>
                   </Text>
                 ))}
                 {forecastLine ? (
-                  <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>No weather forecast for this airport.</Text>
+                  <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>
+                    No weather forecast for this airport.
+                  </Text>
                 ) : null}
                 {s.asOf ? (
                   <View style={styles.ageLine}>
@@ -101,9 +114,14 @@ export function ImpactSheet({ visible, title, subtitle, impact, now, onClose }: 
                         <Icon name="clock" size={13} tintColor={c.text} fallback={null} />
                       </View>
                     ) : null}
-                    <Text style={[s.stale ? textStyles.bodyStrong : textStyles.small, styles.ageText, { color: s.stale ? c.text : c.muted }]}>
+                    <Text
+                      style={[
+                        s.stale ? textStyles.bodyStrong : textStyles.small,
+                        styles.ageText,
+                        { color: s.stale ? c.text : c.muted },
+                      ]}>
                       Updated {formatAge(Date.parse(s.asOf), now)}
-                      {s.stale ? ' · may be out of date' : ''}
+                      {s.stale ? ', may be out of date' : ''}
                     </Text>
                   </View>
                 ) : null}

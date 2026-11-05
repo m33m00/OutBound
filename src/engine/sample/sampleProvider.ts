@@ -1,3 +1,4 @@
+import { sampleAircraft } from '../aircraft';
 import { AIRPORTS } from '../airports';
 import { createMemoryProvider } from '../memoryProvider';
 import { addDays, zonedToUtc } from '../time';
@@ -26,7 +27,17 @@ export function createSampleProvider(startDate: string, days = 8, now = Date.now
     for (const [airline, flightNumber, from, to, time, blockMin] of SAMPLE_SCHEDULE) {
       const departUtc = zonedToUtc(date, time, AIRPORTS[from].tz);
       const id = `${airline}${flightNumber}-${date}-${from}`;
-      flights.push({ id, airline, flightNumber, from, to, departUtc, arriveUtc: departUtc + blockMin * 60_000 });
+      const aircraft = sampleAircraft(airline, flightNumber, blockMin);
+      flights.push({
+        id,
+        airline,
+        flightNumber,
+        from,
+        to,
+        departUtc,
+        arriveUtc: departUtc + blockMin * 60_000,
+        ...(aircraft ? { aircraft } : {}),
+      });
       const h = hash(id);
       const source = SOURCES[h % SOURCES.length];
       if (source) {

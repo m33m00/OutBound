@@ -20,12 +20,14 @@ export interface AirportPickerProps {
   /** Quick picks above the full list (design round 3). */
   nearest?: string | null;
   homes?: readonly { code: string; main: boolean }[];
+  /** Airports not offered at all: the other end's area (round 138, John). */
+  exclude?: readonly string[];
 }
 
-export function AirportPicker({ visible, title, onPick, onClose, current, nearest, homes }: AirportPickerProps) {
+export function AirportPicker({ visible, title, onPick, onClose, current, nearest, homes, exclude }: AirportPickerProps) {
   const c = useColors();
   const [query, setQuery] = useState('');
-  const sections = pickerSections(query, { nearest, homes });
+  const sections = pickerSections(query, { nearest, homes, exclude });
   const empty = sections.every((s) => s.data.length === 0);
   // Same tick as every other pick (design round 10).
   const pick = (code: string) => {
@@ -51,14 +53,16 @@ export function AirportPicker({ visible, title, onPick, onClose, current, neares
         accessibilityState={{ selected: on }}
         accessibilityLabel={[airport.code, airport.name, tag].filter(Boolean).join(', ')}
         style={pressStyle([styles.item, { borderColor: c.line }])}>
-        <Text style={[textStyles.number, styles.code, { color: c.text }]}>{airport.code}</Text>
+        <Text style={[textStyles.code, styles.code, { color: c.text }]}>{airport.code}</Text>
         <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, styles.name, { color: c.muted }]} numberOfLines={2}>
           {airport.name}
         </Text>
         {tag ? (
           // Amber = "you" (DECISIONS.md): your homes and where you are.
           <View style={[styles.tag, { backgroundColor: c.youBg }]}>
-            <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.youText }]}>{tag}</Text>
+            <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.youText }]}>
+              {tag}
+            </Text>
           </View>
         ) : null}
         {on ? (
@@ -104,9 +108,7 @@ export function AirportPicker({ visible, title, onPick, onClose, current, neares
           renderItem={renderItem}
           renderSectionHeader={({ section }) =>
             section.title ? (
-              <Text
-                style={[textStyles.small, styles.sectionTitle, { color: c.muted }]}
-                accessibilityRole="header">
+              <Text style={[textStyles.small, styles.sectionTitle, { color: c.muted }]} accessibilityRole="header">
                 {section.title.toUpperCase()}
               </Text>
             ) : null

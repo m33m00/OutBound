@@ -6,6 +6,7 @@ import type { LoadAnswer } from '@/requests/requests';
 
 import { AtAirportCard } from '../AtAirportCard';
 import { DeparturesSheet } from '../DeparturesSheet';
+import { lineTexts } from '@/testing/lineTexts';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -24,7 +25,9 @@ describe('at-airport card and departures (round 33)', () => {
   let r: ReactTestRenderer | undefined;
   afterEach(() => act(() => r?.unmount()));
   const texts = () =>
-    r!.root.findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string').map((n) => n.props.children as string);
+    r!.root
+      .findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string')
+      .map((n) => n.props.children as string);
 
   it('card asks if you are at the airport and opens the board; no button with no departures', async () => {
     const onReport = jest.fn();
@@ -61,12 +64,16 @@ describe('at-airport card and departures (round 33)', () => {
     expect(rows).toHaveLength(2);
     expect(rows[1].props.accessibilityLabel).toMatch(/^Departed /);
     // Departed shows in words too, not only as a muted time.
-    expect(texts().some((t) => t.startsWith('Departed · '))).toBe(true);
+    expect(lineTexts(r!.root).some((t) => t.startsWith('Departed | '))).toBe(true);
     act(() => rows[0].props.onPress());
     expect(texts()).toContain('Report Load');
-    const box = r!.root.find((n) => n.props.accessibilityLabel === 'Open seats, On the departure board' && n.props.onChangeText);
+    const box = r!.root.find((n) => n.props.accessibilityLabel === 'Seats left, On the departure board' && n.props.onChangeText);
     act(() => box.props.onChangeText('9'));
-    act(() => r!.root.find((n) => typeof n.type !== 'string' && n.props.accessibilityLabel === 'Submit Report' && n.props.onPress).props.onPress());
+    act(() =>
+      r!.root
+        .find((n) => typeof n.type !== 'string' && n.props.accessibilityLabel === 'Submit Report' && n.props.onPress)
+        .props.onPress(),
+    );
     expect(onReport).toHaveBeenCalledWith(props.flights[0], 9, 0);
     act(() => r!.update(<DeparturesSheet {...props} />));
     const row = r!.root.findAll((n) => n.props.testID === 'departure-row' && n.props.onPress)[0];
@@ -76,7 +83,9 @@ describe('at-airport card and departures (round 33)', () => {
 
   it('an empty board says so', async () => {
     await act(async () => {
-      r = create(<DeparturesSheet code="DAL" flights={[]} now={NOW} reportFor={() => null} onReport={jest.fn()} onClose={jest.fn()} />);
+      r = create(
+        <DeparturesSheet code="DAL" flights={[]} now={NOW} reportFor={() => null} onReport={jest.fn()} onClose={jest.fn()} />,
+      );
     });
     expect(texts()).toContain('No more departures from DAL in the next 5 hours.');
   });

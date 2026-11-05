@@ -1,12 +1,28 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { forSpeech } from '@/search/format';
-import { minTapTarget, radius, spacing, textStyles, useColors } from '@/theme';
+import {
+  elevation,
+  InkContext,
+  inkColors,
+  minTapTarget,
+  radius,
+  spacing,
+  textStyles,
+  useColors,
+  useColorSchemeName,
+} from '@/theme';
 import { savedRouteFlights, savedRouteTitle, savedRouteWhen, type SavedRoute } from '@/trips/savedRoutes';
 
+import { aircraftLabel } from '@/engine';
+
 import { Icon } from './Icon';
+import { MetaLine } from './MetaLine';
+import { MiniRoute } from './MiniRoute';
 import { pressStyle } from './press';
+import { ScalePressable } from './ScalePressable';
 import { StatusTag } from './StatusTag';
+import { TicketTear } from './TicketTear';
 
 export interface SavedRouteCardProps {
   route: SavedRoute;
@@ -27,35 +43,66 @@ export interface SavedRouteCardProps {
  */
 export function SavedRouteCard({ route, past, now, onOpen, onRemove }: SavedRouteCardProps) {
   const c = useColors();
+  const scheme = useColorSchemeName();
   const title = savedRouteTitle(route);
   const when = savedRouteWhen(route, now);
   const flights = savedRouteFlights(route);
   const shortWhen = when.split(' · ')[0];
   const pastNote = 'Day passed. Opens today’s search.';
+  const ink = inkColors[scheme];
   return (
-    <View style={[styles.card, { backgroundColor: c.surface, borderColor: c.line }]} testID="saved-route">
-      <Pressable
+    // A saved route is a floating card with a subtle boarding pass tear (rounds 120 and 121): the path
+    // and the day up top, a perforation with notches, then the flights in mono.
+    <View
+      style={[styles.card, elevation.card, { backgroundColor: c.surface, borderColor: c.line, shadowColor: c.text }]}
+      testID="saved-route">
+      <ScalePressable
         onPress={onOpen}
+        scaleTo={0.985}
+        pressedOpacity={0.92}
         accessibilityRole="button"
         accessibilityLabel={forSpeech([title, when, `Flights ${flights}`, past ? pastNote : null].filter(Boolean).join('. '))}
-        accessibilityHint={past ? 'Searches today' : 'Searches this day again'}
-        style={pressStyle(styles.main)}>
-        <Text lineBreakStrategyIOS="push-out" style={[textStyles.heading, { color: past ? c.muted : c.text }]}>{title}</Text>
-        <View style={styles.whenLine}>
-          <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, styles.shrink, { color: c.muted }]}>{when}</Text>
-          {past ? <StatusTag label="Passed" tone="gone" /> : null}
+        accessibilityHint={past ? 'Searches today' : 'Searches this day again'}>
+        <InkContext.Provider value>
+          <View style={[styles.stub, { backgroundColor: c.ink }]} testID="saved-route-stub">
+            <Text lineBreakStrategyIOS="push-out" style={[textStyles.routeTitle, { color: past ? ink.muted : ink.text }]}>
+              {title}
+            </Text>
+            <View style={styles.whenLine}>
+              {/* The day and the times set apart by space, not a dot (round 123, John). */}
+              <MetaLine text={when} textStyle={[textStyles.body, { color: ink.muted }]} testID="saved-route-when" />
+              {past ? <StatusTag label="Passed" tone="gone" /> : null}
+            </View>
+          </View>
+        </InkContext.Provider>
+        <TicketTear notch={c.bg} edge={c.line} line={c.line2} />
+        <View style={styles.body}>
+          {/* The same route line as a result card (round 146): each flight under its own leg with its
+              aircraft. No seat colors, since a saved route's seats are read again when you open it. */}
+          <View style={styles.route} testID="saved-route-line">
+            <MiniRoute
+              airports={[route.legs[0].from, ...route.legs.map((l) => l.to)]}
+              dimmed={past}
+              legs={route.legs.map((l) => ({
+                color: c.line2,
+                text: c.muted,
+                label: '',
+                flight: { airline: l.airline, number: l.flightNumber, aircraft: aircraftLabel(l.aircraft) },
+              }))}
+            />
+          </View>
+          <View importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
+            <Icon
+              name="chevron.right"
+              size={13}
+              weight="semibold"
+              tintColor={c.faint}
+              fallback={<Text style={[textStyles.heading, { color: c.faint }]}>›</Text>}
+            />
+          </View>
         </View>
-        <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>{flights}</Text>
-      </Pressable>
-      <View style={styles.chevron} importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
-        <Icon
-          name="chevron.right"
-          size={13}
-          weight="semibold"
-          tintColor={c.faint}
-          fallback={<Text style={[textStyles.heading, { color: c.faint }]}>›</Text>}
-        />
-      </View>
+      </ScalePressable>
+      {/* Its own button, apart from the card, so VoiceOver reaches it alone; it sits on the stub. */}
       <Pressable
         onPress={onRemove}
         accessibilityRole="button"
@@ -66,8 +113,8 @@ export function SavedRouteCard({ route, past, now, onOpen, onRemove }: SavedRout
         <Icon
           name="trash"
           size={18}
-          tintColor={c.muted}
-          fallback={<Text style={[textStyles.small, { color: c.muted }]}>Remove</Text>}
+          tintColor={ink.muted}
+          fallback={<Text style={[textStyles.small, { color: ink.muted }]}>Remove</Text>}
         />
       </Pressable>
     </View>
@@ -76,21 +123,37 @@ export function SavedRouteCard({ route, past, now, onOpen, onRemove }: SavedRout
 
 const styles = StyleSheet.create({
   card: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
     borderRadius: radius.md,
     borderWidth: StyleSheet.hairlineWidth,
   },
-  main: { flex: 1, gap: 2, padding: spacing.page, paddingRight: spacing.group },
+  stub: {
+    gap: 4,
+    paddingTop: spacing.page,
+    paddingBottom: spacing.page,
+    paddingLeft: spacing.page,
+    // Room for the trash button in the stub's top-right corner.
+    paddingRight: minTapTarget + spacing.group,
+    borderTopLeftRadius: radius.md - 1,
+    borderTopRightRadius: radius.md - 1,
+  },
   whenLine: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: 8, rowGap: 4 },
   shrink: { flexShrink: 1 },
-  chevron: { alignSelf: 'center' },
+  body: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.group,
+    paddingTop: 4,
+    paddingBottom: spacing.page - 2,
+    paddingHorizontal: spacing.page,
+  },
+  route: { flex: 1, minWidth: 0 },
   remove: {
+    position: 'absolute',
+    top: spacing.page - (minTapTarget - 28) / 2,
+    right: 4,
     minWidth: minTapTarget,
     minHeight: minTapTarget,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: spacing.page - (minTapTarget - 22) / 2,
-    marginRight: 4,
   },
 });

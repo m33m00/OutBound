@@ -34,6 +34,8 @@ export const MATERIAL: Partial<Record<SFSymbol, keyof typeof MaterialIcons.glyph
   bookmark: 'bookmark-border',
   'bookmark.fill': 'bookmark',
   trash: 'delete-outline',
+  'carseat.right.fill': 'airline-seat-recline-normal',
+  'person.fill': 'person',
 };
 
 export interface IconProps {
@@ -51,5 +53,13 @@ export function Icon({ name, size = 24, tintColor, weight, fallback = null }: Ic
   }
   const material = MATERIAL[name];
   // Material glyphs draw a little small next to SF Symbols at the same size.
-  return material ? <MaterialIcons name={material} size={Math.round(size * 1.1)} color={typeof tintColor === 'number' ? undefined : (tintColor ?? undefined)} /> : <>{fallback}</>;
+  return material ? (
+    <MaterialIcons
+      name={material}
+      size={Math.round(size * 1.1)}
+      color={typeof tintColor === 'number' ? undefined : (tintColor ?? undefined)}
+    />
+  ) : (
+    <>{fallback}</>
+  );
 }

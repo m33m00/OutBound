@@ -205,19 +205,19 @@ describe('legend and speech', () => {
         tier: 'wide',
         source: 'reported',
         dashed: false,
-        label: 'Easy (Reported)',
-        accessibilityLabel: 'Easy, reported, solid line',
+        label: '50+ seats (Reported)',
+        accessibilityLabel: '50+ seats, reported, solid line',
       },
       {
         key: 'tight:estimate',
         tier: 'tight',
         source: 'estimate',
         dashed: true,
-        label: 'Long\u00a0shot (Estimate)',
-        accessibilityLabel: 'Long\u00a0shot, estimate, dashed line',
+        label: '1 to 5 seats (Estimate)',
+        accessibilityLabel: '1 to 5 seats, estimate, dashed line',
       },
     ]);
-    expect(TIER_LABEL.wide).toBe('Easy');
+    expect(TIER_LABEL.wide).toBe('50+ seats');
   });
 
   it('lists only combinations present, deduped, reported before estimate', () => {
@@ -227,7 +227,7 @@ describe('legend and speech', () => {
       L('ORD', 'ATL', 'good', 'reported'),
       L('ATL', 'LGA', 'good', 'estimate'),
     );
-    expect(legendEntries(r).map((e) => e.label)).toEqual(['Likely (Reported)', 'Likely (Estimate)']);
+    expect(legendEntries(r).map((e) => e.label)).toEqual(['15 to 49 seats (Reported)', '15 to 49 seats (Estimate)']);
   });
 
   it('draws typical and unknown sources in neutral gray, dashed, with no tier word for typical', () => {
@@ -244,15 +244,15 @@ describe('legend and speech', () => {
     ]);
     const unk = route('u', L('DFW', 'LGA', 'okay', 'unknown'));
     const [row] = legendEntries(unk);
-    expect(row).toMatchObject({ tier: 'unknown', dashed: true, label: 'Unknown (No data)' });
-    expect(row.accessibilityLabel).toBe('Unknown, no data, dashed line');
+    expect(row).toMatchObject({ tier: 'unknown', dashed: true, label: 'No seat info (No data)' });
+    expect(row.accessibilityLabel).toBe('No seat info, no data, dashed line');
   });
 
   it('keeps a reported unknown-tier leg solid gray, separate from dashed gray rows', () => {
     const mixed = route('m', L('DFW', 'ORD', 'unknown', 'reported'), L('ORD', 'LGA', 'good', 'typical'));
     const rows = legendEntries(mixed);
     expect(rows.map((e) => [e.label, e.tier, e.dashed])).toEqual([
-      ['Unknown (Reported)', 'unknown', false],
+      ['No seat info (Reported)', 'unknown', false],
       ['Typical load', 'unknown', true],
     ]);
   });

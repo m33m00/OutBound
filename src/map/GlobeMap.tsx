@@ -43,7 +43,6 @@ import { RouteLegend } from './RouteLegend';
 import { recordRouteLayer, type RouteLayer } from './routeLayer';
 import { RoutePulses } from './RoutePulses';
 import { HomeRipple, PreviewArc } from './HomeMotion';
-import { SWAY, swayOffset } from './homeMotionTiming';
 import { drawnRoutes, nextSelection, routeSpokenName } from './routeModel';
 import { recordBaseLayer, recordRimLayer } from './staticLayer';
 import { canvasLayerOrder, RADAR, radarKey, radarSummary, type CanvasLayerName } from './radar';
@@ -163,24 +162,12 @@ export function GlobeMap({
     clearTimeout(driftTimer.current);
     driftTimer.current = null;
   }, []);
-  // Idle sway (homeMotionTiming.ts): the wait before it starts, and its frame loop.
-  const swayTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const swayFrame = useRef<number | null>(null);
-  const [swayEpoch, setSwayEpoch] = useState(0);
-  const stopSway = useCallback(() => {
-    if (swayTimer.current != null) clearTimeout(swayTimer.current);
-    if (swayFrame.current != null) cancelAnimationFrame(swayFrame.current);
-    swayTimer.current = null;
-    swayFrame.current = null;
-  }, []);
   useEffect(
     () => () => {
       if (frameRef.current != null) cancelAnimationFrame(frameRef.current);
       if (flightRef.current != null) cancelAnimationFrame(flightRef.current);
       if (coastRef.current != null) cancelAnimationFrame(coastRef.current);
       if (driftTimer.current != null) clearTimeout(driftTimer.current);
-      if (swayTimer.current != null) clearTimeout(swayTimer.current);
-      if (swayFrame.current != null) cancelAnimationFrame(swayFrame.current);
     },
     [],
   );
@@ -237,7 +224,6 @@ export function GlobeMap({
     // no coasting or pending drift from before.
     stopCoast();
     cancelDrift();
-    stopSway();
 
     // First camera: launch spin-in (once per app launch, item 11).
     if (!cameraRef.current) {
@@ -273,35 +259,10 @@ export function GlobeMap({
     } else {
       flyTo(next, plan.durationMs, plan.spin);
     }
-  }, [targetKey, viewport, reduceKnown, flyTo, stopFlight, stopCoast, cancelDrift, stopSway]);
+  }, [targetKey, viewport, reduceKnown, flyTo, stopFlight, stopCoast, cancelDrift]);
 
-  // Idle sway (John, 2026-11-01): on the home globe with nothing drawn, once it has been left
-  // alone a few seconds, it turns gently east and west of where it sits. Any touch, a new
-  // target, a route or Reduce Motion stops it where it is, with no jump.
-  const swayAllowed = homeMotion && !reduceMotion && reduceKnown && routes.length === 0 && selectedId == null;
-  const hasCamera = camera != null;
-  useEffect(() => {
-    stopSway();
-    if (!swayAllowed || !hasCamera || moving || flying) return;
-    swayTimer.current = setTimeout(() => {
-      swayTimer.current = null;
-      const base = cameraRef.current;
-      if (!base) return;
-      const t0 = performance.now();
-      let last = 0;
-      const step = (now: number) => {
-        if (now - last >= SWAY.frameMs) {
-          last = now;
-          const next = { ...base, center: [base.center[0] + swayOffset(now - t0), base.center[1]] as LonLat };
-          cameraRef.current = next;
-          setCamera(next);
-        }
-        swayFrame.current = requestAnimationFrame(step);
-      };
-      swayFrame.current = requestAnimationFrame(step);
-    }, SWAY.startAfterMs);
-    return stopSway;
-  }, [swayAllowed, hasCamera, moving, flying, targetKey, viewport, swayEpoch, stopSway]);
+  // No idle sway: the globe stays still until you move it (John, 2026-11-02, removed after round 98's
+  // toned-down version).
 
   // After a pinch (or any release under Reduce Motion), once the globe has
   // been still for a while, glide it slowly back home; never with a route
@@ -453,15 +414,31 @@ export function GlobeMap({
     [statusKey, marks, selectedRoute],
   );
   const statusSpoken = useMemo(() => statusSummary(JSON.parse(statusKey)), [statusKey]);
+  // What the key explains: the marks drawn now and the weather badges on the picked route (round 137).
+  const legendMarks = useMemo(() => [...new Set(marks.map((m) => m.kind))], [marks]);
+  const legendBadges = useMemo(() => {
+    if (!selectedRoute) return [];
+    const codes = new Set(selectedRoute.legs.flatMap((l) => [l.fromCode, l.toCode]));
+    const levels = (JSON.parse(statusKey) as NonNullable<typeof airportStatus>)
+      .filter((s) => codes.has(s.code))
+      .map((s) => s.level);
+    return [...new Set(levels)];
+  }, [statusKey, selectedRoute]);
   const statusColorSet = useMemo(() => statusColors(palette), [palette]);
   // Leg flight-time pills (item 15): selected route only, kept off the
   // legend (measured below).
   const legTimeFont = useLegTimeFont();
   const legTimeColorSet = useMemo(() => legTimeColors(palette), [palette]);
   const [legendBox, setLegendBox] = useState<Box | null>(null);
+  // The key starts folded on each new route; opening it lays over the map
+  // without reframing, so only the folded chip's height is reserved.
+  const [legendOpen, setLegendOpen] = useState(false);
+  useEffect(() => setLegendOpen(false), [selectedId]);
+  const legendOpenRef = useRef(legendOpen);
+  legendOpenRef.current = legendOpen;
   const onLegendLayout = useCallback((e: LayoutChangeEvent) => {
     const { x, y, width: w, height: h } = e.nativeEvent.layout;
-    setLegendHeight(Math.round(h));
+    if (!legendOpenRef.current) setLegendHeight(Math.round(h));
     setLegendBox((prev) =>
       prev && prev.x0 === x && prev.y0 === y && prev.x1 === x + w && prev.y1 === y + h
         ? prev
@@ -583,10 +560,7 @@ export function GlobeMap({
     if (flightTargetRef.current?.spin) stopFlight(true);
     stopCoast();
     cancelDrift();
-    // Any touch stops the idle sway at once and starts its wait over (John, 2026-11-01).
-    stopSway();
-    setSwayEpoch((n) => n + 1);
-  }, [stopFlight, stopCoast, cancelDrift, stopSway]);
+  }, [stopFlight, stopCoast, cancelDrift]);
   const touchRef = useRef(onTouchDown);
   useEffect(() => {
     touchRef.current = onTouchDown;
@@ -768,7 +742,7 @@ export function GlobeMap({
                   return (
                     <Group key={name}>
                       {previewRuns ? (
-                        <PreviewArc runs={previewRuns} pairKey={previewKey} color={markColorSet.accent} animate={!reduceMotion} />
+                        <PreviewArc runs={previewRuns} pairKey={previewKey} color={markColorSet.ink} animate={!reduceMotion} />
                       ) : null}
                       {ripple ? <HomeRipple x={ripple.x} y={ripple.y} r={ripple.r} color={markColorSet.you} /> : null}
                       <Picture picture={picture} />
@@ -793,9 +767,15 @@ export function GlobeMap({
       {legendShown ? (
         <View
           onLayout={onLegendLayout}
-          pointerEvents="none"
+          pointerEvents="box-none"
           style={[styles.legend, { left: normInsets.left + LEGEND_GAP, top: normInsets.top + LEGEND_GAP }]}>
-          <RouteLegend route={selectedRoute!} />
+          <RouteLegend
+            route={selectedRoute!}
+            marks={legendMarks}
+            badges={legendBadges}
+            open={legendOpen}
+            onToggle={setLegendOpen}
+          />
         </View>
       ) : null}
     </GestureHandlerRootView>

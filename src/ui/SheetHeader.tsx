@@ -6,6 +6,7 @@ import { spacing, textStyles, useColors } from '@/theme';
 import { PillButton } from './Buttons';
 
 import { useFocusOnMount } from './focusOnMount';
+import { MetaLine } from './MetaLine';
 
 /** Titles stop growing here so long words don't break mid-word. */
 export const TITLE_MAX_SCALE = 1.6;
@@ -33,16 +34,19 @@ export function SheetHeader({ title, subtitle, action, onAction, focusTitle = fa
   return (
     <View style={[styles.header, stacked && styles.stacked]}>
       <View style={[styles.title, stacked && styles.titleStacked]}>
-        <Text ref={titleRef} style={[textStyles.title, { color: c.text }]}
+        <Text
+          ref={titleRef}
+          style={[textStyles.title, { color: c.text }]}
           accessibilityRole="header"
           maxFontSizeMultiplier={TITLE_MAX_SCALE}>
           {title}
         </Text>
         {/* "DAL → PHX → LAX" is read "DAL to PHX to LAX". */}
         {subtitle ? (
-          <Text lineBreakStrategyIOS="push-out" style={[textStyles.bodyStrong, { color: c.muted }]} accessibilityLabel={forSpeech(subtitle)}>
-            {subtitle}
-          </Text>
+          // Items set apart by space, not dots (round 123, John); read as one line.
+          <View accessible accessibilityLabel={forSpeech(subtitle)} testID="sheet-subtitle">
+            <MetaLine text={subtitle} textStyle={[textStyles.bodyStrong, { color: c.muted }]} />
+          </View>
         ) : null}
       </View>
       {/* A real button (round 79): Done filled since it finishes, Cancel soft and lighter. */}

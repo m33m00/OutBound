@@ -11,9 +11,9 @@ describe('routeFrameTarget (auto camera)', () => {
     expect(routeFrameTarget([], null, null)).toEqual({ kind: 'center', center: DEFAULT_CENTER, zoom: HOME_ZOOM });
   });
 
-  it('home view sits closer than the whole-globe fit and the round 98 1.3 (John, 2026-11-02)', () => {
-    expect(HOME_ZOOM).toBeGreaterThan(1.3);
-    expect(HOME_ZOOM).toBeLessThanOrEqual(2.5);
+  it('home view sits closer than the whole-globe fit and the round 99 1.8 (John, 2026-11-02)', () => {
+    expect(HOME_ZOOM).toBeGreaterThan(2.4);
+    expect(HOME_ZOOM).toBeLessThanOrEqual(4);
     const vp: Viewport = { width: 390, height: 760, insets: normalizeInsets({ top: 8, right: 56, bottom: 380 }) };
     const home = cameraForTarget(routeFrameTarget([], null), vp, null);
     const whole = cameraForTarget({ kind: 'center', center: DEFAULT_CENTER }, vp, null);

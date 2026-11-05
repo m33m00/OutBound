@@ -44,6 +44,25 @@ function render(fontScale: number, extra: Partial<React.ComponentProps<typeof Se
 const chipRow = (r: ReactTestRenderer) =>
   StyleSheet.flatten(r.root.findAll((n) => n.props.testID === 'date-chips' && typeof n.type === 'string')[0].props.style);
 
+describe('SearchPanel area pills', () => {
+  it('the To card gets the area pill too, whenever its airport has a sister airport in the app (John, 2026-11-02)', () => {
+    const pills = (r: ReactTestRenderer) =>
+      r.root
+        .findAll((n) => n.props.accessibilityRole === 'switch' && typeof n.type === 'string')
+        .map((p) => p.props.accessibilityLabel);
+    const toOnly = render(1, { origin: 'BNA', destination: 'DFW' });
+    expect(pills(toOnly)).toEqual(['Area: include all Dallas airports']);
+    act(() => toOnly.unmount());
+    const both = render(1, { origin: 'DAL', destination: 'DFW' });
+    expect(pills(both)).toEqual(['Area: include all Dallas airports', 'Area: include all Dallas airports']);
+    act(() => both.unmount());
+    // LAX's area airports aren't in the app's airport list yet, so there's nothing to add.
+    const none = render(1, { origin: 'BNA', destination: 'LAX' });
+    expect(pills(none)).toEqual([]);
+    act(() => none.unmount());
+  });
+});
+
 describe('SearchPanel text size', () => {
   let r: ReactTestRenderer | undefined;
   afterEach(() => {
@@ -121,7 +140,7 @@ describe('SearchPanel main button (Q-063)', () => {
     r = render(1, { onGetHome: jest.fn(), homeName: 'Dallas' });
     expect(order()).toEqual(['Get Home: find routes to your main home, Dallas', 'Find Routes']);
     // It says where it goes before you tap it.
-    expect(r.root.findAll((n) => n.props.children === 'Get Home · Dallas' && typeof n.type === 'string').length).toBe(1);
+    expect(r.root.findAll((n) => n.props.children === 'Get Home to Dallas' && typeof n.type === 'string').length).toBe(1);
     expect(fill('Get Home')).toBe(atHomeFind);
     expect(fill('Find Routes')).not.toBe(atHomeFind);
   });
@@ -176,12 +195,12 @@ describe('SearchPanel first run (design round 39)', () => {
     expect(swapButton().props.accessibilityHint).toBe('Choose an airport first');
   });
 
-  it('tells the screen how tall it is down to Find Routes, so the drawer opens that far', () => {
+  it('tells the screen how tall the whole panel is, airport card included, so the drawer opens that far (John, 2026-11-02)', () => {
     const onFitHeight = jest.fn();
     r = render(1, { onFitHeight });
-    const row = r.root.findAll((n) => n.props.testID === 'search-actions' && typeof n.type === 'string')[0];
-    act(() => row.props.onLayout({ nativeEvent: { layout: { x: 0, y: 300.4, width: 360, height: 52 } } }));
-    expect(onFitHeight).toHaveBeenCalledWith(369);
+    const scroll = r.root.findAll((n) => n.props.testID === 'search-scroll' && typeof n.type === 'string')[0];
+    act(() => scroll.props.onContentSizeChange(360, 452.4));
+    expect(onFitHeight).toHaveBeenCalledWith(453);
   });
 
   it('shows what the empty From card is waiting on', () => {

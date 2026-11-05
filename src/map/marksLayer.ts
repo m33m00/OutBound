@@ -122,14 +122,14 @@ function drawMark(canvas: SkCanvas, m: ScreenMark, c: MarkColors) {
     case 'altHome':
       return drawHomePin(canvas, m, c, true);
     case 'origin':
-      canvas.drawCircle(m.x, m.y, MARK.origin.r, paint(c.accent, PaintStyle.Fill));
+      canvas.drawCircle(m.x, m.y, MARK.origin.r, paint(c.ink, PaintStyle.Fill));
       canvas.drawCircle(m.x, m.y, MARK.origin.r, paint(c.halo, PaintStyle.Stroke, MARK.origin.stroke));
       return;
     case 'destination':
     case 'stop': {
       const s = MARK[m.kind];
       canvas.drawCircle(m.x, m.y, s.r, paint(c.halo, PaintStyle.Fill));
-      canvas.drawCircle(m.x, m.y, s.r, paint(m.kind === 'destination' ? c.accent : c.label, PaintStyle.Stroke, s.stroke));
+      canvas.drawCircle(m.x, m.y, s.r, paint(m.kind === 'destination' ? c.ink : c.label, PaintStyle.Stroke, s.stroke));
       return;
     }
   }
@@ -178,11 +178,7 @@ function drawLegTimes(
       height: LEG_TIME_PILL.height,
     };
   });
-  const placed = placeLegTimes(
-    requests,
-    obstacles,
-    legTimeArea(viewport.width, viewport.height, viewport.insets),
-  );
+  const placed = placeLegTimes(requests, obstacles, legTimeArea(viewport.width, viewport.height, viewport.insets));
   const pill = paint(colors.pill, PaintStyle.Fill);
   const fill = paint(colors.text, PaintStyle.Fill);
   for (const p of placed) {
@@ -242,14 +238,10 @@ export function recordMarksLayer({
       width: text.width,
       height: cap.height + LABEL_FONT[m.kind].halo,
     }));
-    const placed = placeLabels(
-      requests,
-      labelBounds(viewport.width, viewport.insets),
-      [
-        ...shown.map((m) => ({ id: m.code, x: m.x, y: m.y, r: markExtent(m.kind) })),
-        ...badges.map((b) => ({ id: b.id, x: b.x, y: b.y, r: statusExtent(b.level) })),
-      ],
-    );
+    const placed = placeLabels(requests, labelBounds(viewport.width, viewport.insets, viewport.height), [
+      ...shown.map((m) => ({ id: m.code, x: m.x, y: m.y, r: markExtent(m.kind) })),
+      ...badges.map((b) => ({ id: b.id, x: b.x, y: b.y, r: statusExtent(b.level) })),
+    ]);
     const fill = paint(colors.label, PaintStyle.Fill);
     placed.forEach((p, i) => {
       const { m, font, text, cap } = measured[i];
@@ -264,15 +256,16 @@ export function recordMarksLayer({
 
   // Leg time pills (item 15): after IATA labels so those win; drawn under
   // the marks. Not hit tested anywhere.
-  if (wantTimes) drawLegTimes(canvas, {
-    project,
-    viewport,
-    specs: legTimes,
-    route: selectedRoute!,
-    font: legTimeFont!,
-    colors: legTimeColors!,
-    obstacles: [...labelBoxes, ...markBoxes, ...(legendBox ? [legendBox] : [])],
-  });
+  if (wantTimes)
+    drawLegTimes(canvas, {
+      project,
+      viewport,
+      specs: legTimes,
+      route: selectedRoute!,
+      font: legTimeFont!,
+      colors: legTimeColors!,
+      obstacles: [...labelBoxes, ...markBoxes, ...(legendBox ? [legendBox] : [])],
+    });
 
   for (const m of shown) drawMark(canvas, m, colors);
   // Badges last: they sit beside the marks (never over them), above labels.

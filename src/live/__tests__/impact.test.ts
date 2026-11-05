@@ -37,7 +37,7 @@ describe('combineImpact', () => {
     expect(r.level).toBe('likelyDelays');
     expect(r.reasons.map((x) => [x.source, x.text])).toEqual([
       ['Weather', 'Thunderstorms'],
-      ['FAA', 'Delays up to 30 min'],
+      ['FAA', 'Delays up to 30m'],
     ]);
   });
   it('worst wins: FAA ground stop beats weather caution', () => {
@@ -69,7 +69,9 @@ describe('combineImpact', () => {
 });
 
 describe('weatherRequestsForItinerary', () => {
-  const leg = (from: string, to: string, departUtc: number, arriveUtc: number) => ({ flight: { from, to, departUtc, arriveUtc } });
+  const leg = (from: string, to: string, departUtc: number, arriveUtc: number) => ({
+    flight: { from, to, departUtc, arriveUtc },
+  });
   const H = 3_600_000;
   it('nonstop -> destination only, arrival +/- 1h; origin never evaluated', () => {
     const it = { legs: [leg('BNA', 'LAX', 0, 4 * H)] } as unknown as Parameters<typeof weatherRequestsForItinerary>[0];

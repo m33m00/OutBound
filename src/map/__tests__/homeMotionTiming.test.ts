@@ -1,4 +1,5 @@
-import { drawProgress, PREVIEW, RIPPLE, rippleAt, SWAY, swayOffset } from '../homeMotionTiming';
+import * as timing from '../homeMotionTiming';
+import { drawProgress, PREVIEW, RIPPLE, rippleAt } from '../homeMotionTiming';
 
 describe('home globe motion (John, 2026-11-01)', () => {
   it('the home ripple grows and fades, then rests until the next one', () => {
@@ -19,17 +20,8 @@ describe('home globe motion (John, 2026-11-01)', () => {
     expect(drawProgress(PREVIEW.drawMs * 3)).toBe(1);
   });
 
-  it('the idle sway eases in and never turns far from the resting spot', () => {
-    expect(swayOffset(0)).toBe(0);
-    let most = 0;
-    for (let ms = 0; ms < SWAY.periodMs * 2; ms += 250) most = Math.max(most, Math.abs(swayOffset(ms)));
-    expect(most).toBeLessThanOrEqual(SWAY.amplitudeDeg);
-    expect(most).toBeGreaterThan(SWAY.amplitudeDeg * 0.9);
-    // Barely there (John: tone it down): a few degrees, at most a quarter degree a second.
-    expect(SWAY.amplitudeDeg).toBeLessThanOrEqual(3);
-    expect((2 * Math.PI * SWAY.amplitudeDeg) / (SWAY.periodMs / 1000)).toBeLessThanOrEqual(0.25);
-    expect(SWAY.startAfterMs).toBeGreaterThanOrEqual(8000);
-    // Slow: under a quarter degree per frame.
-    expect(Math.abs(swayOffset(SWAY.rampMs + SWAY.frameMs) - swayOffset(SWAY.rampMs))).toBeLessThan(0.25);
+  it('has no idle sway: the globe stays still until moved (John, 2026-11-02)', () => {
+    expect('SWAY' in timing).toBe(false);
+    expect('swayOffset' in timing).toBe(false);
   });
 });

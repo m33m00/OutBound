@@ -13,11 +13,13 @@ import { textStyles } from './typography';
  * rows, map labels) follow through `useBoldText`.
  */
 const HEAVIER: Record<string, string> = {
-  Manrope_400Regular: 'Manrope_600SemiBold',
-  Manrope_500Medium: 'Manrope_700Bold',
-  Manrope_600SemiBold: 'Manrope_700Bold',
-  Manrope_700Bold: 'Manrope_700Bold',
-  BigShouldersDisplay_600SemiBold: 'BigShouldersDisplay_700Bold',
+  Geist_400Regular: 'Geist_600SemiBold',
+  Geist_500Medium: 'Geist_700Bold',
+  Geist_600SemiBold: 'Geist_700Bold',
+  Geist_700Bold: 'Geist_800ExtraBold',
+  Geist_800ExtraBold: 'Geist_800ExtraBold',
+  GeistMono_500Medium: 'GeistMono_600SemiBold',
+  GeistMono_600SemiBold: 'GeistMono_600SemiBold',
   BigShouldersDisplay_700Bold: 'BigShouldersDisplay_800ExtraBold',
   BigShouldersDisplay_800ExtraBold: 'BigShouldersDisplay_800ExtraBold',
 };

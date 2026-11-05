@@ -1,6 +1,6 @@
 import type { FlightState, FlightStatusResponse, Movement } from '@/live';
 import type { FlightStatusEntry } from '@/live/flightStatus';
-import { formatAge, formatTime } from '@/search/format';
+import { formatAge, formatDuration, formatTime } from '@/search/format';
 
 export const STATE_WORD: Record<FlightState, string> = {
   scheduled: 'On time',
@@ -22,11 +22,11 @@ export function stateWord(status: { state: FlightState; arrival: { airport: stri
   return STATE_WORD[status.state];
 }
 
-/** "50 min late", "4 min early", "On time"; null when unknown. */
+/** "50m late", "1h 5m late", "On time"; null when unknown. Same format as the cards' "Delayed 50m". */
 export function delayText(min: number | null): string | null {
   if (min == null) return null;
   if (Math.abs(min) < 5) return 'On time';
-  return min > 0 ? `${min} min late` : `${-min} min early`;
+  return min > 0 ? `${formatDuration(min)} late` : `${formatDuration(-min)} early`;
 }
 
 /** Best time to show: actual, else estimated, else scheduled. */
@@ -83,7 +83,7 @@ export function placeText(m: Movement): string {
 /** Age line, always shown: "Updated 4m ago", with the stale reason when it applies. No spend cap, so no "paused" (Q-049). */
 export function ageText(r: FlightStatusResponse, now: number): string {
   const age = r.fetchedAt ? `Updated ${formatAge(Date.parse(r.fetchedAt), now)}` : 'Not updated yet';
-  if (r.stale) return `${age} · may be out of date`;
+  if (r.stale) return `${age}, may be out of date`;
   return age;
 }
 

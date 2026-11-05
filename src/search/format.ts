@@ -28,7 +28,8 @@ export function formatDuration(min: number): string {
   const h = Math.floor(min / 60);
   const m = min % 60;
   if (!h) return `${m}m`;
-  return m ? `${h}h ${m}m` : `${h}h`;
+  // Always both once there's an hour, so every time reads the same way ("5h 0m", round 149, John).
+  return `${h}h ${m}m`;
 }
 
 /** "1 hour 20 minutes" for VoiceOver, which can read "20m" as meters. */
@@ -47,14 +48,20 @@ const plural = (n: string, unit: string) => `${n} ${unit}${n === '1' ? '' : 's'}
  * pause, "→" "to", "~" "about", "est." "estimated", and "4m ago" "4 minutes ago".
  */
 export function forSpeech(text: string): string {
-  return text
-    .replace(/ · /g, ', ')
-    .replace(/ → /g, ' to ')
-    .replace(/~/g, 'about ')
-    .replace(/\best\./gi, (m) => (m[0] === 'E' ? 'Estimated' : 'estimated'))
-    .replace(/\b(\d+)m ago\b/g, (_, n: string) => `${plural(n, 'minute')} ago`)
-    .replace(/\b(\d+)h ago\b/g, (_, n: string) => `${plural(n, 'hour')} ago`)
-    .replace(/\b(\d+)d ago\b/g, (_, n: string) => `${plural(n, 'day')} ago`);
+  return (
+    text
+      .replace(/ · /g, ', ')
+      .replace(/ → /g, ' to ')
+      .replace(/~/g, 'about ')
+      .replace(/\best\./gi, (m) => (m[0] === 'E' ? 'Estimated' : 'estimated'))
+      .replace(/\b(\d+)m ago\b/g, (_, n: string) => `${plural(n, 'minute')} ago`)
+      .replace(/\b(\d+)h ago\b/g, (_, n: string) => `${plural(n, 'hour')} ago`)
+      .replace(/\b(\d+)d ago\b/g, (_, n: string) => `${plural(n, 'day')} ago`)
+      // Short durations ("2h 5m", "25m") would read as meters; say them in words.
+      .replace(/\b(\d+)h (\d+)m\b/g, (_, h: string, m: string) => `${plural(h, 'hour')} ${plural(m, 'minute')}`)
+      .replace(/\b(\d+)h\b/g, (_, n: string) => plural(n, 'hour'))
+      .replace(/\b(\d+)m\b/g, (_, n: string) => plural(n, 'minute'))
+  );
 }
 
 /** Every value shows its age: "just now", "12m ago", "3h ago", "2d ago". */
@@ -68,13 +75,18 @@ export function formatAge(asOf: number, now: number): string {
 }
 
 /** Seat labels say your chances of getting on (Q-074, John 2026-10-30). */
+/**
+ * What each seat color means, in seats left after the standby list. No chance words since round 140
+ * (John: "Just color and seat availability. Let the user decide on the likelihood"): the map key and
+ * screen readers say the range, the app shows the numbers.
+ */
 export const TIER_WORD: Record<SeatTier, string> = {
-  wide: 'Easy',
-  good: 'Likely',
-  okay: 'Maybe',
-  tight: 'Long\u00a0shot',
-  full: 'Full',
-  unknown: 'Unknown',
+  wide: '50+ after the list',
+  good: '15 to 49 after the list',
+  okay: '6 to 14 after the list',
+  tight: '1 to 5 after the list',
+  full: 'None after the list',
+  unknown: 'No seat info',
 };
 
 /**
@@ -82,34 +94,31 @@ export const TIER_WORD: Record<SeatTier, string> = {
  * never the only signal). Typical loads are neutral: no tier word.
  */
 export function seatText(seats: LegSeats, now: number): string {
-  if (seats.source === 'unknown' || seats.netSeats == null) return 'No data yet';
+  if (seats.source === 'unknown' || seats.netSeats == null) return 'No Estimate';
   if (seats.source === 'typical') {
     // Typical loads are monthly averages; the month isn't worth the space (John, 2026-11-02).
-    return `~${Math.max(0, seats.netSeats)} open seats estimated`;
+    // No "~" and no "open" (round 138, John): "51 seats estimated".
+    return `${Math.max(0, seats.netSeats)} seats estimated`;
   }
   const open = seatCounts(seats);
   const age = seats.asOf == null ? '' : ` · ${seats.source === 'reported' ? 'reported' : 'est.'} ${formatAge(seats.asOf, now)}`;
-  return `${TIER_WORD[seats.tier]} · ${open}${age}`;
+  return `${open}${age}`;
 }
 
-/**
- * Route seat summary for the row's top line (Q-059): the route's chance word, e.g. "Long shot".
- * Cards show just the word; the open and listed numbers are in the flight's sheet
- * (John, 2026-10-31). Null when no leg has reported or estimated seats (typical loads stay neutral).
- */
-export function routeSeatSummary(it: Itinerary): string | null {
-  if (it.tier === 'unknown') return null;
-  return TIER_WORD[it.tier];
-}
+/** "1 seat", "20 seats". */
+export const seatWord = (n: number) => `${n} ${n === 1 ? 'seat' : 'seats'}`;
+
+/** A seat reading's two numbers, "20 seats · 17 listed" (round 138: no "open"). */
+export const seatPair = (seats: number, listed: number) => `${seatWord(seats)} · ${listed} listed`;
 
 /**
- * Both numbers behind the tier (Q-065, John 2026-10-30): "20 open · 17 listed".
- * A reading without them (older data) falls back to the net count, "3 open".
+ * Both numbers behind the tier (Q-065, John 2026-10-30): "20 seats · 17 listed" (no "open", round 138).
+ * A reading without them (older data) falls back to the net count, "3 seats".
  */
 export function seatCounts(seats: LegSeats): string {
-  if (seats.openSeats != null && seats.listed != null) return `${seats.openSeats} open · ${seats.listed} listed`;
+  if (seats.openSeats != null && seats.listed != null) return seatPair(seats.openSeats, seats.listed);
   const net = seats.netSeats ?? 0;
-  return net > 0 ? `${net} open` : 'no open seats';
+  return net > 0 ? seatWord(net) : 'no seats left';
 }
 
 /** The leg that sets the route tier (fewest open seats among the weakest-tier legs); null when Unknown. */
@@ -128,11 +137,11 @@ export function routeSeatAge(it: Itinerary, now: number): string | null {
 
 /**
  * Neutral seat line when a route has no counted tier (only typical loads or no
- * data): the tightest typical leg, e.g. "~51 open seats estimated", else "No data yet".
+ * data): the tightest typical leg, e.g. "51 seats estimated", else "No Estimate".
  */
 export function neutralSeatText(it: Itinerary, now: number): string {
   const typical = it.legs.filter((l) => l.seats.source === 'typical' && l.seats.netSeats != null);
-  if (!typical.length) return 'No data yet';
+  if (!typical.length) return 'No Estimate';
   const least = typical.reduce((a, b) => ((b.seats.netSeats as number) < (a.seats.netSeats as number) ? b : a));
   return seatText(least.seats, now);
 }
@@ -140,11 +149,37 @@ export function neutralSeatText(it: Itinerary, now: number): string {
 /** Connections shorter than this show their length on the slim row. */
 export const SHORT_LAYOVER_MIN = 60;
 
-/** Slim row stops: "Nonstop", "1 stop", or "1 stop · 45m at DEN" when a connection is short. */
-export function slimStops(it: Itinerary): string {
-  const short = it.connections.filter((c) => c.layoverMin < SHORT_LAYOVER_MIN);
-  return [stopCount(it), ...short.map((c) => `${formatDuration(c.layoverMin)} at ${c.airport}`)].join(' · ');
+/**
+ * The route's tightest short connection: "35m connection at MIA", or "missed connection at MIA" (round 149,
+ * John). With more than one short connection only the tightest shows, so the stops line stays one line on
+ * the smallest iPhone. Null when no connection is short.
+ */
+export function shortLayovers(it: Itinerary, layovers?: readonly number[]): string | null {
+  // Live layovers when given (a delay moves them, John 2026-11-02); a missed one says so.
+  const mins = it.connections.map((c, i) => (layovers && Number.isFinite(layovers[i]) ? layovers[i] : c.layoverMin));
+  const short = it.connections.flatMap((c, i) => (mins[i] < SHORT_LAYOVER_MIN ? [{ airport: c.airport, min: mins[i] }] : []));
+  if (!short.length) return null;
+  const tightest = short.reduce((a, b) => (b.min < a.min ? b : a));
+  return tightest.min < 0
+    ? `missed connection at ${tightest.airport}`
+    : `${formatDuration(tightest.min)} connection at ${tightest.airport}`;
 }
+
+/**
+ * Slim row stops, always in one order (round 149, John: "it's always the number of stops, the total time,
+ * and then if there's a risk, it's the last thing"): "1 stop · 4h 20m · 45m at DEN".
+ */
+export function slimStops(it: Itinerary, layovers?: readonly number[], length?: string | null): string {
+  return [stopCount(it), length, shortLayovers(it, layovers)].filter(Boolean).join(' · ');
+}
+
+/**
+ * Whether seat numbers show where they came from and how old they are ("Reported 5m ago",
+ * "Est. 2h ago", "Seats reported just now"). Off for now (John, 2026-11-03: "I also don't need you
+ * to label when a user reported or estimated x time ago at this time"); the data is kept, and
+ * VoiceOver still hears it, so turning this back on brings the labels back.
+ */
+export const SHOW_SEAT_AGE = false;
 
 /** Where a leg's seat number came from and its age: "Reported 5m ago", "Est. 2h ago". */
 export function seatSourceText(seats: LegSeats, now: number): string | null {
@@ -163,10 +198,10 @@ export function stopsText(it: Itinerary): string {
   return `${stopCount(it)} · ${it.connections.map((c) => c.airport).join(', ')}`;
 }
 
-/** "35 min from DFW", or "near DFW" when the transfer time is unknown. */
-const fromText = (min: number | null, code: string) => (min == null ? `near ${code}` : `${min} min from ${code}`);
+/** "35m from DFW", or "near DFW" when the transfer time is unknown. */
+const fromText = (min: number | null, code: string) => (min == null ? `near ${code}` : `${formatDuration(min)} from ${code}`);
 
-/** Area-airport notes, e.g. "Leaves from DAL, 35 min from DFW". */
+/** Area-airport notes, e.g. "Leaves from DAL, 35m from DFW". */
 export function nearbyNotes(it: Itinerary): string[] {
   const notes: string[] = [];
   if (it.origin !== it.requestedOrigin) {
@@ -210,7 +245,7 @@ export function rowAccessibilityLabel(it: Itinerary, now: number): string {
     `arrives ${t.arrive}${t.plusDays ? ' next day' : ''} at ${it.destination}`,
     stopsText(it).replace(' · ', ' via '),
     spokenDuration(it.totalMin),
-    it.isFull ? 'Full route' : `Chances: ${TIER_WORD[it.tier]}`,
+    ...(it.isFull ? ['Full route'] : []),
     ...it.legs.map((l) => `${l.flight.airline} ${l.flight.flightNumber}: ${forSpeech(seatText(l.seats, now))}`),
     ...nearbyNotes(it),
   ];

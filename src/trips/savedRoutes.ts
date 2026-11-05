@@ -18,6 +18,8 @@ export interface SavedLeg {
   to: string;
   departUtc: number;
   arriveUtc: number;
+  /** The schedule's aircraft name, when it had one (round 146); older saves have none. */
+  aircraft?: string;
 }
 
 export interface SavedRoute {
@@ -42,6 +44,7 @@ const itineraryLegs = (it: Itinerary): SavedLeg[] =>
     to: f.to,
     departUtc: f.departUtc,
     arriveUtc: f.arriveUtc,
+    ...(f.aircraft ? { aircraft: f.aircraft } : {}),
   }));
 
 export const savedKey = (it: Itinerary, date: string) => `${date}|${routeSignature(itineraryLegs(it))}`;
@@ -55,8 +58,7 @@ export function addSaved(list: readonly SavedRoute[], route: SavedRoute): SavedR
   return list.some((r) => r.key === route.key) ? [...list] : [...list, route];
 }
 
-export const removeSaved = (list: readonly SavedRoute[], key: string): SavedRoute[] =>
-  list.filter((r) => r.key !== key);
+export const removeSaved = (list: readonly SavedRoute[], key: string): SavedRoute[] => list.filter((r) => r.key !== key);
 
 const known = (v: unknown): v is string => typeof v === 'string' && v in AIRPORTS;
 const isNum = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
@@ -66,7 +68,16 @@ function parseLeg(raw: unknown): SavedLeg | null {
   const l = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
   if (typeof l.airline !== 'string' || typeof l.flightNumber !== 'string') return null;
   if (!known(l.from) || !known(l.to) || !isNum(l.departUtc) || !isNum(l.arriveUtc)) return null;
-  return { airline: l.airline, flightNumber: l.flightNumber, from: l.from, to: l.to, departUtc: l.departUtc, arriveUtc: l.arriveUtc };
+  const leg: SavedLeg = {
+    airline: l.airline,
+    flightNumber: l.flightNumber,
+    from: l.from,
+    to: l.to,
+    departUtc: l.departUtc,
+    arriveUtc: l.arriveUtc,
+  };
+  if (typeof l.aircraft === 'string' && l.aircraft.trim() && l.aircraft.length <= 40) leg.aircraft = l.aircraft;
+  return leg;
 }
 
 function parseRoute(raw: unknown): SavedRoute | null {
@@ -124,8 +135,7 @@ export function findSaved(results: readonly Itinerary[], route: SavedRoute): Iti
 }
 
 /** "DAL → PHX → LAX". */
-export const savedRouteTitle = (route: SavedRoute) =>
-  [route.legs[0].from, ...route.legs.map((l) => l.to)].join(' → ');
+export const savedRouteTitle = (route: SavedRoute) => [route.legs[0].from, ...route.legs.map((l) => l.to)].join(' → ');
 
 /** "Today", "Tomorrow" or "Thu, Oct 30", counted at the origin. */
 export function savedRouteDay(route: SavedRoute, now: number): string {
@@ -145,12 +155,9 @@ export function savedRouteWhen(route: SavedRoute, now: number): string {
 }
 
 /** "AA 1234, AA 88". Airline codes only, never names or logos. */
-export const savedRouteFlights = (route: SavedRoute) =>
-  route.legs.map((l) => `${l.airline} ${l.flightNumber}`).join(', ');
+export const savedRouteFlights = (route: SavedRoute) => route.legs.map((l) => `${l.airline} ${l.flightNumber}`).join(', ');
 
-export type ReopenOutcome =
-  | { kind: 'open'; id: string; hidden: boolean }
-  | { kind: 'note'; text: string };
+export type ReopenOutcome = { kind: 'open'; id: string; hidden: boolean } | { kind: 'note'; text: string };
 
 /**
  * What Search does once a saved route's search is back: open the same

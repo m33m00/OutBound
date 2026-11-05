@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { AIRPORTS, localDate, type Flight, type LegSeats } from '@/engine';
+import { AIRPORTS, aircraftLabel, localDate, type Flight, type LegSeats } from '@/engine';
 import { useFlightStatus, type FlightLookup, type UseFlightStatusOptions, type Movement } from '@/live';
 import type { FlightStatusEntry } from '@/live/flightStatus';
 import {
@@ -15,7 +15,7 @@ import {
   type ReportWindow,
 } from '@/requests/requests';
 import { shortDate } from '@/search/dates';
-import { formatAge, forSpeech, seatCounts, seatSourceText, seatText, TIER_WORD } from '@/search/format';
+import { formatAge, forSpeech, seatCounts, seatPair, seatSourceText, seatText, SHOW_SEAT_AGE } from '@/search/format';
 import { radius, spacing, textStyles, useColors } from '@/theme';
 
 import { Button, PillButton } from './Buttons';
@@ -30,6 +30,7 @@ import { STATE_TONE, TONE_BG, TONE_FG } from './statusTone';
 import { SheetHeader, TITLE_MAX_SCALE } from './SheetHeader';
 import { TIER_FG } from './tierColors';
 import { useAnnounceLater } from './useAnnounceLater';
+import { Divided } from './MetaLine';
 
 export interface FlightStatusSheetProps {
   /** The opened flight; null = closed (no request is made). */
@@ -114,7 +115,10 @@ export function FlightStatusSheet({ flight, visible, now, onClose, liveOptions, 
     setRefreshNote(null);
   }, [response]);
   const title = flight ? `${flight.airline} ${flight.flightNumber}` : 'Flight status';
-  const subtitle = flight && lookup ? `${flight.from} → ${flight.to} · ${shortDate(lookup.date)}` : null;
+  // The aircraft type rides on the subtitle when the schedule has it (round 138, John).
+  const plane = flight ? aircraftLabel(flight.aircraft) : null;
+  const subtitle =
+    flight && lookup ? [`${flight.from} → ${flight.to}`, shortDate(lookup.date), plane].filter(Boolean).join(' · ') : null;
   const tone = status ? STATE_TONE[status.state] : null;
   const canRefresh = error !== 'not_configured' && !isSample;
 
@@ -133,7 +137,7 @@ export function FlightStatusSheet({ flight, visible, now, onClose, liveOptions, 
         )}
         style={[styles.card, { backgroundColor: c.surface, borderColor: c.line }]}>
         <View style={styles.top}>
-          <Text style={[textStyles.number, { color: c.text }]}>{code}</Text>
+          <Text style={[textStyles.code, { color: c.text }]}>{code}</Text>
           <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>
             {label}
           </Text>
@@ -159,7 +163,7 @@ export function FlightStatusSheet({ flight, visible, now, onClose, liveOptions, 
           </Text>
         ) : null}
         <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, { color: c.muted }]}>
-          {placeText(m)}
+          <Divided text={placeText(m)} />
         </Text>
       </View>
     );
@@ -244,7 +248,7 @@ export function FlightStatusSheet({ flight, visible, now, onClose, liveOptions, 
                           styles.ageText,
                           { color: response.stale ? c.text : c.muted },
                         ]}>
-                        {ageText(response, now)}
+                        <Divided text={ageText(response, now)} />
                       </Text>
                     </View>
                   ) : null}
@@ -303,7 +307,7 @@ export function FlightStatusSheet({ flight, visible, now, onClose, liveOptions, 
 
 /**
  * What search knows about this flight's seats: the chance word with both numbers, and how
- * old they are ("Likely · 20 open · 7 listed", "Reported 5m ago"). Typical loads stay neutral.
+ * old they are ("20 seats · 7 listed" in its seat color, "Reported 5m ago"). Typical loads stay neutral.
  */
 function SearchSeats({ seats, now }: { seats: LegSeats; now: number }) {
   const c = useColors();
@@ -318,15 +322,14 @@ function SearchSeats({ seats, now }: { seats: LegSeats; now: number }) {
   const counts = seatCounts(seats);
   const age = seatSourceText(seats, now);
   return (
-    <View
-      accessible
-      accessibilityLabel={forSpeech([`${TIER_WORD[seats.tier]} · ${counts}`, age].filter(Boolean).join('. '))}
-      testID="search-seats">
+    <View accessible accessibilityLabel={forSpeech([counts, age].filter(Boolean).join('. '))} testID="search-seats">
       <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, { color: c.text }]}>
-        <Text style={[textStyles.bodyStrong, { color: c[TIER_FG[seats.tier]] }]}>{TIER_WORD[seats.tier]}</Text>
-        {` · ${counts}`}
+        {/* The numbers in their seat color, no chance word (round 140). */}
+        <Text style={[textStyles.bodyStrong, { color: c[TIER_FG[seats.tier]] }]}>
+          <Divided text={counts} color={c[TIER_FG[seats.tier]]} />
+        </Text>
       </Text>
-      {age ? (
+      {age && SHOW_SEAT_AGE ? (
         <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>
           {age}
         </Text>
@@ -382,9 +385,9 @@ function LoadCard({
           {/* Amber means you; the tier word keeps its tier color. */}
           <Text style={{ color: c.youText }}>You reported </Text>
           <Text lineBreakStrategyIOS="push-out" style={[textStyles.bodyStrong, { color: c[TIER_FG[tier]] }]}>
-            {TIER_WORD[tier]}
+            <Divided text={seatPair(yourReport.open, yourReport.listed)} color={c[TIER_FG[tier]]} />
           </Text>
-          {` · ${yourReport.open} open · ${yourReport.listed} listed · ${formatAge(yourReport.at, now)}`}
+          {SHOW_SEAT_AGE ? <Divided text={` · ${formatAge(yourReport.at, now)}`} /> : null}
         </Text>
       ) : null}
       {askAnswer && answerTierWord ? (
@@ -394,9 +397,9 @@ function LoadCard({
           accessibilityLabel={forSpeech(`Your request was answered: ${answerText(askAnswer)} · ${formatAge(askAnswer.at, now)}`)}>
           {'Answered: '}
           <Text lineBreakStrategyIOS="push-out" style={[textStyles.bodyStrong, { color: c[TIER_FG[answerTierWord]] }]}>
-            {TIER_WORD[answerTierWord]}
+            <Divided text={seatPair(askAnswer.open, askAnswer.listed)} color={c[TIER_FG[answerTierWord]]} />
           </Text>
-          {` · ${askAnswer.open} open · ${askAnswer.listed} listed · ${formatAge(askAnswer.at, now)}`}
+          {SHOW_SEAT_AGE ? <Divided text={` · ${formatAge(askAnswer.at, now)}`} /> : null}
         </Text>
       ) : null}
       {/* Report and Ask side by side (design audit, round 67); stacked at big text. */}
@@ -411,6 +414,7 @@ function LoadCard({
           <Button
             label={asked ? 'Asked' : 'Ask for Load'}
             kind="secondary"
+            haptic="success"
             icon={asked ? 'checkmark' : undefined}
             onPress={() => {
               setCanceled(false);

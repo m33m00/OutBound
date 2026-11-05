@@ -10,28 +10,31 @@ describe('Bold Text', () => {
   afterEach(() => applyBoldText(false));
 
   it('steps each face up a weight and stops at the heaviest', () => {
-    expect(heavierFont('Manrope_400Regular')).toBe('Manrope_600SemiBold');
-    expect(heavierFont('Manrope_500Medium')).toBe('Manrope_700Bold');
-    expect(heavierFont('Manrope_700Bold')).toBe('Manrope_700Bold');
+    expect(heavierFont('Geist_400Regular')).toBe('Geist_600SemiBold');
+    expect(heavierFont('Geist_500Medium')).toBe('Geist_700Bold');
+    expect(heavierFont('Geist_800ExtraBold')).toBe('Geist_800ExtraBold');
+    expect(heavierFont('GeistMono_500Medium')).toBe('GeistMono_600SemiBold');
     expect(heavierFont('BigShouldersDisplay_700Bold')).toBe('BigShouldersDisplay_800ExtraBold');
+    expect(heavierFont('BigShouldersDisplay_800ExtraBold')).toBe('BigShouldersDisplay_800ExtraBold');
   });
 
   it('turns every style heavier and back again', () => {
     applyBoldText(true);
     expect(boldTextOn()).toBe(true);
-    expect(textStyles.body.fontFamily).toBe('Manrope_600SemiBold');
-    expect(textStyles.small.fontFamily).toBe('Manrope_700Bold');
-    expect(textStyles.title.fontFamily).toBe('BigShouldersDisplay_800ExtraBold');
-    expect(fonts.bodyMedium).toBe('Manrope_700Bold');
+    expect(textStyles.body.fontFamily).toBe('Geist_600SemiBold');
+    expect(textStyles.small.fontFamily).toBe('Geist_700Bold');
+    expect(textStyles.code.fontFamily).toBe('Geist_800ExtraBold');
+    expect(textStyles.number.fontFamily).toBe('GeistMono_600SemiBold');
+    expect(fonts.bodyMedium).toBe('Geist_700Bold');
     applyBoldText(false);
-    expect(textStyles.body.fontFamily).toBe('Manrope_400Regular');
-    expect(fonts.bodyMedium).toBe('Manrope_500Medium');
+    expect(textStyles.body.fontFamily).toBe('Geist_400Regular');
+    expect(fonts.bodyMedium).toBe('Geist_500Medium');
   });
 
   it('turning it on twice does not step up twice', () => {
     applyBoldText(true);
     applyBoldText(true);
-    expect(textStyles.body.fontFamily).toBe('Manrope_600SemiBold');
+    expect(textStyles.body.fontFamily).toBe('Geist_600SemiBold');
   });
 
   it('redraws parts that watch it when the setting changes', () => {

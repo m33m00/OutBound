@@ -1,38 +1,47 @@
+import { BigShouldersDisplay_700Bold, BigShouldersDisplay_800ExtraBold } from '@expo-google-fonts/big-shoulders-display';
 import {
-  BigShouldersDisplay_600SemiBold,
-  BigShouldersDisplay_700Bold,
-  BigShouldersDisplay_800ExtraBold,
-} from '@expo-google-fonts/big-shoulders-display';
-import {
-  Manrope_400Regular,
-  Manrope_500Medium,
-  Manrope_600SemiBold,
-  Manrope_700Bold,
-} from '@expo-google-fonts/manrope';
+  Geist_400Regular,
+  Geist_500Medium,
+  Geist_600SemiBold,
+  Geist_700Bold,
+  Geist_800ExtraBold,
+} from '@expo-google-fonts/geist';
+import { GeistMono_500Medium, GeistMono_600SemiBold } from '@expo-google-fonts/geist-mono';
 
 /**
- * Big Shoulders Display (uppercase display) + Manrope (body), per DECISIONS.md.
- * Weights confirmed in DECISIONS.md (Q-005).
+ * The Clean look (round 120, John switched to look B on 2026-11-03): Geist for everything you read
+ * and every title, tight and calm; Geist Mono for times and flight numbers so digits line up row to
+ * row. Big Shoulders stays only for the OUTBOUND wordmark.
  *
  * In React Native each weight is its own family name, so pick a family
- * instead of setting `fontWeight`.
+ * instead of setting `fontWeight` (a bare fontWeight falls back to the system font on iOS).
  */
 export const fontAssets = {
-  BigShouldersDisplay_600SemiBold,
   BigShouldersDisplay_700Bold,
   BigShouldersDisplay_800ExtraBold,
-  Manrope_400Regular,
-  Manrope_500Medium,
-  Manrope_600SemiBold,
-  Manrope_700Bold,
+  Geist_400Regular,
+  Geist_500Medium,
+  Geist_600SemiBold,
+  Geist_700Bold,
+  Geist_800ExtraBold,
+  GeistMono_500Medium,
+  GeistMono_600SemiBold,
 };
 
 export const fonts = {
-  display: 'BigShouldersDisplay_700Bold',
-  displaySemiBold: 'BigShouldersDisplay_600SemiBold',
-  displayHeavy: 'BigShouldersDisplay_800ExtraBold',
-  body: 'Manrope_400Regular',
-  bodyMedium: 'Manrope_500Medium',
-  bodySemiBold: 'Manrope_600SemiBold',
-  bodyBold: 'Manrope_700Bold',
+  /** The wordmark only. */
+  brand: 'BigShouldersDisplay_700Bold',
+  /** Titles, route names and big airport codes. */
+  title: 'Geist_700Bold',
+  display: 'Geist_700Bold',
+  displaySemiBold: 'Geist_600SemiBold',
+  displayHeavy: 'Geist_800ExtraBold',
+  body: 'Geist_400Regular',
+  bodyMedium: 'Geist_500Medium',
+  bodySemiBold: 'Geist_600SemiBold',
+  bodyBold: 'Geist_700Bold',
+  /** Big times. */
+  mono: 'GeistMono_600SemiBold',
+  /** Flight numbers and smaller times. */
+  monoMedium: 'GeistMono_500Medium',
 } as const satisfies Record<string, keyof typeof fontAssets>;

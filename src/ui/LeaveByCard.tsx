@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo, Linking, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
 import type { Airport } from '@/engine';
@@ -12,6 +12,7 @@ import { Icon } from './Icon';
 import { openDirections } from './openDirections';
 import { pressStyle } from './press';
 import type { LocationStatus } from './useCurrentLocation';
+import { Divided } from './MetaLine';
 
 export interface LeaveByCardProps {
   /** Departure airport of the selected route's first leg. */
@@ -75,6 +76,10 @@ export function LeaveByCard(p: LeaveByCardProps) {
     if (delayLine && delayLine !== lastDelay.current) AccessibilityInfo.announceForAccessibility?.(delayLine);
     lastDelay.current = delayLine;
   }, [delayLine]);
+  // Which line wrapped; a new line gets a fresh try at one row.
+  const lineKey = `${text.title}|${short}|${fontScale}`;
+  const [wrapped, setWrapped] = useState<string | null>(null);
+  const twoLines = wrapped === lineKey;
   const note = departed
     ? null
     : p.locationStatus === 'denied'
@@ -83,12 +88,12 @@ export function LeaveByCard(p: LeaveByCardProps) {
         ? 'Finding your location…'
         : null;
 
-  // Outlined so it stands out on the tinted card (it used to be gray on light blue).
-  const outline = [styles.action, styles.outline, inline && styles.inline, { backgroundColor: c.surface, borderColor: c.accent }];
+  // The plain secondary tint: the card is a quiet gray box now, so it stands out without an outline (round 139).
+  const actionStyle = [styles.action, inline && styles.inline];
   const action = departed ? null : p.locationStatus === 'denied' ? (
-    <Button label="Open Settings" kind="secondary" onPress={() => Linking.openSettings()} style={outline} />
+    <Button label="Open Settings" kind="secondary" onPress={() => Linking.openSettings()} style={actionStyle} />
   ) : offerLocation ? (
-    <Button label="Use Location" kind="secondary" onPress={p.onUseLocation} style={outline} />
+    <Button label="Use Location" kind="secondary" onPress={p.onUseLocation} style={actionStyle} />
   ) : null;
 
   return (
@@ -102,7 +107,8 @@ export function LeaveByCard(p: LeaveByCardProps) {
       style={pressStyle([
         styles.card,
         {
-          backgroundColor: atAirport ? c.youBg : departed ? c.surface2 : c.accentSoft,
+          // Gray, not the accent tint: the card is something you read; the car is what says tap (round 139).
+          backgroundColor: atAirport ? c.youBg : c.surface2,
         },
       ])}>
       <View style={styles.top} testID="leave-by-top">
@@ -117,28 +123,44 @@ export function LeaveByCard(p: LeaveByCardProps) {
           accessibilityActions={directions ? [{ name: 'activate' }] : undefined}
           onAccessibilityAction={directions ? go : undefined}
           accessibilityLabel={forSpeech([text.title, text.sub, delayLine, note].filter(Boolean).join('. '))}>
-          {/* One slim row: the time, then the one detail that matters (John, 2026-11-01). */}
-          <Text
-            style={[textStyles.bodyStrong, { color: atAirport ? c.youText : c.text }]}
-            lineBreakStrategyIOS="push-out"
-            testID="leave-by-line">
-            {keepTimes(text.title)}
+          {/* One slim row: the time, then the one detail that matters (John, 2026-11-01). When that
+              doesn't fit on one line, the detail gets its own line, with no dot (John, 2026-11-02). */}
+          {twoLines ? (
+            <>
+              <Text
+                style={[textStyles.bodyStrong, { color: atAirport ? c.youText : c.text }]}
+                lineBreakStrategyIOS="push-out"
+                testID="leave-by-line">
+                {keepTimes(text.title)}
+              </Text>
+              <Text style={[textStyles.small, { color: c.muted }]} lineBreakStrategyIOS="push-out" testID="leave-by-detail">
+                {keepTimes(short)}
+              </Text>
+            </>
+          ) : (
             <Text
-              style={[
-                textStyles.small,
-                { color: c.muted, fontFamily: textStyles.body.fontFamily },
-              ]}>{`  ·  ${keepTimes(short)}`}</Text>
-          </Text>
+              style={[textStyles.bodyStrong, { color: atAirport ? c.youText : c.text }]}
+              lineBreakStrategyIOS="push-out"
+              onTextLayout={(e) => {
+                if (e.nativeEvent.lines.length > 1) setWrapped(lineKey);
+              }}
+              testID="leave-by-line">
+              {keepTimes(text.title)}
+              <Text style={[textStyles.small, { color: c.muted, fontFamily: textStyles.body.fontFamily }]}>
+                <Divided text={` · ${keepTimes(short)}`} />
+              </Text>
+            </Text>
+          )}
         </View>
         {action && inline ? action : null}
-        {/* The chevron is the card's only sign that it opens directions, so it always shows. */}
+        {/* The car is the card's only sign that it opens directions, so it always shows (round 136,
+            John: a car "so people know it's directions", in place of the chevron). */}
         {directions ? (
-          <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+          <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" testID="leave-by-car">
             <Icon
-              name="chevron.right"
-              size={13}
-              weight="semibold"
-              tintColor={c.muted}
+              name="car.fill"
+              size={16}
+              tintColor={atAirport ? c.youText : c.accent}
               fallback={<Text style={{ color: c.muted }}>›</Text>}
             />
           </View>
@@ -185,7 +207,6 @@ const styles = StyleSheet.create({
   },
   top: { flexDirection: 'row', alignItems: 'center', gap: spacing.group },
   action: { alignSelf: 'flex-start', paddingHorizontal: spacing.section },
-  outline: { borderWidth: 1 },
   inline: { alignSelf: 'center' },
   text: { flex: 1 },
   // Pulled up under the title so it reads as the title's caption. No icon tile (design audit,
