@@ -501,7 +501,7 @@ describe('ResultRow', () => {
     expect(group.findAll((n) => n.props.accessibilityLabel === 'American 1' && typeof n.type === 'string').length).toBe(1);
   });
 
-  it('route card: each leg box shows its aircraft type beside the flight chip (round 138, John)', async () => {
+  it('route card: each leg box stacks its aircraft type under the flight chip (rounds 138, 154, John)', async () => {
     const it = await fullItinerary();
     const withPlane = { ...it, legs: it.legs.map((l) => ({ ...l, flight: { ...l.flight, aircraft: 'Boeing 737-800' } })) };
     await act(async () => {
@@ -511,6 +511,9 @@ describe('ResultRow', () => {
     const plane = group.findAll((n) => n.props.testID === 'leg-aircraft' && typeof n.type === 'string');
     expect(plane).toHaveLength(1);
     expect(plane[0].findAll((n) => n.props.children === '737-800').length).toBeGreaterThan(0);
+    // Stacked: a column, so the aircraft sits under the chip, not beside it.
+    const flatStyle = Object.assign({}, ...([group.props.style] as unknown[]).flat(3).filter(Boolean));
+    expect(flatStyle.flexDirection ?? 'column').toBe('column');
     // No type known: nothing extra.
     act(() => r!.update(<ResultRow itinerary={it} selected now={NOW} onPress={jest.fn()} onLegPress={jest.fn()} />));
     expect(r!.root.findAll((n) => n.props.testID === 'leg-aircraft')).toHaveLength(0);
@@ -867,7 +870,7 @@ describe('ResultRow at big text sizes (design round 26)', () => {
     expect(r!.root.findAll((n) => n.props.testID === 'row-tag')).toHaveLength(0);
   });
 
-  it('puts each flight and its aircraft under its own leg of the route line (round 145, John)', async () => {
+  it('puts each flight under its own leg of the route line, with no aircraft type (rounds 145, 154, John)', async () => {
     const it = await twoLegItinerary();
     const withPlanes = {
       ...it,
@@ -884,10 +887,10 @@ describe('ResultRow at big text sizes (design round 26)', () => {
     ]);
     const pick = (n: ReactTestInstance, id: string) =>
       allText(n.find((m) => m.props.testID === id && typeof m.type === 'string'));
-    expect(slots.map((n) => [pick(n, 'mini-route-flight-number'), pick(n, 'mini-route-aircraft')])).toEqual([
-      ['AA 1', '737-800'],
-      ['AA 2', 'A321neo'],
-    ]);
+    expect(slots.map((n) => pick(n, 'mini-route-flight-number'))).toEqual(['AA 1', 'AA 2']);
+    // The aircraft type waits for the opened route (round 154).
+    expect(r!.root.findAll((n) => n.props.testID === 'mini-route-aircraft')).toHaveLength(0);
+    expect(allText(r!.root)).not.toMatch(/737-800|A321neo/);
     // Never wraps: one line each, shrinking a touch on a short leg.
     const texts = slots.flatMap((n) => n.findAll((m) => typeof m.type === 'string' && m.props.numberOfLines != null));
     expect(texts.every((m) => m.props.numberOfLines === 1 && m.props.adjustsFontSizeToFit)).toBe(true);

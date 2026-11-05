@@ -336,7 +336,8 @@ function LegTimeline({
         const pills = (
           <View style={styles.legMeta} testID="leg-flight">
             <AirlinePill airline={leg.flight.airline} flightNumber={leg.flight.flightNumber} />
-            {/* Aircraft type beside the chip, when the schedule has it (round 138, John). */}
+            {/* Aircraft type stacked under the chip, when the schedule has it (round 138; stacked in round 154,
+                John: "stack the airline and equipment type like on the previous page summary"). */}
             {aircraftLabel(leg.flight.aircraft) ? (
               <View style={styles.aircraft} testID="leg-aircraft">
                 <Icon name="airplane" size={11} tintColor={c.muted} fallback={null} />
@@ -703,12 +704,9 @@ export const ResultRow = memo(function ResultRow({
               // A canceled leg is red with an X on it (round 143, John), with no numbers over it; a
               // no-data leg shows no label either (a lone dash said nothing, round 142).
               const canceled = status?.legs[i]?.tag?.kind === 'canceled';
-              // The leg's flight and aircraft sit under its stretch of line (round 145, John).
-              const flight = {
-                airline: l.flight.airline,
-                number: l.flight.flightNumber,
-                aircraft: aircraftLabel(l.flight.aircraft),
-              };
+              // The leg's airline and flight number sit under its stretch of line (round 145, John); the
+              // aircraft type waits for the opened route (round 154, John).
+              const flight = { airline: l.flight.airline, number: l.flight.flightNumber };
               if (canceled) return { color: c.canceled, text: c.canceledFg, label: '', canceled: true, flight };
               const blank = l.seats.source === 'unknown';
               // A delay or diversion rides over its own leg, above the seats (round 146, John).
@@ -1098,7 +1096,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.sm + 2,
   },
   // A leg's tag and flight chip, above (first flight) or below (later flights) its time.
-  legMeta: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', columnGap: spacing.group, rowGap: 2 },
+  legMeta: { alignItems: 'flex-start', gap: 4 },
   aircraft: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   connection: { flex: 1, alignItems: 'center', gap: 4 },
   connectionText: { textAlign: 'center', alignSelf: 'stretch' },

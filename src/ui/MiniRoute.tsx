@@ -19,8 +19,9 @@ const ICON = 11;
 export const COUNT_ICON = { seats: 'carseat.right.fill', listed: 'person.fill' } as const;
 /** The X on a canceled leg. */
 const X_SIZE = 12;
-/** Room under the stop codes for each leg's flight and aircraft (round 145). */
-const FLIGHT_H = 40;
+/** Room under the stop codes for each leg's airline and flight number: one line (round 154, the aircraft
+ * type moved to the opened route). */
+const FLIGHT_H = 22;
 /** With this many legs or more, a known airline's flight shows its logo and number without the code, to fit. */
 const COMPACT_LEGS = 3;
 
@@ -45,7 +46,7 @@ export interface MiniRouteLeg {
    */
   flag?: string | null;
   /** The leg's flight, shown under its stretch of line (round 145, John). */
-  flight?: { airline: string; number: string; aircraft?: string | null };
+  flight?: { airline: string; number: string };
 }
 
 /**
@@ -194,8 +195,8 @@ export function MiniRoute({
             })}
             {segs.map((leg, i) => {
               // Each leg's flight under its own stretch, below the stop codes so the two never meet: the
-              // airline's mark and the flight number, then the aircraft in small gray (round 145, John:
-              // "fit the airline and aircraft underneath the route line ... aligned underneath").
+              // airline's mark and the flight number (round 145). The aircraft type shows only once a route
+              // is opened (round 154, John: "Don't put the equipment type unless you select to view more").
               const f = leg.flight;
               if (!f) return null;
               const known = !!AIRLINE_MARKS[f.airline];
@@ -217,17 +218,6 @@ export function MiniRoute({
                       {number}
                     </Text>
                   </View>
-                  {f.aircraft ? (
-                    <Text
-                      style={[styles.planeText, { color: c.muted }]}
-                      numberOfLines={1}
-                      adjustsFontSizeToFit
-                      minimumFontScale={0.8}
-                      maxFontSizeMultiplier={1.15}
-                      testID="mini-route-aircraft">
-                      {f.aircraft}
-                    </Text>
-                  ) : null}
                 </View>
               );
             })}
@@ -379,7 +369,6 @@ const styles = StyleSheet.create({
   flightSlot: { position: 'absolute', height: FLIGHT_H - 2, alignItems: 'center', paddingHorizontal: 3 },
   flightLine: { flexDirection: 'row', alignItems: 'center', gap: 3, maxWidth: '100%' },
   flightText: { flexShrink: 1, fontFamily: fonts.monoMedium, fontSize: 13, lineHeight: 18 },
-  planeText: { fontFamily: fonts.monoMedium, fontSize: 12, lineHeight: 16, maxWidth: '100%' },
   stopCode: { fontFamily: fonts.monoMedium, fontSize: 12, lineHeight: LABEL_H, letterSpacing: 0.3 },
   dot: { width: DOT, height: DOT, borderRadius: DOT / 2, borderWidth: 2 },
 });

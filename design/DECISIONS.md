@@ -505,3 +505,7 @@ John: "Canceled flights should have the red border on the card. Not when it's fu
 ## Design round 153: solid gray edge on canceled tickets (John, Nov 5)
 
 John didn't like the dashed border after all. A canceled ticket now has a solid gray edge, the same 1pt weight as every other ticket, and keeps the gray fade, the red X on its canceled leg and the Canceled pill. Red stays for full flights.
+
+## Design round 154: aircraft type only on the opened route, stacked under the flight (John, Nov 5)
+
+John: "stack the airline and equipment type like on the previous page summary. In the previous page only show the airline and flight number. Don't put the equipment type unless you select to view more." On the opened route, each leg box now stacks the aircraft type under the airline and flight number chip instead of beside it. The results tickets and saved route cards show only the airline and flight number under each leg, so the space under the route line shrinks by one line.

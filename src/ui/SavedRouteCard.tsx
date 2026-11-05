@@ -14,8 +14,6 @@ import {
 } from '@/theme';
 import { savedRouteFlights, savedRouteTitle, savedRouteWhen, type SavedRoute } from '@/trips/savedRoutes';
 
-import { aircraftLabel } from '@/engine';
-
 import { Icon } from './Icon';
 import { MetaLine } from './MetaLine';
 import { MiniRoute } from './MiniRoute';
@@ -77,8 +75,8 @@ export function SavedRouteCard({ route, past, now, onOpen, onRemove }: SavedRout
         </InkContext.Provider>
         <TicketTear notch={c.bg} edge={c.line} line={c.line2} />
         <View style={styles.body}>
-          {/* The same route line as a result card (round 146): each flight under its own leg with its
-              aircraft. No seat colors, since a saved route's seats are read again when you open it. */}
+          {/* The same route line as a result card (round 146): each flight under its own leg, airline and
+              number only (round 154). No seat colors, since a saved route's seats are read again when you open it. */}
           <View style={styles.route} testID="saved-route-line">
             <MiniRoute
               airports={[route.legs[0].from, ...route.legs.map((l) => l.to)]}
@@ -87,7 +85,7 @@ export function SavedRouteCard({ route, past, now, onOpen, onRemove }: SavedRout
                 color: c.line2,
                 text: c.muted,
                 label: '',
-                flight: { airline: l.airline, number: l.flightNumber, aircraft: aircraftLabel(l.aircraft) },
+                flight: { airline: l.airline, number: l.flightNumber },
               }))}
             />
           </View>
