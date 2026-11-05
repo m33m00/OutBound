@@ -67,7 +67,18 @@ export function airlineName(code: string): string {
  * The airline's logo straight on the card, no tile behind it (round 134, John: "bigger with a
  * transparent background"), or its tail mark when there's no logo. `size` points square.
  */
-export function AirlineMark({ airline, size = 18, logoKey = LOGO_KEY }: { airline: string; size?: number; logoKey?: string }) {
+export function AirlineMark({
+  airline,
+  size = 18,
+  logoKey = LOGO_KEY,
+  bare,
+}: {
+  airline: string;
+  size?: number;
+  logoKey?: string;
+  /** No tile behind the fallback mark: just the plane in the airline's color (round 156, John: "transparent backgrounds not squares"). */
+  bare?: boolean;
+}) {
   const m = AIRLINE_MARKS[airline];
   const [failed, setFailed] = useState(false);
   const ink = useContext(InkContext);
@@ -84,6 +95,18 @@ export function AirlineMark({ airline, size = 18, logoKey = LOGO_KEY }: { airlin
           cachePolicy="disk"
           accessibilityIgnoresInvertColors
           onError={() => setFailed(true)}
+        />
+      </View>
+    );
+  }
+  if (bare) {
+    return (
+      <View style={[styles.mark, { width: size, height: size }]} testID="airline-mark">
+        <Icon
+          name="airplane"
+          size={size * 0.8}
+          tintColor={m.tail}
+          fallback={<Text style={{ color: m.tail, fontSize: size * 0.7, lineHeight: size * 0.9 }}>✈</Text>}
         />
       </View>
     );

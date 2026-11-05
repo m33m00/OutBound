@@ -77,6 +77,11 @@ export const colors = {
     canceledBg: '#fde0e3',
     canceledFg: '#9e0d24',
 
+    // Departed and Arrived pills (round 156, John: "A color for the pill when it has departed or arrived"):
+    // a sky cyan no other meaning uses (blue is for things you tap, green to red for seats and lateness).
+    done: '#0b6782',
+    doneBg: '#dcf1f7',
+
     // A time that moved, tinted by how far (John, 2026-11-02): early green; late yellow, orange, red.
     // Text colors, kept soft so they tint the number rather than shout.
     timeEarly: '#14744a',
@@ -135,6 +140,9 @@ export const colors = {
     canceled: '#ff4d5e',
     canceledBg: '#3a1018',
     canceledFg: '#ffa3ad',
+
+    done: '#8adcf0',
+    doneBg: '#0e2a33',
 
     timeEarly: '#7fdca6',
     timeSlight: '#e8d27a',

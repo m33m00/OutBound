@@ -214,8 +214,8 @@ export function FlightStatusSheet({ flight, visible, now, onClose, liveOptions, 
                       styles.state,
                       {
                         backgroundColor: tone ? c[TONE_BG[tone]] : c.surface2,
-                        // Gray tones get an edge, like the row tag, so the pill shows on the page.
-                        borderColor: !tone || tone === 'gone' ? c.line2 : c[TONE_BG[tone]],
+                        // On time (no tone) gets an edge, so the pill shows on the page.
+                        borderColor: !tone ? c.line2 : c[TONE_BG[tone]],
                       },
                     ]}>
                     {tone === 'canceled' ? (

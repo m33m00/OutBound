@@ -122,18 +122,38 @@ describe('MiniRoute (round 119)', () => {
     expect(flag.top + flag.height).toBeLessThanOrEqual(label.top);
   });
 
-  it('drops the airline code beside a known logo from 3 legs up, to fit the bigger text (rounds 145, 146)', () => {
-    const leg = (number: string) => ({ color: '#0a0', text: '#060', label: '9/1', flight: { airline: 'AA', number } });
-    const numbers = (airports: string[]) => {
-      act(() => {
-        r = create(<MiniRoute airports={airports} legs={airports.slice(1).map((_, i) => leg(`${100 + i}`))} />);
-      });
-      return r!.root
-        .findAll((n) => n.props.testID === 'mini-route-flight-number' && typeof n.type === 'string')
-        .map((n) => n.props.children);
-    };
-    expect(numbers(['DFW', 'MIA', 'LGA'])).toEqual(['AA 100', 'AA 101']);
-    expect(numbers(['DFW', 'CLT', 'MIA', 'LGA'])).toEqual(['100', '101', '102']);
+  it('shows each flight as its airline logo only; a tap opens its number and aircraft, a tap elsewhere closes it (round 156)', () => {
+    const leg = (airline: string, number: string, aircraft?: string) => ({
+      color: '#0a0',
+      text: '#060',
+      label: '9/1',
+      flight: { airline, number, aircraft },
+    });
+    act(() => {
+      r = create(<MiniRoute airports={['DFW', 'MIA', 'LGA']} legs={[leg('AA', '100', '737-800'), leg('ZZ', '7')]} />);
+    });
+    const host = (id: string) => r!.root.findAll((n) => n.props.testID === id && typeof n.type === 'string');
+    const texts = () =>
+      r!.root.findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string').map((n) => n.props.children);
+    // No number on the line: the known airline is its logo with no tile behind it, an unknown one its code.
+    expect(host('flight-peek-logo')).toHaveLength(2);
+    expect(texts()).not.toContain('AA 100');
+    expect(
+      host('flight-peek-logo')[0].findAll((n) => n.props.testID === 'airline-mark' || n.props.testID === 'airline-logo').length,
+    ).toBeGreaterThan(0);
+    expect(host('flight-peek-logo')[1].findAll((n) => n.props.children === 'ZZ').length).toBeGreaterThan(0);
+    expect(host('flight-peek')).toHaveLength(0);
+    // Tap the logo: the little window shows the number and the aircraft.
+    const press = (id: string) => r!.root.findAll((n) => n.props.testID === id && typeof n.props.onPress === 'function');
+    act(() => press('flight-peek-logo')[0].props.onPress());
+    expect(host('flight-peek')).toHaveLength(1);
+    expect(texts()).toEqual(expect.arrayContaining(['AA 100', '737-800']));
+    // A tap anywhere else closes it.
+    act(() => press('flight-peek-backdrop')[0].props.onPress());
+    expect(host('flight-peek')).toHaveLength(0);
+    // Holding works too.
+    act(() => press('flight-peek-logo')[1].props.onLongPress());
+    expect(texts()).toContain('ZZ 7');
   });
 
   it("centres a flight's delay over its own leg, above the seat numbers (round 146, John)", () => {

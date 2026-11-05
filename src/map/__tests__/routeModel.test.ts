@@ -3,14 +3,12 @@ import { colors } from '@/theme';
 import { devSampleRoutes } from '../devSampleRoutes';
 import { hexToRgb, rgba } from '../globeColors';
 import {
-  DASH_PATTERN,
   LINE,
   NEUTRAL_LINE,
   TIER_LABEL,
   drawLegs,
   drawnRoutes,
   groupByPath,
-  isDashedSource,
   isDrawableLeg,
   legPairKey,
   legStyle,
@@ -134,12 +132,9 @@ describe('style mapping', () => {
   for (const scheme of ['light', 'dark'] as const) {
     const p = colors[scheme];
 
-    it(`${scheme}: reported = solid, everything else dashed 8/6`, () => {
-      expect(isDashedSource('reported')).toBe(false);
-      for (const s of ['estimate', 'typical', 'unknown'] as const) expect(isDashedSource(s)).toBe(true);
-      expect(legStyle({ tier: 'good', source: 'reported' }, 'selected', p, scheme).dash).toBeNull();
-      expect(legStyle({ tier: 'good', source: 'estimate' }, 'selected', p, scheme).dash).toEqual([8, 6]);
-      expect(DASH_PATTERN).toEqual([8, 6]);
+    it(`${scheme}: every selected leg is a solid line, no dashes (round 156, John)`, () => {
+      for (const s of ['reported', 'estimate', 'typical', 'unknown'] as const)
+        expect(legStyle({ tier: 'good', source: s }, 'selected', p, scheme).dash).toBeNull();
     });
 
     it(`${scheme}: selected legs use their tier token`, () => {

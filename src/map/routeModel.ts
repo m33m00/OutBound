@@ -5,7 +5,8 @@
  * Rules (DECISIONS.md "Map"):
  * - Results show the top 10 routes of the current sort.
  * - Overview (nothing selected): thin neutral gray.
- * - Selected route: tier color per leg; solid = reported, dashed = the rest.
+ * - Selected route: tier color per leg, always a solid line (round 156, John: "We don't need ... dotted
+ *   lines"; a reading's source shows on the ticket instead).
  *   Typical loads are neutral, so typical/unknown sources draw unknown gray.
  * - Other routes while one is selected: hidden, so the preview shows only the
  *   picked route (John, 2026-11-01; they were faint ghosts before).
@@ -158,7 +159,7 @@ export function legStyle(
   return {
     color: tierHex,
     width: LINE.selected.width,
-    dash: reported ? null : DASH_PATTERN,
+    dash: null,
     halo: {
       color: rgba(hexToRgb(palette.surface), LINE.haloAlpha),
       width: LINE.selected.width + LINE.haloExtra,

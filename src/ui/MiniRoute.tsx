@@ -2,7 +2,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { fonts, useColors } from '@/theme';
 
-import { AIRLINE_MARKS, AirlineMark } from './AirlinePill';
+import { FlightPeek, PEEK_LOGO } from './FlightPeek';
 import { Icon } from './Icon';
 
 /** Room above the line for each leg's seat numbers, and below it for a stop's code. */
@@ -19,10 +19,10 @@ const ICON = 11;
 export const COUNT_ICON = { seats: 'carseat.right.fill', listed: 'person.fill' } as const;
 /** The X on a canceled leg. */
 const X_SIZE = 12;
-/** Room under the stop codes for each leg's airline and flight number: one line (round 154, the aircraft
- * type moved to the opened route). */
-const FLIGHT_H = 22;
-/** With this many legs or more, a known airline's flight shows its logo and number without the code, to fit. */
+/** Room under the stop codes for each leg's airline logo (round 156: logo only, the number and aircraft
+ * open from it). */
+const FLIGHT_H = PEEK_LOGO + 6;
+/** With this many legs or more, a delay pill says "+50m" to fit its short stretch. */
 const COMPACT_LEGS = 3;
 
 /** One leg of the line: the color it's drawn in and the seat numbers shown above it (round 140). */
@@ -45,8 +45,11 @@ export interface MiniRouteLeg {
    * John: "The delayed pill, can that be over on top of that route line ... centered on that route line").
    */
   flag?: string | null;
-  /** The leg's flight, shown under its stretch of line (round 145, John). */
-  flight?: { airline: string; number: string };
+  /**
+   * The leg's flight: its airline's logo under its stretch of line, which opens the number and aircraft
+   * (rounds 145, 156, John).
+   */
+  flight?: { airline: string; number: string; aircraft?: string | null };
 }
 
 /**
@@ -111,6 +114,7 @@ export function MiniRoute({
     <View
       style={[styles.row, segs && styles.rowLabeled, top > 0 && { paddingTop: 6 + top }, tail > 0 && { paddingBottom: 6 + tail }]}
       testID="mini-route"
+      // Drawn only for VoiceOver: the card's own label says the route, flights and seats.
       importantForAccessibility="no-hide-descendants"
       accessibilityElementsHidden>
       <Text style={[styles.code, { color: ends }]} maxFontSizeMultiplier={1.3}>
@@ -194,30 +198,17 @@ export function MiniRoute({
               );
             })}
             {segs.map((leg, i) => {
-              // Each leg's flight under its own stretch, below the stop codes so the two never meet: the
-              // airline's mark and the flight number (round 145). The aircraft type shows only once a route
-              // is opened (round 154, John: "Don't put the equipment type unless you select to view more").
+              // Each leg's airline logo under its own stretch, below the stop codes so the two never meet. Only
+              // the logo: a tap or hold opens the flight number and aircraft (round 156, John).
               const f = leg.flight;
               if (!f) return null;
-              const known = !!AIRLINE_MARKS[f.airline];
-              const number = compact && known ? f.number : `${f.airline} ${f.number}`;
               return (
                 <View
                   key={`fl${i}`}
+                  pointerEvents="box-none"
                   style={[styles.flightSlot, below(legFlagY + under), { left: pct(i), width: pct(1) }]}
                   testID="mini-route-flight">
-                  <View style={styles.flightLine}>
-                    {known ? <AirlineMark airline={f.airline} size={15} /> : null}
-                    <Text
-                      style={[styles.flightText, { color: ends }]}
-                      numberOfLines={1}
-                      adjustsFontSizeToFit
-                      minimumFontScale={0.8}
-                      maxFontSizeMultiplier={1.15}
-                      testID="mini-route-flight-number">
-                      {number}
-                    </Text>
-                  </View>
+                  <FlightPeek airline={f.airline} number={f.number} aircraft={f.aircraft} />
                 </View>
               );
             })}
@@ -367,8 +358,6 @@ const styles = StyleSheet.create({
   count: { alignItems: 'center', height: ICON_H + LABEL_H, justifyContent: 'flex-end', gap: 1 },
   stop: { position: 'absolute', width: STOP_W, marginLeft: -STOP_W / 2, alignItems: 'center' },
   flightSlot: { position: 'absolute', height: FLIGHT_H - 2, alignItems: 'center', paddingHorizontal: 3 },
-  flightLine: { flexDirection: 'row', alignItems: 'center', gap: 3, maxWidth: '100%' },
-  flightText: { flexShrink: 1, fontFamily: fonts.monoMedium, fontSize: 13, lineHeight: 18 },
   stopCode: { fontFamily: fonts.monoMedium, fontSize: 12, lineHeight: LABEL_H, letterSpacing: 0.3 },
   dot: { width: DOT, height: DOT, borderRadius: DOT / 2, borderWidth: 2 },
 });

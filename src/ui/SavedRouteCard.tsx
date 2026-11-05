@@ -1,5 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { aircraftLabel } from '@/engine';
 import { forSpeech } from '@/search/format';
 import {
   elevation,
@@ -75,8 +76,8 @@ export function SavedRouteCard({ route, past, now, onOpen, onRemove }: SavedRout
         </InkContext.Provider>
         <TicketTear notch={c.bg} edge={c.line} line={c.line2} />
         <View style={styles.body}>
-          {/* The same route line as a result card (round 146): each flight under its own leg, airline and
-              number only (round 154). No seat colors, since a saved route's seats are read again when you open it. */}
+          {/* The same route line as a result card (round 146): each flight's airline logo under its own leg,
+              opening its number and aircraft (round 156). No seat colors, since a saved route's seats are read again when you open it. */}
           <View style={styles.route} testID="saved-route-line">
             <MiniRoute
               airports={[route.legs[0].from, ...route.legs.map((l) => l.to)]}
@@ -85,7 +86,7 @@ export function SavedRouteCard({ route, past, now, onOpen, onRemove }: SavedRout
                 color: c.line2,
                 text: c.muted,
                 label: '',
-                flight: { airline: l.airline, number: l.flightNumber },
+                flight: { airline: l.airline, number: l.flightNumber, aircraft: aircraftLabel(l.aircraft) },
               }))}
             />
           </View>

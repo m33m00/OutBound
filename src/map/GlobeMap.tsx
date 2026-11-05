@@ -83,7 +83,9 @@ export function GlobeMap({
   homeMotion = false,
   insets,
   interactive = true,
-  showLegend = true,
+  // Off by default since round 156 (John: "We don't need a map legend ... That is all explained in the
+  // containers now").
+  showLegend = false,
   style,
 }: GlobeMapProps) {
   const palette = useColors();

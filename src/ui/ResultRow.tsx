@@ -704,18 +704,23 @@ export const ResultRow = memo(function ResultRow({
               // A canceled leg is red with an X on it (round 143, John), with no numbers over it; a
               // no-data leg shows no label either (a lone dash said nothing, round 142).
               const canceled = status?.legs[i]?.tag?.kind === 'canceled';
-              // The leg's airline and flight number sit under its stretch of line (round 145, John); the
-              // aircraft type waits for the opened route (round 154, John).
-              const flight = { airline: l.flight.airline, number: l.flight.flightNumber };
+              // The leg's airline logo sits under its stretch of line; its number and aircraft open from it
+              // (rounds 145, 154, 156, John).
+              const flight = {
+                airline: l.flight.airline,
+                number: l.flight.flightNumber,
+                aircraft: aircraftLabel(l.flight.aircraft),
+              };
               if (canceled) return { color: c.canceled, text: c.canceledFg, label: '', canceled: true, flight };
-              const blank = l.seats.source === 'unknown';
               // A delay or diversion rides over its own leg, above the seats (round 146, John).
               const tag = status?.legs[i]?.tag;
               const flag = tag && (tag.kind === 'delayed' || tag.kind === 'diverted') ? tag.label : null;
               return {
                 color: c[tier],
                 text: c[TIER_FG[tier]],
-                label: blank ? '' : dotSeats(l.seats),
+                // No reading: a dash, never a 0 (round 156, John: "If there are no seats reported don't put
+                // 0. Put a - to represent it hasnt been reported").
+                label: dotSeats(l.seats),
                 counts: seatCounts(l.seats),
                 flag,
                 flight,

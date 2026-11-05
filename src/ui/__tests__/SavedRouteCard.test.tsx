@@ -27,7 +27,14 @@ describe('SavedRouteCard', () => {
 
   // One per control: the card's press wrapper and the pressable inside it share a label.
   const buttons = () => {
-    const all = r!.root.findAll((n) => n.props.accessibilityRole === 'button' && typeof n.type !== 'string' && n.props.onPress);
+    // The card's own buttons, not the airline logos on its route line (round 156).
+    const all = r!.root.findAll(
+      (n) =>
+        n.props.accessibilityRole === 'button' &&
+        typeof n.type !== 'string' &&
+        n.props.onPress &&
+        n.props.testID !== 'flight-peek-logo',
+    );
     return all.filter((n, i) => all.findIndex((m) => m.props.accessibilityLabel === n.props.accessibilityLabel) === i);
   };
 
@@ -40,8 +47,9 @@ describe('SavedRouteCard', () => {
     const texts = r!.root
       .findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string')
       .map((n) => n.props.children as string);
-    expect(texts).toEqual(expect.arrayContaining(['DFW → ORD → LAX', 'Tue, Oct 20', '7:05 AM – 1:20 PM', 'AA 1234', 'AA 88']));
-    // The flights sit under their legs on a route line, like the results (round 146).
+    expect(texts).toEqual(expect.arrayContaining(['DFW → ORD → LAX', 'Tue, Oct 20', '7:05 AM – 1:20 PM']));
+    // The flights sit under their legs on a route line as airline logos, like the results (rounds 146, 156);
+    // the numbers are in the card's spoken label below and in each logo's window.
     expect(r!.root.findAll((n) => n.props.testID === 'saved-route-line' && typeof n.type === 'string')).toHaveLength(1);
     expect(r!.root.findAll((n) => n.props.testID === 'mini-route-flight' && typeof n.type === 'string')).toHaveLength(2);
     expect(texts).not.toContain('Passed');

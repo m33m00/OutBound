@@ -513,3 +513,10 @@ John: "stack the airline and equipment type like on the previous page summary. I
 ## Design round 155: flight stack centred under the route line (John, Nov 5)
 
 John: "It's not aligned center underneath the route line when I open more details." On the opened route, each leg box's airline and flight number chip, with its aircraft stacked under it, is now centred across the box, under the middle of the route line, the way the results tickets centre each flight under its leg.
+
+## Design round 156: logo-only tickets, plain map lines, dashes for no seats, colored Departed/Arrived (John, Nov 5)
+
+- Results tickets and saved cards: each leg shows only its airline's logo under the route line, with no tile behind it and no flight number. A tap or hold on a logo opens a small window over it with the flight number and aircraft type; a tap anywhere else closes it (FlightPeek). An airline with no logo shows its code. The tail-mark fallback is drawn bare (a plane in the airline's color) instead of a colored square. Some logos from Logo.dev come with their own colored square baked in (Delta's is navy), which the app can't strip.
+- Map: no map key, no dashed lines, no direction chevrons. Every selected leg is a plain solid line in its seat color. The route pulse stays.
+- A leg with no seat reading shows a dash over it on the route line instead of nothing.
+- Departed and Arrived pills: sky cyan (light #0b6782 on #dcf1f7, 5.5:1; dark #8adcf0 on #0e2a33). No other meaning uses cyan: blue is for things you tap, green to red for seats and lateness, violet for delays, amber for you.

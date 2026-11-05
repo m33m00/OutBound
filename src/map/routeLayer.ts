@@ -4,20 +4,13 @@
  * selection or theme change; the static pictures are not touched by a
  * selection change.
  *
- * The selected route also gets direction chevrons (item 9).
+ * Plain lines and seat colors only: no direction chevrons since round 156 (John: "Just do lines and
+ * colors. No direction arrows either").
  *
  * Also returns the projected lines used for tap hit testing, so drawing and
  * hit testing always agree.
  */
-import {
-  BlurStyle,
-  PaintStyle,
-  Skia,
-  StrokeCap,
-  StrokeJoin,
-  type SkPath,
-  type SkPicture,
-} from '@shopify/react-native-skia';
+import { BlurStyle, PaintStyle, Skia, StrokeCap, StrokeJoin, type SkPath, type SkPicture } from '@shopify/react-native-skia';
 
 import type { ColorScheme, Palette } from '@/theme';
 
@@ -25,7 +18,6 @@ import { legSamples, makeLiftedProjector, projectSamples, runsToSvg, type Runs }
 import type { GlobeCamera, Viewport } from './camera';
 import { hexToRgb, rgba, type Rgb } from './globeColors';
 import type { HitLine } from './hitTest';
-import { CHEVRON, chevronPoints, chevronsAlong } from './marks';
 import { drawLegs, isDrawableLeg, legStyle, LINE } from './routeModel';
 import type { RouteLine } from './types';
 
@@ -128,22 +120,6 @@ export function recordRouteLayer(input: RouteLayerInput): RouteLayer {
       legCount: route?.legs.length ?? 1,
       selected: d.role === 'selected',
     });
-
-    // Direction chevrons: selected route only, always solid, tier color.
-    if (d.role === 'selected') {
-      const halo = stroke(rgba(hexToRgb(palette.surface), CHEVRON.haloAlpha), CHEVRON.haloWidth);
-      const ink = stroke(style.color, CHEVRON.width);
-      for (const c of chevronsAlong(legSamples(d.leg), project)) {
-        const pts = chevronPoints(c);
-        const cp = Skia.PathBuilder.Make()
-          .moveTo(pts[0].x, pts[0].y)
-          .lineTo(pts[1].x, pts[1].y)
-          .lineTo(pts[2].x, pts[2].y)
-          .detach();
-        canvas.drawPath(cp, halo);
-        canvas.drawPath(cp, ink);
-      }
-    }
   }
 
   return { picture: recorder.finishRecordingAsPicture(), hitLines, pulses };
