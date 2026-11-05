@@ -107,10 +107,13 @@ export function MiniRoute({
   // Everything in the track sits this far lower when there are flags or count icons above it.
   const top = (stopFlagged ? FLAG_H : 0) + (withIcons ? ICON_H : 0);
   const below = (y: number) => ({ top: top + y });
-  // Room under the stop codes for each flight's logo, then the delay pills.
-  const under = legFlagged ? FLAG_H : 0;
-  const tail = under + (withFlights ? FLIGHT_H : 0);
-  const legFlagY = LABEL_H + DOT + LABEL_H + 2;
+  // Each leg's logo sits just under the line, level with the stop codes beside it (round 158, John: "Can the
+  // airline logo be scooted up closer to the route line"); a logo centred on its leg clears the codes centred
+  // on the dots, even on a 2-stop ticket. A delay pill goes under the logo.
+  const flightY = LABEL_H + DOT + 3;
+  const legFlagY = withFlights ? flightY + FLIGHT_H - 4 : LABEL_H + DOT + LABEL_H + 2;
+  const base = LABEL_H + DOT + LABEL_H;
+  const tail = Math.max(0, (withFlights ? flightY + FLIGHT_H : 0) - base, legFlagged ? legFlagY + FLAG_H - base : 0);
   return (
     <View
       style={[styles.row, segs && styles.rowLabeled, top > 0 && { paddingTop: 6 + top }, tail > 0 && { paddingBottom: 6 + tail }]}
@@ -185,12 +188,7 @@ export function MiniRoute({
               return (
                 <View
                   key={`lf${i}`}
-                  style={[
-                    styles.flagSlot,
-                    styles.legFlagSlot,
-                    below(legFlagY + (withFlights ? FLIGHT_H : 0)),
-                    { left: pct(i), width: pct(1) },
-                  ]}
+                  style={[styles.flagSlot, styles.legFlagSlot, below(legFlagY), { left: pct(i), width: pct(1) }]}
                   testID="mini-route-leg-flag">
                   <Text
                     style={[styles.flagText, { color: c.caution, backgroundColor: c.cautionBg }]}
@@ -212,7 +210,7 @@ export function MiniRoute({
                 <View
                   key={`fl${i}`}
                   pointerEvents="box-none"
-                  style={[styles.flightSlot, below(legFlagY), { left: pct(i), width: pct(1) }]}
+                  style={[styles.flightSlot, below(flightY), { left: pct(i), width: pct(1) }]}
                   testID="mini-route-flight">
                   <FlightPeek airline={f.airline} number={f.number} aircraft={f.aircraft} />
                 </View>

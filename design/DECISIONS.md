@@ -524,3 +524,9 @@ John: "It's not aligned center underneath the route line when I open more detail
 ## Design round 157: logo above the delay pill, "25m late" (John, Nov 5)
 
 John: "Can the logos sit on top of the delayed pill and delay pill sits underneath the logo? Also +25m doesn't really say much." Under each leg of a ticket's route line the order is now: stop codes, the airline logo, then the delay pill. A delay reads "25m late" everywhere (tickets, the opened route, the flight sheet already used it), which fits even a 2-stop ticket's short legs (about 63pt, measured with Geist SemiBold 12, against about 69pt per leg on a 375pt phone), so the "+25m" short form is gone. VoiceOver still says "Delayed 25 minutes, was ..., now ...".
+
+## Design round 158: logo peek on the opened route, logos closer to the line, no delay line under Leave By (John, Nov 5)
+
+- Opened route: each flight box shows only the airline's logo (28pt, no pill) centred under its route line, with the same tap-or-hold window as the tickets for the flight number and aircraft type. The box's spoken label now includes the aircraft. Tapping elsewhere in the box still opens the flight sheet.
+- Tickets: each leg's logo moved up to sit just under the line, level with the stop codes beside it (a logo centred on its leg clears the codes centred on the dots, even on a 2-stop ticket); a delay pill sits right under the logo.
+- Leave By card: the "Flight delayed to 5:35 PM" line is gone; the route's own times show the change. VoiceOver still hears it with the title.

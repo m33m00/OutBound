@@ -166,22 +166,11 @@ export function LeaveByCard(p: LeaveByCardProps) {
           </View>
         ) : null}
       </View>
-      {/* The small lines use the card's full width, so they don't squeeze beside the button and drop one word (John, 2026-10-30). */}
-      {delayLine || note ? (
+      {/* The small lines use the card's full width, so they don't squeeze beside the button and drop one word (John, 2026-10-30).
+          No delay line under it any more (round 158, John: "I dont need a status underneath the Leave By container. It
+          already tells me in the details a change in time"); VoiceOver still hears it with the title. */}
+      {note ? (
         <View style={styles.details} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-          {delayLine ? (
-            <Text
-              style={[
-                textStyles.small,
-                {
-                  color: c.caution,
-                  fontFamily: textStyles.bodyStrong.fontFamily,
-                },
-              ]}
-              lineBreakStrategyIOS="push-out">
-              {delayLine}
-            </Text>
-          ) : null}
           {note ? (
             <Text style={[textStyles.small, { color: c.muted }]} lineBreakStrategyIOS="push-out">
               {note}

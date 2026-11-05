@@ -495,30 +495,35 @@ describe('ResultRow', () => {
     // Not on the flight chip's row any more.
     const group = box.findAll((n) => n.props.testID === 'leg-flight' && typeof n.type === 'string')[0];
     expect(words(group)).not.toContain('25m late');
-    // The chip shows American's mark and the code with the number again (round 136, John: "like DL, WN").
+    // Just American's mark under the line, no number (round 158, John): the number opens from it.
     expect(group.findAll((n) => n.props.testID === 'airline-mark' && typeof n.type === 'string').length).toBeGreaterThan(0);
-    expect(words(group)).toContain('AA 1');
+    expect(words(group)).not.toContain('AA 1');
     expect(group.findAll((n) => n.props.accessibilityLabel === 'American 1' && typeof n.type === 'string').length).toBe(1);
   });
 
-  it('route card: each leg box stacks its aircraft type under the flight chip (rounds 138, 154, John)', async () => {
+  it('route card: each leg box shows just the airline logo; a tap or hold opens the number and aircraft (rounds 155, 158, John)', async () => {
     const it = await fullItinerary();
     const withPlane = { ...it, legs: it.legs.map((l) => ({ ...l, flight: { ...l.flight, aircraft: 'Boeing 737-800' } })) };
     await act(async () => {
       r = create(<ResultRow itinerary={withPlane} selected now={NOW} onPress={jest.fn()} onLegPress={jest.fn()} />);
     });
     const group = r!.root.findAll((n) => n.props.testID === 'leg-flight' && typeof n.type === 'string')[0];
-    const plane = group.findAll((n) => n.props.testID === 'leg-aircraft' && typeof n.type === 'string');
-    expect(plane).toHaveLength(1);
-    expect(plane[0].findAll((n) => n.props.children === '737-800').length).toBeGreaterThan(0);
-    // Stacked: a column, so the aircraft sits under the chip, not beside it.
-    const flatStyle = Object.assign({}, ...([group.props.style] as unknown[]).flat(3).filter(Boolean));
-    expect(flatStyle.flexDirection ?? 'column').toBe('column');
+    const strings = (n: ReactTestInstance) =>
+      n.findAll((x) => typeof x.type === 'string' && typeof x.props.children === 'string').map((x) => x.props.children as string);
+    // No number and no aircraft in the box, no pill around the logo.
+    expect(strings(group)).toEqual([]);
+    expect(group.findAll((n) => n.props.testID === 'airline-pill')).toHaveLength(0);
     // Centred under the route line, across the whole box (round 155).
+    const flatStyle = Object.assign({}, ...([group.props.style] as unknown[]).flat(3).filter(Boolean));
     expect(flatStyle).toMatchObject({ alignSelf: 'stretch', alignItems: 'center' });
-    // No type known: nothing extra.
-    act(() => r!.update(<ResultRow itinerary={it} selected now={NOW} onPress={jest.fn()} onLegPress={jest.fn()} />));
-    expect(r!.root.findAll((n) => n.props.testID === 'leg-aircraft')).toHaveLength(0);
+    // A hold on the logo opens the little window with the number and aircraft.
+    const logo = group.findAll((n) => n.props.testID === 'flight-peek-logo' && typeof n.props.onLongPress === 'function')[0];
+    act(() => logo.props.onLongPress());
+    const peek = r!.root.find((n) => n.props.testID === 'flight-peek' && typeof n.type === 'string');
+    expect(strings(peek)).toEqual(['AA 1', '737-800']);
+    // The box's own spoken label carries the aircraft too.
+    const box = r!.root.findAll((n) => n.props.testID === 'leg-box' && typeof n.props.accessibilityLabel === 'string')[0];
+    expect(box.props.accessibilityLabel).toContain('737-800');
   });
 
   it('canceled: no tag, a red X on the line and the spoken text; departed: gray tag (round 144, John)', async () => {

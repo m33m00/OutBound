@@ -32,7 +32,7 @@ import {
   useColorSchemeName,
 } from '@/theme';
 
-import { AirlinePill } from './AirlinePill';
+import { FlightPeek } from './FlightPeek';
 import { Icon } from './Icon';
 import { Divided, MetaLine } from './MetaLine';
 import { MiniRoute } from './MiniRoute';
@@ -107,6 +107,9 @@ export function seatCounts(seats: LegSeats): { kind: 'seats' | 'listed'; value: 
     ];
   return [{ kind: 'seats', value: `${Math.max(0, seats.netSeats)}` }];
 }
+
+/** The airline logo's size in an opened route's flight box (round 158). */
+const ROUTE_LOGO = 28;
 
 /** A result card's edge (round 150, John: "a more obvious ticket border"). */
 export const CARD_EDGE_W = 1;
@@ -330,20 +333,18 @@ function LegTimeline({
         const typical = leg.seats.source === 'typical' || leg.seats.source === 'unknown';
         // The dot carries the leg's tier color; the route's chance word is in the headline.
         const dotTier = dimmed || typical || view?.tag?.kind === 'canceled' ? 'unknown' : leg.seats.tier;
-        // Every box has one layout (John, 2026-11-02): times and airports first, then the flight
-        // chip with its status pill after it.
-        // The flight chip on its own row; any status pill sits over the route line (round 136, John).
+        // Every box has one layout (John, 2026-11-02): times and airports first, then the flight.
+        // The flight is its airline's logo alone, centred just under the route line; a tap or hold opens its
+        // number and aircraft, as on the tickets (round 158, John: "Can you do the same select or hold on the
+        // airline icon ... when you open up a route"). Any status pill sits over the route line (round 136).
         const pills = (
           <View style={styles.legMeta} testID="leg-flight">
-            <AirlinePill airline={leg.flight.airline} flightNumber={leg.flight.flightNumber} />
-            {/* Aircraft type stacked under the chip, when the schedule has it (round 138; stacked in round 154,
-                John: "stack the airline and equipment type like on the previous page summary"). */}
-            {aircraftLabel(leg.flight.aircraft) ? (
-              <View style={styles.aircraft} testID="leg-aircraft">
-                <Icon name="airplane" size={11} tintColor={c.muted} fallback={null} />
-                <Text style={[textStyles.small, { color: c.muted }]}>{aircraftLabel(leg.flight.aircraft)}</Text>
-              </View>
-            ) : null}
+            <FlightPeek
+              airline={leg.flight.airline}
+              number={leg.flight.flightNumber}
+              aircraft={aircraftLabel(leg.flight.aircraft)}
+              size={ROUTE_LOGO}
+            />
           </View>
         );
         const content = (
@@ -397,6 +398,7 @@ function LegTimeline({
                   // The label replaces what's inside, so it says the leg's time and seats too.
                   accessibilityLabel={[
                     `Flight status, ${leg.flight.airline} ${leg.flight.flightNumber}, ${leg.flight.from} to ${leg.flight.to}`,
+                    aircraftLabel(leg.flight.aircraft),
                     // A canceled leg's tag already says "Canceled, was 10:40 AM".
                     view?.tag?.kind === 'canceled' ? null : legSpokenTimes(leg.flight, view),
                     view?.tag?.spoken,
@@ -1102,8 +1104,8 @@ const styles = StyleSheet.create({
   },
   // A leg's flight chip with its aircraft stacked under it, centred under the route line (round 155, John:
   // "It's not aligned center underneath the route line").
-  legMeta: { alignSelf: 'stretch', alignItems: 'center', gap: 4 },
-  aircraft: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  // Pulled up toward the route line (round 158, John: "Can the airline logo be scooted up closer").
+  legMeta: { alignSelf: 'stretch', alignItems: 'center', marginTop: -2 },
   connection: { flex: 1, alignItems: 'center', gap: 4 },
   connectionText: { textAlign: 'center', alignSelf: 'stretch' },
   struck: { textDecorationLine: 'line-through' },

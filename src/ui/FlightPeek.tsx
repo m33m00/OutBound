@@ -24,7 +24,18 @@ const EDGE = 8;
  * small window over the logo with the flight number and the aircraft type; a tap anywhere else closes it.
  * An airline we have no logo for shows its code instead.
  */
-export function FlightPeek({ airline, number, aircraft }: { airline: string; number: string; aircraft?: string | null }) {
+export function FlightPeek({
+  airline,
+  number,
+  aircraft,
+  size = PEEK_LOGO,
+}: {
+  airline: string;
+  number: string;
+  aircraft?: string | null;
+  /** The logo's size: the ticket's by default, a little bigger on the opened route (round 158). */
+  size?: number;
+}) {
   const c = useColors();
   const reduce = useReducedMotion();
   const win = useWindowDimensions();
@@ -53,10 +64,10 @@ export function FlightPeek({ airline, number, aircraft }: { airline: string; num
           accessibilityRole="button"
           accessibilityLabel={`${airlineName(airline)} ${number}${aircraft ? `, ${aircraft}` : ''}`}
           accessibilityHint="Shows the flight number and aircraft"
-          style={({ pressed }) => [styles.logo, pressed && { opacity: 0.6 }]}
+          style={({ pressed }) => [styles.logo, { minWidth: size, height: size }, pressed && { opacity: 0.6 }]}
           testID="flight-peek-logo">
           {known ? (
-            <AirlineMark airline={airline} size={PEEK_LOGO} bare />
+            <AirlineMark airline={airline} size={size} bare />
           ) : (
             <Text style={[styles.code, { color: c.text }]} maxFontSizeMultiplier={1.2}>
               {airline}

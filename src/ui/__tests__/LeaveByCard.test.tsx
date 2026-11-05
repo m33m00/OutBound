@@ -103,7 +103,7 @@ describe('LeaveByCard location button', () => {
     expect(texts.some((t) => t.startsWith('Flight delayed'))).toBe(false);
   });
 
-  it('keeps the scheduled leave-by and adds the delay under it (Q-070, John: C)', () => {
+  it('keeps the scheduled leave-by; the delay is spoken, not shown under it (Q-070; round 158, John)', () => {
     mockFontScale = 1;
     act(() => {
       r = create(
@@ -122,7 +122,7 @@ describe('LeaveByCard location button', () => {
     const texts = r!.root
       .findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string')
       .map((n) => n.props.children as string);
-    expect(texts).toContain('Flight delayed to 2:40 PM');
+    expect(texts).not.toContain('Flight delayed to 2:40 PM');
     // The title still counts back from the schedule: 4 h out minus the 60 min buffer.
     expect(lineText(r!)).toMatch(/^Be at DFW by /);
     const label = r!.root.find(
