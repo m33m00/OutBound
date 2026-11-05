@@ -537,3 +537,9 @@ John: "Can the logos sit on top of the delayed pill and delay pill sits undernea
 - Leave By before the airport: "Arrive at DFW by 10:10 AM to begin boarding" (airport and time from the data), with nothing beside it. Leave now's detail ends the same way.
 - At the airport: "Your flight begins boarding at 11:40 AM". The time is still the scheduled departure, since we have no boarding time data.
 - At the airport the card opens walking directions (Apple Maps dirflg=w, Google walking) to "DFW Terminal C Gate C12", built from the first flight's live gate and terminal. The car becomes a walking person with the gate under it. No gate posted yet: the person alone, routed to the terminal or airport. Whether the maps app finds the gate depends on its indoor map for that airport.
+
+## Round 160 (2026-11-05, John)
+
+- No "Follow your airline's rules on sharing loads" line anywhere: gone from the bottom of results and from Profile. The report sheet keeps only "Reports are anonymous to other employees."
+- The notes over the results ("Leaving from any Dallas airport (DAL, DFW)", the summary and the like) are centered.
+- Replaces the round 152/153 gray fade: a canceled nonstop gets a 2pt red edge (canceled red) and a light red wash over the whole card (canceledTint, light #fef1f2, dark #24141d), with gray top times. A 1, 2 or 3-stop route with a canceled leg is left as a normal card, with only the red X and Canceled pill on that leg's line.

@@ -531,11 +531,11 @@ export const ResultRow = memo(function ResultRow({
       : []),
   ];
   const first = status?.legs[0];
-  // Departed rows are dimmed with a gray fill and edge; text keeps 4.5:1. A canceled route fades to gray the
-  // same way, with a solid gray edge like any ticket's (round 153, John: no dashes), while its canceled leg
-  // keeps the red X and pill (round 152, John picked the gray fade: red stays for full flights).
-  const canceledRoute = !!status?.canceled;
-  const dimmed = !!status?.dimmed || canceledRoute;
+  // Departed rows are dimmed with a gray fill and edge; text keeps 4.5:1. A canceled nonstop gets a red edge
+  // and a light red wash over the whole card; a connection with a canceled leg stays a normal card, with
+  // just the red X and pill on that leg's line (round 160, John: "leave it alone").
+  const canceledRoute = !!status?.canceled && it.legs.length === 1;
+  const dimmed = !!status?.dimmed;
   const notFlyable = !!status?.canceled;
   const slimLength = tripLength(it, status);
   const shortLeft = shortLayovers(
@@ -557,9 +557,12 @@ export const ResultRow = memo(function ResultRow({
   const highlight = selected && !large;
   // Picked and full rows draw a thicker edge; the tear's notches match it. Every other card has a full
   // point of a darker edge, so each ticket stands apart when scanning, in dark mode too (round 150, John).
-  const edgeW = highlight || (it.isFull && !canceledRoute) ? 2 : CARD_EDGE_W;
-  // The card's edge color where it isn't picked or full; the tear's notches outline in it too.
-  const edgeColor = canceledRoute ? c.faint : c.cardEdge;
+  const edgeW = highlight || it.isFull || canceledRoute ? 2 : CARD_EDGE_W;
+  // The card's edge color where it isn't picked; the tear's notches outline in it too. Red for a canceled
+  // nonstop (its wash tells it from a full one's gray fill) and for a full route.
+  const edgeColor = canceledRoute ? c.canceled : it.isFull ? c.full : c.cardEdge;
+  // The card's paper: a canceled nonstop's red wash, a full or departed route's gray, else white.
+  const paper = canceledRoute ? c.canceledTint : it.isFull || dimmed ? c.surface2 : c.surface;
   // Every value shows its age: the summary's comes from the leg that sets it.
   const summaryAge = it.tier !== 'unknown' ? routeSeatAge(it, now) : null;
   // Shown only while seat ages are on (off since round 124, John).
@@ -590,8 +593,8 @@ export const ResultRow = memo(function ResultRow({
         adjustsFontSizeToFit={!stacked}
         minimumFontScale={0.7}
         testID="row-times">
-        {status?.canceled ? (
-          // A canceled leg: the top times go grey, not struck; the leg's pill and struck times say it
+        {canceledRoute ? (
+          // A canceled nonstop: the top times go grey, not struck; the leg's pill and struck times say it
           // (John, 2026-11-02).
           <Text style={{ color: hc.muted }} testID="row-times-canceled">
             {t.depart} – {t.arrive}
@@ -754,7 +757,7 @@ export const ResultRow = memo(function ResultRow({
       ) : null}
     </>
   );
-  const slimPaper = it.isFull || dimmed ? c.surface2 : c.surface;
+  const slimPaper = paper;
   const slimSource: TearSource | null =
     large || selected
       ? null
@@ -775,7 +778,7 @@ export const ResultRow = memo(function ResultRow({
           cardHold,
           paper: slimPaper,
           bodyPaper: slimPaper,
-          edge: it.isFull && !canceledRoute ? c.full : edgeColor,
+          edge: edgeColor,
           edgeWidth: edgeW,
         };
   // Set while the route card draws its stub, so the swipe strip on the perforation tears the same card.
@@ -811,13 +814,13 @@ export const ResultRow = memo(function ResultRow({
           // Full routes stay in time order, grayed with a red edge; text keeps full contrast.
           // The route view's card drops the selected tint so the Leave By card above it leads.
           // The picked row keeps white and gets an accent outline, as in the Clean look (round 120).
-          backgroundColor: highlight ? c.surface : it.isFull || dimmed ? c.surface2 : c.surface,
-          borderColor: highlight ? c.accent : canceledRoute ? edgeColor : it.isFull ? c.full : c.cardEdge,
+          backgroundColor: highlight ? c.surface : paper,
+          borderColor: highlight ? c.accent : edgeColor,
           shadowColor: c.text,
         },
         // A touch more lift in light mode; dark mode leans on the edge, where a shadow can't show.
         !dimmed && (scheme === 'dark' ? styles.flatDark : styles.liftLight),
-        (highlight || (it.isFull && !canceledRoute)) && styles.strongBorder,
+        (highlight || it.isFull || canceledRoute) && styles.strongBorder,
       ]}>
       {/* No colored edge since round 140: the route line carries each leg's color now, and a full route keeps
           its red outline. */}
@@ -876,8 +879,8 @@ export const ResultRow = memo(function ResultRow({
                 hold,
                 cardHold,
                 paper: c.ink,
-                bodyPaper: it.isFull ? c.surface2 : c.surface,
-                edge: it.isFull && !canceledRoute ? c.full : edgeColor,
+                bodyPaper: canceledRoute ? c.canceledTint : it.isFull ? c.surface2 : c.surface,
+                edge: edgeColor,
                 edgeWidth: edgeW,
               });
               return (

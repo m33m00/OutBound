@@ -605,12 +605,11 @@ describe('ResultRow', () => {
         <ResultRow itinerary={it} selected large now={NOW} onPress={jest.fn()} status={statusFor(it, live(it, 'canceled'))} />,
       );
     });
-    // The leg keeps its scheduled times, both ends struck; the top times go grey, not struck (on the
-    // pass's navy stub, its own grey).
+    // The leg keeps its scheduled times, both ends struck. A connection's top times are left as they
+    // are (round 160, John: "leave it alone"); only a canceled nonstop grays them.
     const struck = struckTexts();
     expect(struck.map((n) => n.props.testID)).toEqual(['leg-clock', 'leg-arrive']);
-    const top = r!.root.findAll((n) => n.props.testID === 'row-times-canceled' && typeof n.type === 'string')[0];
-    expect(top.props.style).toEqual({ color: inkColors.light.muted });
+    expect(r!.root.findAll((n) => n.props.testID === 'row-times-canceled')).toHaveLength(0);
     const after = r!.root.findAll((n) => n.props.testID === 'leg-timeline' && typeof n.type === 'string')[0];
     const words = after
       .findAll((n) => typeof n.type === 'string')
@@ -1069,7 +1068,7 @@ describe('canceled ticket (round 152)', () => {
       { [flightLookupKey(legLookup(it.legs[0].flight))]: s },
       { minConnectSameAirlineMin: 60, minConnectSwitchMin: 90 },
     );
-  it('fades to gray with a solid gray edge, even on a full route, and keeps the red X and pill (rounds 152, 153)', async () => {
+  it('a canceled nonstop gets a red edge and a light red wash, even on a full route, with the red X and pill (round 160)', async () => {
     const it = await fullItinerary();
     expect(it.isFull).toBe(true);
     let r: ReactTestRenderer;
@@ -1080,10 +1079,12 @@ describe('canceled ticket (round 152)', () => {
     });
     const card = r!.root.findAll((n) => n.props.accessibilityRole === 'button' && typeof n.type === 'string')[0];
     const style = Object.assign({}, ...([card.props.style] as unknown[]).flat(5).filter(Boolean));
-    // Red stays for full flights; a canceled one is gray instead, solid and the same weight as any ticket.
-    expect(style).toMatchObject({ borderColor: colors.light.faint, borderWidth: CARD_EDGE_W });
+    // Red edge like a full one, but the wash, not the gray fill, says canceled (round 160, John).
+    expect(style).toMatchObject({ borderColor: colors.light.canceled, borderWidth: 2 });
     expect(style.borderStyle).toBeUndefined();
-    expect(style.backgroundColor).toBe(colors.light.surface2);
+    expect(style.backgroundColor).toBe(colors.light.canceledTint);
+    const top = r!.root.findAll((n) => n.props.testID === 'row-times-canceled' && typeof n.type === 'string');
+    expect(top).toHaveLength(1);
     const host = (id: string) => r!.root.findAll((n) => n.props.testID === id && typeof n.type === 'string');
     expect(host('mini-route-canceled')).toHaveLength(1);
     expect(host('mini-route-canceled-pill')).toHaveLength(1);
@@ -1091,6 +1092,43 @@ describe('canceled ticket (round 152)', () => {
     expect(Object.assign({}, ...([seg.props.style] as unknown[]).flat(3).filter(Boolean)).backgroundColor).toBe(
       colors.light.canceled,
     );
+  });
+
+  it('a connection with a canceled leg stays a normal card, just the X on that leg (round 160, John)', async () => {
+    const it = await twoLegItinerary();
+    let r: ReactTestRenderer;
+    const first = it.legs[0].flight;
+    const s: FlightStatus = {
+      ...live(it as Awaited<ReturnType<typeof fullItinerary>>, 'canceled'),
+      departure: { ...live(it as Awaited<ReturnType<typeof fullItinerary>>, 'canceled').departure, airport: first.from },
+    };
+    const status = rowStatus(
+      it,
+      { [flightLookupKey(legLookup(first))]: s },
+      { minConnectSameAirlineMin: 60, minConnectSwitchMin: 90 },
+    );
+    expect(status.canceled).toBe(true);
+    await act(async () => {
+      r = create(<ResultRow itinerary={it} selected={false} now={NOW} onPress={jest.fn()} status={status} />);
+    });
+    const cardStyle = () => {
+      const card = r!.root.findAll((n) => n.props.accessibilityRole === 'button' && typeof n.type === 'string')[0];
+      const st = Object.assign({}, ...([card.props.style] as unknown[]).flat(5).filter(Boolean));
+      return { borderColor: st.borderColor, borderWidth: st.borderWidth, backgroundColor: st.backgroundColor };
+    };
+    const withCancel = cardStyle();
+    // Exactly the card it would be with no live status at all.
+    await act(async () => {
+      r!.update(<ResultRow itinerary={it} selected={false} now={NOW} onPress={jest.fn()} />);
+    });
+    expect(withCancel).toEqual(cardStyle());
+    expect(withCancel.backgroundColor).not.toBe(colors.light.canceledTint);
+    await act(async () => {
+      r!.update(<ResultRow itinerary={it} selected={false} now={NOW} onPress={jest.fn()} status={status} />);
+    });
+    const host = (id: string) => r!.root.findAll((n) => n.props.testID === id && typeof n.type === 'string');
+    expect(host('mini-route-canceled')).toHaveLength(1);
+    expect(host('row-times-canceled')).toHaveLength(0);
   });
 
   it('keeps the red edge on a full route that is not canceled', async () => {

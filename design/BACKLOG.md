@@ -192,3 +192,4 @@ Each item names its owner. One item per work session. spec-keeper runs a pre-fli
 | 185 | Design round 157: airline logo above the delay pill under each leg; delays read "25m late" everywhere (John) | main | P2 | Built (design round 157, branch claude/project-thread-fzqwou) |
 | 186 | Design round 158: opened route shows logo only with tap-or-hold window; ticket logos sit just under the line; no delay line under Leave By (John) | main | P2 | Built (design round 158, branch claude/project-thread-fzqwou) |
 | 187 | Design round 159: one layout for every leg box, no "Continuing to", boarding wording on Leave By, walk to gate at the airport (John) | main | P2 | Built (design round 159, branch claude/project-thread-fzqwou) |
+| 188 | Design round 160: no sharing-loads line, centered area notes, canceled nonstop red edge and wash, connections left normal (John) | main | P2 | Built (design round 160, branch claude/project-thread-fzqwou) |

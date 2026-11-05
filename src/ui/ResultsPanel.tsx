@@ -234,7 +234,10 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
   const header = notes.length ? (
     <View style={styles.header}>
       {notes.map((n) => (
-        <Text key={n.key} testID={n.testID} style={[n.strong ? textStyles.body : textStyles.small, { color: c.muted }]}>
+        <Text
+          key={n.key}
+          testID={n.testID}
+          style={[n.strong ? textStyles.body : textStyles.small, styles.headerNote, { color: c.muted }]}>
           {n.text}
         </Text>
       ))}
@@ -559,11 +562,6 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
               setTimeout(pinNow, 50);
             }
           }}
-          ListFooterComponent={
-            <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, styles.footer, { color: c.muted }]}>
-              Follow your airline’s rules on sharing loads.
-            </Text>
-          }
         />
         {!focused && swipeSaved ? (
           <SavedToast
@@ -792,6 +790,8 @@ const styles = StyleSheet.create({
   pad: { paddingHorizontal: spacing.page },
   list: { paddingHorizontal: spacing.page, paddingBottom: spacing.page * 2 },
   header: { gap: 2, paddingTop: spacing.group, paddingBottom: spacing.section },
+  // Centered over the tickets, not hugging the left (round 160, John).
+  headerNote: { textAlign: 'center' },
   headerGap: { height: spacing.group },
   bar: { gap: 4, paddingBottom: spacing.group, borderBottomWidth: StyleSheet.hairlineWidth },
   title: { textAlign: 'center' },
@@ -825,7 +825,6 @@ const styles = StyleSheet.create({
   placeholderBar: { borderRadius: 4 },
   errorTop: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.section },
   errorText: { flex: 1, gap: 2 },
-  footer: { paddingTop: spacing.section },
   nowLine: { flexDirection: 'row', alignItems: 'center', gap: spacing.group, paddingTop: 2 },
   rule: { flex: 1, height: StyleSheet.hairlineWidth * 2 },
 });

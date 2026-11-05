@@ -75,6 +75,8 @@ export const colors = {
     // from Full so a canceled flight never reads as a full one).
     canceled: '#c8102e',
     canceledBg: '#fde0e3',
+    // A canceled nonstop's whole card, a light wash of red (round 160, John).
+    canceledTint: '#fef1f2',
     canceledFg: '#9e0d24',
 
     // Departed and Arrived pills (round 156, John: "A color for the pill when it has departed or arrived"):
@@ -139,6 +141,7 @@ export const colors = {
     // Provisional, pending John (see light).
     canceled: '#ff4d5e',
     canceledBg: '#3a1018',
+    canceledTint: '#24141d',
     canceledFg: '#ffa3ad',
 
     done: '#8adcf0',

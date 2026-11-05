@@ -162,7 +162,7 @@ export function ReportForm({ flight, now, onCancel, onSubmit, focusTitle }: Repo
           )}
         </View>
         <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>
-          Follow your airline’s rules on sharing loads. Reports are anonymous to other employees.
+          Reports are anonymous to other employees.
         </Text>
         <Button
           label="Submit Report"
