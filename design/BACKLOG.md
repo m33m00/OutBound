@@ -187,3 +187,4 @@ Each item names its owner. One item per work session. spec-keeper runs a pre-fli
 | 180 | Design round 152: canceled tickets fade to gray with a dashed gray edge; red edge stays for full routes (John) | main | P2 | Built (design round 152, branch claude/project-thread-fzqwou) |
 | 181 | Design round 153: canceled tickets get a solid gray edge at the normal weight, no dashes (John) | main | P2 | Built (design round 153, branch claude/project-thread-fzqwou) |
 | 182 | Design round 154: aircraft type stacked under the flight on the opened route; tickets and saved cards show airline and flight number only (John) | main | P2 | Built (design round 154, branch claude/project-thread-fzqwou) |
+| 183 | Design round 155: flight and aircraft stack centred under the route line on the opened route (John) | main | P2 | Built (design round 155, branch claude/project-thread-fzqwou) |

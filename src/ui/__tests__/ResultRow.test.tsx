@@ -514,6 +514,8 @@ describe('ResultRow', () => {
     // Stacked: a column, so the aircraft sits under the chip, not beside it.
     const flatStyle = Object.assign({}, ...([group.props.style] as unknown[]).flat(3).filter(Boolean));
     expect(flatStyle.flexDirection ?? 'column').toBe('column');
+    // Centred under the route line, across the whole box (round 155).
+    expect(flatStyle).toMatchObject({ alignSelf: 'stretch', alignItems: 'center' });
     // No type known: nothing extra.
     act(() => r!.update(<ResultRow itinerary={it} selected now={NOW} onPress={jest.fn()} onLegPress={jest.fn()} />));
     expect(r!.root.findAll((n) => n.props.testID === 'leg-aircraft')).toHaveLength(0);

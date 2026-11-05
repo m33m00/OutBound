@@ -509,3 +509,7 @@ John didn't like the dashed border after all. A canceled ticket now has a solid 
 ## Design round 154: aircraft type only on the opened route, stacked under the flight (John, Nov 5)
 
 John: "stack the airline and equipment type like on the previous page summary. In the previous page only show the airline and flight number. Don't put the equipment type unless you select to view more." On the opened route, each leg box now stacks the aircraft type under the airline and flight number chip instead of beside it. The results tickets and saved route cards show only the airline and flight number under each leg, so the space under the route line shrinks by one line.
+
+## Design round 155: flight stack centred under the route line (John, Nov 5)
+
+John: "It's not aligned center underneath the route line when I open more details." On the opened route, each leg box's airline and flight number chip, with its aircraft stacked under it, is now centred across the box, under the middle of the route line, the way the results tickets centre each flight under its leg.

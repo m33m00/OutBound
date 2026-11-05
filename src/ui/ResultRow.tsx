@@ -1095,8 +1095,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: radius.sm + 2,
   },
-  // A leg's tag and flight chip, above (first flight) or below (later flights) its time.
-  legMeta: { alignItems: 'flex-start', gap: 4 },
+  // A leg's flight chip with its aircraft stacked under it, centred under the route line (round 155, John:
+  // "It's not aligned center underneath the route line").
+  legMeta: { alignSelf: 'stretch', alignItems: 'center', gap: 4 },
   aircraft: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   connection: { flex: 1, alignItems: 'center', gap: 4 },
   connectionText: { textAlign: 'center', alignSelf: 'stretch' },
