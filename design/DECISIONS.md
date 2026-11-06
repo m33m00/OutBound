@@ -543,3 +543,13 @@ John: "Can the logos sit on top of the delayed pill and delay pill sits undernea
 - No "Follow your airline's rules on sharing loads" line anywhere: gone from the bottom of results and from Profile. The report sheet keeps only "Reports are anonymous to other employees."
 - The notes over the results ("Leaving from any Dallas airport (DAL, DFW)", the summary and the like) are centered.
 - Replaces the round 152/153 gray fade: a canceled nonstop gets a 2pt red edge (canceled red) and a light red wash over the whole card (canceledTint, light #fef1f2, dark #24141d), with gray top times. A 1, 2 or 3-stop route with a canceled leg is left as a normal card, with only the red X and Canceled pill on that leg's line.
+
+## Round 161 (2026-11-06, John)
+
+- Ticket logos drop 6pt under a route with a canceled leg so they clear the X's disc.
+- A canceled nonstop's gray top times get a red line through them (textDecorationColor canceled).
+- Every airline mark is the same round badge: a white disc with a hairline ring that the logo fills (cover), or the airline's color with a white plane when there's no logo. A square logo like Delta's reads as a circle. The disc is always white, so the logo is asked for in its light form.
+- Area notes name the state: "Leaving from any Dallas, TX airport (DAL, DFW)" (country code outside the US).
+- No red edge on a full route; it keeps the gray fill and the plain edge. Red edges are only for a canceled nonstop.
+- No late pills on results tickets; the opened route keeps them. A diversion still shows on the ticket.
+- A leg with nothing reported shows the seat icon over a dash.

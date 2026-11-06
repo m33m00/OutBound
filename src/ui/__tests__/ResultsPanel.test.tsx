@@ -203,10 +203,10 @@ describe('ResultsPanel', () => {
 describe('areaLines', () => {
   it('names the whole area when a side searched it', () => {
     expect(areaLines({ origin: 'LAX', destination: 'DAL', date: '2026-10-20', destinationArea: true })).toEqual([
-      'Landing at any Dallas airport (DAL, DFW)',
+      'Landing at any Dallas, TX airport (DAL, DFW)',
     ]);
     expect(areaLines({ origin: 'DFW', destination: 'BNA', date: '2026-10-20', originArea: true })).toEqual([
-      'Leaving from any Dallas airport (DAL, DFW)',
+      'Leaving from any Dallas, TX airport (DAL, DFW)',
     ]);
   });
 

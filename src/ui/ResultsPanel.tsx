@@ -724,12 +724,17 @@ function PagerMarks({ count, index, onPick }: { count: number; index: number; on
 
 /**
  * Says when a side searched its whole area (Q-048), since the title shows only
- * the picked airports: "Leaving from any Dallas airport (DAL, DFW)".
+ * the picked airports: "Leaving from any Dallas, TX airport (DAL, DFW)".
  */
 export function areaLines(request: SearchRequest): string[] {
   const line = (code: string, on: boolean | undefined, lead: string) => {
     const area = on ? areaFor(code) : null;
-    return area ? `${lead} any ${area.city} airport (${area.airports.join(', ')})` : null;
+    if (!area) return null;
+    // "Dallas, TX": the state for a US area, the country code elsewhere (round 161, John).
+    const a = AIRPORTS[area.airports[0]];
+    const tail = !a?.country || a.country === 'US' ? a?.region : a.country;
+    const place = tail ? `${area.city}, ${tail}` : area.city;
+    return `${lead} any ${place} airport (${area.airports.join(', ')})`;
   };
   return [
     line(request.origin, request.originArea, 'Leaving from'),

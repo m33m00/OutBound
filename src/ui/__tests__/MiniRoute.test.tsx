@@ -247,4 +247,21 @@ describe('MiniRoute (round 119)', () => {
       StyleSheet.flatten(host('mini-route-canceled')[0].props.style).top as number,
     );
   });
+
+  it("drops the logos clear of a canceled leg's X (round 161, John)", () => {
+    const leg = (canceled: boolean) => ({
+      color: '#c00',
+      text: '#900',
+      label: canceled ? '' : '9/1',
+      canceled,
+      flight: { airline: 'AA', number: '1' },
+    });
+    const flat = (st: unknown) => Object.assign({}, ...[st].flat(5).filter(Boolean));
+    act(() => {
+      r = create(<MiniRoute airports={['DFW', 'LAX']} legs={[leg(true)]} />);
+    });
+    const x = flat(r!.root.find((n) => n.props.testID === 'mini-route-canceled' && typeof n.type === 'string').props.style);
+    const logo = flat(r!.root.find((n) => n.props.testID === 'mini-route-flight' && typeof n.type === 'string').props.style);
+    expect(logo.top - (x.top + x.height)).toBeGreaterThanOrEqual(6);
+  });
 });

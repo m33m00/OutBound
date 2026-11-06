@@ -22,6 +22,8 @@ const X_SIZE = 12;
 /** Room under the stop codes for each leg's airline logo (round 156: logo only, the number and aircraft
  * open from it). */
 const FLIGHT_H = PEEK_LOGO + 6;
+/** How far the logos drop under a route with a canceled leg, clear of the X's disc. */
+const CANCELED_DROP = 6;
 /** With this many legs or more, a diversion pill says just "Diverted" to fit its short stretch. */
 const COMPACT_LEGS = 3;
 
@@ -110,7 +112,10 @@ export function MiniRoute({
   // Each leg's logo sits just under the line, level with the stop codes beside it (round 158, John: "Can the
   // airline logo be scooted up closer to the route line"); a logo centred on its leg clears the codes centred
   // on the dots, even on a 2-stop ticket. A delay pill goes under the logo.
-  const flightY = LABEL_H + DOT + 3;
+  // A canceled leg's X hangs below the line, so its logos drop a little to keep clear of it (round 161,
+  // John: the logo "almost touches the canceled X").
+  const anyCanceled = !!segs?.some((l) => l.canceled);
+  const flightY = LABEL_H + DOT + 3 + (anyCanceled ? CANCELED_DROP : 0);
   const legFlagY = withFlights ? flightY + FLIGHT_H - 4 : LABEL_H + DOT + LABEL_H + 2;
   const base = LABEL_H + DOT + LABEL_H;
   const tail = Math.max(0, (withFlights ? flightY + FLIGHT_H : 0) - base, legFlagged ? legFlagY + FLAG_H - base : 0);

@@ -392,7 +392,8 @@ describe('ResultRow', () => {
       );
     });
     const root = r!.root;
-    expect(strings(root)).toContain('25m late');
+    // No late pill on the ticket any more (round 161, John): the opened route says it.
+    expect(strings(root)).not.toContain('25m late');
     const struck = root.findAll(
       (n) =>
         (n.type as unknown) === 'Text' &&
@@ -417,11 +418,9 @@ describe('ResultRow', () => {
     // The big line keeps only the times now, on one line, so a moved row never wraps (John, 2026-11-02).
     expect(flat(times.props.children)).toBe('9:25\u00a0AM – 11:45\u00a0AM');
     expect(flat(struck[0].props.children)).toBe('9:00\u00a0AM – 11:20\u00a0AM');
-    // The delay rides over its own leg on the route line, not in a tag under the card (round 146, John).
+    // No tag under the card, and no late pill on the route line either: the opened route says it (round 161).
     expect(root.findAll((n) => n.props.testID === 'row-tag' && typeof n.type === 'string')).toHaveLength(0);
-    const flags = root.findAll((n) => n.props.testID === 'mini-route-leg-flag' && typeof n.type === 'string');
-    expect(flags).toHaveLength(1);
-    expect(flat(flags[0].props.children)).toBe('25m late');
+    expect(root.findAll((n) => n.props.testID === 'mini-route-leg-flag' && typeof n.type === 'string')).toHaveLength(0);
     const row = root.findAll((n) => n.props.accessibilityRole === 'button')[0];
     expect(row.props.accessibilityLabel).toContain('Delayed 25 minutes, was 9:00 AM, now 9:25 AM');
   });
@@ -1013,7 +1012,8 @@ describe('seatCounts (round 147)', () => {
     expect(seatCounts({ ...base, source: 'typical', netSeats: 30, openSeats: 40, listed: 10 } as never)).toEqual([
       { kind: 'seats', value: '30' },
     ]);
-    expect(seatCounts({ ...base, source: 'unknown', netSeats: null } as never)).toEqual([]);
+    // Nothing reported: the seat icon over a dash (round 161, John).
+    expect(seatCounts({ ...base, source: 'unknown', netSeats: null } as never)).toEqual([{ kind: 'seats', value: '–' }]);
   });
 });
 
@@ -1085,6 +1085,11 @@ describe('canceled ticket (round 152)', () => {
     expect(style.backgroundColor).toBe(colors.light.canceledTint);
     const top = r!.root.findAll((n) => n.props.testID === 'row-times-canceled' && typeof n.type === 'string');
     expect(top).toHaveLength(1);
+    // A red line through the time (round 161, John).
+    expect(Object.assign({}, ...[top[0].props.style].flat(5).filter(Boolean))).toMatchObject({
+      textDecorationLine: 'line-through',
+      textDecorationColor: colors.light.canceled,
+    });
     const host = (id: string) => r!.root.findAll((n) => n.props.testID === id && typeof n.type === 'string');
     expect(host('mini-route-canceled')).toHaveLength(1);
     expect(host('mini-route-canceled-pill')).toHaveLength(1);
@@ -1131,7 +1136,7 @@ describe('canceled ticket (round 152)', () => {
     expect(host('row-times-canceled')).toHaveLength(0);
   });
 
-  it('keeps the red edge on a full route that is not canceled', async () => {
+  it('a full route has no red edge, just the plain one (round 161, John)', async () => {
     const it = await fullItinerary();
     let r: ReactTestRenderer;
     await act(async () => {
@@ -1139,7 +1144,7 @@ describe('canceled ticket (round 152)', () => {
     });
     const card = r!.root.findAll((n) => n.props.accessibilityRole === 'button' && typeof n.type === 'string')[0];
     const style = Object.assign({}, ...([card.props.style] as unknown[]).flat(5).filter(Boolean));
-    expect(style).toMatchObject({ borderColor: colors.light.full, borderWidth: 2 });
+    expect(style).toMatchObject({ borderColor: colors.light.cardEdge, borderWidth: CARD_EDGE_W });
     expect(style.borderStyle).toBeUndefined();
   });
 });
@@ -1157,9 +1162,12 @@ describe('round 156 (John)', () => {
     await act(async () => {
       r = create(<ResultRow itinerary={blank} selected={false} now={NOW} onPress={jest.fn()} />);
     });
-    const labels = r!.root.findAll((n) => n.props.testID === 'mini-route-leg-label' && typeof n.type === 'string');
-    expect(labels.map(allText)).toContain('–');
-    expect(labels.map(allText)).not.toContain('0');
+    // The seat icon still shows, over a dash (round 161, John).
+    const slots = r!.root.findAll((n) => n.props.testID === 'mini-route-leg-slot' && typeof n.type === 'string');
+    expect(slots[0].findAll((n) => n.props.testID === 'mini-route-count-seats' && typeof n.type === 'string')).toHaveLength(1);
+    const values = r!.root.findAll((n) => n.props.testID === 'mini-route-count-value' && typeof n.type === 'string');
+    expect(values.map(allText)).toContain('–');
+    expect(values.map(allText)).not.toContain('0');
   });
 
   it('gives Departed and Arrived pills their own sky cyan, not gray', () => {
