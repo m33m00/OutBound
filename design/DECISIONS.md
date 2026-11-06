@@ -603,3 +603,11 @@ John: "Add badges to open requests on the feed tab and rename the feed tab to 'R
 - Saved routes: swipe left slides the card over a red Delete (a long swipe or hard flick deletes at once; a short one stays open on Delete; a tap on the card closes it). After a swipe delete, "Route deleted" with Undo shows for 5 seconds. Select in the section header turns on checkboxes and a bottom bar with Select All and a red Delete N, which confirms first. The trash button stays for VoiceOver.
 - Saved routes come off by themselves 24 hours after their last flight lands (checked on app open and each time My Trips shows). Answered asks stay in Your requests until 24 hours after their flight lands; waiting ones still go when the flight leaves.
 - My Trips sections have real headers: an icon in a circle, the name at 20pt, a count pill, and the section's action on the right; a rule and space sit between Your requests and Saved routes.
+
+## Round 168: App Store work ships with the design rounds
+
+John saw no launch screen in Expo Go. Cause: the publish workflow sends each git branch to its own Expo Go branch, and John opens `claude/project-thread-fzqwou`. The animated launch intro, welcome page, sign up and log in, Delete Account, legal pages and report tools were built on `claude/app-store-ready`, so they never reached the update he opens.
+
+Fix: merged `claude/app-store-ready` into the design branch (clean merge, no conflicts). From now on every design round merges the latest `claude/app-store-ready` before it pushes, so both sets of work publish together.
+
+Checked in code and tests (not on a device): `LaunchIntro` plays once per cold start over the app, then lifts onto the welcome page. Expo Go builds are `preview`, so "Look Around First" shows and opens the tabs, and it's remembered so later launches go straight in after the intro.

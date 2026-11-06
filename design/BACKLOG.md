@@ -200,3 +200,4 @@ Each item names its owner. One item per work session. spec-keeper runs a pre-fli
 | 193 | Design round 165: sheets pass: Report Load icons, tinted tier box and blue steppers; Add flight tiles; Departures board as a card with badges and count pills; segmented Max stops (John) | main | P2 | Built (design round 165, branch claude/project-thread-fzqwou) |
 | 194 | Design round 166: icon tiles on Profile rows, filled tab icons, carded date picker, corner-bracket scanner frame (John) | main | P2 | Built (design round 166, branch claude/project-thread-fzqwou) |
 | 195 | Design round 167: Requests tab with badge, oldest asks first, ask age on its own, swipe and multiselect delete for saved routes, 24h auto-clear, My Trips section headers (John) | main | P2 | Built (design round 167, branch claude/project-thread-fzqwou) |
+| 196 | Merge App Store branch into design rounds so the launch intro and accounts show in Expo Go | Done (round 168) |
