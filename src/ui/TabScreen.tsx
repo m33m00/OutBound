@@ -7,16 +7,30 @@ import { spacing, textStyles, useColors } from '@/theme';
 import { TITLE_MAX_SCALE } from './SheetHeader';
 
 /** A tab's page: title plus a scrolling body. */
-export function TabScreen({ title, children }: { title: string; children: ReactNode }) {
+export function TabScreen({
+  title,
+  children,
+  overlay,
+}: {
+  title: string;
+  children: ReactNode;
+  /** Floats over the page, outside the scroll: a toast or an action bar (round 167). */
+  overlay?: ReactNode;
+}) {
   const c = useColors();
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: c.bg }]} edges={['top']}>
       <ScrollView contentContainerStyle={styles.body}>
-        <Text lineBreakStrategyIOS="push-out" style={[textStyles.title, { color: c.text }]} accessibilityRole="header" maxFontSizeMultiplier={TITLE_MAX_SCALE}>
+        <Text
+          lineBreakStrategyIOS="push-out"
+          style={[textStyles.title, { color: c.text }]}
+          accessibilityRole="header"
+          maxFontSizeMultiplier={TITLE_MAX_SCALE}>
           {title}
         </Text>
         {children}
       </ScrollView>
+      {overlay}
     </SafeAreaView>
   );
 }

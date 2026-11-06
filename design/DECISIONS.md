@@ -592,3 +592,14 @@ Not rendered here: sizes checked against the fonts only.
 - Date picker: the calendar sits on the shared card, with the note centered under it.
 - Pass scanner: four white corner brackets frame the pass instead of a full box; the hint is a rounder dark pill; the camera ask leads with a camera in a light circle.
 - Settings' structure is unchanged, so the App Store thread's Account section still merges cleanly.
+
+## Round 167: Requests tab, My Trips cleanup (John, Nov 6)
+
+John: "Add badges to open requests on the feed tab and rename the feed tab to 'Requests'", "sorted by oldest from the top so that those get answered quickly", "When it was asked the text gets wrapped onto the 2nd row", "swipe left to delete a saved route or multiselect to delete", "Saved routes should also auto delete after 24 hours when the last leg of the route arrives", "Your requests answered should stay until the last leg of your request arrives and it's been 24 hours", "Your Requests and Saved Routes should have a better design to separate both".
+
+- Feed is now Requests (tab and screen). The tab shows a count badge of asks still waiting for your answer (system red, the iOS meaning). Answers you give live in RequestsProvider so the badge drops as you answer.
+- Open asks sort oldest first.
+- Request rows: when it was asked (or answered) sits on its own at the right, over the Answer button or the Waiting/Answered pill, so the departure line never wraps. At 393pt wide the departure line has about 195pt; "Departs tomorrow 10:55 AM" measures 158pt in Geist Medium 12.
+- Saved routes: swipe left slides the card over a red Delete (a long swipe or hard flick deletes at once; a short one stays open on Delete; a tap on the card closes it). After a swipe delete, "Route deleted" with Undo shows for 5 seconds. Select in the section header turns on checkboxes and a bottom bar with Select All and a red Delete N, which confirms first. The trash button stays for VoiceOver.
+- Saved routes come off by themselves 24 hours after their last flight lands (checked on app open and each time My Trips shows). Answered asks stay in Your requests until 24 hours after their flight lands; waiting ones still go when the flight leaves.
+- My Trips sections have real headers: an icon in a circle, the name at 20pt, a count pill, and the section's action on the right; a rule and space sit between Your requests and Saved routes.

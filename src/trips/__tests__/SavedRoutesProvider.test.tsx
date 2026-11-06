@@ -11,10 +11,12 @@ jest.mock('@react-native-async-storage/async-storage', () =>
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
+// Far ahead, so these routes never run out during the test (round 167 drops landed ones).
+const LATER = Date.UTC(2099, 0, 1);
 const route = (n: string): SavedRoute => ({
   key: `2026-10-20|AA${n}:DFW-LAX`,
   request: { origin: 'DFW', destination: 'LAX', date: '2026-10-20', originArea: false, destinationArea: false },
-  legs: [{ airline: 'AA', flightNumber: n, from: 'DFW', to: 'LAX', departUtc: 1, arriveUtc: 2 }],
+  legs: [{ airline: 'AA', flightNumber: n, from: 'DFW', to: 'LAX', departUtc: LATER, arriveUtc: LATER + 3 * 3600_000 }],
   savedAt: 0,
 });
 
@@ -76,5 +78,21 @@ describe('SavedRoutesProvider', () => {
     expect(ctx.opening?.key).toBe(route('3').key);
     act(() => ctx.clearOpening());
     expect(ctx.opening).toBeNull();
+  });
+
+  it('drops routes whose last flight landed over 24 hours ago, on load and when asked (round 167)', async () => {
+    const landed = (n: string, hoursAgo: number): SavedRoute => {
+      const arrive = Date.now() - hoursAgo * 3600_000;
+      return { ...route(n), legs: [{ ...route(n).legs[0], departUtc: arrive - 3 * 3600_000, arriveUtc: arrive }] };
+    };
+    await AsyncStorage.setItem(SAVED_ROUTES_KEY, JSON.stringify([landed('1', 30), landed('2', 2), route('3')]));
+    await mount();
+    expect(ctx.routes.map((x) => x.key)).toEqual([route('2').key, route('3').key]);
+    expect((await stored()).map((x) => x.key)).toEqual([route('2').key, route('3').key]);
+    // A day later the one that landed 2 hours ago goes too.
+    await act(async () => ctx.expire(Date.now() + 23 * 3600_000));
+    expect(ctx.routes.map((x) => x.key)).toEqual([route('3').key]);
+    await act(async () => ctx.removeMany([route('3').key]));
+    expect(await stored()).toEqual([]);
   });
 });

@@ -177,3 +177,16 @@ export function reopenOutcome(
   if (hidden) return { kind: 'open', id: hidden.id, hidden: true };
   return { kind: 'note', text: 'Your saved flights aren’t in this search anymore. Here’s what’s flying that day.' };
 }
+
+/** How long a saved route stays after its last flight lands (round 167, John). */
+export const SAVED_KEEP_MS = 24 * 60 * 60_000;
+
+/** The route's last flight landed more than 24 hours ago: it comes off My Trips by itself. */
+export const isExpired = (route: SavedRoute, now: number) => route.legs[route.legs.length - 1].arriveUtc + SAVED_KEEP_MS <= now;
+
+/** Saved routes without the ones that have run their course. */
+export const dropExpired = (list: readonly SavedRoute[], now: number): SavedRoute[] => list.filter((r) => !isExpired(r, now));
+
+/** Saved list without these routes (multiselect delete). */
+export const removeManySaved = (list: readonly SavedRoute[], keys: readonly string[]): SavedRoute[] =>
+  list.filter((r) => !keys.includes(r.key));

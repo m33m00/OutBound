@@ -84,11 +84,14 @@ const askedAgo = (id: string, min: number, span: number) => (min + (hash(id) % s
  * the feed shows only your airline plus your own asks; yours live in My Trips).
  */
 export function sampleFeed(now: number, airline = SAMPLE_MY_AIRLINE, count = 4): LoadRequest[] {
-  return upcomingSampleFlights(now)
-    .filter((f) => f.airline === airline)
-    .slice(0, count)
-    .map((flight) => ({ id: `req-${flight.id}`, flight, askedAt: now - askedAgo(flight.id, 3, 90) }))
-    .sort((a, b) => b.askedAt - a.askedAt);
+  return (
+    upcomingSampleFlights(now)
+      .filter((f) => f.airline === airline)
+      .slice(0, count)
+      .map((flight) => ({ id: `req-${flight.id}`, flight, askedAt: now - askedAgo(flight.id, 3, 90) }))
+      // Oldest ask on top, so the one waiting longest gets answered first (round 167, John).
+      .sort((a, b) => a.askedAt - b.askedAt)
+  );
 }
 
 /**
@@ -247,9 +250,21 @@ export const openRequestCount = (mine: LoadRequest[], now?: number) =>
  * Your asks for flights still to leave, soonest first (John, 2026-11-02: nothing that departed or
  * arrived). Each drops off at its departure time; `gone` drops one live data says already left.
  */
+/** How long an answered ask stays in My Trips after its flight lands (round 167, John). */
+export const ANSWERED_KEEP_MS = 24 * 60 * 60_000;
+
+/**
+ * Your asks still worth showing, soonest flight first. One still waiting goes once its flight leaves (no one
+ * can answer it then); an answered one stays until 24 hours after its flight lands (round 167, John).
+ */
 export function upcomingRequests(mine: LoadRequest[], now: number, gone?: (r: LoadRequest) => boolean): LoadRequest[] {
-  return mine.filter((r) => r.flight.departUtc > now && !gone?.(r)).sort((a, b) => a.flight.departUtc - b.flight.departUtc);
+  return mine
+    .filter((r) => (r.answer ? r.flight.arriveUtc + ANSWERED_KEEP_MS > now : r.flight.departUtc > now && !gone?.(r)))
+    .sort((a, b) => a.flight.departUtc - b.flight.departUtc);
 }
+
+/** The departure line of an ask without when it was asked, which the row shows on its own (round 167). */
+export const requestDepartsLine = (r: LoadRequest, now: number) => departsText(r.flight, now);
 
 /** ready: can ask; asked: already asked about this flight; full: 5 asks still waiting; left: the flight has gone. */
 export type AskState = 'ready' | 'asked' | 'full' | 'left';

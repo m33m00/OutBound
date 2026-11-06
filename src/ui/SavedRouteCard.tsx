@@ -31,6 +31,8 @@ export interface SavedRouteCardProps {
   now: number;
   onOpen: () => void;
   onRemove: () => void;
+  /** My Trips is picking routes to delete: the trash button steps aside for the checkbox (round 167). */
+  selecting?: boolean;
 }
 
 /**
@@ -40,7 +42,7 @@ export interface SavedRouteCardProps {
  * gray Passed tag beside its day, like the tags on list rows, in place of a
  * sentence (round 71); VoiceOver still says it opens today's search.
  */
-export function SavedRouteCard({ route, past, now, onOpen, onRemove }: SavedRouteCardProps) {
+export function SavedRouteCard({ route, past, now, onOpen, onRemove, selecting }: SavedRouteCardProps) {
   const c = useColors();
   const scheme = useColorSchemeName();
   const title = savedRouteTitle(route);
@@ -102,20 +104,22 @@ export function SavedRouteCard({ route, past, now, onOpen, onRemove }: SavedRout
         </View>
       </ScalePressable>
       {/* Its own button, apart from the card, so VoiceOver reaches it alone; it sits on the stub. */}
-      <Pressable
-        onPress={onRemove}
-        accessibilityRole="button"
-        accessibilityLabel={`Remove ${forSpeech(title)}, ${forSpeech(shortWhen)}`}
-        hitSlop={{ right: spacing.group }}
-        testID="remove-saved-route"
-        style={pressStyle(styles.remove, 'link')}>
-        <Icon
-          name="trash"
-          size={18}
-          tintColor={ink.muted}
-          fallback={<Text style={[textStyles.small, { color: ink.muted }]}>Remove</Text>}
-        />
-      </Pressable>
+      {selecting ? null : (
+        <Pressable
+          onPress={onRemove}
+          accessibilityRole="button"
+          accessibilityLabel={`Remove ${forSpeech(title)}, ${forSpeech(shortWhen)}`}
+          hitSlop={{ right: spacing.group }}
+          testID="remove-saved-route"
+          style={pressStyle(styles.remove, 'link')}>
+          <Icon
+            name="trash"
+            size={18}
+            tintColor={ink.muted}
+            fallback={<Text style={[textStyles.small, { color: ink.muted }]}>Remove</Text>}
+          />
+        </Pressable>
+      )}
     </View>
   );
 }

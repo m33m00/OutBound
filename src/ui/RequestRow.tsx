@@ -1,7 +1,14 @@
 import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
-import { answeredAgo, answerTier, liveRequestDetail, requestDetail, requestTitle, type LoadRequest } from '@/requests/requests';
-import { forSpeech } from '@/search/format';
+import {
+  answerTier,
+  liveRequestDetail,
+  requestDepartsLine,
+  requestDetail,
+  requestTitle,
+  type LoadRequest,
+} from '@/requests/requests';
+import { formatAge, forSpeech } from '@/search/format';
 import type { LegStatusView } from '@/search/statusTags';
 import { fonts, minTapTarget, radius, spacing, textStyles, useColors } from '@/theme';
 
@@ -76,22 +83,25 @@ export function RequestRow({ request, now, mine, onAnswer, onOpen, leg }: Reques
             // in the seat color, in one pill (round 164; "just color and seat availability").
             <SeatCountPill open={request.answer.open} listed={request.answer.listed} tier={tier} testID="request-counts" />
           ) : null}
-          <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, styles.detail, { color: c.muted }]}>
-            {tier && request.answer ? (
-              answeredAgo(request.answer, now)
-            ) : live ? (
-              <>
-                {live.prefix}
-                {/* The old time sits struck before the new one (John, 2026-10-30). */}
-                {live.struck ? <Text style={styles.struck}>{live.struck}</Text> : null}
-                {live.time && live.struck ? '\u00a0' : null}
-                {live.time ? <Text style={{ color: c.text, fontFamily: fonts.bodySemiBold }}>{live.time}</Text> : null}
-                <Divided text={live.tail} />
-              </>
-            ) : (
-              <Divided text={detail} />
-            )}
-          </Text>
+          {/* When it was asked or answered sits on its own at the right, so this line never wraps (round 167, John). */}
+          {tier && request.answer ? null : (
+            <Text
+              lineBreakStrategyIOS="push-out"
+              style={[textStyles.small, styles.detail, { color: c.muted }]}
+              testID="request-departs">
+              {live ? (
+                <>
+                  {live.prefix}
+                  {/* The old time sits struck before the new one (John, 2026-10-30). */}
+                  {live.struck ? <Text style={styles.struck}>{live.struck}</Text> : null}
+                  {live.time && live.struck ? '\u00a0' : null}
+                  {live.time ? <Text style={{ color: c.text, fontFamily: fonts.bodySemiBold }}>{live.time}</Text> : null}
+                </>
+              ) : (
+                requestDepartsLine(request, now)
+              )}
+            </Text>
+          )}
         </View>
         {tag ? (
           <View style={styles.tagLine}>
@@ -99,29 +109,39 @@ export function RequestRow({ request, now, mine, onAnswer, onOpen, leg }: Reques
           </View>
         ) : null}
       </View>
-      {status ? (
-        <View
-          style={[styles.badge, stacked && styles.selfStart, { backgroundColor: answered ? c.goodBg : c.surface2 }]}
+      <View style={[styles.side, stacked && styles.sideStacked]}>
+        <Text
+          style={[textStyles.small, { color: c.muted }]}
+          numberOfLines={1}
           importantForAccessibility="no-hide-descendants"
-          accessibilityElementsHidden>
-          <Text
-            lineBreakStrategyIOS="push-out"
-            style={[textStyles.small, styles.badgeText, { color: answered ? c.goodFg : c.muted }]}>
-            {status}
-          </Text>
-        </View>
-      ) : null}
-      {!mine && !answered && onAnswer ? (
-        <Pressable
-          onPress={onAnswer}
-          accessibilityRole="button"
-          accessibilityLabel={`Answer ${forSpeech(title)}`}
-          accessibilityHint="Opens Report Load"
-          testID="answer-request"
-          style={pressStyle([styles.answer, stacked && styles.selfStart, { backgroundColor: c.accent }])}>
-          <Text style={[textStyles.button, { color: c.onAccent }]}>Answer</Text>
-        </Pressable>
-      ) : null}
+          accessibilityElementsHidden
+          testID="request-age">
+          {formatAge(request.answer ? request.answer.at : request.askedAt, now)}
+        </Text>
+        {status ? (
+          <View
+            style={[styles.badge, { backgroundColor: answered ? c.goodBg : c.surface2 }]}
+            importantForAccessibility="no-hide-descendants"
+            accessibilityElementsHidden>
+            <Text
+              lineBreakStrategyIOS="push-out"
+              style={[textStyles.small, styles.badgeText, { color: answered ? c.goodFg : c.muted }]}>
+              {status}
+            </Text>
+          </View>
+        ) : null}
+        {!mine && !answered && onAnswer ? (
+          <Pressable
+            onPress={onAnswer}
+            accessibilityRole="button"
+            accessibilityLabel={`Answer ${forSpeech(title)}`}
+            accessibilityHint="Opens Report Load"
+            testID="answer-request"
+            style={pressStyle([styles.answer, { backgroundColor: c.accent }])}>
+            <Text style={[textStyles.button, { color: c.onAccent }]}>Answer</Text>
+          </Pressable>
+        ) : null}
+      </View>
       {onOpen ? (
         <View style={stacked ? styles.chevronStacked : undefined}>
           <Icon name="chevron.right" size={14} tintColor={c.muted} fallback={null} />
@@ -163,10 +183,12 @@ const styles = StyleSheet.create({
   stacked: { flexDirection: 'column', alignItems: 'stretch', gap: spacing.group },
   text: { flex: 1, gap: 2 },
   textStacked: { gap: 2, paddingRight: 20 },
-  selfStart: { alignSelf: 'flex-start' },
   // Large text: the chevron stays, at the row's top right, so the row still reads as tappable.
   chevronStacked: { position: 'absolute', top: spacing.rowY + 4, right: spacing.rowX },
   detailLine: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6, marginTop: 2 },
+  // The age over the button or badge, both at the right edge.
+  side: { alignItems: 'flex-end', gap: 6 },
+  sideStacked: { alignItems: 'flex-start', alignSelf: 'flex-start' },
   detail: { flexShrink: 1 },
   mark: { alignSelf: 'flex-start', marginTop: 2 },
   badge: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 999 },
