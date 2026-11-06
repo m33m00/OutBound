@@ -584,3 +584,11 @@ Not rendered here: sizes checked against the fonts only.
 - Add flight: the form card and the Scan / Photo tiles use the card look; the tile icons sit in a light blue circle so the tiles read as buttons.
 - Departures board: one rounded card of rows with inset hairlines, like the airport picker. Each flight leads with its airline badge, and "You reported" shows the same seat-colored count pill as an answered request (shared SeatCountPill).
 - Filters: Max stops is one segmented track with the pick filled blue and the others in blue text. Steppers everywhere (Filters, Settings) use the secondary tint for − and +.
+
+## Round 166: premium pass part 4, Profile, date picker, scanner, tab bar (Nov 6)
+
+- ListRow takes an optional icon: a small rounded tile in the quiet fill with the icon in text color (not blue, since the tile isn't the button; the row is). A hairline under a row with a tile starts at the text, like iOS Settings. Profile's setup rows (home, other homes, location, notifications, buffer, directions, search defaults) and About rows use it.
+- Tab bar: the picked tab shows its filled icon; the bar's top line uses the card edge.
+- Date picker: the calendar sits on the shared card, with the note centered under it.
+- Pass scanner: four white corner brackets frame the pass instead of a full box; the hint is a rounder dark pill; the camera ask leads with a camera in a light circle.
+- Settings' structure is unchanged, so the App Store thread's Account section still merges cleanly.

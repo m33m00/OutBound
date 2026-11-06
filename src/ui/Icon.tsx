@@ -38,6 +38,20 @@ export const MATERIAL: Partial<Record<SFSymbol, keyof typeof MaterialIcons.glyph
   'carseat.right.fill': 'airline-seat-recline-normal',
   'person.fill': 'person',
   'mappin.and.ellipse': 'place',
+  // Profile row icons and filled tab icons (round 166).
+  house: 'home',
+  camera: 'photo-camera',
+  'location.fill': 'location-on',
+  'bell.fill': 'notifications',
+  clock: 'schedule',
+  map: 'map',
+  'info.circle': 'info-outline',
+  'antenna.radiowaves.left.and.right': 'radar',
+  'book.closed': 'menu-book',
+  'book.closed.fill': 'menu-book',
+  'text.bubble.fill': 'chat-bubble',
+  'suitcase.fill': 'luggage',
+  'person.crop.circle.fill': 'account-circle',
 };
 
 export interface IconProps {

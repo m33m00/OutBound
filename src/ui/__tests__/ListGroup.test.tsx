@@ -57,6 +57,26 @@ describe('ListGroup and ListRow', () => {
     expect(words).toEqual(['Longest', 'DFW → LAX', '1,235 mi']);
   });
 
+  it('a row can lead with an icon tile, and the hairline under it starts at the text (round 166)', () => {
+    act(() => {
+      r = create(
+        <ListGroup>
+          <ListRow icon="house.fill" label="Main home" value="DAL" />
+          <ListRow icon="bell.fill" label="Notifications" value="On" />
+          <ListRow label="Version" value="1.0" />
+        </ListGroup>,
+      );
+    });
+    expect(r!.root.findAll((n) => typeof n.type === 'string' && n.props.testID === 'list-row-icon')).toHaveLength(2);
+    const card = r!.root.find((n) => typeof n.type === 'string' && n.props.testID === 'list-group-card');
+    const lines = card.findAll(
+      (n) => typeof n.type === 'string' && StyleSheet.flatten(n.props.style)?.height === StyleSheet.hairlineWidth,
+    );
+    expect(lines).toHaveLength(2);
+    // Each hairline belongs to the row above it, and both of those rows have tiles.
+    for (const l of lines) expect(StyleSheet.flatten(l.props.style).marginLeft).toBeGreaterThan(40);
+  });
+
   it('puts the value under the label at big text, uncut', () => {
     mockFontScale = 2;
     act(() => {

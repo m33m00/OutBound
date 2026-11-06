@@ -1,10 +1,11 @@
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { Modal, StyleSheet, Text } from 'react-native';
+import { Modal, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { fromPickerDate, toPickerDate } from '@/search/dates';
 import { spacing, textStyles, useColors, useColorSchemeName } from '@/theme';
 
+import { useCardSurface } from './cardSurface';
 import { SheetHeader } from './SheetHeader';
 
 export interface DatePickerModalProps {
@@ -33,25 +34,31 @@ export function DatePickerModal({
 }: DatePickerModalProps) {
   const c = useColors();
   const scheme = useColorSchemeName();
+  const card = useCardSurface();
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <SafeAreaView style={[styles.screen, { backgroundColor: c.bg }]} edges={['top', 'bottom']}>
         <SheetHeader title={title} action="Done" onAction={onClose} />
-        <DateTimePicker
-          value={toPickerDate(date)}
-          mode="date"
-          display="inline"
-          minimumDate={toPickerDate(min)}
-          maximumDate={toPickerDate(max)}
-          accentColor={c.accent}
-          themeVariant={scheme}
-          onChange={(e, d) => {
-            if (e.type === 'set' && d) onPick(fromPickerDate(d));
-            // Android shows a dialog; a cancel there should close this sheet too.
-            if (e.type === 'set' || e.type === 'dismissed') onClose();
-          }}
-        />
-        <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>{note}</Text>
+        {/* The calendar sits on the shared card, like every other panel (round 166). */}
+        <View style={[card, styles.card]} testID="date-picker-card">
+          <DateTimePicker
+            value={toPickerDate(date)}
+            mode="date"
+            display="inline"
+            minimumDate={toPickerDate(min)}
+            maximumDate={toPickerDate(max)}
+            accentColor={c.accent}
+            themeVariant={scheme}
+            onChange={(e, d) => {
+              if (e.type === 'set' && d) onPick(fromPickerDate(d));
+              // Android shows a dialog; a cancel there should close this sheet too.
+              if (e.type === 'set' || e.type === 'dismissed') onClose();
+            }}
+          />
+        </View>
+        <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, styles.note, { color: c.muted }]}>
+          {note}
+        </Text>
       </SafeAreaView>
     </Modal>
   );
@@ -59,4 +66,6 @@ export function DatePickerModal({
 
 const styles = StyleSheet.create({
   screen: { flex: 1, paddingHorizontal: spacing.page, gap: spacing.section },
+  card: { paddingHorizontal: spacing.group, paddingVertical: spacing.group },
+  note: { textAlign: 'center' },
 });

@@ -1,4 +1,5 @@
-import { Children, Fragment, type ReactNode } from 'react';
+import type { SFSymbol } from 'expo-symbols';
+import { Children, Fragment, isValidElement, type ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
 import { minTapTarget, radius, spacing, textStyles, useColors } from '@/theme';
@@ -45,7 +46,18 @@ export function ListGroup({ title, children }: { title?: string; children: React
         <View style={styles.clip}>
           {rows.map((row, i) => (
             <Fragment key={i}>
-              {i > 0 ? <View style={[styles.sep, { backgroundColor: c.line }]} /> : null}
+              {/* Under a row with an icon tile, its hairline starts at the text, like iOS (round 166). */}
+              {i > 0 ? (
+                <View
+                  style={[
+                    styles.sep,
+                    isValidElement<ListRowProps>(rows[i - 1]) && (rows[i - 1] as { props: ListRowProps }).props.icon
+                      ? styles.sepIcon
+                      : null,
+                    { backgroundColor: c.line },
+                  ]}
+                />
+              ) : null}
               {row}
             </Fragment>
           ))}
@@ -65,10 +77,12 @@ export interface ListRowProps {
   accessibilityHint?: string;
   /** The value is an action to take (accent), not a setting. */
   valueAccent?: boolean;
+  /** A small icon tile before the label, like iOS Settings (round 166). Decorative. */
+  icon?: SFSymbol;
 }
 
 /** One row: label (+ detail) on the left, value and chevron on the right. */
-export function ListRow({ label, value, detail, onPress, accessibilityHint, valueAccent }: ListRowProps) {
+export function ListRow({ label, value, detail, onPress, accessibilityHint, valueAccent, icon }: ListRowProps) {
   const c = useColors();
   // Big text: the value goes under the label so neither gets cut off.
   const stacked = useWindowDimensions().fontScale >= STACK_VALUE_SCALE;
@@ -81,6 +95,11 @@ export function ListRow({ label, value, detail, onPress, accessibilityHint, valu
   ) : null;
   const content = (
     <>
+      {icon ? (
+        <View style={[styles.iconTile, { backgroundColor: c.surface2 }]} testID="list-row-icon">
+          <Icon name={icon} size={15} tintColor={c.text} fallback={null} />
+        </View>
+      ) : null}
       <View style={styles.left}>
         <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, { color: c.text }]}>
           {label}
@@ -130,6 +149,8 @@ const styles = StyleSheet.create({
   footer: { paddingHorizontal: spacing.rowX },
   clip: { borderRadius: radius.md - 1, overflow: 'hidden' },
   sep: { height: StyleSheet.hairlineWidth, marginLeft: spacing.rowX },
+  // rowX + the 30pt tile + its 2pt margin + the row gap.
+  sepIcon: { marginLeft: spacing.rowX + 32 + spacing.group },
   row: {
     minHeight: minTapTarget,
     paddingHorizontal: spacing.rowX,
@@ -139,5 +160,6 @@ const styles = StyleSheet.create({
     gap: spacing.group,
   },
   left: { flex: 1, gap: 2 },
+  iconTile: { width: 30, height: 30, borderRadius: 8, alignItems: 'center', justifyContent: 'center', marginRight: 2 },
   value: { flexShrink: 1, maxWidth: '45%', textAlign: 'right' },
 });
