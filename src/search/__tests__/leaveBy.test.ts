@@ -8,6 +8,7 @@ import {
   driveQuery,
   leaveByShort,
   leaveByText,
+  driveTimeText,
   isWidebody,
   LOCATION_FRESH_MS,
 } from '../leaveBy';
@@ -64,7 +65,9 @@ describe('computeLeaveBy', () => {
       title: 'Leave by 7:13 AM',
       sub: '32m drive with traffic. Arrive at BNA by 7:45 AM to begin boarding',
     });
-    expect(leaveByShort(r, BNA.tz)).toBe('32m drive');
+    // The drive time moved next to the car (round 169), so nothing sits beside the title.
+    expect(leaveByShort(r, BNA.tz)).toBe('');
+    expect(driveTimeText(r)).toBe('32m');
     // No live answer: the rough guess, marked with ~.
     expect(run({ location: { ...downtown, at: EARLY - 5 * MIN }, liveDriveMin: null })).toMatchObject({
       driveMin: 25,

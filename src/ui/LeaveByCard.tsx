@@ -4,7 +4,14 @@ import { AccessibilityInfo, Linking, Pressable, StyleSheet, Text, useWindowDimen
 import type { Airport } from '@/engine';
 import { forSpeech } from '@/search/format';
 import { MAPS_APP_NAME, type MapsApp } from '@/search/directions';
-import { computeLeaveBy, leaveByShort, leaveByText, LOCATION_FRESH_MS, type PhoneLocation } from '@/search/leaveBy';
+import {
+  computeLeaveBy,
+  driveTimeText,
+  leaveByShort,
+  leaveByText,
+  LOCATION_FRESH_MS,
+  type PhoneLocation,
+} from '@/search/leaveBy';
 import { fonts, radius, spacing, textStyles, useColors } from '@/theme';
 
 import { Button } from './Buttons';
@@ -50,6 +57,7 @@ export function LeaveByCard(p: LeaveByCardProps) {
   const result = computeLeaveBy(p);
   const text = leaveByText(result, p.airport.tz);
   const short = leaveByShort(result, p.airport.tz);
+  const drive = driveTimeText(result);
   const atAirport = result.kind === 'atAirport';
   const departed = result.kind === 'departed';
   // Tap for directions while there's still a trip to make: driving to the airport (John, 2026-10-30), or,
@@ -134,7 +142,16 @@ export function LeaveByCard(p: LeaveByCardProps) {
           accessibilityActions={directions ? [{ name: 'activate' }] : undefined}
           onAccessibilityAction={directions ? go : undefined}
           accessibilityLabel={forSpeech(
-            [text.title, text.sub, atAirport && gate ? `Gate ${gate}` : null, delayLine, note].filter(Boolean).join('. '),
+            [
+              text.title,
+              text.sub,
+              result.kind === 'leaveNow' && drive ? `${drive} drive` : null,
+              atAirport && gate ? `Gate ${gate}` : null,
+              delayLine,
+              note,
+            ]
+              .filter(Boolean)
+              .join('. '),
           )}>
           {/* One slim row: the time, then the one detail that matters (John, 2026-11-01). When that
               doesn't fit on one line, the detail gets its own line, with no dot (John, 2026-11-02). */}
@@ -170,26 +187,39 @@ export function LeaveByCard(p: LeaveByCardProps) {
           )}
         </View>
         {action && inline ? action : null}
-        {/* The car is the card's only sign that it opens directions, so it always shows (round 136,
-            John: a car "so people know it's directions", in place of the chevron). */}
-        {directions && !atAirport ? (
-          <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" testID="leave-by-car">
-            <Icon name="car.fill" size={16} tintColor={c.accent} fallback={<Text style={{ color: c.muted }}>›</Text>} />
-          </View>
-        ) : null}
-        {/* At the airport the car becomes a walking person with the gate under it (round 159, John). */}
-        {directions && atAirport ? (
+        {/* The directions button: a filled blue capsule so the card reads as tappable (round 169, John:
+            "doesn't look obvious to select"). The car carries the drive time beside it; at the airport a
+            walking person carries the gate (round 159). The whole card still opens directions. */}
+        {directions ? (
           <View
-            style={styles.walk}
+            style={[styles.go, { backgroundColor: c.accent }]}
             accessibilityElementsHidden
             importantForAccessibility="no-hide-descendants"
-            testID="leave-by-walk">
-            <Icon name="figure.walk" size={18} tintColor={c.accent} fallback={<Text style={{ color: c.muted }}>›</Text>} />
-            {gate ? (
-              <Text style={[styles.gate, { color: c.accent }]} maxFontSizeMultiplier={1.3} testID="leave-by-gate">
-                {gate}
-              </Text>
-            ) : null}
+            testID="leave-by-go">
+            {atAirport ? (
+              <View style={styles.goInner} testID="leave-by-walk">
+                <Icon
+                  name="figure.walk"
+                  size={16}
+                  tintColor={c.onAccent}
+                  fallback={<Text style={{ color: c.onAccent }}>›</Text>}
+                />
+                {gate ? (
+                  <Text style={[styles.goText, { color: c.onAccent }]} maxFontSizeMultiplier={1.3} testID="leave-by-gate">
+                    {gate}
+                  </Text>
+                ) : null}
+              </View>
+            ) : (
+              <View style={styles.goInner} testID="leave-by-car">
+                <Icon name="car.fill" size={16} tintColor={c.onAccent} fallback={<Text style={{ color: c.onAccent }}>›</Text>} />
+                {drive ? (
+                  <Text style={[styles.goText, { color: c.onAccent }]} maxFontSizeMultiplier={1.3} testID="leave-by-drive">
+                    {drive}
+                  </Text>
+                ) : null}
+              </View>
+            )}
           </View>
         ) : null}
       </View>
@@ -225,8 +255,10 @@ const styles = StyleSheet.create({
   action: { alignSelf: 'flex-start', paddingHorizontal: spacing.section },
   inline: { alignSelf: 'center' },
   text: { flex: 1 },
-  walk: { alignItems: 'center', minWidth: 28, gap: 1 },
-  gate: { fontFamily: fonts.monoMedium, fontSize: 11, lineHeight: 13 },
+  // Same height and shape as the app's pill buttons, filled like the main button.
+  go: { minHeight: 32, minWidth: 40, borderRadius: 16, paddingHorizontal: 12, justifyContent: 'center', alignItems: 'center' },
+  goInner: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  goText: { fontFamily: fonts.monoMedium, fontSize: 13, lineHeight: 16 },
   // Pulled up under the title so it reads as the title's caption. No icon tile (design audit,
   // round 69): the chevron says it opens directions, and the lines get the card's full width.
   details: { gap: 2 },

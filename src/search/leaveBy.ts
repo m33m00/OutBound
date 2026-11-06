@@ -64,7 +64,7 @@ export type LeaveBy =
   | { kind: 'departed'; airport: string }
   | { kind: 'atAirport'; airport: string; departUtc: number; boardUtc: number }
   | { kind: 'leaveBy'; airport: string; leaveUtc: number; beAtUtc: number; driveMin: number; live: boolean }
-  | { kind: 'leaveNow'; airport: string; beAtUtc: number }
+  | { kind: 'leaveNow'; airport: string; beAtUtc: number; driveMin?: number }
   | { kind: 'beAt'; airport: string; beAtUtc: number; bufferMin: number };
 
 export function computeLeaveBy(input: {
@@ -96,7 +96,7 @@ export function computeLeaveBy(input: {
       const live = input.liveDriveMin != null && input.liveDriveMin > 0;
       const driveMin = live ? Math.round(input.liveDriveMin!) : driveMinutes(km);
       const leaveUtc = beAtUtc - driveMin * 60_000;
-      if (leaveUtc <= now) return { kind: 'leaveNow', airport: airport.code, beAtUtc };
+      if (leaveUtc <= now) return { kind: 'leaveNow', airport: airport.code, beAtUtc, driveMin };
       return { kind: 'leaveBy', airport: airport.code, leaveUtc, beAtUtc, driveMin, live };
     }
   }
@@ -174,6 +174,17 @@ export function leaveByText(r: LeaveBy, tz: string): LeaveByText {
 }
 
 /**
+ * The drive time shown next to the car on the Leave By card's directions button (round 169, John:
+ * "can the estimated time to drive there be next to the car icon"). Null when there's no location,
+ * so no drive to time.
+ */
+export function driveTimeText(r: LeaveBy): string | null {
+  if (r.kind === 'leaveBy') return formatDuration(r.driveMin);
+  if (r.kind === 'leaveNow' && r.driveMin != null) return formatDuration(r.driveMin);
+  return null;
+}
+
+/**
  * The one short detail beside the title on the slim Leave By row (John, 2026-11-01: the card was
  * too tall for what it says). The full line stays in the spoken label.
  */
@@ -185,7 +196,8 @@ export function leaveByShort(r: LeaveBy, tz: string): string {
     case 'atAirport':
       return boardingAt(t(r.boardUtc));
     case 'leaveBy':
-      return `${formatDuration(r.driveMin)} drive`;
+      // The drive time sits by the car on the directions button now (round 169, John).
+      return '';
     case 'leaveNow':
       // Spelled out (John, 2026-11-03), ending "to begin boarding" (round 159, John).
       return arriveBy(r.airport, t(r.beAtUtc));

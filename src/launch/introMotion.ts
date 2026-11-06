@@ -28,12 +28,23 @@ export const ICON = {
 
 /** Right half of the plane, nose up, in plane units (mirrored for the left half). */
 const PLANE_RIGHT: readonly [number, number][] = [
-  [0, -118], [15, -104], [17, -34], [112, 22], [112, 44], [17, 22], [14, 72], [46, 96], [46, 112], [0, 100],
+  [0, -118],
+  [15, -104],
+  [17, -34],
+  [112, 22],
+  [112, 44],
+  [17, 22],
+  [14, 72],
+  [46, 96],
+  [46, 112],
+  [0, 100],
 ];
 /** The whole plane outline, nose up, centred on its own middle. */
 export const PLANE_OUTLINE: readonly [number, number][] = [
   ...PLANE_RIGHT,
-  ...PLANE_RIGHT.slice(1, -1).reverse().map(([x, y]) => [-x, y] as [number, number]),
+  ...PLANE_RIGHT.slice(1, -1)
+    .reverse()
+    .map(([x, y]) => [-x, y] as [number, number]),
 ];
 /** The plane's centre sits this far ahead of the route's end, so its tail meets the line. */
 const PLANE_AHEAD = 70 * ICON.planeScale;
@@ -63,8 +74,10 @@ export const TIMING = {
   letterSpin: 300,
   /** A new letter shows this often while spinning, like a flap falling. */
   flapEvery: 50,
-  /** The plane leaves and the panel lifts. */
-  exit: { start: 1800, ms: 520 },
+  /** The plane leaves and the panel lifts (round 169: a little longer so the lift glides). */
+  exit: { start: 1800, ms: 640 },
+  /** The panel starts lifting this long after the plane leaves. */
+  liftDelay: 90,
   /** Reduce Motion: the finished picture holds, then fades. */
   reducedHold: 650,
   reducedFade: 300,
@@ -256,7 +269,7 @@ export function introFrame(t: number, reduceMotion = false): IntroFrame {
   const exitP = progress(t, TIMING.exit.start, TIMING.exit.ms);
   const heading = routeHeading(u);
   const base = planeCenterAt(u);
-  const flown = easeInCubic(exitP) * 1400;
+  const flown = easeInCubic(exitP) * FLY_UNITS;
   const at = { x: base.x + flown * Math.cos(heading), y: base.y + flown * Math.sin(heading) };
   const planeOpacity = drawP <= 0 ? 0 : Math.min(1, drawP * 6);
 
@@ -270,9 +283,41 @@ export function introFrame(t: number, reduceMotion = false): IntroFrame {
     settle: easeInOutCubic(drawP),
     wordOpacity,
     letters,
-    lift: easeInOutCubic(progress(t, TIMING.exit.start + 90, TIMING.exit.ms - 90)),
+    lift: easeInOutCubic(progress(t, TIMING.exit.start + TIMING.liftDelay, TIMING.exit.ms - TIMING.liftDelay)),
     opacity: 1,
     done: t >= INTRO_MS,
+  };
+}
+
+/** How far the plane flies on take-off, in icon units. */
+export const FLY_UNITS = 1400;
+
+export interface ExitPlan {
+  /** Where the plane ends up, in screen points from where it sat. */
+  flyX: number;
+  flyY: number;
+  /** How far the panel rises, in points (negative = up). */
+  liftY: number;
+  /** Plane flight and panel lift timings, in ms. */
+  flyMs: number;
+  liftDelay: number;
+  liftMs: number;
+}
+
+/**
+ * The take-off and lift as fixed start and end values (round 169). The screen runs these on the
+ * native animation thread, so the lift stays smooth while the app mounts underneath; the curves
+ * match introFrame's (ease-in for the plane, ease-in-out for the panel).
+ */
+export function exitPlan(layout: Pick<IntroLayout, 'scale'>, heading: number, height: number): ExitPlan {
+  const fly = FLY_UNITS * layout.scale;
+  return {
+    flyX: fly * Math.cos(heading),
+    flyY: fly * Math.sin(heading),
+    liftY: -(height + 40),
+    flyMs: TIMING.exit.ms,
+    liftDelay: TIMING.liftDelay,
+    liftMs: TIMING.exit.ms - TIMING.liftDelay,
   };
 }
 

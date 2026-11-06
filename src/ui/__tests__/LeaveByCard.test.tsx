@@ -183,7 +183,7 @@ describe('LeaveByCard location button', () => {
     expect(r!.root.find((n) => n.props.testID === 'leave-by-card' && 'disabled' in n.props).props.disabled).toBe(true);
   });
 
-  it('is one slim row: the time and the drive, no second line (John, 2026-11-01)', () => {
+  it('is one slim row: the time, with the drive time on the directions button (round 169)', () => {
     mockFontScale = 1;
     act(() => {
       r = create(
@@ -199,8 +199,11 @@ describe('LeaveByCard location button', () => {
         />,
       );
     });
-    expect(lineText(r!)).toMatch(/^Leave by .+\u2002\|\u200232m drive$/);
+    expect(lineText(r!)).toMatch(/^Leave by \d{1,2}:\d{2}\u00a0(AM|PM)$/);
     expect(lineText(r!)).not.toContain('·');
+    // John: "can the estimated time to drive there be next to the car icon".
+    const car = r!.root.find((n) => n.props.testID === 'leave-by-car' && typeof n.type === 'string');
+    expect(car.find((n) => n.props.testID === 'leave-by-drive' && typeof n.type === 'string').props.children).toBe('32m');
     const texts = r!.root
       .findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string')
       .map((n) => n.props.children as string);
@@ -208,6 +211,55 @@ describe('LeaveByCard location button', () => {
     const label = r!.root.find((n) => n.props.accessible && String(n.props.accessibilityLabel).startsWith('Leave by')).props
       .accessibilityLabel as string;
     expect(label).toContain('at DFW by');
+  });
+
+  it('shows directions as a filled blue button, so the card reads as tappable (round 169)', () => {
+    mockFontScale = 1;
+    act(() => {
+      r = create(
+        <LeaveByCard
+          airport={AIRPORTS.DFW}
+          departUtc={NOW + 4 * 3600_000}
+          bufferMin={60}
+          now={NOW}
+          location={null}
+          locationStatus="idle"
+          onUseLocation={jest.fn()}
+        />,
+      );
+    });
+    const go = r!.root.find((n) => n.props.testID === 'leave-by-go' && typeof n.type === 'string');
+    const style = Object.assign({}, ...[go.props.style].flat(5).filter(Boolean));
+    expect(style.backgroundColor).toBe('#1c5fd4');
+    expect(style.borderRadius).toBeGreaterThanOrEqual(16);
+    expect(style.minHeight).toBeGreaterThanOrEqual(32);
+    // No location yet: just the car, no made-up drive time.
+    expect(r!.root.findAll((n) => n.props.testID === 'leave-by-car' && typeof n.type === 'string')).toHaveLength(1);
+    expect(r!.root.findAll((n) => n.props.testID === 'leave-by-drive')).toHaveLength(0);
+  });
+
+  it('keeps the drive time by the car when it is already time to leave', () => {
+    mockFontScale = 1;
+    act(() => {
+      r = create(
+        <LeaveByCard
+          airport={AIRPORTS.DFW}
+          departUtc={NOW + 80 * 60_000}
+          bufferMin={60}
+          now={NOW}
+          location={{ lat: 32.85, lon: -96.85, at: NOW }}
+          locationStatus="idle"
+          onUseLocation={jest.fn()}
+          liveDriveMin={32}
+        />,
+      );
+    });
+    expect(lineText(r!)).toMatch(/^Leave now/);
+    const drive = r!.root.find((n) => n.props.testID === 'leave-by-drive' && typeof n.type === 'string');
+    expect(drive.props.children).toBe('32m');
+    const label = r!.root.find((n) => n.props.accessible && String(n.props.accessibilityLabel).startsWith('Leave now')).props
+      .accessibilityLabel as string;
+    expect(label).toContain('32 minutes drive');
   });
 
   it('puts the detail on its own line, with no dot, when the row would wrap (John, 2026-11-02)', () => {
