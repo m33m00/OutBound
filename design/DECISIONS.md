@@ -571,3 +571,9 @@ This round:
 - Settings keeps its structure so the App Store thread's Account section merges cleanly; no auth screens here.
 
 Not rendered here: sizes checked against the fonts only.
+
+## Round 164: premium pass part 2, Feed and requests (Nov 6)
+
+- Every request row (Feed and My Trips) leads with the same round airline badge as the tickets.
+- An answered request shows its numbers the way the route line does: a pill in the seat color with the seat icon and open seats, a slash, the person icon and people listed, then "answered 2m ago" in gray. No tier dot, no sentence of numbers. VoiceOver still reads "20 seats, 17 listed, answered 2m ago".
+- Answered and Waiting badges are round pills with semibold text, like the other pills.

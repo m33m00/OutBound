@@ -184,7 +184,18 @@ describe('RequestRow', () => {
     });
     const texts = hostTexts(r!);
     expect(texts).toEqual(expect.arrayContaining(['Answered', 'Waiting']));
-    expect(lineTexts(r!.root).some((t) => / seats \| \d+ listed \| answered /.test(t))).toBe(true);
+    // The numbers sit in a seat-colored pill with the seat and person icons, then "answered 2m ago" (round 164).
+    const pill = r!.root.findAll((n) => typeof n.type === 'string' && n.props.testID === 'request-counts');
+    expect(pill).toHaveLength(1);
+    const pillTexts = pill[0]
+      .findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string')
+      .map((n) => n.props.children);
+    expect(pillTexts).toEqual([String(answered.answer!.open), '/', String(answered.answer!.listed)]);
+    expect(texts.some((t) => /^answered \d/.test(String(t)))).toBe(true);
+    // Both rows lead with the round airline badge.
+    expect(
+      r!.root.findAll((n) => ['airline-mark', 'airline-logo'].includes(n.props.testID) && typeof n.type === 'string').length,
+    ).toBeGreaterThanOrEqual(2);
     expect(r!.root.findAll((n) => n.props.testID === 'answer-request')).toHaveLength(0);
     // VoiceOver hears "answered" once (in the detail), and Waiting at the end.
     const labels = r!.root

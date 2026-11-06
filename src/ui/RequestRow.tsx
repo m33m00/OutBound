@@ -1,15 +1,17 @@
 import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
-import { answerTier, liveRequestDetail, requestDetail, requestTitle, type LoadRequest } from '@/requests/requests';
+import { answeredAgo, answerTier, liveRequestDetail, requestDetail, requestTitle, type LoadRequest } from '@/requests/requests';
 import { forSpeech } from '@/search/format';
 import type { LegStatusView } from '@/search/statusTags';
 import { fonts, minTapTarget, radius, spacing, textStyles, useColors } from '@/theme';
 
+import { AirlineMark } from './AirlinePill';
 import { Icon } from './Icon';
 import { Divided } from './MetaLine';
 import { pressStyle } from './press';
 import { StatusTag, TAG_TONE } from './StatusTag';
-import { TIER_FG, TIER_MARK } from './tierColors';
+import { COUNT_ICON } from './MiniRoute';
+import { TIER_BG, TIER_FG } from './tierColors';
 
 export interface RequestRowProps {
   request: LoadRequest;
@@ -57,6 +59,11 @@ export function RequestRow({ request, now, mine, onAnswer, onOpen, leg }: Reques
   const label = forSpeech([title, live ? live.spoken : detail, tagSpoken, spokenStatus].filter(Boolean).join('. '));
   const body = (
     <>
+      {/* The same round airline badge as the tickets (round 164). */}
+      {/* At big text the rows stack, and the badge leads the stack. */}
+      <View style={styles.mark} importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
+        <AirlineMark airline={request.flight.airline} size={30} />
+      </View>
       <View
         style={stacked ? styles.textStacked : styles.text}
         accessible={!onOpen}
@@ -65,11 +72,27 @@ export function RequestRow({ request, now, mine, onAnswer, onOpen, leg }: Reques
           <Divided text={title} />
         </Text>
         <View style={styles.detailLine}>
-          {tier ? <View style={[styles.dot, { backgroundColor: c[TIER_MARK[tier]] }]} /> : null}
-          <Text
-            lineBreakStrategyIOS="push-out"
-            style={[textStyles.small, styles.detail, { color: tier ? c[TIER_FG[tier]] : c.muted }]}>
-            {live ? (
+          {tier && request.answer ? (
+            // The answer as the route line shows seats: seat and person icons over the numbers,
+            // in the seat color, in one pill (round 164; "just color and seat availability").
+            <View style={[styles.counts, { backgroundColor: c[TIER_BG[tier]] }]} testID="request-counts">
+              <Icon name={COUNT_ICON.seats} size={12} tintColor={c[TIER_FG[tier]]} fallback={null} />
+              <Text style={[styles.countText, { color: c[TIER_FG[tier]] }]} maxFontSizeMultiplier={1.4}>
+                {String(request.answer.open)}
+              </Text>
+              <Text style={[styles.countText, { color: c[TIER_FG[tier]] }]} maxFontSizeMultiplier={1.4}>
+                /
+              </Text>
+              <Icon name={COUNT_ICON.listed} size={12} tintColor={c[TIER_FG[tier]]} fallback={null} />
+              <Text style={[styles.countText, { color: c[TIER_FG[tier]] }]} maxFontSizeMultiplier={1.4}>
+                {String(request.answer.listed)}
+              </Text>
+            </View>
+          ) : null}
+          <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, styles.detail, { color: c.muted }]}>
+            {tier && request.answer ? (
+              answeredAgo(request.answer, now)
+            ) : live ? (
               <>
                 {live.prefix}
                 {/* The old time sits struck before the new one (John, 2026-10-30). */}
@@ -94,7 +117,9 @@ export function RequestRow({ request, now, mine, onAnswer, onOpen, leg }: Reques
           style={[styles.badge, stacked && styles.selfStart, { backgroundColor: answered ? c.goodBg : c.surface2 }]}
           importantForAccessibility="no-hide-descendants"
           accessibilityElementsHidden>
-          <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: answered ? c.goodFg : c.muted }]}>
+          <Text
+            lineBreakStrategyIOS="push-out"
+            style={[textStyles.small, styles.badgeText, { color: answered ? c.goodFg : c.muted }]}>
             {status}
           </Text>
         </View>
@@ -154,11 +179,13 @@ const styles = StyleSheet.create({
   selfStart: { alignSelf: 'flex-start' },
   // Large text: the chevron stays, at the row's top right, so the row still reads as tappable.
   chevronStacked: { position: 'absolute', top: spacing.rowY + 4, right: spacing.rowX },
-  // Dot sits on the first line when the detail wraps.
-  detailLine: { flexDirection: 'row', alignItems: 'flex-start', gap: 6 },
+  detailLine: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6, marginTop: 2 },
   detail: { flexShrink: 1 },
-  dot: { width: 8, height: 8, borderRadius: 4, marginTop: 5 },
-  badge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: radius.sm },
+  mark: { alignSelf: 'flex-start', marginTop: 2 },
+  counts: { flexDirection: 'row', alignItems: 'center', gap: 3, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999 },
+  countText: { fontFamily: fonts.monoMedium, fontSize: 13, lineHeight: 16 },
+  badge: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 999 },
+  badgeText: { fontFamily: fonts.bodySemiBold },
   answer: {
     minHeight: minTapTarget,
     paddingHorizontal: spacing.page,
