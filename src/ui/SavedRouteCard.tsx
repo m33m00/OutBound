@@ -53,7 +53,7 @@ export function SavedRouteCard({ route, past, now, onOpen, onRemove }: SavedRout
     // A saved route is a floating card with a subtle boarding pass tear (rounds 120 and 121): the path
     // and the day up top, a perforation with notches, then the flights in mono.
     <View
-      style={[styles.card, elevation.card, { backgroundColor: c.surface, borderColor: c.line, shadowColor: c.text }]}
+      style={[styles.card, elevation.card, { backgroundColor: c.surface, borderColor: c.cardEdge, shadowColor: c.text }]}
       testID="saved-route">
       <ScalePressable
         onPress={onOpen}
@@ -74,7 +74,7 @@ export function SavedRouteCard({ route, past, now, onOpen, onRemove }: SavedRout
             </View>
           </View>
         </InkContext.Provider>
-        <TicketTear notch={c.bg} edge={c.line} line={c.line2} />
+        <TicketTear notch={c.bg} edge={c.cardEdge} line={c.line2} />
         <View style={styles.body}>
           {/* The same route line as a result card (round 146): each flight's airline logo under its own leg,
               opening its number and aircraft (round 156). No seat colors, since a saved route's seats are read again when you open it. */}
@@ -121,9 +121,10 @@ export function SavedRouteCard({ route, past, now, onOpen, onRemove }: SavedRout
 }
 
 const styles = StyleSheet.create({
+  // The same solid edge as a result ticket (round 163).
   card: {
     borderRadius: radius.md,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 1,
   },
   stub: {
     gap: 4,

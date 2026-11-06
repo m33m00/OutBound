@@ -37,6 +37,7 @@ export const MATERIAL: Partial<Record<SFSymbol, keyof typeof MaterialIcons.glyph
   trash: 'delete-outline',
   'carseat.right.fill': 'airline-seat-recline-normal',
   'person.fill': 'person',
+  'mappin.and.ellipse': 'place',
 };
 
 export interface IconProps {

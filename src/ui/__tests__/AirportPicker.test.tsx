@@ -30,12 +30,48 @@ describe('AirportPicker (design round 3)', () => {
       );
     });
     const labels = rows().map((n) => n.props.accessibilityLabel);
-    expect(labels[0]).toBe('DFW, Dallas/Fort Worth, Nearest');
-    expect(labels[1]).toBe('DAL, Dallas Love Field, Main home');
-    const dal = rows().find((n) => n.props.accessibilityLabel.startsWith('DAL, Dallas Love Field, Main'))!;
+    expect(labels[0]).toBe('DFW, Dallas/Fort Worth, Dallas, TX, Nearest');
+    expect(labels[1]).toBe('DAL, Dallas Love Field, Dallas, TX, Main home');
+    const dal = rows().find((n) => n.props.accessibilityLabel.startsWith('DAL, Dallas Love Field, Dallas, TX, Main'))!;
     expect(dal.props.accessibilityState).toEqual({ selected: true });
     act(() => dal.props.onPress());
     expect(onPick).toHaveBeenCalledWith('DAL');
+  });
+
+  it('draws each section as one rounded card with the code in a pill and the city under the name (round 163)', () => {
+    act(() => {
+      r = create(
+        <AirportPicker
+          visible
+          title="To"
+          nearest="DFW"
+          homes={[{ code: 'DAL', main: true }]}
+          onPick={jest.fn()}
+          onClose={jest.fn()}
+        />,
+      );
+    });
+    const flat = (st: unknown) => Object.assign({}, ...[st].flat(5).filter(Boolean));
+    const quick = rows().slice(0, 2);
+    const style = (n: (typeof quick)[0]) =>
+      flat(typeof n.props.style === 'function' ? n.props.style({ pressed: false }) : n.props.style);
+    expect(style(quick[0]).borderTopLeftRadius).toBeGreaterThan(0);
+    expect(style(quick[0]).borderBottomLeftRadius).toBeUndefined();
+    expect(style(quick[1]).borderBottomLeftRadius).toBeGreaterThan(0);
+    expect(style(quick[1]).borderTopLeftRadius).toBeUndefined();
+    const hosts = (n: (typeof quick)[0], id: string) => n.findAll((x) => typeof x.type === 'string' && x.props.testID === id);
+    expect(hosts(quick[0], 'airport-code-pill')).toHaveLength(1);
+    const place = hosts(quick[0], 'airport-place')[0];
+    expect([place.props.children].flat().join('')).toBe('Dallas, TX');
+  });
+
+  it('finds airports by city too (round 163)', () => {
+    act(() => {
+      r = create(<AirportPicker visible title="To" onPick={jest.fn()} onClose={jest.fn()} />);
+    });
+    const input = r!.root.find((n) => n.props.accessibilityLabel === 'Search airports' && n.props.onChangeText);
+    act(() => input.props.onChangeText('Nashville'));
+    expect(rows().map((n) => n.props.accessibilityLabel.slice(0, 3))).toEqual(['BNA']);
   });
 
   it('says so when nothing matches', () => {
@@ -64,4 +100,3 @@ describe('AirportPicker (design round 3)', () => {
     expect(onPick).toHaveBeenCalledWith('LAX');
   });
 });
-
