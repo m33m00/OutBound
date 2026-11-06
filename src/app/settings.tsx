@@ -23,10 +23,13 @@ import { useSharedLocation } from '@/ui/LocationProvider';
 import { withTick } from '@/ui/haptics';
 import { pressStyle } from '@/ui/press';
 import { useSheetContent } from '@/ui/useSheetContent';
+import { useCardSurface } from '@/ui/cardSurface';
 
 /** Tester settings (backlog 12; Q-003, Q-024). Saved on this phone (Q-025). */
 export default function SettingsScreen() {
   const c = useColors();
+  // Every group is the shared card (round 163), the same as Profile, Trips and Logbook.
+  const card = useCardSurface();
   const { settings, update, reset } = useSettings();
   const { status, request } = useSharedLocation();
   const [picking, setPicking] = useState<'main' | 'extra' | null>(null);
@@ -68,7 +71,7 @@ export default function SettingsScreen() {
 
         <View style={styles.section} onLayout={sectionLayout('homes')}>
           <SectionHeader title="Homes" />
-          <View style={[styles.group, { backgroundColor: c.surface, borderColor: c.line }]}>
+          <View style={[card, styles.group]}>
             {homeList.length === 0 ? (
               <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, styles.empty, { color: c.muted }]}>
                 No main home yet. Set one to show Get Home when you’re away.
@@ -110,7 +113,7 @@ export default function SettingsScreen() {
 
         <View style={styles.section} onLayout={sectionLayout('location')}>
           <SectionHeader title="Location" />
-          <View style={[styles.group, { backgroundColor: c.surface, borderColor: c.line }]}>
+          <View style={[card, styles.group]}>
             <SwitchRow
               label="Use your location"
               hint="For the nearest airport and your drive estimate"
@@ -129,7 +132,7 @@ export default function SettingsScreen() {
         {/* Moved here from a button on the map (John, 2026-11-01: "That should just be in the settings"). */}
         <View style={styles.section}>
           <SectionHeader title="Map" />
-          <View style={[styles.group, { backgroundColor: c.surface, borderColor: c.line }]}>
+          <View style={[card, styles.group]}>
             <SwitchRow
               label="Rain radar"
               caption="Live rain on the globe, from NOAA"
@@ -141,7 +144,7 @@ export default function SettingsScreen() {
 
         <View style={styles.section} onLayout={sectionLayout('notify')}>
           <SectionHeader title="Notifications" />
-          <View style={[styles.group, { backgroundColor: c.surface, borderColor: c.line }]}>
+          <View style={[card, styles.group]}>
             <SwitchRow
               label="Answers to your requests"
               caption="As soon as someone replies"
@@ -162,7 +165,7 @@ export default function SettingsScreen() {
 
         <View style={styles.section} onLayout={sectionLayout('leaveBy')}>
           <SectionHeader title="Leave-by" />
-          <View style={[styles.group, { backgroundColor: c.surface, borderColor: c.line }]}>
+          <View style={[card, styles.group]}>
             <Stepper
               label="Be at the airport before departure"
               value={settings.bufferMin}
@@ -179,7 +182,7 @@ export default function SettingsScreen() {
 
         <View style={styles.section} onLayout={sectionLayout('search')}>
           <SectionHeader title="Search defaults" />
-          <View style={[styles.group, { backgroundColor: c.surface, borderColor: c.line }]}>
+          <View style={[card, styles.group]}>
             <FiltersForm filters={settings.search} onChange={(search) => update({ search })} />
           </View>
           <SectionFooter>Every search starts with these. Change them for one search in Filters.</SectionFooter>
@@ -311,8 +314,6 @@ const styles = StyleSheet.create({
   header: { paddingHorizontal: spacing.page, minHeight: minTapTarget, justifyContent: 'center' },
   body: { paddingHorizontal: spacing.page, paddingBottom: spacing.page * 2, gap: spacing.section },
   group: {
-    borderRadius: radius.md,
-    borderWidth: StyleSheet.hairlineWidth,
     padding: spacing.rowX,
     gap: spacing.group,
   },

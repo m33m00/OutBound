@@ -557,3 +557,17 @@ John: "Can the logos sit on top of the delayed pill and delay pill sits undernea
 ## Round 162 (2026-11-06, John)
 
 - Boarding time, since no feed gives one: 40 minutes before a domestic departure, 50 before an international (airports in different countries) or widebody one (747, 767, 777, 787, A330, A340, A350, A380, MD-11, DC-10; not the 757). "Your flight begins boarding at" uses it. Widebody detection needs the aircraft type, so until real flights carry it, a domestic widebody gets 40.
+
+## Round 163: premium pass on the less-touched screens, part 1 (John, Nov 6)
+
+John: the home screen, results and flight details have had all the attention; the station picker, Settings, Trips, the Logbook and the other menus need the same premium pass.
+
+Audit of screens not yet polished: Airport picker, Settings, Trips, Logbook (totals card, logged flight rows), Feed and request rows, Add flight sheet, Report sheet, Filters, Departures sheet, Profile, Date picker, Pass scanner, the tab bar.
+
+This round:
+- One shared card look (`useCardSurface`): surface fill, card-edge border, 1pt, medium radius, and a soft lift in light mode only. ListGroup, EmptyState, the Settings groups, SavedRouteCard edges and the Logbook totals card all use it, so every list screen matches the results tickets.
+- Airport picker: each section is one rounded card of rows with inset hairlines; the code sits in a mono pill; the airport name is in text color with "Dallas, TX" under it; amber tags are now round pills; the search field uses the card look. Search finds a city or a state too, as the placeholder already promised.
+- Logbook totals: the highlights are rows (icon, label left, answer right, miles or flights muted) instead of plain sentences. VoiceOver reads the same.
+- Settings keeps its structure so the App Store thread's Account section merges cleanly; no auth screens here.
+
+Not rendered here: sizes checked against the fonts only.
