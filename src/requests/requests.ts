@@ -128,9 +128,12 @@ export function departsText(f: Flight, now: number, atUtc: number = f.departUtc)
 // Just the numbers since round 140; the color says the rest.
 export const answerText = (a: LoadAnswer) => seatPair(a.open, a.listed);
 
+/** "you answered 2m ago": the part of an answered row after its numbers (round 164). */
+export const answeredAgo = (a: LoadAnswer, now: number) => `${a.byYou ? 'you answered' : 'answered'} ${formatAge(a.at, now)}`;
+
 /** Second line of a request row. */
 export function requestDetail(r: LoadRequest, now: number): string {
-  if (r.answer) return `${answerText(r.answer)} · ${r.answer.byYou ? 'you answered' : 'answered'} ${formatAge(r.answer.at, now)}`;
+  if (r.answer) return `${answerText(r.answer)} · ${answeredAgo(r.answer, now)}`;
   return `${departsText(r.flight, now)} · asked ${formatAge(r.askedAt, now)}`;
 }
 
