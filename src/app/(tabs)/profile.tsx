@@ -1,13 +1,17 @@
 import Constants from 'expo-constants';
 import { router } from 'expo-router';
-import { Platform } from 'react-native';
+import { Linking, Platform } from 'react-native';
+
+import { useAccount } from '@/account/AccountProvider';
+import { openLegal } from '@/account/AuthUI';
+import { supportLink } from '@/legal/legal';
 
 import type { SFSymbol } from 'expo-symbols';
 
 import { useSettings } from '@/settings/SettingsProvider';
 import { profileSummary, SETTINGS_SECTION_TITLE, settingsSectionFor } from '@/settings/profileSummary';
 import { SCHEDULE_SOURCE } from '@/search/useRouteSearch';
-import { ListGroup, ListRow } from '@/ui/ListGroup';
+import { ListGroup, ListRow, SectionFooter } from '@/ui/ListGroup';
 import { TabScreen } from '@/ui/TabScreen';
 
 /**
@@ -27,6 +31,7 @@ const ROW_ICON: Record<ReturnType<typeof profileSummary>[number]['key'], SFSymbo
 
 export default function ProfileScreen() {
   const { settings } = useSettings();
+  const account = useAccount();
   // Each row opens Settings at its own section (backlog 56).
   const openSettings = (key: Parameters<typeof settingsSectionFor>[0]) =>
     router.push({ pathname: '/settings', params: { section: settingsSectionFor(key) } });
@@ -34,6 +39,15 @@ export default function ProfileScreen() {
 
   return (
     <TabScreen title="Profile">
+      <ListGroup title="Account">
+        <ListRow
+          label={account.status === 'preview' ? 'Not signed in' : 'Signed in'}
+          value={account.status === 'preview' ? 'Preview' : account.user?.email}
+          onPress={() => router.push('/account')}
+          accessibilityHint="Opens Account: log out or delete your account"
+        />
+      </ListGroup>
+
       <ListGroup title="Your setup">
         {profileSummary(settings, Platform.OS === 'ios').map((row) => (
           <ListRow
@@ -57,6 +71,14 @@ export default function ProfileScreen() {
         <ListRow icon="antenna.radiowaves.left.and.right" label="Radar" value="NOAA/NWS MRMS" />
         {version ? <ListRow icon="info.circle" label="Version" value={version} /> : null}
       </ListGroup>
+
+      <ListGroup title="Legal and help">
+        <ListRow label="Privacy Policy" onPress={() => openLegal('privacy')} />
+        <ListRow label="Terms of Use" onPress={() => openLegal('terms')} />
+        <ListRow label="Contact Support" onPress={() => Linking.openURL(supportLink())} />
+      </ListGroup>
+      {/* Apple 5.2: airline names and logos only identify flights; say plainly whose they are. */}
+      <SectionFooter>OutBound is independent and isn’t affiliated with or endorsed by any airline. Airline names and logos belong to their owners.</SectionFooter>
     </TabScreen>
   );
 }
