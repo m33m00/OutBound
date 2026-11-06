@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { AccessibilityInfo } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
+import { LaunchIntro } from '@/launch/LaunchIntro';
 import { LogbookProvider } from '@/logbook/LogbookProvider';
 import { RequestsProvider } from '@/requests/RequestsProvider';
 import { SettingsProvider } from '@/settings/SettingsProvider';
@@ -42,6 +43,8 @@ export default function RootLayout() {
     };
   }, []);
   const ready = (fontsLoaded || fontError != null) && boldChecked;
+  // The animated loading screen plays once per launch, over the app as it loads (App Store round 1).
+  const [introDone, setIntroDone] = useState(false);
 
   useEffect(() => {
     if (ready) SplashScreen.hideAsync();
@@ -73,6 +76,7 @@ export default function RootLayout() {
                 <ThemeProvider value={navTheme}>
                   <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
                   <Stack screenOptions={{ headerShown: false }} />
+                  {introDone ? null : <LaunchIntro onDone={() => setIntroDone(true)} />}
                 </ThemeProvider>
               </LocationProvider>
             </RequestsProvider>
