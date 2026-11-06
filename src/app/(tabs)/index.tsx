@@ -9,7 +9,7 @@ import { GlobeMap, type LonLat, type MapAirport } from '@/map';
 import { nearestAirport } from '@/search/airports';
 import { otherEndExcludes, searchRequest, showGetHome } from '@/search/areas';
 import { dateChips } from '@/search/dates';
-import { driveQuery } from '@/search/leaveBy';
+import { boardingLeadMin, driveQuery } from '@/search/leaveBy';
 import { chooseOrigin, restSpot, showLocationCard, type RestSpot } from '@/search/origin';
 import { legLookup, resultsBanner, rowStatus, statusLookups } from '@/search/statusTags';
 import { SAMPLE_TZ, SCHEDULE_SOURCE, useRouteSearch } from '@/search/useRouteSearch';
@@ -614,6 +614,7 @@ export default function HomeScreen() {
                           locationStatus={locationStatus}
                           mapsApp={settings.mapsApp}
                           liveDriveMin={liveDrive?.minutes ?? null}
+                          boardingMin={boardingLeadMin(firstLeg.from, firstLeg.to, firstLeg.aircraft)}
                           gate={firstGate?.gate ?? null}
                           terminal={firstGate?.terminal ?? null}
                           onUseLocation={async () => {

@@ -31,6 +31,8 @@ export interface LeaveByCardProps {
   mapsApp?: MapsApp;
   /** Drive minutes with traffic from a maps service; without it the card uses its rough estimate. */
   liveDriveMin?: number | null;
+  /** Boarding starts this long before departure (round 162): 40 domestic, 50 international or widebody. */
+  boardingMin?: number;
   /** The first flight's departure gate and terminal from live status, when posted (round 159). */
   gate?: string | null;
   terminal?: string | null;

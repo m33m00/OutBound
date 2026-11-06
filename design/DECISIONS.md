@@ -553,3 +553,7 @@ John: "Can the logos sit on top of the delayed pill and delay pill sits undernea
 - No red edge on a full route; it keeps the gray fill and the plain edge. Red edges are only for a canceled nonstop.
 - No late pills on results tickets; the opened route keeps them. A diversion still shows on the ticket.
 - A leg with nothing reported shows the seat icon over a dash.
+
+## Round 162 (2026-11-06, John)
+
+- Boarding time, since no feed gives one: 40 minutes before a domestic departure, 50 before an international (airports in different countries) or widebody one (747, 767, 777, 787, A330, A340, A350, A380, MD-11, DC-10; not the 757). "Your flight begins boarding at" uses it. Widebody detection needs the aircraft type, so until real flights carry it, a domestic widebody gets 40.

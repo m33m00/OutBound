@@ -1,6 +1,16 @@
 import { AIRPORTS, zonedToUtc } from '@/engine';
 
-import { computeLeaveBy, distanceKm, driveMinutes, driveQuery, leaveByShort, leaveByText, LOCATION_FRESH_MS } from '../leaveBy';
+import {
+  boardingLeadMin,
+  computeLeaveBy,
+  distanceKm,
+  driveMinutes,
+  driveQuery,
+  leaveByShort,
+  leaveByText,
+  isWidebody,
+  LOCATION_FRESH_MS,
+} from '../leaveBy';
 
 const BNA = AIRPORTS.BNA;
 const DEP = zonedToUtc('2026-10-20', '09:00', BNA.tz); // 9:00 AM Nashville
@@ -92,9 +102,13 @@ describe('computeLeaveBy', () => {
     // The airport's name too (John, 2026-11-02), and boarding in his words (round 159).
     expect(leaveByText(r, BNA.tz)).toEqual({
       title: `You’re at BNA (${AIRPORTS.BNA.name})`,
-      sub: 'Your flight begins boarding at 9:00 AM',
+      // Boarding 40 minutes before a domestic departure (round 162, John).
+      sub: 'Your flight begins boarding at 8:20 AM',
     });
-    expect(leaveByShort(r, BNA.tz)).toBe('Your flight begins boarding at 9:00 AM');
+    expect(leaveByShort(r, BNA.tz)).toBe('Your flight begins boarding at 8:20 AM');
+    // International or widebody: 50 minutes.
+    const long = run({ location: { lat: BNA.lat + 0.01, lon: BNA.lon, at: EARLY }, boardingMin: 50 });
+    expect(leaveByShort(long, BNA.tz)).toBe('Your flight begins boarding at 8:10 AM');
   });
 
   it('says leave now when it is already too late', () => {
@@ -118,5 +132,22 @@ describe('computeLeaveBy', () => {
     expect(r).toEqual({ kind: 'departed', airport: 'BNA' });
     expect(leaveByText(r, BNA.tz)).toEqual({ title: 'Departed', sub: 'This flight has left BNA. Pick a later route.' });
     expect(leaveByShort(r, BNA.tz)).toBe('Pick a later route');
+  });
+});
+
+describe('boarding lead (round 162, John)', () => {
+  it('is 40 minutes domestic, 50 international or widebody', () => {
+    expect(boardingLeadMin('DFW', 'LAX', 'Boeing 737-800')).toBe(40);
+    expect(boardingLeadMin('DFW', 'LAX')).toBe(40);
+    expect(boardingLeadMin('DFW', 'LAX', 'Boeing 777-200')).toBe(50);
+    expect(boardingLeadMin('DFW', 'LAX', 'Airbus A350-900')).toBe(50);
+    const table = { DFW: { country: 'US' }, LHR: { country: 'GB' } };
+    expect(boardingLeadMin('DFW', 'LHR', 'Boeing 737-800', table)).toBe(50);
+  });
+  it('knows the twin-aisle types and leaves the 757 and A321 alone', () => {
+    for (const t of ['Boeing 747-8', '767-300ER', 'B787-9', 'Airbus A330-300', 'A380-800', 'MD-11'])
+      expect(isWidebody(t)).toBe(true);
+    for (const t of ['Boeing 757-200', 'Airbus A321neo', 'Boeing 737 MAX 8', 'Embraer E175', null])
+      expect(isWidebody(t)).toBe(false);
   });
 });

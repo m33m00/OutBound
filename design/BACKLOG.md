@@ -194,3 +194,4 @@ Each item names its owner. One item per work session. spec-keeper runs a pre-fli
 | 187 | Design round 159: one layout for every leg box, no "Continuing to", boarding wording on Leave By, walk to gate at the airport (John) | main | P2 | Built (design round 159, branch claude/project-thread-fzqwou) |
 | 188 | Design round 160: no sharing-loads line, centered area notes, canceled nonstop red edge and wash, connections left normal (John) | main | P2 | Built (design round 160, branch claude/project-thread-fzqwou) |
 | 189 | Design round 161: logos clear the canceled X, struck canceled nonstop time, round logo badges, state in area notes, no red edge for full, no late pills on tickets, seat icon over dash (John) | main | P2 | Built (design round 161, branch claude/project-thread-fzqwou) |
+| 190 | Design round 162: boarding 40m before domestic, 50m before international or widebody (John) | main | P2 | Built (design round 162, branch claude/project-thread-fzqwou) |
