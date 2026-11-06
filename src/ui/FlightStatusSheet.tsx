@@ -14,6 +14,8 @@ import {
   type LoadAnswer,
   type ReportWindow,
 } from '@/requests/requests';
+import { contentKey } from '@/moderation/moderation';
+import { askFlag, useModeration } from '@/moderation/ModerationProvider';
 import { shortDate } from '@/search/dates';
 import { formatAge, forSpeech, seatCounts, seatPair, seatSourceText, seatText, SHOW_SEAT_AGE } from '@/search/format';
 import { radius, spacing, textStyles, useColors } from '@/theme';
@@ -288,7 +290,7 @@ export function FlightStatusSheet({ flight, visible, now, onClose, liveOptions, 
                 </Text>
               ) : null}
               {load && flight ? (
-                <LoadCard load={load} seats={seats} now={now} focus={backFromReport} onReport={() => setReporting(true)} />
+                <LoadCard load={load} flight={flight} seats={seats} now={now} focus={backFromReport} onReport={() => setReporting(true)} />
               ) : null}
               {flight ? <LogFlightLink flight={flight} now={now} /> : null}
               {/* The source line names a real feed, so it shows only for live status (round 30: no sample labels). */}
@@ -338,22 +340,50 @@ function SearchSeats({ seats, now }: { seats: LegSeats; now: number }) {
   );
 }
 
+/** Flag someone else's numbers: a small soft pill, so it reads as a button but stays quiet. */
+function FlagButton({ onPress }: { onPress: () => void }) {
+  return (
+    <PillButton
+      label="Flag"
+      leading="flag"
+      quiet
+      onPress={onPress}
+      accessibilityLabel="Flag report"
+      accessibilityHint="Hide it, or hide everything this person sends"
+    />
+  );
+}
+
 /** Seats: what search knows, your report if you made one, then Report Load and Ask for Load. */
 function LoadCard({
   load,
+  flight,
   seats,
   now,
   focus,
   onReport,
 }: {
   load: FlightLoadActions;
+  flight: Flight;
   seats?: LegSeats | null;
   now: number;
   focus: boolean;
   onReport: () => void;
 }) {
   const c = useColors();
-  const { reportWindow, askState, yourReport, onAsk, askAnswer, onCancelAsk, fromTrips } = load;
+  const { reportWindow, askState, yourReport, onAsk, onCancelAsk, fromTrips } = load;
+  // Other people's numbers can be flagged and hidden (App Store round 2, Apple guideline 1.2).
+  const moderation = useModeration();
+  const [justFlagged, setJustFlagged] = useState(false);
+  const crowdKey = seats?.source === 'reported' && seats.asOf != null ? contentKey(flight, 'report', seats.asOf) : null;
+  const answerKey = load.askAnswer ? contentKey(flight, 'answer', load.askAnswer.at) : null;
+  const shownSeats = crowdKey && moderation.hidden(crowdKey) ? null : seats;
+  const askAnswer = answerKey && moderation.hidden(answerKey) ? null : load.askAnswer;
+  const flagThis = (key: string) =>
+    askFlag((reason) => {
+      moderation.flag(key, reason);
+      setJustFlagged(true);
+    });
   const note = askState === 'asked' && fromTrips ? 'Waiting for an answer.' : askNote(askState);
   const answerTierWord = askAnswer ? answerTier(askAnswer) : null;
   const headerRef = useFocusOnMount(focus);
@@ -377,7 +407,23 @@ function LoadCard({
       <Text ref={headerRef} style={[textStyles.heading, { color: c.text }]} accessibilityRole="header">
         Seats
       </Text>
-      {seats ? <SearchSeats seats={seats} now={now} /> : null}
+      {shownSeats ? (
+        crowdKey ? (
+          <View style={styles.flagRow}>
+            <View style={styles.flagBody}>
+              <SearchSeats seats={shownSeats} now={now} />
+            </View>
+            <FlagButton onPress={() => flagThis(crowdKey)} />
+          </View>
+        ) : (
+          <SearchSeats seats={shownSeats} now={now} />
+        )
+      ) : null}
+      {justFlagged ? (
+        <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]} accessibilityLiveRegion="polite">
+          Report hidden. Thanks for flagging it.
+        </Text>
+      ) : null}
       {yourReport && tier ? (
         <Text
           style={[textStyles.body, { color: c.text }]}
@@ -392,6 +438,7 @@ function LoadCard({
       ) : null}
       {askAnswer && answerTierWord ? (
         // Answered: the numbers take the place of the ask button.
+        <View style={styles.flagRow}>
         <Text
           style={[textStyles.body, { color: c.text }]}
           accessibilityLabel={forSpeech(`Your request was answered: ${answerText(askAnswer)} · ${formatAge(askAnswer.at, now)}`)}>
@@ -401,6 +448,8 @@ function LoadCard({
           </Text>
           {SHOW_SEAT_AGE ? <Divided text={` · ${formatAge(askAnswer.at, now)}`} /> : null}
         </Text>
+        {answerKey ? <FlagButton onPress={() => flagThis(answerKey)} /> : null}
+        </View>
       ) : null}
       {/* Report and Ask side by side (design audit, round 67); stacked at big text. */}
       <View style={[styles.loadButtons, stack && styles.loadButtonsStacked]}>
@@ -457,6 +506,8 @@ function LoadCard({
 
 const styles = StyleSheet.create({
   screen: { flex: 1, paddingHorizontal: spacing.page },
+  flagRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.group },
+  flagBody: { flex: 1 },
   state: {
     flexDirection: 'row',
     alignItems: 'center',

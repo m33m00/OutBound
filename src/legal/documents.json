@@ -1,0 +1,123 @@
+{
+  "updated": "November 6, 2026",
+  "privacy": {
+    "title": "Privacy Policy",
+    "intro": "OutBound helps airline employees plan standby travel. This policy says what OutBound collects, why, who helps run it, and how to delete it. OutBound has no ads, doesn't track you across other apps or websites, and never sells your information.",
+    "sections": [
+      {
+        "heading": "What we collect",
+        "items": [
+          "Your account: your work email address, an account ID and your password. The password is stored only as a secure hash; nobody can read it.",
+          "What you share: seat counts you report and loads you ask about, with the flight and the time. Other people see the numbers, never who sent them; your account is linked to them behind the scenes so abuse can be stopped.",
+          "Searches and flight lookups: the airports, dates and flight numbers you look up, so OutBound can fetch schedules, flight status, airport delays and weather.",
+          "Location, only if you turn it on: used on your phone to find your nearest airport. For drive times, your location is rounded to about 100 meters and sent through our server to Apple Maps. It isn't stored."
+        ]
+      },
+      {
+        "heading": "What stays on your phone",
+        "items": [
+          "Your settings, homes, saved routes and logbook stay on your phone.",
+          "Boarding pass scans and screenshots are read on your phone. The picture never leaves it; only the flight details you save go into your logbook on the phone."
+        ]
+      },
+      {
+        "heading": "Who helps run OutBound",
+        "items": [
+          "Supabase hosts OutBound's accounts, database and server functions.",
+          "Apple Maps works out drive times from your rounded location.",
+          "AeroDataBox provides flight status for the flight numbers you look up.",
+          "Logo.dev shows airline logos; your phone asks it for a logo by the airline's web address.",
+          "The FAA and NOAA provide airport delays, weather and radar from public data.",
+          "Each of these gets only what it needs to do its job and is expected to protect it at least as well as we do."
+        ]
+      },
+      {
+        "heading": "How long we keep it",
+        "items": [
+          "Your account and what you shared are kept until you delete your account.",
+          "Seat reports stop showing after the flight leaves, and are deleted with your account.",
+          "Server logs that may include your IP address are kept for a short time to keep the service running and safe."
+        ]
+      },
+      {
+        "heading": "Delete your account",
+        "items": [
+          "In the app, go to Profile, then Account, then Delete Account. Your account, your email and everything you shared are deleted from our servers right away, and OutBound clears what it kept on your phone.",
+          "You can also turn off location in Settings or in your iPhone's Settings at any time."
+        ]
+      },
+      {
+        "heading": "Age",
+        "items": [
+          "OutBound is for airline employees who are 18 or older. We don't knowingly collect information from anyone younger."
+        ]
+      },
+      {
+        "heading": "Changes and contact",
+        "items": [
+          "If this policy changes, we'll update the date above and tell you in the app when the change matters.",
+          "Questions or requests: see Contact below."
+        ]
+      }
+    ]
+  },
+  "terms": {
+    "title": "Terms of Use",
+    "intro": "These terms are the agreement between you and OutBound. By creating an account or using the app you agree to them.",
+    "sections": [
+      {
+        "heading": "Who can use OutBound",
+        "items": [
+          "You must be an airline employee, 18 or older, and sign up with your own airline work email.",
+          "Keep your password to yourself. You're responsible for what happens on your account."
+        ]
+      },
+      {
+        "heading": "Not an airline",
+        "items": [
+          "OutBound is independent. It isn't affiliated with, endorsed by or sponsored by any airline. Airline names and logos belong to their owners and are shown only to identify flights.",
+          "Schedules, seat counts, delays and weather can be wrong or out of date. Seats are never guaranteed. Always check with your airline before you travel."
+        ]
+      },
+      {
+        "heading": "Follow your airline's rules",
+        "items": [
+          "You're responsible for following your employer's travel and confidentiality policies, including any rules about sharing loads. Only share what you're allowed to share."
+        ]
+      },
+      {
+        "heading": "No tolerance for abuse",
+        "items": [
+          "Don't post false or misleading seat counts, spam, harass anyone, impersonate anyone or try to break or misuse the service. There is no tolerance for objectionable content or abusive users.",
+          "You can flag a report you think is wrong or abusive, and hide reports from the person who sent it. We review flags within 24 hours, remove content that breaks these terms and remove accounts that abuse OutBound."
+        ]
+      },
+      {
+        "heading": "What you share",
+        "items": [
+          "You keep ownership of what you share. You let OutBound store it and show it to other employees, without your name, so the app works."
+        ]
+      },
+      {
+        "heading": "Ending your account",
+        "items": [
+          "You can delete your account at any time in Profile, then Account. We may suspend or end an account that breaks these terms."
+        ]
+      },
+      {
+        "heading": "The legal part",
+        "items": [
+          "OutBound is provided as is, without warranties. To the extent the law allows, OutBound isn't liable for missed flights, travel costs or other losses from using the app.",
+          "These terms are governed by the laws of Texas, USA. We may update them; we'll change the date above, and continuing to use OutBound means you accept the update.",
+          "Apple isn't responsible for OutBound or these terms. Apple's standard end user license agreement also applies to the app."
+        ]
+      }
+    ]
+  },
+  "contact": {
+    "heading": "Contact",
+    "text": "Questions, problems or privacy requests: open the support page, or email us at the address there.",
+    "supportUrl": "https://m33m00.github.io/OutBound/support.html",
+    "email": ""
+  }
+}
