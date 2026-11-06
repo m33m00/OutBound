@@ -26,3 +26,20 @@ everything Apple requires, built in now. He isn't submitting yet.
   flags table, sender IDs on reports and a review queue.
 - DECISIONS.md still says no airline logos; John said yes to Logo.dev on 2026-11-04. Store risk
   under 5.2 is noted for him.
+
+## Submit-day checklist (John's steps, remind him when he's ready)
+1. Support email: John will create one later (2026-11-06). Put it in src/legal/documents.json
+   contact.email, run `node scripts/build-legal-pages.mjs`, and republish. Until then the app and
+   support page fall back to the support page with no email, which Apple won't accept at review.
+2. Supabase: push the accounts migration, turn on email confirmations, paste the code templates,
+   add custom SMTP so codes reach people.
+3. Confirm the seeded airline domains with people at each airline.
+4. Reviewer login: add one address to allowed_emails.
+5. Merge to main, turn on GitHub Pages from /docs.
+6. Apple Developer Program enrollment.
+7. App Store Connect listing: privacy answers, age rating, screenshots, support and privacy URLs,
+   EU trader status, "not affiliated" line in the description.
+8. EAS production env vars, `eas build --profile production`, `eas submit`.
+
+## Waiting
+- Message board: John said build it after accounts are switched on (2026-11-06). Not started.
