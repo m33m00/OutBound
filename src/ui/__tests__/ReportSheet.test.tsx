@@ -2,10 +2,11 @@ import React from 'react';
 import { View } from 'react-native';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 
-import { sampleFeed, sampleMine } from '@/requests/requests';
+import { answerTier, sampleFeed, sampleMine } from '@/requests/requests';
 
 import { ReportSheet } from '../ReportSheet';
 import { RequestRow } from '../RequestRow';
+import { TIER_BG } from '../tierColors';
 import { lineTexts } from '@/testing/lineTexts';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -78,6 +79,23 @@ describe('ReportSheet', () => {
     expect(box().props.value).toBe('');
     act(() => box().props.onBlur());
     expect(box().props.value).toBe('0');
+  });
+
+  it('the tier box takes the seat color once you set numbers, and − / + are blue secondary buttons (round 165)', async () => {
+    await act(async () => {
+      r = create(<ReportSheet flight={flight} now={NOW} onCancel={jest.fn()} onSubmit={jest.fn()} />);
+    });
+    const flat = (st: unknown) => Object.assign({}, ...[st].flat(5).filter(Boolean));
+    const tierBox = () => flat(r!.root.find((n) => typeof n.type === 'string' && n.props.testID === 'report-tier').props.style);
+    const { colors } = jest.requireActual('@/theme');
+    expect(tierBox().backgroundColor).toBe(colors.light.surface);
+    const box = r!.root.find((n) => n.props.accessibilityLabel === 'Seats left, On the departure board' && n.props.onChangeText);
+    act(() => box.props.onChangeText('30'));
+    expect(tierBox().backgroundColor).toBe(colors.light[TIER_BG[answerTier({ open: 30, listed: 0 })]]);
+    const plus = button(r!, 'Increase: Seats left');
+    expect(
+      flat(typeof plus.props.style === 'function' ? plus.props.style({ pressed: false }) : plus.props.style).backgroundColor,
+    ).toBe(colors.light.accentSoft);
   });
 
   it('Cancel leaves without a report', async () => {

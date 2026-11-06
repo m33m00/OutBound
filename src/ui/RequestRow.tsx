@@ -10,8 +10,7 @@ import { Icon } from './Icon';
 import { Divided } from './MetaLine';
 import { pressStyle } from './press';
 import { StatusTag, TAG_TONE } from './StatusTag';
-import { COUNT_ICON } from './MiniRoute';
-import { TIER_BG, TIER_FG } from './tierColors';
+import { SeatCountPill } from './SeatCountPill';
 
 export interface RequestRowProps {
   request: LoadRequest;
@@ -75,19 +74,7 @@ export function RequestRow({ request, now, mine, onAnswer, onOpen, leg }: Reques
           {tier && request.answer ? (
             // The answer as the route line shows seats: seat and person icons over the numbers,
             // in the seat color, in one pill (round 164; "just color and seat availability").
-            <View style={[styles.counts, { backgroundColor: c[TIER_BG[tier]] }]} testID="request-counts">
-              <Icon name={COUNT_ICON.seats} size={12} tintColor={c[TIER_FG[tier]]} fallback={null} />
-              <Text style={[styles.countText, { color: c[TIER_FG[tier]] }]} maxFontSizeMultiplier={1.4}>
-                {String(request.answer.open)}
-              </Text>
-              <Text style={[styles.countText, { color: c[TIER_FG[tier]] }]} maxFontSizeMultiplier={1.4}>
-                /
-              </Text>
-              <Icon name={COUNT_ICON.listed} size={12} tintColor={c[TIER_FG[tier]]} fallback={null} />
-              <Text style={[styles.countText, { color: c[TIER_FG[tier]] }]} maxFontSizeMultiplier={1.4}>
-                {String(request.answer.listed)}
-              </Text>
-            </View>
+            <SeatCountPill open={request.answer.open} listed={request.answer.listed} tier={tier} testID="request-counts" />
           ) : null}
           <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, styles.detail, { color: c.muted }]}>
             {tier && request.answer ? (
@@ -182,8 +169,6 @@ const styles = StyleSheet.create({
   detailLine: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6, marginTop: 2 },
   detail: { flexShrink: 1 },
   mark: { alignSelf: 'flex-start', marginTop: 2 },
-  counts: { flexDirection: 'row', alignItems: 'center', gap: 3, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999 },
-  countText: { fontFamily: fonts.monoMedium, fontSize: 13, lineHeight: 16 },
   badge: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 999 },
   badgeText: { fontFamily: fonts.bodySemiBold },
   answer: {

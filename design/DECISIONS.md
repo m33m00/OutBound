@@ -577,3 +577,10 @@ Not rendered here: sizes checked against the fonts only.
 - Every request row (Feed and My Trips) leads with the same round airline badge as the tickets.
 - An answered request shows its numbers the way the route line does: a pill in the seat color with the seat icon and open seats, a slash, the person icon and people listed, then "answered 2m ago" in gray. No tier dot, no sentence of numbers. VoiceOver still reads "20 seats, 17 listed, answered 2m ago".
 - Answered and Waiting badges are round pills with semibold text, like the other pills.
+
+## Round 165: premium pass part 3, the sheets (Nov 6)
+
+- Report Load: the two number cards and the tier box use the shared card look. Each count card has the same seat or person icon as the route line, in a small circle by its label. − and + are secondary buttons now (light blue tint, blue glyph). Once you set numbers, the tier box fills with the seat color. The flight line under the header leads with its round airline badge.
+- Add flight: the form card and the Scan / Photo tiles use the card look; the tile icons sit in a light blue circle so the tiles read as buttons.
+- Departures board: one rounded card of rows with inset hairlines, like the airport picker. Each flight leads with its airline badge, and "You reported" shows the same seat-colored count pill as an answered request (shared SeatCountPill).
+- Filters: Max stops is one segmented track with the pick filled blue and the others in blue text. Steppers everywhere (Filters, Settings) use the secondary tint for − and +.

@@ -15,8 +15,11 @@ export function FiltersForm({ filters: f, onChange }: { filters: SearchFilters; 
   const grid = useWindowDimensions().fontScale >= 1.3;
   return (
     <View style={styles.form}>
-      <Text lineBreakStrategyIOS="push-out" style={[textStyles.heading, { color: c.text }]}>Max stops</Text>
-      <View style={[styles.segments, grid && styles.grid]} accessibilityRole="radiogroup">
+      <Text lineBreakStrategyIOS="push-out" style={[textStyles.heading, { color: c.text }]}>
+        Max stops
+      </Text>
+      {/* One track with the pick filled, like an iOS segmented control (round 165). */}
+      <View style={[styles.segments, grid && styles.grid, { backgroundColor: c.surface2 }]} accessibilityRole="radiogroup">
         {[0, 1, 2, 3].map((n) => {
           const on = f.maxStops === n;
           return (
@@ -26,10 +29,14 @@ export function FiltersForm({ filters: f, onChange }: { filters: SearchFilters; 
               accessibilityRole="radio"
               accessibilityState={{ checked: on }}
               accessibilityLabel={n === 0 ? 'Nonstop only' : `Up to ${n} ${n === 1 ? 'stop' : 'stops'}`}
-              style={pressStyle([styles.segment, grid && styles.segmentGrid, { backgroundColor: on ? c.accent : c.surface2 }])}>
+              style={pressStyle([
+                styles.segment,
+                grid && styles.segmentGrid,
+                { backgroundColor: on ? c.accent : 'transparent' },
+              ])}>
               {/* Units on every option, so "2" never reads as a count of something else. */}
               <Text
-                style={[textStyles.bodyStrong, { color: on ? c.onAccent : c.text }]}
+                style={[textStyles.bodyStrong, { color: on ? c.onAccent : c.accent }]}
                 numberOfLines={1}
                 adjustsFontSizeToFit
                 minimumFontScale={0.8}>
@@ -40,7 +47,9 @@ export function FiltersForm({ filters: f, onChange }: { filters: SearchFilters; 
         })}
       </View>
 
-      <Text lineBreakStrategyIOS="push-out" style={[textStyles.heading, { color: c.text }]}>Connections</Text>
+      <Text lineBreakStrategyIOS="push-out" style={[textStyles.heading, { color: c.text }]}>
+        Connections
+      </Text>
       <Stepper
         label="Same airline, at least"
         value={f.minConnectSameAirlineMin}
@@ -65,7 +74,7 @@ export function FiltersForm({ filters: f, onChange }: { filters: SearchFilters; 
 
 const styles = StyleSheet.create({
   form: { gap: spacing.section },
-  segments: { flexDirection: 'row', gap: spacing.group },
+  segments: { flexDirection: 'row', gap: 4, padding: 4, borderRadius: radius.sm + 4 },
   grid: { flexWrap: 'wrap' },
   // Under half so two fit beside the gap.
   segmentGrid: { flexBasis: '45%' },

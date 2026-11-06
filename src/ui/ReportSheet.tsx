@@ -12,6 +12,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { type SFSymbol } from 'expo-symbols';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type { Flight } from '@/engine';
@@ -23,7 +24,11 @@ import { Button, PillButton } from './Buttons';
 import { selectionTick } from './haptics';
 import { pressStyle } from './press';
 import { SheetHeader } from './SheetHeader';
-import { TIER_FG, TIER_MARK } from './tierColors';
+import { AirlineMark } from './AirlinePill';
+import { useCardSurface } from './cardSurface';
+import { Icon } from './Icon';
+import { COUNT_ICON } from './MiniRoute';
+import { TIER_BG, TIER_FG, TIER_MARK } from './tierColors';
 
 /** Hold − or + this long before it starts repeating, then step this often (prototype v9.1). */
 const REPEAT_DELAY_MS = 380;
@@ -77,6 +82,7 @@ export interface ReportFormProps {
  */
 export function ReportForm({ flight, now, onCancel, onSubmit, focusTitle }: ReportFormProps) {
   const c = useColors();
+  const card = useCardSurface();
   const [open, setOpen] = useState(0);
   const [listed, setListed] = useState(0);
   // Nothing set yet: no tier shown and Submit stays off, so a stray tap can't report a false Full.
@@ -117,12 +123,19 @@ export function ReportForm({ flight, now, onCancel, onSubmit, focusTitle }: Repo
         keyboardDismissMode="interactive"
         automaticallyAdjustKeyboardInsets>
         {flight ? (
-          <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, { color: c.muted }]}>
-            {departsText(flight, now)}
-          </Text>
+          // The flight it's for, led by its round airline badge like everywhere else (round 165).
+          <View style={styles.flightLine}>
+            <View importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
+              <AirlineMark airline={flight.airline} size={24} />
+            </View>
+            <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, styles.after, { color: c.muted }]}>
+              {departsText(flight, now)}
+            </Text>
+          </View>
         ) : null}
         <NumberField
           label="Seats left"
+          icon={COUNT_ICON.seats}
           caption="On the departure board"
           value={open}
           max={MAX_OPEN}
@@ -133,6 +146,7 @@ export function ReportForm({ flight, now, onCancel, onSubmit, focusTitle }: Repo
         />
         <NumberField
           label="Nonrevs listed"
+          icon={COUNT_ICON.listed}
           caption="On the standby list"
           value={listed}
           max={MAX_LISTED}
@@ -142,7 +156,8 @@ export function ReportForm({ flight, now, onCancel, onSubmit, focusTitle }: Repo
           }}
         />
         <View
-          style={[styles.tier, { backgroundColor: c.surface, borderColor: c.line }]}
+          // Once you've typed, the box takes the seat color, like a route line (round 165).
+          style={[card, styles.tier, touched && { backgroundColor: c[TIER_BG[tier]], borderColor: c[TIER_MARK[tier]] }]}
           accessible
           // Android reads a live region; iOS gets the announcement above (both would speak twice).
           accessibilityLiveRegion={Platform.OS === 'android' ? 'polite' : undefined}
@@ -188,18 +203,22 @@ export function ReportForm({ flight, now, onCancel, onSubmit, focusTitle }: Repo
 
 function NumberField({
   label,
+  icon,
   caption,
   value,
   max,
   onChange,
 }: {
   label: string;
+  /** The seat or person icon the route line uses for this count. */
+  icon: SFSymbol;
   caption: string;
   value: number;
   max: number;
   onChange: (v: number) => void;
 }) {
   const c = useColors();
+  const card = useCardSurface();
   const scheme = useColorSchemeName();
   const [text, setText] = useState(String(value));
   // Keep the box in step with − / + and with the limit ("999" shows 200);
@@ -245,8 +264,11 @@ function NumberField({
         // VoiceOver stays on − or + and reads the new number from here.
         accessibilityValue={{ text: String(value) }}
         accessibilityState={{ disabled }}
-        style={pressStyle([styles.stepBtn, { backgroundColor: c.surface2, opacity: disabled ? 0.4 : 1 }])}>
-        <Text style={[styles.stepText, { fontFamily: fonts.bodyBold, color: c.text }]} maxFontSizeMultiplier={BIG_TEXT_MAX_SCALE}>
+        // Secondary buttons: the light tint with blue glyphs (round 139 rule, round 165).
+        style={pressStyle([styles.stepBtn, { backgroundColor: c.accentSoft, opacity: disabled ? 0.4 : 1 }])}>
+        <Text
+          style={[styles.stepText, { fontFamily: fonts.bodyBold, color: c.accent }]}
+          maxFontSizeMultiplier={BIG_TEXT_MAX_SCALE}>
           {d > 0 ? '+' : '−'}
         </Text>
       </Pressable>
@@ -254,15 +276,20 @@ function NumberField({
   };
 
   return (
-    <View style={[styles.field, { backgroundColor: c.surface, borderColor: c.line }]}>
+    <View style={[card, styles.field]}>
       {/* The number box says the label and caption, so VoiceOver skips them here. */}
-      <View style={styles.fieldLabel} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-        <Text lineBreakStrategyIOS="push-out" style={[textStyles.heading, { color: c.text }]}>
-          {label}
-        </Text>
-        <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>
-          {caption}
-        </Text>
+      <View style={styles.fieldHead} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+        <View style={[styles.fieldIcon, { backgroundColor: c.surface2 }]}>
+          <Icon name={icon} size={16} tintColor={c.text} fallback={null} />
+        </View>
+        <View style={styles.fieldLabel}>
+          <Text lineBreakStrategyIOS="push-out" style={[textStyles.heading, { color: c.text }]}>
+            {label}
+          </Text>
+          <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>
+            {caption}
+          </Text>
+        </View>
       </View>
       <View style={styles.stepper}>
         {btn(-1)}
@@ -282,7 +309,7 @@ function NumberField({
           maxFontSizeMultiplier={BIG_TEXT_MAX_SCALE}
           accessibilityLabel={forSpeech(`${label}, ${caption}`)}
           accessibilityHint={`Type a number from 0 to ${max}`}
-          style={[styles.bignum, { fontFamily: fonts.mono, color: c.text, borderColor: c.line }]}
+          style={[styles.bignum, { fontFamily: fonts.mono, color: c.text, borderColor: c.line, backgroundColor: c.bg }]}
         />
         {btn(1)}
       </View>
@@ -293,13 +320,11 @@ function NumberField({
 const styles = StyleSheet.create({
   screen: { flex: 1, paddingHorizontal: spacing.page },
   body: { gap: spacing.section, paddingBottom: spacing.page * 2 },
-  field: {
-    borderRadius: radius.md,
-    borderWidth: StyleSheet.hairlineWidth,
-    padding: spacing.page,
-    gap: spacing.section,
-  },
-  fieldLabel: { gap: 2 },
+  field: { padding: spacing.page, gap: spacing.section },
+  fieldHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.section },
+  fieldIcon: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+  fieldLabel: { flex: 1, gap: 2 },
+  flightLine: { flexDirection: 'row', alignItems: 'center', gap: spacing.group },
   stepper: { flexDirection: 'row', alignItems: 'center', gap: spacing.section },
   stepBtn: {
     width: minTapTarget + 12,
@@ -326,8 +351,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.group,
     padding: spacing.page,
-    borderRadius: radius.md,
-    borderWidth: StyleSheet.hairlineWidth,
   },
   dot: { width: 10, height: 10, borderRadius: 5 },
   after: { flex: 1 },
