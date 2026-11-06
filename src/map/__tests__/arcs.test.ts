@@ -1,8 +1,10 @@
-import { geoDistance } from 'd3-geo';
+import { geoDistance, geoInterpolate } from 'd3-geo';
 
 import {
   arcLift,
   arcSamples,
+  BOW,
+  bowedPoint,
   legFramePoints,
   legSamples,
   makeLiftedProjector,
@@ -18,14 +20,44 @@ const LGA = [-73.87, 40.78] as const;
 const leg: RouteLeg = { id: 'l1', from: DFW, to: LGA, fromCode: 'DFW', toCode: 'LGA', tier: 'good', source: 'reported' };
 
 describe('arc samples (computed once per leg)', () => {
-  it('runs from start to end along the great circle', () => {
+  it('runs from start to end, curving out to the side in the middle (round 170)', () => {
     const s = arcSamples(DFW, LGA);
-    expect(s[0].ll[0]).toBeCloseTo(DFW[0], 6);
-    expect(s[s.length - 1].ll[1]).toBeCloseTo(LGA[1], 6);
+    expect(s[0].ll[0]).toBeCloseTo(DFW[0], 9);
+    expect(s[0].ll[1]).toBeCloseTo(DFW[1], 9);
+    expect(s[s.length - 1].ll[0]).toBeCloseTo(LGA[0], 9);
+    expect(s[s.length - 1].ll[1]).toBeCloseTo(LGA[1], 9);
     const d = geoDistance([DFW[0], DFW[1]], [LGA[0], LGA[1]]);
-    const mid = s[Math.floor(s.length / 2)].ll;
-    // Midpoint is (about) halfway along the great circle.
-    expect(geoDistance([DFW[0], DFW[1]], [mid[0], mid[1]])).toBeCloseTo(d / 2, 2);
+    const mid = bowedPoint(DFW, LGA, 0.5);
+    // Still halfway between the two airports...
+    expect(geoDistance([DFW[0], DFW[1]], [mid[0], mid[1]])).toBeCloseTo(geoDistance([LGA[0], LGA[1]], [mid[0], mid[1]]), 3);
+    // ...but swung off the straight great circle by the bow, toward the pole.
+    const straight = geoInterpolate([DFW[0], DFW[1]], [LGA[0], LGA[1]])(0.5);
+    expect(geoDistance(straight, [mid[0], mid[1]])).toBeCloseTo(BOW * d, 4);
+    expect(mid[1]).toBeGreaterThan(straight[1]);
+    // The drawn samples carry the same curve.
+    const far = Math.max(...s.map((x) => geoDistance([x.ll[0], x.ll[1]], straight)));
+    expect(Math.min(...s.map((x) => geoDistance([x.ll[0], x.ll[1]], straight)))).toBeLessThan(BOW * d * 1.05);
+    expect(far).toBeGreaterThan(d / 2);
+  });
+
+  it('bows the same way both directions, so a round trip reads as one curve', () => {
+    const there = bowedPoint(DFW, LGA, 0.5);
+    const back = bowedPoint(LGA, DFW, 0.5);
+    expect(there[0]).toBeCloseTo(back[0], 6);
+    expect(there[1]).toBeCloseTo(back[1], 6);
+  });
+
+  it('bows a north-south leg east, and a same-airport leg stays put', () => {
+    const DEN = [-104.67, 39.86] as const;
+    const ABQ = [-106.61, 35.04] as const;
+    const straight = geoInterpolate([ABQ[0], ABQ[1]], [DEN[0], DEN[1]])(0.5);
+    expect(bowedPoint(ABQ, DEN, 0.5)[0]).toBeGreaterThan(straight[0]);
+    expect(bowedPoint(DFW, DFW, 0.5)[0]).toBeCloseTo(DFW[0], 9);
+  });
+
+  it('keeps the curve gentle: the bend is a small share of the leg', () => {
+    expect(BOW).toBeGreaterThan(0.05);
+    expect(BOW).toBeLessThan(0.2);
   });
 
   it('uses at least 24 samples, more for long legs', () => {
@@ -107,8 +139,14 @@ describe('lifted projection', () => {
 
   it('builds one SVG path for all runs', () => {
     const d = runsToSvg([
-      [{ x: 0, y: 0 }, { x: 1, y: 1 }],
-      [{ x: 5, y: 5 }, { x: 6.04, y: 6 }],
+      [
+        { x: 0, y: 0 },
+        { x: 1, y: 1 },
+      ],
+      [
+        { x: 5, y: 5 },
+        { x: 6.04, y: 6 },
+      ],
     ]);
     expect(d).toBe('M0.0 0.0L1.0 1.0M5.0 5.0L6.0 6.0');
   });

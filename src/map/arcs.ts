@@ -40,18 +40,77 @@ export function arcLift(d: number): number {
   return 0.012 + 0.11 * Math.min(1, d / 1.2);
 }
 
+/**
+ * Sideways bow, as a share of the leg's length (round 170, John: "make the route lines curve or
+ * look more natural free flowing than a straight line"). The lift alone points at the camera when
+ * you look straight down on a domestic leg, so it read as a ruler line; the bow swings the path
+ * out to one side so it curves from any angle, like a flight map.
+ */
+export const BOW = 0.13;
+
+type V3 = [number, number, number];
+const D2R = Math.PI / 180;
+const toV = (ll: readonly [number, number]): V3 => {
+  const l = ll[0] * D2R;
+  const f = ll[1] * D2R;
+  return [Math.cos(f) * Math.cos(l), Math.cos(f) * Math.sin(l), Math.sin(f)];
+};
+const toLL = (v: V3): LonLat => [Math.atan2(v[1], v[0]) / D2R, Math.asin(Math.max(-1, Math.min(1, v[2]))) / D2R];
+const cross = (a: V3, b: V3): V3 => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+const norm = (v: V3): V3 => {
+  const m = Math.hypot(v[0], v[1], v[2]) || 1;
+  return [v[0] / m, v[1] / m, v[2] / m];
+};
+
+/**
+ * The side a leg bows to: toward the nearer pole, the way flight paths look on a flat map, so
+ * DAL to LAX and LAX to DAL both arc north and a there-and-back reads as one curve. A leg that
+ * runs north-south bows east.
+ */
+export function bowSide(a: LonLat, b: LonLat): V3 | null {
+  const A = toV(a);
+  const B = toV(b);
+  const n = cross(A, B);
+  if (Math.hypot(n[0], n[1], n[2]) < 1e-9) return null;
+  const u = norm(n);
+  const mid = norm([A[0] + B[0], A[1] + B[1], A[2] + B[2]]);
+  const pole = mid[2] >= 0 ? 1 : -1;
+  // Mostly north-south (heading within 45 degrees of north or south): bow east of the midpoint.
+  const tangent = cross(u, mid);
+  if (Math.abs(tangent[2]) > Math.SQRT1_2) {
+    const east = norm(cross([0, 0, 1], mid));
+    return u[0] * east[0] + u[1] * east[1] + u[2] * east[2] >= 0 ? u : [-u[0], -u[1], -u[2]];
+  }
+  return u[2] * pole >= 0 ? u : [-u[0], -u[1], -u[2]];
+}
+
+/** The leg's path at t (0 to 1): along the great circle, swung out sideways by the bow. */
+export function bowedPoint(a: LonLat, b: LonLat, t: number, side = bowSide(a, b)): LonLat {
+  const p = geoInterpolate([a[0], a[1]], [b[0], b[1]])(t);
+  if (!side) return [p[0], p[1]];
+  const d = geoDistance([a[0], a[1]], [b[0], b[1]]);
+  const off = BOW * d * Math.sin(Math.PI * t);
+  const P = toV([p[0], p[1]]);
+  return toLL(
+    norm([
+      P[0] * Math.cos(off) + side[0] * Math.sin(off),
+      P[1] * Math.cos(off) + side[1] * Math.sin(off),
+      P[2] * Math.cos(off) + side[2] * Math.sin(off),
+    ]),
+  );
+}
+
 export function arcSamples(a: LonLat, b: LonLat): ArcSample[] {
-  const A: [number, number] = [a[0], a[1]];
-  const B: [number, number] = [b[0], b[1]];
-  const at = geoInterpolate(A, B);
-  const d = geoDistance(A, B);
+  const d = geoDistance([a[0], a[1]], [b[0], b[1]]);
   const n = Math.max(MIN_SAMPLES, Math.round(d * SAMPLES_PER_RAD));
   const peak = arcLift(d);
+  const side = bowSide(a, b);
   const out: ArcSample[] = [];
   for (let i = 0; i <= n; i++) {
     const t = i / n;
-    const p = at(t);
-    out.push({ ll: [p[0], p[1]], lift: 1 + peak * Math.sin(Math.PI * t) });
+    // Ends stay exactly on the airports.
+    const ll: LonLat = i === 0 ? [a[0], a[1]] : i === n ? [b[0], b[1]] : bowedPoint(a, b, t, side);
+    out.push({ ll, lift: 1 + peak * Math.sin(Math.PI * t) });
   }
   return out;
 }
@@ -93,11 +152,7 @@ export type LiftedProjector = ReturnType<typeof makeLiftedProjector>;
  * Screen runs for samples. `surface` drops the lift (ground shadow).
  * Hidden points split the line; single-point runs are dropped.
  */
-export function projectSamples(
-  samples: readonly ArcSample[],
-  project: LiftedProjector,
-  surface = false,
-): Runs {
+export function projectSamples(samples: readonly ArcSample[], project: LiftedProjector, surface = false): Runs {
   const runs: Runs = [];
   let run: Pt[] = [];
   for (const s of samples) {
@@ -128,12 +183,10 @@ export function runsToSvg(runs: Runs): string | null {
  * so long legs that bow north still fit.
  */
 export function legFramePoints(leg: Pick<RouteLeg, 'from' | 'to'>): LonLat[] {
-  const at = geoInterpolate([leg.from[0], leg.from[1]], [leg.to[0], leg.to[1]]);
+  // The bowed path, so the curve's belly stays inside the frame too (round 170).
+  const side = bowSide(leg.from, leg.to);
   const out: LonLat[] = [leg.from];
-  for (const t of [0.25, 0.5, 0.75]) {
-    const p = at(t);
-    out.push([p[0], p[1]]);
-  }
+  for (const t of [0.25, 0.5, 0.75]) out.push(bowedPoint(leg.from, leg.to, t, side));
   out.push(leg.to);
   return out;
 }

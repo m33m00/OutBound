@@ -616,3 +616,11 @@ Checked in code and tests (not on a device): `LaunchIntro` plays once per cold s
 
 - Launch intro exit (John: "It looks choppy when it's coming off the screen. It looks awesome though"). Cause: every frame of the lift was a JS re-render of the whole intro while the app mounted underneath, so frames dropped. Now the drawing freezes at take-off and the plane's flight and the panel's lift run as native-driver Animated timings (same curves as before), so the JS thread being busy can't stall them. The plane sits on its own layer so it can fly without redrawing. The exit is a bit longer (520 to 640ms) so the lift glides. Reduce Motion's fade runs natively too. Whole intro is 2.44s.
 - Leave By (John: "doesn't look obvious to select and can the estimated time to drive there be next to the car icon or walking icon"). The car is now a filled blue capsule button with the drive time beside it ("🚗 32m"), also on "Leave now" when the drive is known. At the airport the capsule holds the walking person and the gate; there's no walking-time source, so no walk time is shown. The title stands alone ("Leave by 10:45 AM"); the arrive-by line stays in the spoken label. Measured: "Leave by 10:45 AM" 126pt + "1h 15m" capsule 93pt fits the ~330pt row.
+
+## Round 170: curved map route lines
+
+John: "None scrap this idea" (destination art on tickets: dropped, nothing built). Then: "Can you make the route lines curve or look more natural free flowing than a straight line?"
+
+- Map: the arcs were already lifted great circles, but on a domestic leg seen from above the lift points at the camera, so they read as ruler lines. Each leg now also bows sideways by 13% of its length (BOW in arcs.ts), toward the nearer pole like a flight map; legs within 45 degrees of due north or south bow east. Both directions of a pair bow the same way, so a round trip reads as one curve. Ends stay exactly on the airports. Everything drawn from the samples follows: lines, ground shadow, time pills, tap targets, and camera framing (legFramePoints uses the bowed path). Map rules kept: plain lines in seat colors, no dots, arrows or legend.
+- Cards: mocked up only (outbound-frames/r170_card_line_options.png): A soft arch per leg, B one flowing wave. Not built until John picks.
+- Frame: outbound-frames/r170_map_curves.png, drawn from the app's own projection on the dev sample routes.

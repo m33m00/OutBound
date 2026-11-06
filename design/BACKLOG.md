@@ -202,3 +202,4 @@ Each item names its owner. One item per work session. spec-keeper runs a pre-fli
 | 195 | Design round 167: Requests tab with badge, oldest asks first, ask age on its own, swipe and multiselect delete for saved routes, 24h auto-clear, My Trips section headers (John) | main | P2 | Built (design round 167, branch claude/project-thread-fzqwou) |
 | 196 | Merge App Store branch into design rounds so the launch intro and accounts show in Expo Go | Done (round 168) |
 | 197 | Native-thread launch exit; Leave By directions as a filled capsule with drive time | Done (round 169) |
+| 198 | Curved map route lines (sideways bow per leg); card line curves mocked up | Done (round 170) |
