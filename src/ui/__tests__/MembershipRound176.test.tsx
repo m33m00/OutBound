@@ -9,7 +9,7 @@ import { RequestsProvider, useRequests } from '@/requests/RequestsProvider';
 import { SettingsProvider } from '@/settings/SettingsProvider';
 import type { Flight } from '@/engine';
 
-import { CreditsSheet } from '../Credits';
+import { CreditsChip, CreditsSheet } from '../Credits';
 import { DEFAULT_FILTERS } from '@/settings/settings';
 import { FiltersForm } from '../FiltersForm';
 import { PlanPicker } from '../PlanPicker';
@@ -123,6 +123,31 @@ describe('plans and credits (round 176)', () => {
     expect(m.tracksCredits).toBe(false);
     act(() => q.report({ ...flight, flightNumber: '13' }, 10, 2));
     expect(m.credits).toBe(4);
+  });
+
+  it('the credits chip says credits in words, and Premium has none (round 177, John)', async () => {
+    await AsyncStorage.setItem('outbound.settings.v1', JSON.stringify({ membership: 'free' }));
+    await AsyncStorage.removeItem('outbound.wallet.v1');
+    let m!: ReturnType<typeof useMembership>;
+    const Probe = () => {
+      m = useMembership();
+      return null;
+    };
+    let r!: ReactTestRenderer;
+    await act(async () => {
+      r = create(
+        <SettingsProvider>
+          <MembershipProvider>
+            <Probe />
+            <CreditsChip onAnswerLoads={jest.fn()} />
+          </MembershipProvider>
+        </SettingsProvider>,
+      );
+    });
+    const count = r.root.find((n) => n.props.testID === 'credits-chip-count' && (n.type as unknown) === 'Text');
+    expect(words(count).join('')).toBe('3 credits');
+    await act(async () => m.setTier('premium'));
+    expect(r.root.findAll((n) => n.props.testID === 'credits-chip')).toHaveLength(0);
   });
 
   it('a requested flight lands in My Trips already answered', () => {

@@ -214,3 +214,5 @@ Each item names its owner. One item per work session. spec-keeper runs a pre-fli
 | 207 | Free and Pay as you go: seats hidden until a route is requested for a credit; loads land in My Trips (round 176 demo) | Done |
 | 208 | Credits chip and sheet; answering loads earns credits (round 176 demo) | Done |
 | 209 | Buying credits on Pay as you go, real plans and server-side credits | Later |
+| 210 | Credits chip reads "N credits" (round 177, John) | Done |
+| 211 | Results day stepper becomes a labeled row of day buttons (round 177, John) | Done |

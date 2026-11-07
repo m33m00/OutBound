@@ -30,41 +30,52 @@ describe('DayStepper', () => {
   let r: ReactTestRenderer | undefined;
   afterEach(() => act(() => r?.unmount()));
 
-  const arrow = (dir: 'prev' | 'next') =>
-    r!.root.findAll((n) => n.props.testID === `day-${dir}` && n.props.accessibilityRole === 'button')[0];
+  const chip = (date: string) =>
+    r!.root.findAll((n) => n.props.testID === `day-${date}` && n.props.accessibilityRole === 'radio')[0];
+  const words = () =>
+    r!.root
+      .findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string')
+      .map((n) => n.props.children as string);
 
-  it('steps to the next day and names it for VoiceOver', () => {
-    const onDay = jest.fn();
-    act(() => {
-      r = create(<DayStepper days={DAYS} date="2026-10-31" label="Sat, Oct 31" onDay={onDay} />);
-    });
-    const next = arrow('next');
-    expect(next.props.accessibilityLabel).toBe('Next day, Sunday, November 1');
-    act(() => next.props.onPress());
-    expect(onDay).toHaveBeenCalledWith('2026-11-01');
-    act(() => arrow('prev').props.onPress());
-    expect(onDay).toHaveBeenLastCalledWith('2026-10-30');
-  });
-
-  it('disables the previous arrow on today', () => {
-    act(() => {
-      r = create(<DayStepper days={DAYS} date="2026-10-30" label="Fri, Oct 30" onDay={jest.fn()} />);
-    });
-    const prev = arrow('prev');
-    expect(prev.props.accessibilityState).toEqual({ disabled: true });
-    expect(prev.props.accessibilityLabel).toBe('Previous day');
-    expect(arrow('next').props.accessibilityState).toEqual({ disabled: false });
-  });
-
-  it('runs the full width with the route count under the date (John, 2026-10-30)', () => {
+  it('says what it is and shows every day in the window as a button (round 177, John)', () => {
     act(() => {
       r = create(<DayStepper days={DAYS} date="2026-10-31" label="Sat, Oct 31" onDay={jest.fn()} detail="4 routes" />);
     });
-    const box = r!.root.findAll((n) => typeof n.type === 'string')[0];
-    const flat = Object.assign({}, ...[box.props.style].flat(Infinity).filter(Boolean));
-    expect(flat.alignSelf).toBe('stretch');
+    expect(words()).toContain('Departing Sat, Oct 31');
+    for (const d of DAYS) expect(chip(d.date)).toBeDefined();
+    expect(words()).toContain('Today');
+    expect(words()).toContain('Tomorrow');
+    expect(words()).toContain('Oct 31');
     const detail = r!.root.findAll((n) => n.props.testID === 'day-detail' && typeof n.type === 'string')[0];
     expect(detail.props.children).toBe('4 routes');
-    expect(r!.root.findAll((n) => n.props.accessibilityLabel === 'Saturday, October 31, 4 routes').length).toBeGreaterThan(0);
+  });
+
+  it('marks the searched day and searches another day on a tap, naming it for VoiceOver', () => {
+    const onDay = jest.fn();
+    act(() => {
+      r = create(<DayStepper days={DAYS} date="2026-10-31" label="Sat, Oct 31" onDay={onDay} detail="4 routes" />);
+    });
+    const on = chip('2026-10-31');
+    expect(on.props.accessibilityState).toEqual({ checked: true });
+    expect(on.props.accessibilityLabel).toBe('Saturday, October 31, 4 routes');
+    expect(on.props.onPress).toBeUndefined();
+    const next = chip('2026-11-01');
+    expect(next.props.accessibilityState).toEqual({ checked: false });
+    expect(next.props.accessibilityLabel).toBe('Sunday, November 1');
+    act(() => next.props.onPress());
+    expect(onDay).toHaveBeenCalledWith('2026-11-01');
+  });
+
+  it('fills the searched day blue and the others light blue, so they read as buttons', () => {
+    act(() => {
+      r = create(<DayStepper days={DAYS} date="2026-10-31" label="Sat, Oct 31" onDay={jest.fn()} />);
+    });
+    const bg = (date: string) => {
+      const st = chip(date).props.style;
+      const resolved = typeof st === 'function' ? st({ pressed: false }) : st;
+      return Object.assign({}, ...[resolved].flat(Infinity).filter(Boolean)).backgroundColor as string;
+    };
+    expect(bg('2026-10-31')).not.toBe(bg('2026-11-01'));
+    expect(bg('2026-11-01')).toBe(bg('2026-10-30'));
   });
 });

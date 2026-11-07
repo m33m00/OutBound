@@ -1,9 +1,9 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useRef, type ComponentRef } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import type { DateChip } from '@/search/dates';
-import { minTapTarget, radius, textStyles, useColors } from '@/theme';
+import { fonts, minTapTarget, radius, textStyles, useColors } from '@/theme';
 
-import { Icon } from './Icon';
 import { pressStyle } from './press';
 import { withTick } from './haptics';
 
@@ -15,9 +15,11 @@ export function neighborDays(days: DateChip[], date: string): { prev: DateChip |
 }
 
 /**
- * "‹ Wed, Oct 30 ›" on the results header (Q-057): step a day without going
- * back to search. Arrows dim at the ends of the 0-7 day window. Spans the
- * panel's full width, arrows at the edges and the day centered (John, 2026-10-30).
+ * The results header's day picker (Q-057). Round 177, John: "It's not obvious that you can switch
+ * days or that's what it means." So it says what it is ("Departing Tue, Oct 20", the route count
+ * beside it) over a row of day buttons for the whole 0-7 day window, the searched day filled blue and
+ * the rest light blue. The row scrolls to keep the
+ * picked day in view.
  */
 export function DayStepper({
   days,
@@ -28,71 +30,84 @@ export function DayStepper({
 }: {
   days: DateChip[];
   date: string;
-  /** What the middle shows, e.g. "Wed, Oct 30". */
+  /** The searched day, e.g. "Tue, Oct 20". */
   label: string;
   onDay: (date: string) => void;
-  /** Small line under the day, e.g. "8 routes, 1 full". */
+  /** The route count, e.g. "8 routes, 1 full". */
   detail?: string;
 }) {
   const c = useColors();
-  const { prev, next } = neighborDays(days, date);
-  const current = days.find((d) => d.date === date);
-  const arrow = (to: DateChip | null, dir: 'prev' | 'next') => (
-    <Pressable
-      testID={`day-${dir}`}
-      onPress={to ? withTick(() => onDay(to.date)) : undefined}
-      disabled={!to}
-      accessibilityRole="button"
-      accessibilityLabel={`${dir === 'prev' ? 'Previous day' : 'Next day'}${to ? `, ${to.long}` : ''}`}
-      accessibilityState={{ disabled: !to }}
-      style={pressStyle([styles.arrow, { opacity: to ? 1 : 0.35 }])}>
-      {/* A round soft button inside the 44pt target (round 79), so stepping days reads as a button. */}
-      <View style={[styles.arrowDisc, { backgroundColor: c.surface }]}>
-      <Icon
-        name={dir === 'prev' ? 'chevron.left' : 'chevron.right'}
-        size={16}
-        weight="semibold"
-        tintColor={c.accent}
-        fallback={<Text style={[textStyles.heading, { color: c.accent }]}>{dir === 'prev' ? '‹' : '›'}</Text>}
-      />
-      </View>
-    </Pressable>
-  );
+  const scroll = useRef<ComponentRef<typeof ScrollView>>(null);
+  const xs = useRef<Record<string, number>>({});
+  useEffect(() => {
+    const x = xs.current[date];
+    if (x != null) scroll.current?.scrollTo({ x: Math.max(0, x - 24), animated: true });
+  }, [date]);
   return (
-    <View style={[styles.box, { backgroundColor: c.surface2 }]}>
-      {arrow(prev, 'prev')}
-      <View
-        style={styles.middle}
-        accessible
-        accessibilityLabel={[current?.long ?? label, detail].filter(Boolean).join(', ')}>
-        {/* Shrinks a little before cutting off (big or bold text). */}
+    <View style={styles.box} testID="day-picker">
+      <View style={styles.head}>
         <Text
-          style={[textStyles.heading, styles.label, { color: c.text }]}
+          style={[textStyles.bodyStrong, styles.title, { color: c.text }]}
           numberOfLines={1}
           adjustsFontSizeToFit
-          minimumFontScale={0.8}>
-          {label}
+          minimumFontScale={0.8}
+          testID="day-title">
+          {`Departing ${label}`}
         </Text>
         {detail ? (
-          <Text
-            style={[textStyles.small, styles.label, { color: c.muted }]}
-            numberOfLines={1}
-            adjustsFontSizeToFit
-            minimumFontScale={0.8}
-            testID="day-detail">
+          <Text style={[textStyles.small, { color: c.muted }]} numberOfLines={1} testID="day-detail">
             {detail}
           </Text>
         ) : null}
       </View>
-      {arrow(next, 'next')}
+      <ScrollView
+        ref={scroll}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.row}
+        accessibilityRole="radiogroup"
+        accessibilityLabel="Departure day">
+        {days.map((d) => {
+          const on = d.date === date;
+          return (
+            <Pressable
+              key={d.date}
+              testID={`day-${d.date}`}
+              onLayout={(e) => {
+                xs.current[d.date] = e.nativeEvent.layout.x;
+              }}
+              onPress={on ? undefined : withTick(() => onDay(d.date))}
+              accessibilityRole="radio"
+              accessibilityState={{ checked: on }}
+              accessibilityLabel={[d.long, on ? detail : null].filter(Boolean).join(', ')}
+              accessibilityHint={on ? undefined : 'Searches this day'}
+              style={pressStyle([styles.chip, { backgroundColor: on ? c.accent : c.accentSoft }])}>
+              <Text style={[styles.chipTop, { color: on ? c.onAccent : c.accent }]} numberOfLines={1}>
+                {d.label}
+              </Text>
+              <Text style={[textStyles.small, { color: on ? c.onAccent : c.accent }]} numberOfLines={1}>
+                {d.day}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  box: { flexDirection: 'row', alignItems: 'center', borderRadius: radius.sm, alignSelf: 'stretch' },
-  arrowDisc: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
-  arrow: { width: minTapTarget, minHeight: minTapTarget, alignSelf: 'stretch', alignItems: 'center', justifyContent: 'center' },
-  middle: { flex: 1, alignItems: 'center', paddingVertical: 4 },
-  label: { textAlign: 'center' },
+  box: { alignSelf: 'stretch', gap: 6 },
+  head: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 },
+  title: { flexShrink: 1 },
+  row: { gap: 8 },
+  chip: {
+    minWidth: 68,
+    minHeight: minTapTarget + 8,
+    paddingHorizontal: 10,
+    borderRadius: radius.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  chipTop: { fontFamily: fonts.bodySemiBold, fontSize: 14, lineHeight: 18 },
 });

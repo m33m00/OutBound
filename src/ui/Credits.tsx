@@ -48,8 +48,9 @@ export function CreditsChip({ onAnswerLoads }: { onAnswerLoads: () => void }) {
         accessibilityHint="Opens your credits"
         style={pressStyle([styles.chip, { backgroundColor: c.accentSoft }])}>
         <Icon name={CREDITS_ICON} size={15} tintColor={c.accent} fallback={null} />
-        <Text style={[styles.chipText, { color: c.accent }]} testID="credits-chip-count">
-          {m.credits}
+        {/* Says "credits" in words, so it reads at a glance (round 177, John). */}
+        <Text style={[styles.chipText, { color: c.accent }]} numberOfLines={1} testID="credits-chip-count">
+          {creditsWord(m.credits)}
         </Text>
       </Pressable>
       <CreditsSheet

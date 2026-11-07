@@ -688,3 +688,8 @@ Settings tab (was Profile, cog icon):
 - Opening a hidden route shows a "Seats are hidden" card above Leave By. Request Loads spends 1 credit, unlocks that route's flights for good, adds each flight to My Trips already answered with sample loads (the sample seats search has, else steady made-up numbers), saves the route and opens My Trips. Out of credits, the card offers Answer Loads (Requests tab) instead.
 - Credits: Free starts with 3, Pay as you go with 10, once per plan. Answering a load (Requests tab or Report Load) earns 1, once per flight. The ticket chip on the Search top bar shows the balance; a tap opens Credits: balance, earned, spent, how it works, recent entries, Answer Loads. Premium has no chip. No buying: Pay as you go says adding credits comes later. Everything is kept on the phone; nothing is charged.
 - John: rename "Time of day" to "Departure Time".
+
+## Round 177: Credits say "credits", the day picker says what it is
+
+- John: "add some labeling to the credit icon. It's not obvious from a first look." The chip on the Search top bar now reads "3 credits" beside the ticket icon.
+- John: "It's not obvious that you can switch days or that's what it means." The results header's day stepper (arrows either side of the date) is now a labeled day picker: "Departing Tue, Oct 20" with the route count beside it, over a row of day buttons for the whole 0-7 day window (Today, Tomorrow, then weekday names, each with its date). The searched day is filled blue, the others light blue, so each reads as a button. The row scrolls to keep the picked day in view. VoiceOver reads it as a "Departure day" radio group.

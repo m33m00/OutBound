@@ -246,11 +246,11 @@ describe('ResultsPanel day and filters (Q-057)', () => {
         />,
       );
     });
-    // The count sits under the day in the full-width stepper (John, 2026-10-30).
+    // The count sits beside "Departing Tue, Oct 20" over the day buttons (round 177, John).
     const detail = r!.root.findAll((n) => n.props.testID === 'day-detail' && typeof n.type === 'string')[0];
     expect(detail.props.children).toBe('2 routes');
-    expect(texts()).toContain('Tue, Oct 20');
-    const next = r!.root.findAll((n) => n.props.testID === 'day-next' && n.props.accessibilityRole === 'button')[0];
+    expect(texts()).toContain('Departing Tue, Oct 20');
+    const next = r!.root.findAll((n) => n.props.testID === 'day-2026-10-21' && n.props.accessibilityRole === 'radio')[0];
     act(() => next.props.onPress());
     expect(onDay).toHaveBeenCalledWith('2026-10-21');
     const filters = r!.root.findAll((n) => n.props.accessibilityLabel === 'Filters, 2 changed' && n.props.onPress)[0];
@@ -269,7 +269,7 @@ describe('ResultsPanel day and filters (Q-057)', () => {
     });
     const summary = r!.root.findAll((n) => n.props.testID === 'results-summary' && typeof n.type === 'string')[0];
     expect(summary.props.children).toBe('Tue, Oct 20\n2 routes');
-    expect(r!.root.findAll((n) => n.props.testID === 'day-next').length).toBe(0);
+    expect(r!.root.findAll((n) => n.props.testID === 'day-picker').length).toBe(0);
   });
 });
 
