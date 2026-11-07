@@ -14,6 +14,7 @@ import { RequestsProvider } from '@/requests/RequestsProvider';
 import { readSavedAppearance, SettingsProvider } from '@/settings/SettingsProvider';
 import { applyAppearance, applyBoldText, colors, fontAssets, useColorSchemeName } from '@/theme';
 import { SavedRoutesProvider } from '@/trips/SavedRoutesProvider';
+import { AirportSummaryProvider } from '@/ui/AirportSummary';
 import { LocationProvider } from '@/ui/LocationProvider';
 
 SplashScreen.preventAutoHideAsync();
@@ -109,17 +110,19 @@ function AppStack() {
           <RequestsProvider>
             <LocationProvider>
               <ModerationProvider>
-                <Stack screenOptions={{ headerShown: false }}>
-                  <Stack.Protected guard={inApp}>
-                    <Stack.Screen name="(tabs)" />
-                    <Stack.Screen name="settings" />
-                    <Stack.Screen name="account" />
-                  </Stack.Protected>
-                  <Stack.Protected guard={!inApp}>
-                    <Stack.Screen name="(auth)" />
-                  </Stack.Protected>
-                  <Stack.Screen name="legal/[doc]" />
-                </Stack>
+                <AirportSummaryProvider>
+                  <Stack screenOptions={{ headerShown: false }}>
+                    <Stack.Protected guard={inApp}>
+                      <Stack.Screen name="(tabs)" />
+                      <Stack.Screen name="settings" />
+                      <Stack.Screen name="account" />
+                    </Stack.Protected>
+                    <Stack.Protected guard={!inApp}>
+                      <Stack.Screen name="(auth)" />
+                    </Stack.Protected>
+                    <Stack.Screen name="legal/[doc]" />
+                  </Stack>
+                </AirportSummaryProvider>
               </ModerationProvider>
             </LocationProvider>
           </RequestsProvider>

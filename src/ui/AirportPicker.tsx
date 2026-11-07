@@ -6,6 +6,7 @@ import { placeLabel } from '@/engine';
 import { pickerSections, type PickerItem } from '@/search/airports';
 import { fonts, minTapTarget, radius, spacing, textStyles, useColors } from '@/theme';
 
+import { AirportSummarySheet } from './AirportSummary';
 import { useCardSurface } from './cardSurface';
 import { selectionTick } from './haptics';
 import { Icon } from './Icon';
@@ -29,6 +30,8 @@ export function AirportPicker({ visible, title, onPick, onClose, current, neares
   const c = useColors();
   const searchCard = useCardSurface({ lift: false });
   const [query, setQuery] = useState('');
+  // Hold a row for its airport summary (round 174); the sheet lives inside this modal so it can open over it.
+  const [info, setInfo] = useState<string | null>(null);
   const sections = pickerSections(query, { nearest, homes, exclude });
   const empty = sections.every((s) => s.data.length === 0);
   // Same tick as every other pick (design round 10).
@@ -64,6 +67,15 @@ export function AirportPicker({ visible, title, onPick, onClose, current, neares
     return (
       <Pressable
         onPress={() => pick(airport.code)}
+        onLongPress={() => {
+          selectionTick();
+          setInfo(airport.code);
+        }}
+        delayLongPress={350}
+        accessibilityActions={[{ name: 'airportInfo', label: 'Airport info' }]}
+        onAccessibilityAction={(e) => {
+          if (e.nativeEvent.actionName === 'airportInfo') setInfo(airport.code);
+        }}
         accessibilityRole="button"
         accessibilityState={{ selected: on }}
         accessibilityLabel={[airport.code, airport.name, place !== airport.code ? place : null, tag].filter(Boolean).join(', ')}
@@ -160,6 +172,7 @@ export function AirportPicker({ visible, title, onPick, onClose, current, neares
             ) : undefined
           }
         />
+        <AirportSummarySheet code={info} onClose={() => setInfo(null)} />
       </SafeAreaView>
     </Modal>
   );

@@ -1,0 +1,65 @@
+{
+  "ATL": [
+    "https://itsmarta.com/airport.aspx",
+    "https://www.atl.com/ground-transportation/",
+    "https://www.atl.com/directions-to-the-rcc/",
+    "https://www.atl.com/wp-content/uploads/2024/04/ATL-Access-FAQs-April-2024.pdf"
+  ],
+  "BNA": [
+    "https://www.wegotransit.com/ride/transit-services/airport/",
+    "https://flynashville.com/ground-transportation",
+    "https://flynashville.com/security-screening"
+  ],
+  "CLT": [
+    "https://www.charlottenc.gov/CATS/Ride/Bus/Airport-Routes",
+    "https://www.cltairport.com/to-and-from/rental-cars/",
+    "https://www.cltairport.com/airport-info/security/"
+  ],
+  "DAL": [
+    "https://www.dart.org/guide/transit-and-use/rail/travelling-to-and-from-dallas-love-field-airport",
+    "https://www.dallas-lovefield.com/passenger-services/a-z-guide",
+    "https://www.dallas-lovefield.com/passenger-services/ground-transportation/rental-cars"
+  ],
+  "DEN": [
+    "https://www.flydenver.com/parking-and-transportation/to-and-from/public-bus-or-train-rtd/",
+    "https://www.flydenver.com/parking-and-transportation/to-and-from/rental-cars/"
+  ],
+  "DFW": [
+    "https://www.dfwairport.com/explore/transportation/publictransit/",
+    "https://www.dfwairport.com/explore/transportation/publictransit/schedules/",
+    "https://www.dfwairport.com/explore/transportation/rentalcars/"
+  ],
+  "LAX": [
+    "https://www.metro.net/riding/go-metro-to-lax/",
+    "https://www.flylax.com/flyaway-bus/faqs",
+    "https://www.lawa.org/news-releases/2026/lax-opens-consolidated-rental-car-center-increasing-convenience-travelers",
+    "https://www.lawa.org/transforminglax/projects/skylink"
+  ],
+  "LGA": [
+    "https://www.mta.info/guides/airports/laguardia",
+    "https://www.laguardiaairport.com/transportation/public-transport",
+    "https://www.laguardiaairport.com/transportation/car-rentals"
+  ],
+  "MIA": [
+    "https://www.miami-airport.com/public-transportation.asp",
+    "https://www.miami-airport.com/ground-transportation.asp",
+    "https://www.miami-airport.com/airport-security.asp"
+  ],
+  "ORD": [
+    "https://www.flychicago.com/ohare/tofrom/publictransit/Pages/default.aspx",
+    "https://www.flychicago.com/ohare/tofrom/rentalcar/pages/default.aspx",
+    "https://www.flychicago.com/ohare/ServicesAmenities/services/Pages/transitupdate.aspx",
+    "https://www.flychicago.com/ohare/myflight/security/Pages/TSA.aspx"
+  ],
+  "PHX": [
+    "https://www.skyharbor.com/ground-transportation/phx-sky-train/",
+    "https://www.skyharbor.com/ground-transportation/public-transportation/",
+    "https://www.skyharbor.com/flying-from-phx/security-screening/"
+  ],
+  "SEA": [
+    "https://www.soundtransit.org/ride-with-us/popular-destinations/sea-tac-airport",
+    "https://www.portseattle.org/page/public-transit-link-light-rail",
+    "https://www.portseattle.org/places/rental-car-facility",
+    "https://www.portseattle.org/Security"
+  ]
+}

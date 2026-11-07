@@ -650,3 +650,25 @@ John (Nov 7): "Can you create a a system toggle for light/dark/system mode and a
 - The saved choice is read before the first screen draws, so the app the launch intro lifts off is already in the right mode with no flash.
 - The launch intro itself stays the icon's ink blue in every mode, same as the phone's splash screen, which can't read an in-app setting.
 - Not seen on a device.
+
+## Round 174: five new filters, airport summary, Settings tab
+
+John (Nov 7): "Time of day filter, Airports to avoid, Only answered loads, Airline filter, US airlines only or all ... Can you also build these additional filters", then "The airport summary should be when you select an airport or hold to select it", then "Profile tab should be renamed to Settings and Cog icon ... Organize it logically".
+
+Filters (Filters sheet and Settings > Search defaults, saved like the rest):
+- Time of day: Morning 5 AM to 12 PM, Afternoon 12 to 5 PM, Evening 5 to 9 PM, Night 9 PM to 5 AM, any mix. Judged by the first flight's local departure. None picked = any time. Window bounds are provisional.
+- Airlines: All airlines or US airlines (segments), then airline pills with logos. Picked airlines must fly every flight; none picked = every airline. US only hides and drops foreign airlines. US list = mainline plus the regionals flying for them; an unknown code counts as not US.
+- Loads: Only answered loads = every flight has a crowd-reported load (source 'reported').
+- Airports to avoid: removable pills plus Add Airport. No connection there, and an avoided area airport is skipped at either end; the airports typed in From and To always stay.
+- The empty-list "your filters hid N routes" count loosens these too.
+
+Airport summary:
+- Hold an airport (From/To card, an airport pill on an opened route, a row in the airport picker) for a sheet with local time, public transit, hours and rental cars. VoiceOver gets an "Airport info" action.
+- Facts for all 12 airports were checked on each airport's or transit agency's own site on Nov 7, 2026 (sources in design/airport-info-sources.json). What couldn't be confirmed says "Couldn't confirm this one yet" instead of guessing: hours for DAL, DEN, DFW, LAX and LGA. Most airport sites list TSA checkpoint hours rather than terminal hours, so that's what Hours shows.
+- Moves to the schedule DB later, so new airports get their own facts.
+
+Settings tab (was Profile, cog icon):
+- Groups: Account, Home airports, Getting to the airport (buffer, directions app, location switch), Search (search defaults), Display (Appearance segments, Rain radar switch), Notifications, Help and legal, About (credits, version, Logo.dev), then Reset All Settings.
+- On/off and pick-one settings change right on the tab; anything bigger opens a page with just that section.
+- The route keeps its file name (profile) so links don't break.
+- Not seen on a device.

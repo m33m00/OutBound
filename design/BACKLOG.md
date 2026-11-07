@@ -206,3 +206,6 @@ Each item names its owner. One item per work session. spec-keeper runs a pre-fli
 | 199 | Route lines flow gently (map lean through stops, card 2.5pt wave) instead of arching | Reverted in round 172 |
 | 200 | Route lines back to straight on map and cards (curves dropped) | Done, round 172 |
 | 201 | Appearance setting: Light, Dark, System (default System), saved, whole app follows | Done, round 173 |
+| 202 | Filters: time of day, airports to avoid, only answered loads, airline picks, US airlines only | Done, round 174 |
+| 203 | Airport summary on hold: transit, hours, rental cars (12 airports checked Nov 7) | Done, round 174 |
+| 204 | Profile tab becomes Settings (cog), regrouped | Done, round 174 |

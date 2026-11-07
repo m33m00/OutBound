@@ -1,25 +1,15 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useRef, useState, type ComponentRef } from 'react';
-import { Linking, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, View, type LayoutChangeEvent } from 'react-native';
+import { Linking, Platform, Pressable, ScrollView, StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useSettings } from '@/settings/SettingsProvider';
 import { AIRPORTS } from '@/engine';
 import { confirmReset } from '@/settings/confirmReset';
-import { parseSettingsSection, type SettingsSection } from '@/settings/profileSummary';
-import { MAPS_APP_NAME, type MapsApp } from '@/search/directions';
+import { parseSettingsSection, SETTINGS_SECTION_TITLE, type SettingsSection } from '@/settings/profileSummary';
 import { formatDuration } from '@/search/format';
 import { homeAirports, LIMITS } from '@/settings/settings';
-import {
-  APPEARANCE_LABEL,
-  APPEARANCE_PREFS,
-  minTapTarget,
-  radius,
-  spacing,
-  textStyles,
-  useColors,
-  type AppearancePref,
-} from '@/theme';
+import { minTapTarget, radius, spacing, textStyles, useColors } from '@/theme';
 import { logosOn } from '@/ui/AirlinePill';
 import { AirportPicker } from '@/ui/AirportPicker';
 import { BackButton } from '@/ui/BackButton';
@@ -29,8 +19,8 @@ import { FiltersForm } from '@/ui/FiltersForm';
 import { TITLE_MAX_SCALE } from '@/ui/SheetHeader';
 import { Stepper } from '@/ui/Stepper';
 import { useSharedLocation } from '@/ui/LocationProvider';
-import { withTick } from '@/ui/haptics';
 import { pressStyle } from '@/ui/press';
+import { AppearanceChoice, MapsChoice, SwitchRow } from '@/ui/SettingsControls';
 import { useSheetContent } from '@/ui/useSheetContent';
 import { useCardSurface } from '@/ui/cardSurface';
 
@@ -57,6 +47,9 @@ export default function SettingsScreen() {
     scrollRef.current?.scrollTo({ y: Math.max(0, e.nativeEvent.layout.y - spacing.page), animated: false });
   };
 
+  // From the Settings tab each row opens just its own section (round 174, John: "Organize it logically").
+  const show = (section: SettingsSection) => !target || target === section;
+
   const setUseLocation = async (on: boolean) => {
     if (!on) return update({ useLocation: false });
     // The iOS prompt only ever appears from a tap: this toggle, leave-by's button or the launch card's Allow.
@@ -75,144 +68,158 @@ export default function SettingsScreen() {
           style={[textStyles.title, { color: c.text }]}
           accessibilityRole="header"
           maxFontSizeMultiplier={TITLE_MAX_SCALE}>
-          Settings
+          {target ? SETTINGS_SECTION_TITLE[target] : 'Settings'}
         </Text>
 
-        <View style={styles.section} onLayout={sectionLayout('homes')}>
-          <SectionHeader title="Homes" />
-          <View style={[card, styles.group]}>
-            {homeList.length === 0 ? (
-              <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, styles.empty, { color: c.muted }]}>
-                No main home yet. Set one to show Get Home when you’re away.
-              </Text>
-            ) : (
-              homeList.map((h, i) => (
-                <View key={h.code} style={[styles.row, i > 0 ? [styles.divided, { borderTopColor: c.line }] : null]}>
-                  <Text style={[textStyles.code, styles.code, { color: c.text }]}>{h.code}</Text>
-                  <View style={styles.label}>
-                    <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, { color: c.text }]}>
-                      {AIRPORTS[h.code]?.name}
-                    </Text>
-                    <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.youText }]}>
-                      {h.main ? 'Main home' : h.auto ? 'Same area, added automatically' : 'Also home'}
-                    </Text>
+        {show('homes') ? (
+          <View style={styles.section} onLayout={sectionLayout('homes')}>
+            <SectionHeader title="Homes" />
+            <View style={[card, styles.group]}>
+              {homeList.length === 0 ? (
+                <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, styles.empty, { color: c.muted }]}>
+                  No main home yet. Set one to show Get Home when you’re away.
+                </Text>
+              ) : (
+                homeList.map((h, i) => (
+                  <View key={h.code} style={[styles.row, i > 0 ? [styles.divided, { borderTopColor: c.line }] : null]}>
+                    <Text style={[textStyles.code, styles.code, { color: c.text }]}>{h.code}</Text>
+                    <View style={styles.label}>
+                      <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, { color: c.text }]}>
+                        {AIRPORTS[h.code]?.name}
+                      </Text>
+                      <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.youText }]}>
+                        {h.main ? 'Main home' : h.auto ? 'Same area, added automatically' : 'Also home'}
+                      </Text>
+                    </View>
+                    {h.main ? (
+                      <Button label="Change" kind="secondary" onPress={() => setPicking('main')} />
+                    ) : h.auto ? null : (
+                      <Button
+                        label="Remove"
+                        kind="secondary"
+                        accessibilityLabel={`Remove ${h.code} from homes`}
+                        onPress={() => update({ homes: { ...homes, extras: homes.extras.filter((x) => x !== h.code) } })}
+                      />
+                    )}
                   </View>
-                  {h.main ? (
-                    <Button label="Change" kind="secondary" onPress={() => setPicking('main')} />
-                  ) : h.auto ? null : (
-                    <Button
-                      label="Remove"
-                      kind="secondary"
-                      accessibilityLabel={`Remove ${h.code} from homes`}
-                      onPress={() => update({ homes: { ...homes, extras: homes.extras.filter((x) => x !== h.code) } })}
-                    />
-                  )}
-                </View>
-              ))
-            )}
-            <View style={[styles.buttons, { borderTopColor: c.line }]}>
-              {homes.main ? null : <Button label="Set Main Home" onPress={() => setPicking('main')} />}
-              <Button label="Add Home" kind="secondary" icon="plus" onPress={() => setPicking('extra')} />
+                ))
+              )}
+              <View style={[styles.buttons, { borderTopColor: c.line }]}>
+                {homes.main ? null : <Button label="Set Main Home" onPress={() => setPicking('main')} />}
+                <Button label="Add Home" kind="secondary" icon="plus" onPress={() => setPicking('extra')} />
+              </View>
             </View>
+            <SectionFooter>
+              Search starts from your main home when location is off, and Get Home takes you back to it.
+            </SectionFooter>
           </View>
-          <SectionFooter>
-            Search starts from your main home when location is off, and Get Home takes you back to it.
-          </SectionFooter>
-        </View>
+        ) : null}
 
-        <View style={styles.section} onLayout={sectionLayout('location')}>
-          <SectionHeader title="Location" />
-          <View style={[card, styles.group]}>
-            <SwitchRow
-              label="Use your location"
-              hint="For the nearest airport and your drive estimate"
-              value={settings.useLocation}
-              onChange={setUseLocation}
-            />
+        {show('location') ? (
+          <View style={styles.section} onLayout={sectionLayout('location')}>
+            <SectionHeader title="Location" />
+            <View style={[card, styles.group]}>
+              <SwitchRow
+                label="Use your location"
+                hint="For the nearest airport and your drive estimate"
+                value={settings.useLocation}
+                onChange={setUseLocation}
+              />
+            </View>
+            <SectionFooter>
+              {status === 'denied'
+                ? 'Location is off for OutBound. Turn it on in iPhone Settings, then try again.'
+                : // The switch's hint already says what it's for (round 65), so the footer keeps the privacy line.
+                  'Only used while the app is open.'}
+            </SectionFooter>
           </View>
-          <SectionFooter>
-            {status === 'denied'
-              ? 'Location is off for OutBound. Turn it on in iPhone Settings, then try again.'
-              : // The switch's hint already says what it's for (round 65), so the footer keeps the privacy line.
-                'Only used while the app is open.'}
-          </SectionFooter>
-        </View>
+        ) : null}
 
         {/* Light, Dark or System; System follows the phone and is the default (John, 2026-11-07). */}
-        <View style={styles.section} onLayout={sectionLayout('appearance')}>
-          <SectionHeader title="Appearance" />
-          <View style={[card, styles.group]}>
-            <AppearanceChoice value={settings.appearance} onChange={(appearance) => update({ appearance })} />
+        {show('appearance') ? (
+          <View style={styles.section} onLayout={sectionLayout('appearance')}>
+            <SectionHeader title="Appearance" />
+            <View style={[card, styles.group]}>
+              <AppearanceChoice value={settings.appearance} onChange={(appearance) => update({ appearance })} />
+            </View>
+            <SectionFooter>System matches your phone’s light or dark setting.</SectionFooter>
           </View>
-          <SectionFooter>System matches your phone’s light or dark setting.</SectionFooter>
-        </View>
+        ) : null}
 
         {/* Moved here from a button on the map (John, 2026-11-01: "That should just be in the settings"). */}
-        <View style={styles.section}>
-          <SectionHeader title="Map" />
-          <View style={[card, styles.group]}>
-            <SwitchRow
-              label="Rain radar"
-              caption="Live rain on the globe, from NOAA"
-              value={settings.radarOn}
-              onChange={(radarOn) => update({ radarOn })}
-            />
+        {!target ? (
+          <View style={styles.section}>
+            <SectionHeader title="Map" />
+            <View style={[card, styles.group]}>
+              <SwitchRow
+                label="Rain radar"
+                caption="Live rain on the globe, from NOAA"
+                value={settings.radarOn}
+                onChange={(radarOn) => update({ radarOn })}
+              />
+            </View>
           </View>
-        </View>
+        ) : null}
 
-        <View style={styles.section} onLayout={sectionLayout('notify')}>
-          <SectionHeader title="Notifications" />
-          <View style={[card, styles.group]}>
-            <SwitchRow
-              label="Answers to your requests"
-              caption="As soon as someone replies"
-              value={settings.notify.answers}
-              onChange={(on) => update({ notify: { ...settings.notify, answers: on } })}
-            />
-            <SwitchRow
-              label="Requests on your airline’s flights"
-              caption="At most 5 a day"
-              value={settings.notify.airlineAsks}
-              onChange={(on) => update({ notify: { ...settings.notify, airlineAsks: on } })}
-              divided
-            />
+        {show('notify') ? (
+          <View style={styles.section} onLayout={sectionLayout('notify')}>
+            <SectionHeader title="Notifications" />
+            <View style={[card, styles.group]}>
+              <SwitchRow
+                label="Answers to your requests"
+                caption="As soon as someone replies"
+                value={settings.notify.answers}
+                onChange={(on) => update({ notify: { ...settings.notify, answers: on } })}
+              />
+              <SwitchRow
+                label="Requests on your airline’s flights"
+                caption="At most 5 a day"
+                value={settings.notify.airlineAsks}
+                onChange={(on) => update({ notify: { ...settings.notify, airlineAsks: on } })}
+                divided
+              />
+            </View>
+            {/* The switch captions already say who asks and the 5-a-day cap (round 73). */}
+            <SectionFooter>Notifications start once requests go live. Nobody sees who asked or who answered.</SectionFooter>
           </View>
-          {/* The switch captions already say who asks and the 5-a-day cap (round 73). */}
-          <SectionFooter>Notifications start once requests go live. Nobody sees who asked or who answered.</SectionFooter>
-        </View>
+        ) : null}
 
-        <View style={styles.section} onLayout={sectionLayout('leaveBy')}>
-          <SectionHeader title="Leave-by" />
-          <View style={[card, styles.group]}>
-            <Stepper
-              label="Be at the airport before departure"
-              value={settings.bufferMin}
-              {...LIMITS.bufferMin}
-              format={formatDuration}
-              onChange={(v) => update({ bufferMin: v })}
-            />
-            {/* Android always uses Google Maps, so there's nothing to pick there. */}
-            {Platform.OS === 'ios' ? <MapsChoice value={settings.mapsApp} onChange={(mapsApp) => update({ mapsApp })} /> : null}
+        {show('leaveBy') ? (
+          <View style={styles.section} onLayout={sectionLayout('leaveBy')}>
+            <SectionHeader title="Leave-by" />
+            <View style={[card, styles.group]}>
+              <Stepper
+                label="Be at the airport before departure"
+                value={settings.bufferMin}
+                {...LIMITS.bufferMin}
+                format={formatDuration}
+                onChange={(v) => update({ bufferMin: v })}
+              />
+              {/* Android always uses Google Maps, so there's nothing to pick there. */}
+              {Platform.OS === 'ios' ? <MapsChoice value={settings.mapsApp} onChange={(mapsApp) => update({ mapsApp })} /> : null}
+            </View>
+            {/* The Leave By card's chevron already shows it opens directions (round 78). */}
+            <SectionFooter>Time to list and clear security.</SectionFooter>
           </View>
-          {/* The Leave By card's chevron already shows it opens directions (round 78). */}
-          <SectionFooter>Time to list and clear security.</SectionFooter>
-        </View>
+        ) : null}
 
-        <View style={styles.section} onLayout={sectionLayout('search')}>
-          <SectionHeader title="Search defaults" />
-          <View style={[card, styles.group]}>
-            <FiltersForm filters={settings.search} onChange={(search) => update({ search })} />
+        {show('search') ? (
+          <View style={styles.section} onLayout={sectionLayout('search')}>
+            <SectionHeader title="Search defaults" />
+            <View style={[card, styles.group]}>
+              <FiltersForm filters={settings.search} onChange={(search) => update({ search })} />
+            </View>
+            <SectionFooter>Every search starts with these. Change them for one search in Filters.</SectionFooter>
           </View>
-          <SectionFooter>Every search starts with these. Change them for one search in Filters.</SectionFooter>
-        </View>
+        ) : null}
 
-        {/* Clears homes too, so it asks first (what it should clear is Q-064). */}
-        <Button label="Reset All Settings" kind="secondary" onPress={() => confirmReset(reset)} />
+        {/* Clears homes too, so it asks first (what it should clear is Q-064). On the Settings tab since round 174. */}
+        {!target ? <Button label="Reset All Settings" kind="secondary" onPress={() => confirmReset(reset)} /> : null}
         <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>
           Saved on this phone.
         </Text>
-        {/* Logo.dev's free plan asks for a visible link wherever its logos show (round 133). */}
-        {logosOn() ? (
+        {/* Logo.dev's free plan asks for a visible link wherever its logos show (round 133); the Settings tab has it too. */}
+        {logosOn() && !target ? (
           <Pressable
             accessibilityRole="link"
             accessibilityLabel="Airline logos provided by Logo.dev"
@@ -240,133 +247,6 @@ export default function SettingsScreen() {
         onClose={() => setPicking(null)}
       />
     </SafeAreaView>
-  );
-}
-
-/**
- * A setting with a switch: the whole row toggles it and VoiceOver reads it
- * as one switch (label, caption as the hint, on or off).
- */
-function SwitchRow({
-  label,
-  caption,
-  hint,
-  value,
-  onChange,
-  divided,
-}: {
-  label: string;
-  caption?: string;
-  hint?: string;
-  value: boolean;
-  onChange: (on: boolean) => void;
-  divided?: boolean;
-}) {
-  const c = useColors();
-  return (
-    <Pressable
-      onPress={() => onChange(!value)}
-      accessibilityRole="switch"
-      accessibilityState={{ checked: value }}
-      accessibilityLabel={label}
-      accessibilityHint={hint ?? caption}
-      style={pressStyle([styles.row, divided && [styles.divided, { borderTopColor: c.line }]])}>
-      <View style={styles.label}>
-        <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, { color: c.text }]}>
-          {label}
-        </Text>
-        {caption ? (
-          <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>
-            {caption}
-          </Text>
-        ) : null}
-      </View>
-      {/* The row takes the tap and speaks for it. */}
-      <View pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-        <Switch value={value} trackColor={{ true: c.accent, false: c.faint }} />
-      </View>
-    </Pressable>
-  );
-}
-
-/** Which maps app the leave-by card opens (provisional; John left it open, 2026-10-30). */
-function MapsChoice({ value, onChange }: { value: MapsApp; onChange: (app: MapsApp) => void }) {
-  const c = useColors();
-  return (
-    <View style={[styles.divided, styles.maps, { borderTopColor: c.line }]}>
-      <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, { color: c.text }]}>
-        Directions open in
-      </Text>
-      <Segments
-        label="Directions open in"
-        options={['apple', 'google'] as const}
-        value={value}
-        name={(app) => MAPS_APP_NAME[app]}
-        onChange={onChange}
-      />
-      {/* Always shown, so picking doesn't make the layout jump. */}
-      <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>
-        Google Maps opens in Safari if the app isn’t on this iPhone.
-      </Text>
-    </View>
-  );
-}
-
-/** Light, Dark or System, as one row of segments (round 173). */
-function AppearanceChoice({ value, onChange }: { value: AppearancePref; onChange: (pref: AppearancePref) => void }) {
-  return (
-    <Segments
-      label="Appearance"
-      testID="appearance-choice"
-      options={APPEARANCE_PREFS}
-      value={value}
-      name={(pref) => APPEARANCE_LABEL[pref]}
-      onChange={onChange}
-    />
-  );
-}
-
-/** A row of equal segments, the picked one filled blue; VoiceOver reads it as a radio group. */
-function Segments<T extends string>({
-  label,
-  options,
-  value,
-  name,
-  onChange,
-  testID,
-}: {
-  label: string;
-  options: readonly T[];
-  value: T;
-  name: (v: T) => string;
-  onChange: (v: T) => void;
-  testID?: string;
-}) {
-  const c = useColors();
-  return (
-    <View testID={testID} style={styles.segments} accessibilityRole="radiogroup" accessibilityLabel={label}>
-      {options.map((opt) => {
-        const on = value === opt;
-        return (
-          <Pressable
-            key={opt}
-            testID={testID ? `${testID}-${opt}` : undefined}
-            onPress={withTick(() => onChange(opt))}
-            accessibilityRole="radio"
-            accessibilityState={{ checked: on }}
-            accessibilityLabel={name(opt)}
-            style={pressStyle([styles.segment, { backgroundColor: on ? c.accent : c.surface2 }])}>
-            <Text
-              style={[textStyles.bodyStrong, { color: on ? c.onAccent : c.text }]}
-              numberOfLines={1}
-              adjustsFontSizeToFit
-              minimumFontScale={0.8}>
-              {name(opt)}
-            </Text>
-          </Pressable>
-        );
-      })}
-    </View>
   );
 }
 

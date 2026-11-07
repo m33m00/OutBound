@@ -3,7 +3,7 @@
  * moves to the account when login exists. Values are clamped on read so a
  * bad or old saved value can't break search.
  */
-import { AIRPORTS, areaFor, DEFAULT_SEARCH_OPTIONS, type SearchOptions } from '@/engine';
+import { AIRPORTS, areaFor, DEFAULT_SEARCH_OPTIONS, TIMES_OF_DAY, type SearchOptions } from '@/engine';
 import type { MapsApp } from '@/search/directions';
 import { DEFAULT_APPEARANCE, parseAppearance, type AppearancePref } from '@/theme/appearancePref';
 
@@ -14,7 +14,15 @@ import { DEFAULT_APPEARANCE, parseAppearance, type AppearancePref } from '@/them
  */
 export type SearchFilters = Pick<
   SearchOptions,
-  'maxStops' | 'minConnectSameAirlineMin' | 'minConnectSwitchMin' | 'maxLayoverMin'
+  | 'maxStops'
+  | 'minConnectSameAirlineMin'
+  | 'minConnectSwitchMin'
+  | 'maxLayoverMin'
+  | 'departTimes'
+  | 'avoidAirports'
+  | 'answeredOnly'
+  | 'airlines'
+  | 'airlineRegion'
 >;
 
 export const DEFAULT_FILTERS: SearchFilters = {
@@ -22,6 +30,11 @@ export const DEFAULT_FILTERS: SearchFilters = {
   minConnectSameAirlineMin: DEFAULT_SEARCH_OPTIONS.minConnectSameAirlineMin,
   minConnectSwitchMin: DEFAULT_SEARCH_OPTIONS.minConnectSwitchMin,
   maxLayoverMin: DEFAULT_SEARCH_OPTIONS.maxLayoverMin,
+  departTimes: [],
+  avoidAirports: [],
+  answeredOnly: false,
+  airlines: [],
+  airlineRegion: 'all',
 };
 
 /** Stepper limits, shared by settings and the Filters panel (provisional ranges). */
@@ -128,6 +141,14 @@ export function parseSettings(raw: unknown): Settings {
       minConnectSameAirlineMin: num(s.minConnectSameAirlineMin, d.minConnectSameAirlineMin, LIMITS.minConnectSameAirlineMin),
       minConnectSwitchMin: num(s.minConnectSwitchMin, d.minConnectSwitchMin, LIMITS.minConnectSwitchMin),
       maxLayoverMin: num(s.maxLayoverMin, d.maxLayoverMin, LIMITS.maxLayoverMin),
+      // Round 174 filters; old saves lack them and get the open defaults.
+      departTimes: TIMES_OF_DAY.filter((t) => Array.isArray(s.departTimes) && s.departTimes.includes(t)),
+      avoidAirports: Array.isArray(s.avoidAirports) ? [...new Set(s.avoidAirports.filter(known))] : [],
+      answeredOnly: bool(s.answeredOnly, false),
+      airlines: Array.isArray(s.airlines)
+        ? [...new Set(s.airlines.filter((a): a is string => typeof a === 'string' && /^[A-Z0-9]{2}$/.test(a)))]
+        : [],
+      airlineRegion: s.airlineRegion === 'us' ? 'us' : 'all',
     },
     areaOn,
     notify: {
@@ -139,9 +160,12 @@ export function parseSettings(raw: unknown): Settings {
   };
 }
 
-/** How many search filters differ from `base`. */
+const sameValue = (a: unknown, b: unknown) =>
+  Array.isArray(a) && Array.isArray(b) ? a.length === b.length && a.every((x) => b.includes(x)) : a === b;
+
+/** How many search filters differ from `base`. Lists count as one each, whatever their order. */
 export function changedFilters(f: SearchFilters, base: SearchFilters = DEFAULT_FILTERS): number {
-  return (Object.keys(base) as (keyof SearchFilters)[]).filter((k) => f[k] !== base[k]).length;
+  return (Object.keys(base) as (keyof SearchFilters)[]).filter((k) => !sameValue(f[k], base[k])).length;
 }
 
 export interface HomeAirport {

@@ -158,3 +158,35 @@ describe('area toggle memory (Q-048)', () => {
     expect(parseSettings({ areaOn: 'nope' }).areaOn).toEqual({});
   });
 });
+
+describe('round 174 filters in saved defaults', () => {
+  it('keeps valid picks and drops anything else', () => {
+    const s = parseSettings({
+      search: {
+        departTimes: ['night', 'morning', 'noon', 'morning'],
+        avoidAirports: ['ORD', 'XXX', 'ORD', 4],
+        answeredOnly: true,
+        airlines: ['WN', 'wn', 'UA', 'WN', 'TOOLONG'],
+        airlineRegion: 'us',
+      },
+    }).search;
+    expect(s.departTimes).toEqual(['morning', 'night']);
+    expect(s.avoidAirports).toEqual(['ORD']);
+    expect(s.answeredOnly).toBe(true);
+    expect(s.airlines).toEqual(['WN', 'UA']);
+    expect(s.airlineRegion).toBe('us');
+  });
+
+  it('old saves get the open defaults', () => {
+    const s = parseSettings({ search: { maxStops: 1 } }).search;
+    expect(s).toMatchObject({ departTimes: [], avoidAirports: [], answeredOnly: false, airlines: [], airlineRegion: 'all' });
+  });
+
+  it('counts each changed filter once, lists in any order', () => {
+    expect(changedFilters({ ...DEFAULT_FILTERS, departTimes: [], airlines: [] })).toBe(0);
+    expect(changedFilters({ ...DEFAULT_FILTERS, departTimes: ['morning', 'night'], answeredOnly: true })).toBe(2);
+    const saved = { ...DEFAULT_FILTERS, airlines: ['WN', 'UA'] };
+    expect(changedFilters({ ...DEFAULT_FILTERS, airlines: ['UA', 'WN'] }, saved)).toBe(0);
+    expect(changedFilters({ ...DEFAULT_FILTERS, airlines: ['UA'] }, saved)).toBe(1);
+  });
+});

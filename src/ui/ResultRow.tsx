@@ -32,6 +32,7 @@ import {
   useColorSchemeName,
 } from '@/theme';
 
+import { useAirportHold, useOpenAirportSummary } from './AirportSummary';
 import { FlightPeek } from './FlightPeek';
 import { Icon } from './Icon';
 import { Divided, MetaLine } from './MetaLine';
@@ -138,6 +139,7 @@ function LegEnds({
   dimmed,
   showTimes,
   tag,
+  onTapCode,
 }: {
   leg: Flight;
   view?: LegStatusView;
@@ -145,8 +147,12 @@ function LegEnds({
   showTimes: boolean;
   /** The flight's status pill, centered just above its route line (round 136, John). */
   tag?: ReactNode;
+  /** A tap on an airport pill does what a tap on the box does; holding it opens the airport (round 174). */
+  onTapCode?: () => void;
 }) {
   const c = useColors();
+  const holdFrom = useAirportHold(leg.from);
+  const holdTo = useAirportHold(leg.to);
   const { fontScale } = useWindowDimensions();
   const endW = { width: END_W * Math.min(Math.max(fontScale, 1), 1.4) };
   const t = legTimesText(leg, view);
@@ -169,11 +175,26 @@ function LegEnds({
       {keep(text)}
     </Text>
   );
-  const code = (text: string) => (
-    <View style={[styles.codePill, { backgroundColor: c.surface, borderColor: c.line }]} testID="leg-code">
-      <Text style={[styles.codeText, { color: dimmed ? c.muted : c.text }]}>{text}</Text>
-    </View>
-  );
+  const code = (text: string, hold: ReturnType<typeof useAirportHold>) => {
+    const pill = (
+      <View style={[styles.codePill, { backgroundColor: c.surface, borderColor: c.line }]} testID="leg-code">
+        <Text style={[styles.codeText, { color: dimmed ? c.muted : c.text }]}>{text}</Text>
+      </View>
+    );
+    if (!hold.onLongPress) return pill;
+    // Hold an airport pill for its summary (round 174); VoiceOver gets it as an action on the leg box.
+    return (
+      <Pressable
+        onPress={onTapCode}
+        onLongPress={hold.onLongPress}
+        delayLongPress={hold.delayLongPress}
+        hitSlop={6}
+        accessible={false}
+        testID={`leg-code-hold-${text}`}>
+        {pill}
+      </Pressable>
+    );
+  };
   const length =
     minutes > 0 ? (
       <Text style={[styles.endsLength, { color: c.muted }]} numberOfLines={1} testID="leg-length">
@@ -186,7 +207,7 @@ function LegEnds({
     <View style={styles.ends} testID="leg-line">
       <View style={[styles.endCol, endW, styles.endColLifted]}>
         {showTimes ? time(t.depart, departColor, 'leg-clock') : null}
-        {code(leg.from)}
+        {code(leg.from, holdFrom)}
       </View>
       <View style={styles.endsMid} testID="leg-track">
         {tag ? (
@@ -208,7 +229,7 @@ function LegEnds({
       </View>
       <View style={[styles.endCol, styles.endColRight, endW, styles.endColLifted]}>
         {showTimes ? time(t.arrive, arriveColor, 'leg-arrive', true) : null}
-        {code(leg.to)}
+        {code(leg.to, holdTo)}
       </View>
     </View>
   );
@@ -317,6 +338,7 @@ function LegTimeline({
   onLegPress?: (flight: Flight) => void;
 }) {
   const c = useColors();
+  const openAirport = useOpenAirportSummary();
   const rail = { backgroundColor: c.line2 };
   // Each box's measured height. Its dot sits at its middle, so the line between two dots runs
   // half of one box, the connection, and half of the next; the label is placed at its middle.
@@ -361,6 +383,7 @@ function LegTimeline({
               dimmed={dimmed}
               showTimes={!nonstop}
               tag={view?.tag ? <StatusTag label={view.tag.label} tone={TAG_TONE[view.tag.kind]} /> : undefined}
+              onTapCode={onLegPress ? withTick(() => onLegPress(leg.flight)) : undefined}
             />
             {/* No "Continuing to" note on a diverted leg (round 159, John: "I don't care it's continuing to SEA"). */}
             {pills}
@@ -394,6 +417,18 @@ function LegTimeline({
                   scaleTo={0.98}
                   pressedOpacity={0.85}
                   onPress={withTick(() => onLegPress(leg.flight))}
+                  accessibilityActions={
+                    openAirport
+                      ? [
+                          { name: 'fromInfo', label: `${leg.flight.from} airport info` },
+                          { name: 'toInfo', label: `${leg.flight.to} airport info` },
+                        ]
+                      : undefined
+                  }
+                  onAccessibilityAction={(e) => {
+                    if (e.nativeEvent.actionName === 'fromInfo') openAirport?.(leg.flight.from);
+                    if (e.nativeEvent.actionName === 'toInfo') openAirport?.(leg.flight.to);
+                  }}
                   accessibilityRole="button"
                   // The label replaces what's inside, so it says the leg's time and seats too.
                   accessibilityLabel={[

@@ -9,6 +9,16 @@ import { Platform, type ColorValue } from 'react-native';
  */
 export const MATERIAL: Partial<Record<SFSymbol, keyof typeof MaterialIcons.glyphMap>> = {
   magnifyingglass: 'search',
+  // Round 174: Settings tab, airport summary.
+  gearshape: 'settings',
+  'gearshape.fill': 'settings',
+  envelope: 'mail-outline',
+  'hand.raised': 'privacy-tip',
+  'doc.text': 'description',
+  'cloud.sun': 'wb-cloudy',
+  'tram.fill': 'tram',
+  'clock.fill': 'schedule',
+  'circle.lefthalf.filled': 'contrast',
   'text.bubble': 'chat-bubble-outline',
   suitcase: 'luggage',
   'person.crop.circle': 'account-circle',

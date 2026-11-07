@@ -6,7 +6,7 @@ import { fonts, minTapTarget, useBoldText, useColors } from '@/theme';
 import { useRequests } from '@/requests/RequestsProvider';
 import { Icon } from '@/ui/Icon';
 
-/** Bottom tab bar (backlog 16; Q-042): Search, Requests (was Feed, round 167), My Trips, Logbook, Profile. */
+/** Bottom tab bar (backlog 16; Q-042): Search, Requests (was Feed, round 167), My Trips, Logbook, Settings (was Profile, round 174). */
 export default function TabsLayout() {
   const c = useColors();
   // Redraws the labels when Bold Text changes.
@@ -45,7 +45,8 @@ export default function TabsLayout() {
       <Tabs.Screen name="logbook" options={{ title: 'Logbook', tabBarIcon: icon('book.closed', 'book.closed.fill') }} />
       <Tabs.Screen
         name="profile"
-        options={{ title: 'Profile', tabBarIcon: icon('person.crop.circle', 'person.crop.circle.fill') }}
+        // Profile became Settings with a cog (round 174, John); the route keeps its old name.
+        options={{ title: 'Settings', tabBarIcon: icon('gearshape', 'gearshape.fill') }}
       />
     </Tabs>
   );

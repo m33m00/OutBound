@@ -38,6 +38,11 @@ export const LOOSE_FILTERS: SearchFilters = {
   minConnectSameAirlineMin: LIMITS.minConnectSameAirlineMin.min,
   minConnectSwitchMin: LIMITS.minConnectSwitchMin.min,
   maxLayoverMin: LIMITS.maxLayoverMin.max,
+  departTimes: [],
+  avoidAirports: [],
+  answeredOnly: false,
+  airlines: [],
+  airlineRegion: 'all',
 };
 
 let sample: FlightDataProvider | undefined;
