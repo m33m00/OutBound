@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { fonts, useColors } from '@/theme';
@@ -27,53 +26,6 @@ const FLIGHT_H = PEEK_LOGO + 6;
 const CANCELED_DROP = 6;
 /** With this many legs or more, a diversion pill says just "Diverted" to fit its short stretch. */
 const COMPACT_LEGS = 3;
-
-/**
- * How far a connecting route's line drifts off straight, in points (round 172, John: "I just want it to look
- * like it flows nicely", after the arches were "too much"). One low wave across the trip: each leg dips or
- * rises a little, alternating, and crosses back through every stop dot, so the dots, codes and numbers stay
- * where they were and the line turns smoothly through each stop. A nonstop stays straight.
- */
-export const FLOW_AMP = 2.5;
-/** Short straight strokes per leg that draw the curve. */
-const FLOW_PIECES = 12;
-
-export interface FlowPiece {
-  /** Stroke centre, from the rail's left edge and the line's baseline (positive = lower). */
-  x: number;
-  y: number;
-  len: number;
-  /** Rotation, radians. */
-  angle: number;
-}
-
-/** Which way leg i drifts: the first dips, the next rises, and so on. */
-export const flowSign = (i: number) => (i % 2 === 0 ? 1 : -1);
-
-/**
- * The strokes that draw each leg's curve on a rail `width` wide, split evenly into `legs`. Each leg is half
- * a sine, so the line is level at both its ends and the turns through the stops have no corner.
- */
-export function flowPieces(legs: number, width: number, amp = FLOW_AMP, pieces = FLOW_PIECES): FlowPiece[][] {
-  const w = width / legs;
-  return Array.from({ length: legs }, (_, i) => {
-    const pt = (k: number) => {
-      const u = k / pieces;
-      return { x: (i + u) * w, y: flowSign(i) * amp * Math.sin(Math.PI * u) };
-    };
-    return Array.from({ length: pieces }, (_, k) => {
-      const a = pt(k);
-      const b = pt(k + 1);
-      // A hair of overlap so the strokes join without seams.
-      return {
-        x: (a.x + b.x) / 2,
-        y: (a.y + b.y) / 2,
-        len: Math.hypot(b.x - a.x, b.y - a.y) + 0.6,
-        angle: Math.atan2(b.y - a.y, b.x - a.x),
-      };
-    });
-  });
-}
 
 /** One leg of the line: the color it's drawn in and the seat numbers shown above it (round 140). */
 export interface MiniRouteLeg {
@@ -132,7 +84,6 @@ export function MiniRoute({
   stopFlags?: readonly (string | null)[];
 }) {
   const c = useColors();
-  const [railW, setRailW] = useState(0);
   const ends = dimmed ? c.muted : c.text;
   const stops = airports.slice(1, -1);
   const first = airports[0];
@@ -168,9 +119,6 @@ export function MiniRoute({
   const legFlagY = withFlights ? flightY + FLIGHT_H - 4 : LABEL_H + DOT + LABEL_H + 2;
   const base = LABEL_H + DOT + LABEL_H;
   const tail = Math.max(0, (withFlights ? flightY + FLIGHT_H : 0) - base, legFlagged ? legFlagY + FLAG_H - base : 0);
-  // A connecting route flows once the line's width is known; until then (and for a nonstop) it's straight.
-  const flow = segs && n > 1 && railW > 0 ? flowPieces(n, railW) : null;
-  const drift = (i: number) => (flow ? flowSign(i) * FLOW_AMP : 0);
   return (
     <View
       style={[styles.row, segs && styles.rowLabeled, top > 0 && { paddingTop: 6 + top }, tail > 0 && { paddingBottom: 6 + tail }]}
@@ -196,49 +144,21 @@ export function MiniRoute({
         testID="mini-route-track">
         {segs ? null : <View style={[styles.line, below(LABEL_H + DOT / 2 - 1), { backgroundColor: c.line }]} />}
         {segs ? (
-          <View
-            style={styles.rail}
-            onLayout={(e) => {
-              const w = Math.round(e.nativeEvent.layout.width);
-              setRailW((prev) => (prev === w ? prev : w));
-            }}>
-            {flow
-              ? flow.map((pieces, i) =>
-                  pieces.map((pc, k) => (
-                    <View
-                      key={`flow${i}-${k}`}
-                      style={[
-                        styles.flowPiece,
-                        below(LABEL_H + DOT / 2 - 1.5 + pc.y),
-                        {
-                          left: pc.x - pc.len / 2,
-                          width: pc.len,
-                          backgroundColor: segs[i].color,
-                          transform: [{ rotate: `${pc.angle}rad` }],
-                        },
-                      ]}
-                      testID="mini-route-flow"
-                    />
-                  )),
-                )
-              : segs.map((leg, i) => (
-                  <View
-                    key={`seg${i}`}
-                    style={[
-                      styles.seg,
-                      below(LABEL_H + DOT / 2 - 1.5),
-                      { left: pct(i), width: pct(1), backgroundColor: leg.color },
-                    ]}
-                    testID="mini-route-seg"
-                  />
-                ))}
+          <View style={styles.rail}>
+            {segs.map((leg, i) => (
+              <View
+                key={`seg${i}`}
+                style={[styles.seg, below(LABEL_H + DOT / 2 - 1.5), { left: pct(i), width: pct(1), backgroundColor: leg.color }]}
+                testID="mini-route-seg"
+              />
+            ))}
             {segs.map((leg, i) =>
               // A canceled leg: an X dead centre on its red stretch (round 143, John: "Maybe an X indicator in
               // the middle with a red colored line?"). Drawn from two bars, on a small disc that hides the line.
               leg.canceled ? (
                 <View
                   key={`x${i}`}
-                  style={[styles.xSlot, below(LABEL_H + DOT / 2 - X_SIZE / 2 + drift(i)), { left: pct(i + 0.5) }]}
+                  style={[styles.xSlot, below(LABEL_H + DOT / 2 - X_SIZE / 2), { left: pct(i + 0.5) }]}
                   testID="mini-route-canceled">
                   <View style={[styles.xDisc, { backgroundColor: c.surface, borderColor: leg.color }]}>
                     <View style={[styles.xBar, { backgroundColor: leg.color, transform: [{ rotate: '45deg' }] }]} />
@@ -406,7 +326,6 @@ const styles = StyleSheet.create({
   rail: { position: 'absolute', left: DOT / 2, right: DOT / 2, top: 0, bottom: 0 },
   // One leg's stretch of line, a touch thicker than the plain line so its color reads.
   seg: { position: 'absolute', height: 3 },
-  flowPiece: { position: 'absolute', height: 3, borderRadius: 1.5 },
   xSlot: { position: 'absolute', width: X_SIZE, height: X_SIZE, marginLeft: -X_SIZE / 2 },
   xDisc: {
     width: X_SIZE,

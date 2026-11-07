@@ -52,7 +52,7 @@ import { useReduceMotionStatus } from './useReduceMotion';
 import { recordNightLayer } from './nightLayer';
 import { markSpinInDone, shouldSpinIn, SPIN_IN, spinStartCamera } from './spinIn';
 import { NIGHT_THEME, SKY_IDLE_TICK_MS, sunFromKey, sunKey, sunPosition } from './sun';
-import { arcSamples, linkRouteLegs, makeLiftedProjector, projectSamples } from './arcs';
+import { arcSamples, makeLiftedProjector, projectSamples } from './arcs';
 import { useLegTimeFont, useMarkFonts } from './markFonts';
 import { legTimeColors, legTimeSpecs, legTimesSummary } from './legTimes';
 import { markColors, markExtent, marksSummary, markSet } from './marks';
@@ -102,12 +102,7 @@ export function GlobeMap({
   const controlled = selectedRouteId !== undefined;
   const wanted = controlled ? selectedRouteId : ownSelected;
   const selectedId = wanted != null && routes.some((r) => r.id === wanted) ? wanted : null;
-  const drawn = useMemo(() => {
-    const out = drawnRoutes(routes, selectedId);
-    // Connecting legs flow through their stops (round 171).
-    linkRouteLegs(out);
-    return out;
-  }, [routes, selectedId]);
+  const drawn = useMemo(() => drawnRoutes(routes, selectedId), [routes, selectedId]);
   const selectedRoute = selectedId ? drawn.find((r) => r.id === selectedId) : undefined;
 
   const [size, setSize] = useState<{ width: number; height: number } | null>(null);

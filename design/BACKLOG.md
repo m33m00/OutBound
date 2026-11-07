@@ -203,4 +203,5 @@ Each item names its owner. One item per work session. spec-keeper runs a pre-fli
 | 196 | Merge App Store branch into design rounds so the launch intro and accounts show in Expo Go | Done (round 168) |
 | 197 | Native-thread launch exit; Leave By directions as a filled capsule with drive time | Done (round 169) |
 | 198 | Curved map route lines (sideways bow per leg); card line curves mocked up | Done (round 170) |
-| 199 | Route lines flow gently (map lean through stops, card 2.5pt wave) instead of arching | Done, round 171 |
+| 199 | Route lines flow gently (map lean through stops, card 2.5pt wave) instead of arching | Reverted in round 172 |
+| 200 | Route lines back to straight on map and cards (curves dropped) | Done, round 172 |

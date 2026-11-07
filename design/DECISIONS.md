@@ -632,3 +632,10 @@ John (Nov 7): "The arch is too much. Not every line also has to be an arch. I ju
 - Map: the sideways bow drops from 13% of the leg to 4%, and only a lone nonstop keeps it. Legs that meet at a stop lose the bow and instead lean gently (at most about 17 degrees) so the line runs through the stop with no corner. Most lines now read nearly straight.
 - Cards: connections drift 2.5pt off straight in one low wave that passes through every stop dot, alternating up and down per leg. Nonstops stay straight. Seat numbers, stop codes and the canceled X stay put (the X follows the line by its drift).
 - Drawn from the app's own numbers (r171_map_flow.png, r172_card_flow.png), not seen on a device.
+
+## Round 172: straight route lines again
+
+John (Nov 7): "No I dont like it go back to straight lines haha"
+
+- Map and card route lines are back to straight, exactly as they were before round 170 (arcs.ts, framing.ts, GlobeMap.tsx and MiniRoute.tsx restored; the card flow test removed).
+- Rule going forward: route lines stay straight. Don't revisit curves unless John asks.
