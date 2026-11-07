@@ -693,3 +693,9 @@ Settings tab (was Profile, cog icon):
 
 - John: "add some labeling to the credit icon. It's not obvious from a first look." The chip on the Search top bar now reads "3 credits" beside the ticket icon.
 - John: "It's not obvious that you can switch days or that's what it means." The results header's day stepper (arrows either side of the date) is now a labeled day picker: "Departing Tue, Oct 20" with the route count beside it, over a row of day buttons for the whole 0-7 day window (Today, Tomorrow, then weekday names, each with its date). The searched day is filled blue, the others light blue, so each reads as a button. The row scrolls to keep the picked day in view. VoiceOver reads it as a "Departure day" radio group.
+
+## Round 178: map and launch animation missing (fix)
+
+- John, after round 177: "I can't see the map and the loading screen only loads the words." Both are drawn with Skia, and neither file changed in rounds 173 to 177.
+- The only change in those rounds that reached native views was round 173's Appearance choice calling Appearance.setColorScheme, which sets a light/dark override on every app window. In Expo Go that override stays on the windows across reloads of an update. It's the prime suspect; not confirmed on a device.
+- Fix: the Appearance choice no longer sets the phone-level override. Light/Dark/System still changes every color in the app (useColorSchemeName). Launch clears any override an earlier version left, once. The phone's own parts (keyboard, alerts) follow the phone's setting again.

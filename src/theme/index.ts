@@ -9,6 +9,7 @@ export {
   APPEARANCE_LABEL,
   APPEARANCE_PREFS,
   applyAppearance,
+  clearNativeAppearanceOverride,
   DEFAULT_APPEARANCE,
   getAppearancePref,
   parseAppearance,

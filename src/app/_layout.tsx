@@ -14,7 +14,7 @@ import { ModerationProvider } from '@/moderation/ModerationProvider';
 import { LogbookProvider } from '@/logbook/LogbookProvider';
 import { RequestsProvider } from '@/requests/RequestsProvider';
 import { readSavedAppearance, SettingsProvider } from '@/settings/SettingsProvider';
-import { applyAppearance, applyBoldText, colors, fontAssets, useColorSchemeName } from '@/theme';
+import { applyAppearance, applyBoldText, clearNativeAppearanceOverride, colors, fontAssets, useColorSchemeName } from '@/theme';
 import { SavedRoutesProvider } from '@/trips/SavedRoutesProvider';
 import { AirportSummaryProvider } from '@/ui/AirportSummary';
 import { LocationProvider } from '@/ui/LocationProvider';
@@ -52,6 +52,7 @@ export default function RootLayout() {
   const [appearanceChecked, setAppearanceChecked] = useState(false);
   useEffect(() => {
     let live = true;
+    clearNativeAppearanceOverride();
     readSavedAppearance()
       .then(applyAppearance)
       .finally(() => live && setAppearanceChecked(true));

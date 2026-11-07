@@ -3,7 +3,7 @@ import { Appearance, Text } from 'react-native';
 import * as RN from 'react-native';
 import { act, create } from 'react-test-renderer';
 
-import { applyAppearance, getAppearancePref, parseAppearance } from '../appearance';
+import { applyAppearance, clearNativeAppearanceOverride, getAppearancePref, parseAppearance } from '../appearance';
 import { colors } from '../colors';
 import { useColors, useColorSchemeName } from '../index';
 
@@ -61,16 +61,15 @@ describe('Appearance: Light, Dark or System (round 173)', () => {
     expect(read(r)).toBe(`light ${colors.light.bg}`);
   });
 
-  it("sets the phone's own parts (keyboard, alerts, pickers) to match, and clears that for System", () => {
+  it('never sets the phone-level override, and launch clears an old one once (round 178)', () => {
     applyAppearance('dark');
-    expect(setSpy).toHaveBeenLastCalledWith('dark');
     applyAppearance('light');
-    expect(setSpy).toHaveBeenLastCalledWith('light');
     applyAppearance('system');
-    expect(setSpy).toHaveBeenLastCalledWith('unspecified');
-    const calls = setSpy.mock.calls.length;
-    applyAppearance('system');
-    expect(setSpy.mock.calls.length).toBe(calls);
+    expect(setSpy).not.toHaveBeenCalled();
+    clearNativeAppearanceOverride();
+    clearNativeAppearanceOverride();
+    expect(setSpy).toHaveBeenCalledTimes(1);
+    expect(setSpy).toHaveBeenCalledWith('unspecified');
   });
 
   it('still draws the choice if the phone override throws', () => {
