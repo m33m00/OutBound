@@ -624,3 +624,11 @@ John: "None scrap this idea" (destination art on tickets: dropped, nothing built
 - Map: the arcs were already lifted great circles, but on a domestic leg seen from above the lift points at the camera, so they read as ruler lines. Each leg now also bows sideways by 13% of its length (BOW in arcs.ts), toward the nearer pole like a flight map; legs within 45 degrees of due north or south bow east. Both directions of a pair bow the same way, so a round trip reads as one curve. Ends stay exactly on the airports. Everything drawn from the samples follows: lines, ground shadow, time pills, tap targets, and camera framing (legFramePoints uses the bowed path). Map rules kept: plain lines in seat colors, no dots, arrows or legend.
 - Cards: mocked up only (outbound-frames/r170_card_line_options.png): A soft arch per leg, B one flowing wave. Not built until John picks.
 - Frame: outbound-frames/r170_map_curves.png, drawn from the app's own projection on the dev sample routes.
+
+## Round 171: route lines flow instead of arching
+
+John (Nov 7): "The arch is too much. Not every line also has to be an arch. I just want it to look like it flows nicely."
+
+- Map: the sideways bow drops from 13% of the leg to 4%, and only a lone nonstop keeps it. Legs that meet at a stop lose the bow and instead lean gently (at most about 17 degrees) so the line runs through the stop with no corner. Most lines now read nearly straight.
+- Cards: connections drift 2.5pt off straight in one low wave that passes through every stop dot, alternating up and down per leg. Nonstops stay straight. Seat numbers, stop codes and the canceled X stay put (the X follows the line by its drift).
+- Drawn from the app's own numbers (r171_map_flow.png, r172_card_flow.png), not seen on a device.
