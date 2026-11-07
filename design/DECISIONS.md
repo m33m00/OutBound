@@ -505,3 +505,137 @@ John: "Canceled flights should have the red border on the card. Not when it's fu
 ## Design round 153: solid gray edge on canceled tickets (John, Nov 5)
 
 John didn't like the dashed border after all. A canceled ticket now has a solid gray edge, the same 1pt weight as every other ticket, and keeps the gray fade, the red X on its canceled leg and the Canceled pill. Red stays for full flights.
+
+## Design round 154: aircraft type only on the opened route, stacked under the flight (John, Nov 5)
+
+John: "stack the airline and equipment type like on the previous page summary. In the previous page only show the airline and flight number. Don't put the equipment type unless you select to view more." On the opened route, each leg box now stacks the aircraft type under the airline and flight number chip instead of beside it. The results tickets and saved route cards show only the airline and flight number under each leg, so the space under the route line shrinks by one line.
+
+## Design round 155: flight stack centred under the route line (John, Nov 5)
+
+John: "It's not aligned center underneath the route line when I open more details." On the opened route, each leg box's airline and flight number chip, with its aircraft stacked under it, is now centred across the box, under the middle of the route line, the way the results tickets centre each flight under its leg.
+
+## Design round 156: logo-only tickets, plain map lines, dashes for no seats, colored Departed/Arrived (John, Nov 5)
+
+- Results tickets and saved cards: each leg shows only its airline's logo under the route line, with no tile behind it and no flight number. A tap or hold on a logo opens a small window over it with the flight number and aircraft type; a tap anywhere else closes it (FlightPeek). An airline with no logo shows its code. The tail-mark fallback is drawn bare (a plane in the airline's color) instead of a colored square. Some logos from Logo.dev come with their own colored square baked in (Delta's is navy), which the app can't strip.
+- Map: no map key, no dashed lines, no direction chevrons. Every selected leg is a plain solid line in its seat color. The route pulse stays.
+- A leg with no seat reading shows a dash over it on the route line instead of nothing.
+- Departed and Arrived pills: sky cyan (light #0b6782 on #dcf1f7, 5.5:1; dark #8adcf0 on #0e2a33). No other meaning uses cyan: blue is for things you tap, green to red for seats and lateness, violet for delays, amber for you.
+
+## Design round 157: logo above the delay pill, "25m late" (John, Nov 5)
+
+John: "Can the logos sit on top of the delayed pill and delay pill sits underneath the logo? Also +25m doesn't really say much." Under each leg of a ticket's route line the order is now: stop codes, the airline logo, then the delay pill. A delay reads "25m late" everywhere (tickets, the opened route, the flight sheet already used it), which fits even a 2-stop ticket's short legs (about 63pt, measured with Geist SemiBold 12, against about 69pt per leg on a 375pt phone), so the "+25m" short form is gone. VoiceOver still says "Delayed 25 minutes, was ..., now ...".
+
+## Design round 158: logo peek on the opened route, logos closer to the line, no delay line under Leave By (John, Nov 5)
+
+- Opened route: each flight box shows only the airline's logo (28pt, no pill) centred under its route line, with the same tap-or-hold window as the tickets for the flight number and aircraft type. The box's spoken label now includes the aircraft. Tapping elsewhere in the box still opens the flight sheet.
+- Tickets: each leg's logo moved up to sit just under the line, level with the stop codes beside it (a logo centred on its leg clears the codes centred on the dots, even on a 2-stop ticket); a delay pill sits right under the logo.
+- Leave By card: the "Flight delayed to 5:35 PM" line is gone; the route's own times show the change. VoiceOver still hears it with the title.
+
+## Round 159 (2026-11-05, John)
+
+- Opened route: no "Continuing to SEA" note on a diverted leg. Every leg box now has one layout: both airport columns are a fixed 74pt (the width of "10:40 AM"), the line is always raised the same amount, any status pill sits over the line and the flight's length is always under it. So lines start, end and sit at the same height in every box.
+- Leave By before the airport: "Arrive at DFW by 10:10 AM to begin boarding" (airport and time from the data), with nothing beside it. Leave now's detail ends the same way.
+- At the airport: "Your flight begins boarding at 11:40 AM". The time is still the scheduled departure, since we have no boarding time data.
+- At the airport the card opens walking directions (Apple Maps dirflg=w, Google walking) to "DFW Terminal C Gate C12", built from the first flight's live gate and terminal. The car becomes a walking person with the gate under it. No gate posted yet: the person alone, routed to the terminal or airport. Whether the maps app finds the gate depends on its indoor map for that airport.
+
+## Round 160 (2026-11-05, John)
+
+- No "Follow your airline's rules on sharing loads" line anywhere: gone from the bottom of results and from Profile. The report sheet keeps only "Reports are anonymous to other employees."
+- The notes over the results ("Leaving from any Dallas airport (DAL, DFW)", the summary and the like) are centered.
+- Replaces the round 152/153 gray fade: a canceled nonstop gets a 2pt red edge (canceled red) and a light red wash over the whole card (canceledTint, light #fef1f2, dark #24141d), with gray top times. A 1, 2 or 3-stop route with a canceled leg is left as a normal card, with only the red X and Canceled pill on that leg's line.
+
+## Round 161 (2026-11-06, John)
+
+- Ticket logos drop 6pt under a route with a canceled leg so they clear the X's disc.
+- A canceled nonstop's gray top times get a red line through them (textDecorationColor canceled).
+- Every airline mark is the same round badge: a white disc with a hairline ring that the logo fills (cover), or the airline's color with a white plane when there's no logo. A square logo like Delta's reads as a circle. The disc is always white, so the logo is asked for in its light form.
+- Area notes name the state: "Leaving from any Dallas, TX airport (DAL, DFW)" (country code outside the US).
+- No red edge on a full route; it keeps the gray fill and the plain edge. Red edges are only for a canceled nonstop.
+- No late pills on results tickets; the opened route keeps them. A diversion still shows on the ticket.
+- A leg with nothing reported shows the seat icon over a dash.
+
+## Round 162 (2026-11-06, John)
+
+- Boarding time, since no feed gives one: 40 minutes before a domestic departure, 50 before an international (airports in different countries) or widebody one (747, 767, 777, 787, A330, A340, A350, A380, MD-11, DC-10; not the 757). "Your flight begins boarding at" uses it. Widebody detection needs the aircraft type, so until real flights carry it, a domestic widebody gets 40.
+
+## Round 163: premium pass on the less-touched screens, part 1 (John, Nov 6)
+
+John: the home screen, results and flight details have had all the attention; the station picker, Settings, Trips, the Logbook and the other menus need the same premium pass.
+
+Audit of screens not yet polished: Airport picker, Settings, Trips, Logbook (totals card, logged flight rows), Feed and request rows, Add flight sheet, Report sheet, Filters, Departures sheet, Profile, Date picker, Pass scanner, the tab bar.
+
+This round:
+- One shared card look (`useCardSurface`): surface fill, card-edge border, 1pt, medium radius, and a soft lift in light mode only. ListGroup, EmptyState, the Settings groups, SavedRouteCard edges and the Logbook totals card all use it, so every list screen matches the results tickets.
+- Airport picker: each section is one rounded card of rows with inset hairlines; the code sits in a mono pill; the airport name is in text color with "Dallas, TX" under it; amber tags are now round pills; the search field uses the card look. Search finds a city or a state too, as the placeholder already promised.
+- Logbook totals: the highlights are rows (icon, label left, answer right, miles or flights muted) instead of plain sentences. VoiceOver reads the same.
+- Settings keeps its structure so the App Store thread's Account section merges cleanly; no auth screens here.
+
+Not rendered here: sizes checked against the fonts only.
+
+## Round 164: premium pass part 2, Feed and requests (Nov 6)
+
+- Every request row (Feed and My Trips) leads with the same round airline badge as the tickets.
+- An answered request shows its numbers the way the route line does: a pill in the seat color with the seat icon and open seats, a slash, the person icon and people listed, then "answered 2m ago" in gray. No tier dot, no sentence of numbers. VoiceOver still reads "20 seats, 17 listed, answered 2m ago".
+- Answered and Waiting badges are round pills with semibold text, like the other pills.
+
+## Round 165: premium pass part 3, the sheets (Nov 6)
+
+- Report Load: the two number cards and the tier box use the shared card look. Each count card has the same seat or person icon as the route line, in a small circle by its label. − and + are secondary buttons now (light blue tint, blue glyph). Once you set numbers, the tier box fills with the seat color. The flight line under the header leads with its round airline badge.
+- Add flight: the form card and the Scan / Photo tiles use the card look; the tile icons sit in a light blue circle so the tiles read as buttons.
+- Departures board: one rounded card of rows with inset hairlines, like the airport picker. Each flight leads with its airline badge, and "You reported" shows the same seat-colored count pill as an answered request (shared SeatCountPill).
+- Filters: Max stops is one segmented track with the pick filled blue and the others in blue text. Steppers everywhere (Filters, Settings) use the secondary tint for − and +.
+
+## Round 166: premium pass part 4, Profile, date picker, scanner, tab bar (Nov 6)
+
+- ListRow takes an optional icon: a small rounded tile in the quiet fill with the icon in text color (not blue, since the tile isn't the button; the row is). A hairline under a row with a tile starts at the text, like iOS Settings. Profile's setup rows (home, other homes, location, notifications, buffer, directions, search defaults) and About rows use it.
+- Tab bar: the picked tab shows its filled icon; the bar's top line uses the card edge.
+- Date picker: the calendar sits on the shared card, with the note centered under it.
+- Pass scanner: four white corner brackets frame the pass instead of a full box; the hint is a rounder dark pill; the camera ask leads with a camera in a light circle.
+- Settings' structure is unchanged, so the App Store thread's Account section still merges cleanly.
+
+## Round 167: Requests tab, My Trips cleanup (John, Nov 6)
+
+John: "Add badges to open requests on the feed tab and rename the feed tab to 'Requests'", "sorted by oldest from the top so that those get answered quickly", "When it was asked the text gets wrapped onto the 2nd row", "swipe left to delete a saved route or multiselect to delete", "Saved routes should also auto delete after 24 hours when the last leg of the route arrives", "Your requests answered should stay until the last leg of your request arrives and it's been 24 hours", "Your Requests and Saved Routes should have a better design to separate both".
+
+- Feed is now Requests (tab and screen). The tab shows a count badge of asks still waiting for your answer (system red, the iOS meaning). Answers you give live in RequestsProvider so the badge drops as you answer.
+- Open asks sort oldest first.
+- Request rows: when it was asked (or answered) sits on its own at the right, over the Answer button or the Waiting/Answered pill, so the departure line never wraps. At 393pt wide the departure line has about 195pt; "Departs tomorrow 10:55 AM" measures 158pt in Geist Medium 12.
+- Saved routes: swipe left slides the card over a red Delete (a long swipe or hard flick deletes at once; a short one stays open on Delete; a tap on the card closes it). After a swipe delete, "Route deleted" with Undo shows for 5 seconds. Select in the section header turns on checkboxes and a bottom bar with Select All and a red Delete N, which confirms first. The trash button stays for VoiceOver.
+- Saved routes come off by themselves 24 hours after their last flight lands (checked on app open and each time My Trips shows). Answered asks stay in Your requests until 24 hours after their flight lands; waiting ones still go when the flight leaves.
+- My Trips sections have real headers: an icon in a circle, the name at 20pt, a count pill, and the section's action on the right; a rule and space sit between Your requests and Saved routes.
+
+## Round 168: App Store work ships with the design rounds
+
+John saw no launch screen in Expo Go. Cause: the publish workflow sends each git branch to its own Expo Go branch, and John opens `claude/project-thread-fzqwou`. The animated launch intro, welcome page, sign up and log in, Delete Account, legal pages and report tools were built on `claude/app-store-ready`, so they never reached the update he opens.
+
+Fix: merged `claude/app-store-ready` into the design branch (clean merge, no conflicts). From now on every design round merges the latest `claude/app-store-ready` before it pushes, so both sets of work publish together.
+
+Checked in code and tests (not on a device): `LaunchIntro` plays once per cold start over the app, then lifts onto the welcome page. Expo Go builds are `preview`, so "Look Around First" shows and opens the tabs, and it's remembered so later launches go straight in after the intro.
+
+## Round 169: smooth launch exit, Leave By reads as a button
+
+- Launch intro exit (John: "It looks choppy when it's coming off the screen. It looks awesome though"). Cause: every frame of the lift was a JS re-render of the whole intro while the app mounted underneath, so frames dropped. Now the drawing freezes at take-off and the plane's flight and the panel's lift run as native-driver Animated timings (same curves as before), so the JS thread being busy can't stall them. The plane sits on its own layer so it can fly without redrawing. The exit is a bit longer (520 to 640ms) so the lift glides. Reduce Motion's fade runs natively too. Whole intro is 2.44s.
+- Leave By (John: "doesn't look obvious to select and can the estimated time to drive there be next to the car icon or walking icon"). The car is now a filled blue capsule button with the drive time beside it ("🚗 32m"), also on "Leave now" when the drive is known. At the airport the capsule holds the walking person and the gate; there's no walking-time source, so no walk time is shown. The title stands alone ("Leave by 10:45 AM"); the arrive-by line stays in the spoken label. Measured: "Leave by 10:45 AM" 126pt + "1h 15m" capsule 93pt fits the ~330pt row.
+
+## Round 170: curved map route lines
+
+John: "None scrap this idea" (destination art on tickets: dropped, nothing built). Then: "Can you make the route lines curve or look more natural free flowing than a straight line?"
+
+- Map: the arcs were already lifted great circles, but on a domestic leg seen from above the lift points at the camera, so they read as ruler lines. Each leg now also bows sideways by 13% of its length (BOW in arcs.ts), toward the nearer pole like a flight map; legs within 45 degrees of due north or south bow east. Both directions of a pair bow the same way, so a round trip reads as one curve. Ends stay exactly on the airports. Everything drawn from the samples follows: lines, ground shadow, time pills, tap targets, and camera framing (legFramePoints uses the bowed path). Map rules kept: plain lines in seat colors, no dots, arrows or legend.
+- Cards: mocked up only (outbound-frames/r170_card_line_options.png): A soft arch per leg, B one flowing wave. Not built until John picks.
+- Frame: outbound-frames/r170_map_curves.png, drawn from the app's own projection on the dev sample routes.
+
+## Round 171: route lines flow instead of arching
+
+John (Nov 7): "The arch is too much. Not every line also has to be an arch. I just want it to look like it flows nicely."
+
+- Map: the sideways bow drops from 13% of the leg to 4%, and only a lone nonstop keeps it. Legs that meet at a stop lose the bow and instead lean gently (at most about 17 degrees) so the line runs through the stop with no corner. Most lines now read nearly straight.
+- Cards: connections drift 2.5pt off straight in one low wave that passes through every stop dot, alternating up and down per leg. Nonstops stay straight. Seat numbers, stop codes and the canceled X stay put (the X follows the line by its drift).
+- Drawn from the app's own numbers (r171_map_flow.png, r172_card_flow.png), not seen on a device.
+
+## Round 172: straight route lines again
+
+John (Nov 7): "No I dont like it go back to straight lines haha"
+
+- Map and card route lines are back to straight, exactly as they were before round 170 (arcs.ts, framing.ts, GlobeMap.tsx and MiniRoute.tsx restored; the card flow test removed).
+- Rule going forward: route lines stay straight. Don't revisit curves unless John asks.

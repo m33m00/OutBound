@@ -1,3 +1,4 @@
+import type { SFSymbol } from 'expo-symbols';
 import { useEffect } from 'react';
 import { AccessibilityInfo, Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -16,29 +17,47 @@ export const SAVED_TOAST_MS = 5000;
  * that I didn't mean to save"). Floats at the bottom of the route card for a few seconds; Undo takes the route
  * back out of My Trips. Gone on its own after SAVED_TOAST_MS, or as soon as `onDone` is called.
  */
-export function SavedToast({ onUndo, onDone }: { onUndo: () => void; onDone: () => void }) {
+export function SavedToast({
+  onUndo,
+  onDone,
+  label = 'Saved to My Trips',
+  icon = 'bookmark.fill',
+  undoLabel = 'Undo save',
+  undone = 'Removed from My Trips',
+  testID = 'saved-toast',
+}: {
+  onUndo: () => void;
+  onDone: () => void;
+  /** The same toast says other things too: "Route deleted" after a swipe delete (round 167). */
+  label?: string;
+  icon?: SFSymbol;
+  undoLabel?: string;
+  /** Said to VoiceOver after Undo. */
+  undone?: string;
+  testID?: string;
+}) {
   const c = useColors();
   useEffect(() => {
     const t = setTimeout(onDone, SAVED_TOAST_MS);
     return () => clearTimeout(t);
   }, [onDone]);
   return (
-    <View pointerEvents="box-none" style={styles.wrap} testID="saved-toast">
+    <View pointerEvents="box-none" style={styles.wrap} testID={testID}>
       <Appear>
         <View style={[styles.toast, elevation.raised, { backgroundColor: c.surface, borderColor: c.line }]}>
-          <Icon name="bookmark.fill" size={15} tintColor={c.muted} fallback={null} />
-          <Text style={[textStyles.bodyStrong, styles.words, { color: c.text }]}>Saved to My Trips</Text>
+          <Icon name={icon} size={15} tintColor={c.muted} fallback={null} />
+          <Text style={[textStyles.bodyStrong, styles.words, { color: c.text }]}>{label}</Text>
           <Pressable
             onPress={() => {
               selectionTick();
               onUndo();
               onDone();
-              AccessibilityInfo.announceForAccessibility('Removed from My Trips');
+              AccessibilityInfo.announceForAccessibility(undone);
             }}
             accessibilityRole="button"
-            accessibilityLabel="Undo save"
+            accessibilityLabel={undoLabel}
             hitSlop={8}
-            testID="saved-toast-undo"
+            testID={`${testID}-undo`}
             style={pressStyle([styles.undo, { backgroundColor: c.accentSoft }])}>
             <Text style={[textStyles.bodyStrong, { color: c.accent }]}>Undo</Text>
           </Pressable>

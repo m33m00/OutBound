@@ -2,7 +2,7 @@
  * Row status tags (Q-047, Q-050) and the empty-results banner. Pure
  * functions: rows, their VoiceOver labels and tests read the same data.
  *
- * Tags per leg: Scheduled = none; Delayed (violet, old time struck);
+ * Tags per leg: Scheduled = none; Delayed ("25m late", violet, old time struck);
  * Departed / Arrived (gray, row dimmed); Canceled (canceled red, time
  * struck). Diverted (violet caution, never struck, John 2026-11-01): a
  * diverted flight still goes on to its destination late, so it names where it
@@ -23,7 +23,7 @@ export type LegTagKind = 'delayed' | 'departed' | 'arrived' | 'canceled' | 'dive
 
 export interface LegTag {
   kind: LegTagKind;
-  /** Visible words, e.g. "Delayed 25m", "Departed". */
+  /** Visible words, e.g. "25m late", "Departed". */
   label: string;
   /** What VoiceOver reads, e.g. "Delayed 25 minutes, was 3:10 PM, now 3:35 PM". */
   spoken: string;
@@ -161,7 +161,9 @@ export function legStatus(f: Flight, status: FlightStatus | undefined): LegStatu
         newText,
         tag: {
           kind: 'delayed',
-          label: `Delayed ${formatDuration(d.delayMin)}`,
+          // "25m late" reads at a glance and fits even a 2-stop ticket's short legs (round 157, John: "+25m
+          // doesn't really say much"); the same words as the flight sheet's.
+          label: `${formatDuration(d.delayMin)} late`,
           spoken: `Delayed ${spokenDuration(d.delayMin)}, was ${scheduledText}, now ${newText}`,
         },
       };

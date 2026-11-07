@@ -3,7 +3,18 @@ import { createContext, useCallback, useContext, useMemo, useState, type ReactNo
 import type { Flight } from '@/engine';
 import { SCHEDULE_SOURCE } from '@/search/useRouteSearch';
 
-import { addAsk, askFor, askState, cancelAsk, flightKey, sampleMine, type AskState, type LoadAnswer, type LoadRequest } from './requests';
+import {
+  addAsk,
+  askFor,
+  askState,
+  cancelAsk,
+  flightKey,
+  sampleFeed,
+  sampleMine,
+  type AskState,
+  type LoadAnswer,
+  type LoadRequest,
+} from './requests';
 
 interface RequestsContextValue {
   /** Your asks, newest first (My Trips). */
@@ -17,6 +28,11 @@ interface RequestsContextValue {
   /** Your report on a flight this session, if any. */
   reportFor: (flight: Flight) => LoadAnswer | null;
   report: (flight: Flight, open: number, listed: number) => void;
+  /** Answers you gave on the Requests tab, by request id (kept here so the tab's badge knows). */
+  feedAnswers: Record<string, LoadAnswer>;
+  answerFeed: (id: string, answer: LoadAnswer) => void;
+  /** Asks on your airline's flights still waiting for an answer: the Requests tab's badge (round 167). */
+  openFeedCount: (now: number) => number;
 }
 
 const RequestsContext = createContext<RequestsContextValue | null>(null);
@@ -29,6 +45,8 @@ const RequestsContext = createContext<RequestsContextValue | null>(null);
 export function RequestsProvider({ children }: { children: ReactNode }) {
   const [mine, setMine] = useState<LoadRequest[]>(() => (SCHEDULE_SOURCE === 'live' ? [] : sampleMine(Date.now())));
   const [reports, setReports] = useState<Record<string, LoadAnswer>>({});
+  const [feedAnswers, setFeedAnswers] = useState<Record<string, LoadAnswer>>({});
+  const answerFeed = useCallback((id: string, answer: LoadAnswer) => setFeedAnswers((a) => ({ ...a, [id]: answer })), []);
 
   const ask = useCallback((flight: Flight) => setMine((list) => addAsk(list, flight, Date.now())), []);
   const cancel = useCallback((flight: Flight) => setMine((list) => cancelAsk(list, flight)), []);
@@ -47,11 +65,17 @@ export function RequestsProvider({ children }: { children: ReactNode }) {
       cancelAsk: cancel,
       reportFor: (flight) => reports[flightKey(flight)] ?? null,
       report,
+      feedAnswers,
+      answerFeed,
+      openFeedCount: (now) => feedAsks(now).filter((r) => !feedAnswers[r.id]).length,
     }),
-    [mine, reports, ask, cancel, report],
+    [mine, reports, ask, cancel, report, feedAnswers, answerFeed],
   );
   return <RequestsContext.Provider value={value}>{children}</RequestsContext.Provider>;
 }
+
+/** The asks the Requests tab shows: sample asks until the requests backend exists. */
+export const feedAsks = (now: number): LoadRequest[] => (SCHEDULE_SOURCE === 'live' ? [] : sampleFeed(now));
 
 export function useRequests(): RequestsContextValue {
   const v = useContext(RequestsContext);

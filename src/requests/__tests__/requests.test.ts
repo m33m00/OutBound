@@ -31,14 +31,15 @@ import {
 const NOW = Date.UTC(2026, 9, 30, 13);
 
 describe('example requests (design round 31)', () => {
-  it('Feed asks are about your airline only, still to leave, newest ask first', () => {
+  it('Feed asks are about your airline only, still to leave, oldest ask first', () => {
     const feed = sampleFeed(NOW);
     expect(feed.length).toBeGreaterThanOrEqual(3);
     expect(feed.every((r) => r.flight.airline === SAMPLE_MY_AIRLINE)).toBe(true);
     expect(feed.every((r) => r.flight.departUtc > NOW)).toBe(true);
     expect(feed.every((r) => r.askedAt < NOW && !r.answer)).toBe(true);
     const asked = feed.map((r) => r.askedAt);
-    expect([...asked].sort((a, b) => b - a)).toEqual(asked);
+    // Oldest ask on top, so it gets answered first (round 167, John).
+    expect([...asked].sort((a, b) => a - b)).toEqual(asked);
   });
 
   it('stays the same between renders', () => {
@@ -66,7 +67,7 @@ describe('request words', () => {
     const tz = AIRPORTS[req.flight.from].tz;
     const sameDay = localDate(req.flight.departUtc, tz) === localDate(NOW, tz);
     expect(departsText(req.flight, NOW).startsWith(sameDay ? 'Departs ' : 'Departs tomorrow ')).toBe(true);
-    expect(requestDetail(req, NOW)).toMatch(/^Departs .* · asked \d+m ago$/);
+    expect(requestDetail(req, NOW)).toMatch(/^Departs .* · asked \d+[mh] ago$/);
   });
 
   it('an answer reads as both numbers, no tier word (Q-065, round 140)', () => {
@@ -153,6 +154,17 @@ describe('asking and reporting from a flight (round 32)', () => {
     expect(upcomingRequests([later, soon], NOW2, (r) => r.id === 'b').map((r) => r.id)).toEqual(['a']);
     expect(openRequestCount([later, left, soon], NOW2)).toBe(2);
     expect(openRequestCount([later, left, soon])).toBe(3);
+  });
+
+  it('an answered ask stays after its flight leaves, until 24 hours after it lands (round 167, John)', () => {
+    const answer = { open: 10, listed: 2, at: NOW2 - 7200_000 };
+    const f = flight(4, NOW2 - 3 * 3600_000);
+    const answered = { id: 'd', flight: f, askedAt: NOW2 - 4 * 3600_000, answer };
+    const waiting = { id: 'e', flight: flight(5, NOW2 - 3600_000), askedAt: NOW2 - 7200_000 };
+    // Left hours ago: the answered one stays, the waiting one is gone, and live data saying it left changes nothing.
+    expect(upcomingRequests([answered, waiting], NOW2, () => true).map((r) => r.id)).toEqual(['d']);
+    expect(upcomingRequests([answered], f.arriveUtc + 23 * 3600_000).map((r) => r.id)).toEqual(['d']);
+    expect(upcomingRequests([answered], f.arriveUtc + 24 * 3600_000)).toEqual([]);
   });
 });
 

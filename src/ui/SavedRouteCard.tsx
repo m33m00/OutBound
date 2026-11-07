@@ -1,5 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { aircraftLabel } from '@/engine';
 import { forSpeech } from '@/search/format';
 import {
   elevation,
@@ -13,8 +14,6 @@ import {
   useColorSchemeName,
 } from '@/theme';
 import { savedRouteFlights, savedRouteTitle, savedRouteWhen, type SavedRoute } from '@/trips/savedRoutes';
-
-import { aircraftLabel } from '@/engine';
 
 import { Icon } from './Icon';
 import { MetaLine } from './MetaLine';
@@ -32,6 +31,8 @@ export interface SavedRouteCardProps {
   now: number;
   onOpen: () => void;
   onRemove: () => void;
+  /** My Trips is picking routes to delete: the trash button steps aside for the checkbox (round 167). */
+  selecting?: boolean;
 }
 
 /**
@@ -41,7 +42,7 @@ export interface SavedRouteCardProps {
  * gray Passed tag beside its day, like the tags on list rows, in place of a
  * sentence (round 71); VoiceOver still says it opens today's search.
  */
-export function SavedRouteCard({ route, past, now, onOpen, onRemove }: SavedRouteCardProps) {
+export function SavedRouteCard({ route, past, now, onOpen, onRemove, selecting }: SavedRouteCardProps) {
   const c = useColors();
   const scheme = useColorSchemeName();
   const title = savedRouteTitle(route);
@@ -54,7 +55,7 @@ export function SavedRouteCard({ route, past, now, onOpen, onRemove }: SavedRout
     // A saved route is a floating card with a subtle boarding pass tear (rounds 120 and 121): the path
     // and the day up top, a perforation with notches, then the flights in mono.
     <View
-      style={[styles.card, elevation.card, { backgroundColor: c.surface, borderColor: c.line, shadowColor: c.text }]}
+      style={[styles.card, elevation.card, { backgroundColor: c.surface, borderColor: c.cardEdge, shadowColor: c.text }]}
       testID="saved-route">
       <ScalePressable
         onPress={onOpen}
@@ -75,10 +76,10 @@ export function SavedRouteCard({ route, past, now, onOpen, onRemove }: SavedRout
             </View>
           </View>
         </InkContext.Provider>
-        <TicketTear notch={c.bg} edge={c.line} line={c.line2} />
+        <TicketTear notch={c.bg} edge={c.cardEdge} line={c.line2} />
         <View style={styles.body}>
-          {/* The same route line as a result card (round 146): each flight under its own leg with its
-              aircraft. No seat colors, since a saved route's seats are read again when you open it. */}
+          {/* The same route line as a result card (round 146): each flight's airline logo under its own leg,
+              opening its number and aircraft (round 156). No seat colors, since a saved route's seats are read again when you open it. */}
           <View style={styles.route} testID="saved-route-line">
             <MiniRoute
               airports={[route.legs[0].from, ...route.legs.map((l) => l.to)]}
@@ -103,28 +104,31 @@ export function SavedRouteCard({ route, past, now, onOpen, onRemove }: SavedRout
         </View>
       </ScalePressable>
       {/* Its own button, apart from the card, so VoiceOver reaches it alone; it sits on the stub. */}
-      <Pressable
-        onPress={onRemove}
-        accessibilityRole="button"
-        accessibilityLabel={`Remove ${forSpeech(title)}, ${forSpeech(shortWhen)}`}
-        hitSlop={{ right: spacing.group }}
-        testID="remove-saved-route"
-        style={pressStyle(styles.remove, 'link')}>
-        <Icon
-          name="trash"
-          size={18}
-          tintColor={ink.muted}
-          fallback={<Text style={[textStyles.small, { color: ink.muted }]}>Remove</Text>}
-        />
-      </Pressable>
+      {selecting ? null : (
+        <Pressable
+          onPress={onRemove}
+          accessibilityRole="button"
+          accessibilityLabel={`Remove ${forSpeech(title)}, ${forSpeech(shortWhen)}`}
+          hitSlop={{ right: spacing.group }}
+          testID="remove-saved-route"
+          style={pressStyle(styles.remove, 'link')}>
+          <Icon
+            name="trash"
+            size={18}
+            tintColor={ink.muted}
+            fallback={<Text style={[textStyles.small, { color: ink.muted }]}>Remove</Text>}
+          />
+        </Pressable>
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  // The same solid edge as a result ticket (round 163).
   card: {
     borderRadius: radius.md,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 1,
   },
   stub: {
     gap: 4,

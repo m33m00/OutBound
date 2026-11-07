@@ -4,15 +4,15 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AIRPORTS, type Flight } from '@/engine';
 import { answerText, answerTier, flightKey, type LoadAnswer } from '@/requests/requests';
-import { formatAge, formatTime, forSpeech, seatPair, SHOW_SEAT_AGE } from '@/search/format';
-import { minTapTarget, spacing, textStyles, useColors } from '@/theme';
+import { formatAge, formatTime, forSpeech, SHOW_SEAT_AGE } from '@/search/format';
+import { minTapTarget, radius, spacing, textStyles, useColors } from '@/theme';
 
+import { AirlineMark } from './AirlinePill';
 import { Icon } from './Icon';
-import { pressStyle } from './press';
 import { ReportForm } from './ReportSheet';
 import { SheetHeader, TITLE_MAX_SCALE } from './SheetHeader';
 import { Divided } from './MetaLine';
-import { TIER_FG } from './tierColors';
+import { SeatCountPill } from './SeatCountPill';
 import { useAnnounceLater } from './useAnnounceLater';
 
 export interface DeparturesSheetProps {
@@ -48,7 +48,10 @@ export function DeparturesSheet({ code, visible, flights, now, reportFor, onRepo
     setBack(true);
   };
 
-  const row = ({ item: f }: { item: Flight }) => {
+  // The board is one card of rows, like the airport picker (round 165).
+  const row = ({ item: f, index }: { item: Flight; index: number }) => {
+    const first = index === 0;
+    const last = index === flights.length - 1;
     const tz = AIRPORTS[f.from]?.tz ?? 'UTC';
     const time = formatTime(f.departUtc, tz);
     const yours = reportFor(f);
@@ -70,24 +73,39 @@ export function DeparturesSheet({ code, visible, flights, now, reportFor, onRepo
         )}
         accessibilityHint={yours ? 'Opens Report Load again' : 'Opens Report Load'}
         testID="departure-row"
-        style={pressStyle([styles.row, big && styles.rowStacked, { borderBottomColor: c.line }])}>
+        style={({ pressed }) => [
+          styles.row,
+          big && styles.rowStacked,
+          { backgroundColor: pressed ? c.surface2 : c.surface, borderColor: c.cardEdge },
+          first && styles.rowFirst,
+          last && styles.rowLast,
+        ]}>
+        {first ? null : <View style={[styles.sep, { backgroundColor: c.line }]} />}
         <Text
           style={[textStyles.number, !big && styles.time, { color: left ? c.muted : c.text }]}
           maxFontSizeMultiplier={TITLE_MAX_SCALE}>
           {time}
         </Text>
         <View style={[styles.text, big && styles.textStacked]}>
-          <Text
-            lineBreakStrategyIOS="push-out"
-            style={[textStyles.heading, { color: c.text }]}>{`${f.airline} ${f.flightNumber} to ${f.to}`}</Text>
-          {yours && tier ? (
-            <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.text }]}>
-              <Text style={{ color: c.youText }}>You reported </Text>
-              <Text style={{ color: c[TIER_FG[tier]], fontFamily: textStyles.bodyStrong.fontFamily }}>
-                <Divided text={seatPair(yours.open, yours.listed)} color={c[TIER_FG[tier]]} />
-              </Text>
-              {SHOW_SEAT_AGE ? <Divided text={` · ${formatAge(yours.at, now)}`} /> : null}
+          <View style={styles.flightLine}>
+            <AirlineMark airline={f.airline} size={22} />
+            <Text lineBreakStrategyIOS="push-out" style={[textStyles.heading, styles.flightText, { color: c.text }]}>
+              {`${f.airline} ${f.flightNumber} to ${f.to}`}
             </Text>
+          </View>
+          {yours && tier ? (
+            // Your report as the same seat-colored pill as an answered request (round 165).
+            <View style={styles.reported}>
+              <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.youText }]}>
+                You reported
+              </Text>
+              <SeatCountPill open={yours.open} listed={yours.listed} tier={tier} testID="departure-reported" />
+              {SHOW_SEAT_AGE ? (
+                <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>
+                  {formatAge(yours.at, now)}
+                </Text>
+              ) : null}
+            </View>
           ) : (
             <Text
               lineBreakStrategyIOS="push-out"
@@ -160,12 +178,20 @@ const styles = StyleSheet.create({
     gap: spacing.section,
     minHeight: minTapTarget + spacing.rowY,
     paddingVertical: spacing.rowY,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: spacing.rowX,
+    borderLeftWidth: 1,
+    borderRightWidth: 1,
   },
+  rowFirst: { borderTopWidth: 1, borderTopLeftRadius: radius.md, borderTopRightRadius: radius.md },
+  rowLast: { borderBottomWidth: 1, borderBottomLeftRadius: radius.md, borderBottomRightRadius: radius.md },
+  sep: { position: 'absolute', top: 0, left: spacing.rowX, right: 0, height: StyleSheet.hairlineWidth },
+  flightLine: { flexDirection: 'row', alignItems: 'center', gap: spacing.group },
+  flightText: { flexShrink: 1 },
+  reported: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6 },
   // Big text: time on top, flight under it, chevron pinned at the right.
-  rowStacked: { flexDirection: 'column', alignItems: 'flex-start', gap: 2, paddingRight: 24 },
+  rowStacked: { flexDirection: 'column', alignItems: 'flex-start', gap: 2, paddingRight: 24 + spacing.rowX },
   time: { minWidth: 76 },
   text: { flex: 1, gap: 2 },
   textStacked: { flex: 0, alignSelf: 'stretch' },
-  chevronStacked: { position: 'absolute', right: 0, top: 0, bottom: 0, justifyContent: 'center' },
+  chevronStacked: { position: 'absolute', right: spacing.rowX, top: 0, bottom: 0, justifyContent: 'center' },
 });

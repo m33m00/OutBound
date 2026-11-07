@@ -9,7 +9,8 @@ import { ScalePressable } from './ScalePressable';
 interface ButtonProps {
   label: string;
   onPress: () => void;
-  kind?: 'primary' | 'secondary';
+  /** danger: filled red, for deleting (round 167). */
+  kind?: 'primary' | 'secondary' | 'danger';
   disabled?: boolean;
   accessibilityLabel?: string;
   /** Say why a button is off, or what it opens. */
@@ -39,7 +40,9 @@ export function Button({
   const primary = kind === 'primary';
   const feel = HAPTIC[haptic ?? (primary ? 'impact' : 'none')];
   // Secondary is the accent tint with accent words, the same as a soft pill (round 139: one look per kind).
-  const fg = primary ? c.onAccent : c.accent;
+  const danger = kind === 'danger';
+  const fg = danger ? '#ffffff' : primary ? c.onAccent : c.accent;
+  const bg = danger ? c.canceled : primary ? c.accent : c.accentSoft;
   return (
     <ScalePressable
       onPress={() => {
@@ -51,7 +54,7 @@ export function Button({
       accessibilityLabel={accessibilityLabel ?? label}
       accessibilityHint={accessibilityHint}
       accessibilityState={{ disabled }}
-      style={[styles.button, { backgroundColor: primary ? c.accent : c.accentSoft, opacity: disabled ? 0.5 : 1 }, style]}>
+      style={[styles.button, { backgroundColor: bg, opacity: disabled ? 0.5 : 1 }, style]}>
       {icon ? <Icon name={icon} size={18} tintColor={fg} fallback={null} /> : null}
       {label ? (
         <Text lineBreakStrategyIOS="push-out" style={[textStyles.button, { color: fg }]}>

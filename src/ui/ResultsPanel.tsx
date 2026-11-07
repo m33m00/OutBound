@@ -234,7 +234,10 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
   const header = notes.length ? (
     <View style={styles.header}>
       {notes.map((n) => (
-        <Text key={n.key} testID={n.testID} style={[n.strong ? textStyles.body : textStyles.small, { color: c.muted }]}>
+        <Text
+          key={n.key}
+          testID={n.testID}
+          style={[n.strong ? textStyles.body : textStyles.small, styles.headerNote, { color: c.muted }]}>
           {n.text}
         </Text>
       ))}
@@ -559,11 +562,6 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
               setTimeout(pinNow, 50);
             }
           }}
-          ListFooterComponent={
-            <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, styles.footer, { color: c.muted }]}>
-              Follow your airline’s rules on sharing loads.
-            </Text>
-          }
         />
         {!focused && swipeSaved ? (
           <SavedToast
@@ -726,12 +724,17 @@ function PagerMarks({ count, index, onPick }: { count: number; index: number; on
 
 /**
  * Says when a side searched its whole area (Q-048), since the title shows only
- * the picked airports: "Leaving from any Dallas airport (DAL, DFW)".
+ * the picked airports: "Leaving from any Dallas, TX airport (DAL, DFW)".
  */
 export function areaLines(request: SearchRequest): string[] {
   const line = (code: string, on: boolean | undefined, lead: string) => {
     const area = on ? areaFor(code) : null;
-    return area ? `${lead} any ${area.city} airport (${area.airports.join(', ')})` : null;
+    if (!area) return null;
+    // "Dallas, TX": the state for a US area, the country code elsewhere (round 161, John).
+    const a = AIRPORTS[area.airports[0]];
+    const tail = !a?.country || a.country === 'US' ? a?.region : a.country;
+    const place = tail ? `${area.city}, ${tail}` : area.city;
+    return `${lead} any ${place} airport (${area.airports.join(', ')})`;
   };
   return [
     line(request.origin, request.originArea, 'Leaving from'),
@@ -792,6 +795,8 @@ const styles = StyleSheet.create({
   pad: { paddingHorizontal: spacing.page },
   list: { paddingHorizontal: spacing.page, paddingBottom: spacing.page * 2 },
   header: { gap: 2, paddingTop: spacing.group, paddingBottom: spacing.section },
+  // Centered over the tickets, not hugging the left (round 160, John).
+  headerNote: { textAlign: 'center' },
   headerGap: { height: spacing.group },
   bar: { gap: 4, paddingBottom: spacing.group, borderBottomWidth: StyleSheet.hairlineWidth },
   title: { textAlign: 'center' },
@@ -825,7 +830,6 @@ const styles = StyleSheet.create({
   placeholderBar: { borderRadius: 4 },
   errorTop: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.section },
   errorText: { flex: 1, gap: 2 },
-  footer: { paddingTop: spacing.section },
   nowLine: { flexDirection: 'row', alignItems: 'center', gap: spacing.group, paddingTop: 2 },
   rule: { flex: 1, height: StyleSheet.hairlineWidth * 2 },
 });

@@ -2,10 +2,11 @@ import React from 'react';
 import { StyleSheet } from 'react-native';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 
-import { minTapTarget } from '@/theme';
+import { colors, minTapTarget } from '@/theme';
 
 import { EmptyState } from '../EmptyState';
 import { ListGroup, ListRow } from '../ListGroup';
+import { LogbookTotalsCard } from '../LogbookTotalsCard';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -20,6 +21,60 @@ describe('ListGroup and ListRow', () => {
   afterEach(() => {
     act(() => r?.unmount());
     mockFontScale = 1;
+  });
+
+  it('groups, empty states and the logbook totals share one card look: card edge, lifted in light (round 163)', () => {
+    act(() => {
+      r = create(
+        <>
+          <ListGroup title="Your setup">
+            <ListRow label="Main home" value="DAL" />
+          </ListGroup>
+          <EmptyState icon="suitcase" title="No trips yet" body="Saved routes show up here." />
+          <LogbookTotalsCard
+            totals={{ flights: 2, miles: 2480, airports: 2 }}
+            highlights={{ topAirport: { code: 'DFW', flights: 2 }, longest: { from: 'DFW', to: 'LAX', miles: 1235 } }}
+          />
+        </>,
+      );
+    });
+    const c = colors.light;
+    const cards = r!.root.findAll(
+      (n) => typeof n.type === 'string' && ['list-group-card', 'logbook-totals', 'empty-state'].includes(n.props.testID),
+    );
+    expect(cards).toHaveLength(3);
+    for (const card of cards) {
+      const st = StyleSheet.flatten(card.props.style);
+      expect(st.borderColor).toBe(c.cardEdge);
+      expect(st.backgroundColor).toBe(c.surface);
+      expect(st.shadowOpacity).toBeGreaterThan(0);
+    }
+    // Highlights are rows now: label left, answer right.
+    const row = r!.root.findAll((n) => typeof n.type === 'string' && n.props.testID === 'logbook-highlight-longest')[0];
+    const words = row
+      .findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string')
+      .map((n) => n.props.children);
+    expect(words).toEqual(['Longest', 'DFW → LAX', '1,235 mi']);
+  });
+
+  it('a row can lead with an icon tile, and the hairline under it starts at the text (round 166)', () => {
+    act(() => {
+      r = create(
+        <ListGroup>
+          <ListRow icon="house.fill" label="Main home" value="DAL" />
+          <ListRow icon="bell.fill" label="Notifications" value="On" />
+          <ListRow label="Version" value="1.0" />
+        </ListGroup>,
+      );
+    });
+    expect(r!.root.findAll((n) => typeof n.type === 'string' && n.props.testID === 'list-row-icon')).toHaveLength(2);
+    const card = r!.root.find((n) => typeof n.type === 'string' && n.props.testID === 'list-group-card');
+    const lines = card.findAll(
+      (n) => typeof n.type === 'string' && StyleSheet.flatten(n.props.style)?.height === StyleSheet.hairlineWidth,
+    );
+    expect(lines).toHaveLength(2);
+    // Each hairline belongs to the row above it, and both of those rows have tiles.
+    for (const l of lines) expect(StyleSheet.flatten(l.props.style).marginLeft).toBeGreaterThan(40);
   });
 
   it('puts the value under the label at big text, uncut', () => {
@@ -68,9 +123,7 @@ describe('ListGroup and ListRow', () => {
     const header = r!.root.findAll((n) => n.props.accessibilityRole === 'header' && (n.type as unknown) === 'Text');
     expect(header[0].props.children).toBe('ABOUT');
     const seps = r!.root.findAll(
-      (n) =>
-        (n.type as unknown) === 'View' &&
-        StyleSheet.flatten(n.props.style)?.height === StyleSheet.hairlineWidth,
+      (n) => (n.type as unknown) === 'View' && StyleSheet.flatten(n.props.style)?.height === StyleSheet.hairlineWidth,
     );
     expect(seps).toHaveLength(2);
   });

@@ -32,7 +32,7 @@ import {
   useColorSchemeName,
 } from '@/theme';
 
-import { AirlinePill } from './AirlinePill';
+import { FlightPeek } from './FlightPeek';
 import { Icon } from './Icon';
 import { Divided, MetaLine } from './MetaLine';
 import { MiniRoute } from './MiniRoute';
@@ -99,7 +99,8 @@ export function dotSeats(seats: LegSeats): string {
  * or person icon over it (round 147, John). A lone number is seats left after the list.
  */
 export function seatCounts(seats: LegSeats): { kind: 'seats' | 'listed'; value: string }[] {
-  if (seats.source === 'unknown' || seats.netSeats == null) return [];
+  // Nothing reported: still the seat icon, over a dash (round 161, John).
+  if (seats.source === 'unknown' || seats.netSeats == null) return [{ kind: 'seats', value: '–' }];
   if (seats.source !== 'typical' && seats.openSeats != null && seats.listed != null)
     return [
       { kind: 'seats', value: `${seats.openSeats}` },
@@ -108,13 +109,21 @@ export function seatCounts(seats: LegSeats): { kind: 'seats' | 'listed'; value: 
   return [{ kind: 'seats', value: `${Math.max(0, seats.netSeats)}` }];
 }
 
+/** The airline logo's size in an opened route's flight box (round 158). */
+const ROUTE_LOGO = 28;
+
 /** A result card's edge (round 150, John: "a more obvious ticket border"). */
 export const CARD_EDGE_W = 1;
 
 /** Space above and below a connection label, before any extra that centers it on the line. */
 const CONNECTION_PAD = 6;
-/** How far the airport pills rise when a status pill sits over the line, so the line stays level with them. */
+/** How far the airport pills rise so the line, with the flight's length under it, stays level with their middles. */
 const ENDS_LIFT = 10;
+/**
+ * Each end's column is this wide, the width of "10:40 AM" in the times' font, so every flight box's line
+ * starts and ends in the same place whatever its times say (round 159, John: "Just aligned the route line").
+ */
+const END_W = 74;
 
 /**
  * One flight as its two ends (round 132, John: "It just looks like a bunch of text on one row. Is there
@@ -138,6 +147,8 @@ function LegEnds({
   tag?: ReactNode;
 }) {
   const c = useColors();
+  const { fontScale } = useWindowDimensions();
+  const endW = { width: END_W * Math.min(Math.max(fontScale, 1), 1.4) };
   const t = legTimesText(leg, view);
   const canceled = view?.tag?.kind === 'canceled';
   const tint = (min: number | null) => {
@@ -169,23 +180,20 @@ function LegEnds({
         {formatDuration(minutes)}
       </Text>
     ) : null;
-  // With a pill over the line, the flight's length moves under it, and the airport pills rise to
-  // stay level with the line.
-  const lift = tag ? styles.endColLifted : null;
+  // One layout for every flight (round 159, John): any status pill over the line, the flight's length
+  // always under it, and the airport pills raised to stay level with the line.
   return (
     <View style={styles.ends} testID="leg-line">
-      <View style={[styles.endCol, lift]}>
+      <View style={[styles.endCol, endW, styles.endColLifted]}>
         {showTimes ? time(t.depart, departColor, 'leg-clock') : null}
         {code(leg.from)}
       </View>
-      <View style={[styles.endsMid, tag ? styles.endsMidTagged : null]} testID="leg-track">
+      <View style={styles.endsMid} testID="leg-track">
         {tag ? (
           <View style={styles.endsTag} testID="leg-tag">
             {tag}
           </View>
-        ) : (
-          length
-        )}
+        ) : null}
         <View style={styles.endsTrack}>
           <View style={[styles.endsLine, { backgroundColor: c.line2 }]} />
           <Icon
@@ -196,9 +204,9 @@ function LegEnds({
           />
           <View style={[styles.endsLine, { backgroundColor: c.line2 }]} />
         </View>
-        {tag ? length : null}
+        {length}
       </View>
-      <View style={[styles.endCol, styles.endColRight, lift]}>
+      <View style={[styles.endCol, styles.endColRight, endW, styles.endColLifted]}>
         {showTimes ? time(t.arrive, arriveColor, 'leg-arrive', true) : null}
         {code(leg.to)}
       </View>
@@ -330,19 +338,18 @@ function LegTimeline({
         const typical = leg.seats.source === 'typical' || leg.seats.source === 'unknown';
         // The dot carries the leg's tier color; the route's chance word is in the headline.
         const dotTier = dimmed || typical || view?.tag?.kind === 'canceled' ? 'unknown' : leg.seats.tier;
-        // Every box has one layout (John, 2026-11-02): times and airports first, then the flight
-        // chip with its status pill after it.
-        // The flight chip on its own row; any status pill sits over the route line (round 136, John).
+        // Every box has one layout (John, 2026-11-02): times and airports first, then the flight.
+        // The flight is its airline's logo alone, centred just under the route line; a tap or hold opens its
+        // number and aircraft, as on the tickets (round 158, John: "Can you do the same select or hold on the
+        // airline icon ... when you open up a route"). Any status pill sits over the route line (round 136).
         const pills = (
           <View style={styles.legMeta} testID="leg-flight">
-            <AirlinePill airline={leg.flight.airline} flightNumber={leg.flight.flightNumber} />
-            {/* Aircraft type beside the chip, when the schedule has it (round 138, John). */}
-            {aircraftLabel(leg.flight.aircraft) ? (
-              <View style={styles.aircraft} testID="leg-aircraft">
-                <Icon name="airplane" size={11} tintColor={c.muted} fallback={null} />
-                <Text style={[textStyles.small, { color: c.muted }]}>{aircraftLabel(leg.flight.aircraft)}</Text>
-              </View>
-            ) : null}
+            <FlightPeek
+              airline={leg.flight.airline}
+              number={leg.flight.flightNumber}
+              aircraft={aircraftLabel(leg.flight.aircraft)}
+              size={ROUTE_LOGO}
+            />
           </View>
         );
         const content = (
@@ -355,12 +362,7 @@ function LegTimeline({
               showTimes={!nonstop}
               tag={view?.tag ? <StatusTag label={view.tag.label} tone={TAG_TONE[view.tag.kind]} /> : undefined}
             />
-            {/* A diversion goes on to the planned airport, late (John, 2026-11-01). */}
-            {view?.tag?.kind === 'diverted' ? (
-              <Text style={[textStyles.small, { color: c.muted }]} testID="leg-diverted-note">
-                {`Continuing to ${leg.flight.to}`}
-              </Text>
-            ) : null}
+            {/* No "Continuing to" note on a diverted leg (round 159, John: "I don't care it's continuing to SEA"). */}
             {pills}
           </>
         );
@@ -396,6 +398,7 @@ function LegTimeline({
                   // The label replaces what's inside, so it says the leg's time and seats too.
                   accessibilityLabel={[
                     `Flight status, ${leg.flight.airline} ${leg.flight.flightNumber}, ${leg.flight.from} to ${leg.flight.to}`,
+                    aircraftLabel(leg.flight.aircraft),
                     // A canceled leg's tag already says "Canceled, was 10:40 AM".
                     view?.tag?.kind === 'canceled' ? null : legSpokenTimes(leg.flight, view),
                     view?.tag?.spoken,
@@ -529,11 +532,11 @@ export const ResultRow = memo(function ResultRow({
       : []),
   ];
   const first = status?.legs[0];
-  // Departed rows are dimmed with a gray fill and edge; text keeps 4.5:1. A canceled route fades to gray the
-  // same way, with a solid gray edge like any ticket's (round 153, John: no dashes), while its canceled leg
-  // keeps the red X and pill (round 152, John picked the gray fade: red stays for full flights).
-  const canceledRoute = !!status?.canceled;
-  const dimmed = !!status?.dimmed || canceledRoute;
+  // Departed rows are dimmed with a gray fill and edge; text keeps 4.5:1. A canceled nonstop gets a red edge
+  // and a light red wash over the whole card; a connection with a canceled leg stays a normal card, with
+  // just the red X and pill on that leg's line (round 160, John: "leave it alone").
+  const canceledRoute = !!status?.canceled && it.legs.length === 1;
+  const dimmed = !!status?.dimmed;
   const notFlyable = !!status?.canceled;
   const slimLength = tripLength(it, status);
   const shortLeft = shortLayovers(
@@ -555,9 +558,12 @@ export const ResultRow = memo(function ResultRow({
   const highlight = selected && !large;
   // Picked and full rows draw a thicker edge; the tear's notches match it. Every other card has a full
   // point of a darker edge, so each ticket stands apart when scanning, in dark mode too (round 150, John).
-  const edgeW = highlight || (it.isFull && !canceledRoute) ? 2 : CARD_EDGE_W;
-  // The card's edge color where it isn't picked or full; the tear's notches outline in it too.
-  const edgeColor = canceledRoute ? c.faint : c.cardEdge;
+  const edgeW = highlight || canceledRoute ? 2 : CARD_EDGE_W;
+  // The card's edge color where it isn't picked; the tear's notches outline in it too. Red only for a
+  // canceled nonstop; a full route keeps the plain edge (round 161, John: "No red border for a full flight").
+  const edgeColor = canceledRoute ? c.canceled : c.cardEdge;
+  // The card's paper: a canceled nonstop's red wash, a full or departed route's gray, else white.
+  const paper = canceledRoute ? c.canceledTint : it.isFull || dimmed ? c.surface2 : c.surface;
   // Every value shows its age: the summary's comes from the leg that sets it.
   const summaryAge = it.tier !== 'unknown' ? routeSeatAge(it, now) : null;
   // Shown only while seat ages are on (off since round 124, John).
@@ -588,10 +594,11 @@ export const ResultRow = memo(function ResultRow({
         adjustsFontSizeToFit={!stacked}
         minimumFontScale={0.7}
         testID="row-times">
-        {status?.canceled ? (
-          // A canceled leg: the top times go grey, not struck; the leg's pill and struck times say it
+        {canceledRoute ? (
+          // A canceled nonstop: the top times go grey, not struck; the leg's pill and struck times say it
           // (John, 2026-11-02).
-          <Text style={{ color: hc.muted }} testID="row-times-canceled">
+          // A red line through it too (round 161, John).
+          <Text style={[{ color: hc.muted }, styles.struck, { textDecorationColor: c.canceled }]} testID="row-times-canceled">
             {t.depart} – {t.arrive}
           </Text>
         ) : (
@@ -703,21 +710,24 @@ export const ResultRow = memo(function ResultRow({
               // A canceled leg is red with an X on it (round 143, John), with no numbers over it; a
               // no-data leg shows no label either (a lone dash said nothing, round 142).
               const canceled = status?.legs[i]?.tag?.kind === 'canceled';
-              // The leg's flight and aircraft sit under its stretch of line (round 145, John).
+              // The leg's airline logo sits under its stretch of line; its number and aircraft open from it
+              // (rounds 145, 154, 156, John).
               const flight = {
                 airline: l.flight.airline,
                 number: l.flight.flightNumber,
                 aircraft: aircraftLabel(l.flight.aircraft),
               };
               if (canceled) return { color: c.canceled, text: c.canceledFg, label: '', canceled: true, flight };
-              const blank = l.seats.source === 'unknown';
-              // A delay or diversion rides over its own leg, above the seats (round 146, John).
+              // No late pills on the ticket: delays are told in the opened route (round 161, John: "Leave it to
+              // the flight details"). A diversion still shows, since it changes where the leg lands.
               const tag = status?.legs[i]?.tag;
-              const flag = tag && (tag.kind === 'delayed' || tag.kind === 'diverted') ? tag.label : null;
+              const flag = tag?.kind === 'diverted' ? tag.label : null;
               return {
                 color: c[tier],
                 text: c[TIER_FG[tier]],
-                label: blank ? '' : dotSeats(l.seats),
+                // No reading: a dash, never a 0 (round 156, John: "If there are no seats reported don't put
+                // 0. Put a - to represent it hasnt been reported").
+                label: dotSeats(l.seats),
                 counts: seatCounts(l.seats),
                 flag,
                 flight,
@@ -750,7 +760,7 @@ export const ResultRow = memo(function ResultRow({
       ) : null}
     </>
   );
-  const slimPaper = it.isFull || dimmed ? c.surface2 : c.surface;
+  const slimPaper = paper;
   const slimSource: TearSource | null =
     large || selected
       ? null
@@ -771,7 +781,7 @@ export const ResultRow = memo(function ResultRow({
           cardHold,
           paper: slimPaper,
           bodyPaper: slimPaper,
-          edge: it.isFull && !canceledRoute ? c.full : edgeColor,
+          edge: edgeColor,
           edgeWidth: edgeW,
         };
   // Set while the route card draws its stub, so the swipe strip on the perforation tears the same card.
@@ -804,16 +814,16 @@ export const ResultRow = memo(function ResultRow({
         // Floating cards with a soft shadow (round 120, the Clean look).
         dimmed ? null : elevation.card,
         {
-          // Full routes stay in time order, grayed with a red edge; text keeps full contrast.
+          // Full routes stay in time order, grayed with the plain edge (round 161, John); text keeps full contrast.
           // The route view's card drops the selected tint so the Leave By card above it leads.
           // The picked row keeps white and gets an accent outline, as in the Clean look (round 120).
-          backgroundColor: highlight ? c.surface : it.isFull || dimmed ? c.surface2 : c.surface,
-          borderColor: highlight ? c.accent : canceledRoute ? edgeColor : it.isFull ? c.full : c.cardEdge,
+          backgroundColor: highlight ? c.surface : paper,
+          borderColor: highlight ? c.accent : edgeColor,
           shadowColor: c.text,
         },
         // A touch more lift in light mode; dark mode leans on the edge, where a shadow can't show.
         !dimmed && (scheme === 'dark' ? styles.flatDark : styles.liftLight),
-        (highlight || (it.isFull && !canceledRoute)) && styles.strongBorder,
+        (highlight || canceledRoute) && styles.strongBorder,
       ]}>
       {/* No colored edge since round 140: the route line carries each leg's color now, and a full route keeps
           its red outline. */}
@@ -872,8 +882,8 @@ export const ResultRow = memo(function ResultRow({
                 hold,
                 cardHold,
                 paper: c.ink,
-                bodyPaper: it.isFull ? c.surface2 : c.surface,
-                edge: it.isFull && !canceledRoute ? c.full : edgeColor,
+                bodyPaper: canceledRoute ? c.canceledTint : it.isFull ? c.surface2 : c.surface,
+                edge: edgeColor,
                 edgeWidth: edgeW,
               });
               return (
@@ -1097,15 +1107,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: radius.sm + 2,
   },
-  // A leg's tag and flight chip, above (first flight) or below (later flights) its time.
-  legMeta: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', columnGap: spacing.group, rowGap: 2 },
-  aircraft: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  // A leg's flight chip with its aircraft stacked under it, centred under the route line (round 155, John:
+  // "It's not aligned center underneath the route line").
+  // Pulled up toward the route line (round 158, John: "Can the airline logo be scooted up closer").
+  legMeta: { alignSelf: 'stretch', alignItems: 'center', marginTop: -2 },
   connection: { flex: 1, alignItems: 'center', gap: 4 },
   connectionText: { textAlign: 'center', alignSelf: 'stretch' },
   struck: { textDecorationLine: 'line-through' },
   // A flight's two ends (round 132): time over an airport pill on each side, a plane line between.
   ends: { flexDirection: 'row', alignItems: 'flex-end', columnGap: 8 },
-  endCol: { alignItems: 'flex-start', gap: 4, flexShrink: 1 },
+  endCol: { alignItems: 'flex-start', gap: 4 },
   endColRight: { alignItems: 'flex-end' },
   endTime: { fontSize: 15, lineHeight: 20 },
   endRight: { textAlign: 'right' },
@@ -1116,9 +1127,8 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   codeText: { fontFamily: fonts.mono, fontSize: 13, lineHeight: 17, letterSpacing: 0.4 },
-  endsMid: { flex: 1, minWidth: 40, alignItems: 'center', paddingBottom: 6, gap: 1 },
-  // Pill, line, then length: the line stays level with the airport pills' middles.
-  endsMidTagged: { paddingBottom: 0, gap: 2 },
+  // Pill (if any), line, then length: the line stays level with the airport pills' middles.
+  endsMid: { flex: 1, minWidth: 40, alignItems: 'center', gap: 2 },
   endsTag: { maxWidth: '100%', marginBottom: 1 },
   endColLifted: { marginBottom: ENDS_LIFT },
   endsLength: { fontFamily: fonts.body, fontSize: 11, lineHeight: 14 },

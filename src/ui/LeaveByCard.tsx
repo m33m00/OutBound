@@ -4,8 +4,15 @@ import { AccessibilityInfo, Linking, Pressable, StyleSheet, Text, useWindowDimen
 import type { Airport } from '@/engine';
 import { forSpeech } from '@/search/format';
 import { MAPS_APP_NAME, type MapsApp } from '@/search/directions';
-import { computeLeaveBy, leaveByShort, leaveByText, LOCATION_FRESH_MS, type PhoneLocation } from '@/search/leaveBy';
-import { radius, spacing, textStyles, useColors } from '@/theme';
+import {
+  computeLeaveBy,
+  driveTimeText,
+  leaveByShort,
+  leaveByText,
+  LOCATION_FRESH_MS,
+  type PhoneLocation,
+} from '@/search/leaveBy';
+import { fonts, radius, spacing, textStyles, useColors } from '@/theme';
 
 import { Button } from './Buttons';
 import { Icon } from './Icon';
@@ -31,6 +38,11 @@ export interface LeaveByCardProps {
   mapsApp?: MapsApp;
   /** Drive minutes with traffic from a maps service; without it the card uses its rough estimate. */
   liveDriveMin?: number | null;
+  /** Boarding starts this long before departure (round 162): 40 domestic, 50 international or widebody. */
+  boardingMin?: number;
+  /** The first flight's departure gate and terminal from live status, when posted (round 159). */
+  gate?: string | null;
+  terminal?: string | null;
 }
 
 /** From this text size the location button gets its own row. */
@@ -45,12 +57,19 @@ export function LeaveByCard(p: LeaveByCardProps) {
   const result = computeLeaveBy(p);
   const text = leaveByText(result, p.airport.tz);
   const short = leaveByShort(result, p.airport.tz);
+  const drive = driveTimeText(result);
   const atAirport = result.kind === 'atAirport';
   const departed = result.kind === 'departed';
-  // Tap for directions while there's still a trip to the airport (John, 2026-10-30).
-  const directions = !atAirport && !departed;
+  // Tap for directions while there's still a trip to make: driving to the airport (John, 2026-10-30), or,
+  // once you're there, walking to the gate (round 159, John: "have me routed to the gate").
+  const directions = !departed;
   const mapsApp = p.mapsApp ?? 'apple';
-  const go = () => void openDirections(p.airport, mapsApp);
+  const gate = p.gate?.trim() || null;
+  const walkTo = atAirport ? { gate, terminal: p.terminal?.trim() || null } : undefined;
+  const go = () => void openDirections(p.airport, mapsApp, walkTo);
+  const hint = atAirport
+    ? `Opens walking directions to ${gate ? `gate ${gate}` : 'your terminal'} in ${MAPS_APP_NAME[mapsApp]}`
+    : `Opens directions in ${MAPS_APP_NAME[mapsApp]}`;
   // "10:45 AM" never splits across lines.
   const keepTimes = (s: string) => s.replace(/(\d) (AM|PM)/g, '$1\u00a0$2');
   const fresh = p.location != null && p.now - p.location.at <= LOCATION_FRESH_MS;
@@ -117,12 +136,23 @@ export function LeaveByCard(p: LeaveByCardProps) {
           style={styles.text}
           accessible
           accessibilityRole={directions ? 'button' : undefined}
-          accessibilityHint={directions ? `Opens directions in ${MAPS_APP_NAME[mapsApp]}` : undefined}
+          accessibilityHint={directions ? hint : undefined}
           onAccessibilityTap={directions ? go : undefined}
           // TalkBack has no accessibility tap, so activation runs the same.
           accessibilityActions={directions ? [{ name: 'activate' }] : undefined}
           onAccessibilityAction={directions ? go : undefined}
-          accessibilityLabel={forSpeech([text.title, text.sub, delayLine, note].filter(Boolean).join('. '))}>
+          accessibilityLabel={forSpeech(
+            [
+              text.title,
+              text.sub,
+              result.kind === 'leaveNow' && drive ? `${drive} drive` : null,
+              atAirport && gate ? `Gate ${gate}` : null,
+              delayLine,
+              note,
+            ]
+              .filter(Boolean)
+              .join('. '),
+          )}>
           {/* One slim row: the time, then the one detail that matters (John, 2026-11-01). When that
               doesn't fit on one line, the detail gets its own line, with no dot (John, 2026-11-02). */}
           {twoLines ? (
@@ -133,9 +163,11 @@ export function LeaveByCard(p: LeaveByCardProps) {
                 testID="leave-by-line">
                 {keepTimes(text.title)}
               </Text>
-              <Text style={[textStyles.small, { color: c.muted }]} lineBreakStrategyIOS="push-out" testID="leave-by-detail">
-                {keepTimes(short)}
-              </Text>
+              {short ? (
+                <Text style={[textStyles.small, { color: c.muted }]} lineBreakStrategyIOS="push-out" testID="leave-by-detail">
+                  {keepTimes(short)}
+                </Text>
+              ) : null}
             </>
           ) : (
             <Text
@@ -146,42 +178,56 @@ export function LeaveByCard(p: LeaveByCardProps) {
               }}
               testID="leave-by-line">
               {keepTimes(text.title)}
-              <Text style={[textStyles.small, { color: c.muted, fontFamily: textStyles.body.fontFamily }]}>
-                <Divided text={` · ${keepTimes(short)}`} />
-              </Text>
+              {short ? (
+                <Text style={[textStyles.small, { color: c.muted, fontFamily: textStyles.body.fontFamily }]}>
+                  <Divided text={` · ${keepTimes(short)}`} />
+                </Text>
+              ) : null}
             </Text>
           )}
         </View>
         {action && inline ? action : null}
-        {/* The car is the card's only sign that it opens directions, so it always shows (round 136,
-            John: a car "so people know it's directions", in place of the chevron). */}
+        {/* The directions button: a filled blue capsule so the card reads as tappable (round 169, John:
+            "doesn't look obvious to select"). The car carries the drive time beside it; at the airport a
+            walking person carries the gate (round 159). The whole card still opens directions. */}
         {directions ? (
-          <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" testID="leave-by-car">
-            <Icon
-              name="car.fill"
-              size={16}
-              tintColor={atAirport ? c.youText : c.accent}
-              fallback={<Text style={{ color: c.muted }}>›</Text>}
-            />
+          <View
+            style={[styles.go, { backgroundColor: c.accent }]}
+            accessibilityElementsHidden
+            importantForAccessibility="no-hide-descendants"
+            testID="leave-by-go">
+            {atAirport ? (
+              <View style={styles.goInner} testID="leave-by-walk">
+                <Icon
+                  name="figure.walk"
+                  size={16}
+                  tintColor={c.onAccent}
+                  fallback={<Text style={{ color: c.onAccent }}>›</Text>}
+                />
+                {gate ? (
+                  <Text style={[styles.goText, { color: c.onAccent }]} maxFontSizeMultiplier={1.3} testID="leave-by-gate">
+                    {gate}
+                  </Text>
+                ) : null}
+              </View>
+            ) : (
+              <View style={styles.goInner} testID="leave-by-car">
+                <Icon name="car.fill" size={16} tintColor={c.onAccent} fallback={<Text style={{ color: c.onAccent }}>›</Text>} />
+                {drive ? (
+                  <Text style={[styles.goText, { color: c.onAccent }]} maxFontSizeMultiplier={1.3} testID="leave-by-drive">
+                    {drive}
+                  </Text>
+                ) : null}
+              </View>
+            )}
           </View>
         ) : null}
       </View>
-      {/* The small lines use the card's full width, so they don't squeeze beside the button and drop one word (John, 2026-10-30). */}
-      {delayLine || note ? (
+      {/* The small lines use the card's full width, so they don't squeeze beside the button and drop one word (John, 2026-10-30).
+          No delay line under it any more (round 158, John: "I dont need a status underneath the Leave By container. It
+          already tells me in the details a change in time"); VoiceOver still hears it with the title. */}
+      {note ? (
         <View style={styles.details} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-          {delayLine ? (
-            <Text
-              style={[
-                textStyles.small,
-                {
-                  color: c.caution,
-                  fontFamily: textStyles.bodyStrong.fontFamily,
-                },
-              ]}
-              lineBreakStrategyIOS="push-out">
-              {delayLine}
-            </Text>
-          ) : null}
           {note ? (
             <Text style={[textStyles.small, { color: c.muted }]} lineBreakStrategyIOS="push-out">
               {note}
@@ -209,6 +255,10 @@ const styles = StyleSheet.create({
   action: { alignSelf: 'flex-start', paddingHorizontal: spacing.section },
   inline: { alignSelf: 'center' },
   text: { flex: 1 },
+  // Same height and shape as the app's pill buttons, filled like the main button.
+  go: { minHeight: 32, minWidth: 40, borderRadius: 16, paddingHorizontal: 12, justifyContent: 'center', alignItems: 'center' },
+  goInner: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  goText: { fontFamily: fonts.monoMedium, fontSize: 13, lineHeight: 16 },
   // Pulled up under the title so it reads as the title's caption. No icon tile (design audit,
   // round 69): the chevron says it opens directions, and the lines get the card's full width.
   details: { gap: 2 },

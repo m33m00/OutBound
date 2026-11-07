@@ -122,21 +122,41 @@ describe('MiniRoute (round 119)', () => {
     expect(flag.top + flag.height).toBeLessThanOrEqual(label.top);
   });
 
-  it('drops the airline code beside a known logo from 3 legs up, to fit the bigger text (rounds 145, 146)', () => {
-    const leg = (number: string) => ({ color: '#0a0', text: '#060', label: '9/1', flight: { airline: 'AA', number } });
-    const numbers = (airports: string[]) => {
-      act(() => {
-        r = create(<MiniRoute airports={airports} legs={airports.slice(1).map((_, i) => leg(`${100 + i}`))} />);
-      });
-      return r!.root
-        .findAll((n) => n.props.testID === 'mini-route-flight-number' && typeof n.type === 'string')
-        .map((n) => n.props.children);
-    };
-    expect(numbers(['DFW', 'MIA', 'LGA'])).toEqual(['AA 100', 'AA 101']);
-    expect(numbers(['DFW', 'CLT', 'MIA', 'LGA'])).toEqual(['100', '101', '102']);
+  it('shows each flight as its airline logo only; a tap opens its number and aircraft, a tap elsewhere closes it (round 156)', () => {
+    const leg = (airline: string, number: string, aircraft?: string) => ({
+      color: '#0a0',
+      text: '#060',
+      label: '9/1',
+      flight: { airline, number, aircraft },
+    });
+    act(() => {
+      r = create(<MiniRoute airports={['DFW', 'MIA', 'LGA']} legs={[leg('AA', '100', '737-800'), leg('ZZ', '7')]} />);
+    });
+    const host = (id: string) => r!.root.findAll((n) => n.props.testID === id && typeof n.type === 'string');
+    const texts = () =>
+      r!.root.findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string').map((n) => n.props.children);
+    // No number on the line: the known airline is its logo with no tile behind it, an unknown one its code.
+    expect(host('flight-peek-logo')).toHaveLength(2);
+    expect(texts()).not.toContain('AA 100');
+    expect(
+      host('flight-peek-logo')[0].findAll((n) => n.props.testID === 'airline-mark' || n.props.testID === 'airline-logo').length,
+    ).toBeGreaterThan(0);
+    expect(host('flight-peek-logo')[1].findAll((n) => n.props.children === 'ZZ').length).toBeGreaterThan(0);
+    expect(host('flight-peek')).toHaveLength(0);
+    // Tap the logo: the little window shows the number and the aircraft.
+    const press = (id: string) => r!.root.findAll((n) => n.props.testID === id && typeof n.props.onPress === 'function');
+    act(() => press('flight-peek-logo')[0].props.onPress());
+    expect(host('flight-peek')).toHaveLength(1);
+    expect(texts()).toEqual(expect.arrayContaining(['AA 100', '737-800']));
+    // A tap anywhere else closes it.
+    act(() => press('flight-peek-backdrop')[0].props.onPress());
+    expect(host('flight-peek')).toHaveLength(0);
+    // Holding works too.
+    act(() => press('flight-peek-logo')[1].props.onLongPress());
+    expect(texts()).toContain('ZZ 7');
   });
 
-  it("centres a flight's delay over its own leg, above the seat numbers (round 146, John)", () => {
+  it("centres a flight's delay on its own leg, under its airline logo (rounds 146, 157, John)", () => {
     const leg = (flag?: string) => ({
       color: '#0a0',
       text: '#060',
@@ -150,27 +170,29 @@ describe('MiniRoute (round 119)', () => {
       });
       return r!.root.findAll((n) => n.props.testID === 'mini-route-leg-flag' && typeof n.type === 'string');
     };
-    const two = flags(['DFW', 'MIA', 'LGA'], [leg(), leg('Delayed 50m')]);
+    const two = flags(['DFW', 'MIA', 'LGA'], [leg(), leg('50m late')]);
     expect(two).toHaveLength(1);
     const slot = StyleSheet.flatten(two[0].props.style);
     // The slot spans the second leg, so the pill centres on it.
     expect(slot).toMatchObject({ left: '50%', width: '50%' });
     const text = two[0].findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string')[0];
-    expect(text.props.children).toBe('Delayed 50m');
-    // Under the line (round 148, John): below the stop codes and right above that leg's flight number,
-    // while At risk and the seats stay above the line.
+    expect(text.props.children).toBe('50m late');
+    // Under the line: below the stop codes and right under that leg's airline logo (round 157, John: "Can
+    // the logos sit on top of the delayed pill"), while At risk and the seats stay above the line.
     const host = (id: string) => r!.root.findAll((n) => n.props.testID === id && typeof n.type === 'string');
     const topOf = (n: { props: { [k: string]: unknown } }) => StyleSheet.flatten(n.props.style as never).top as number;
     const stopSlot = topOf(host('mini-route-stop-slot')[0]);
     const flights = host('mini-route-flight');
     expect(topOf(two[0])).toBeGreaterThan(stopSlot);
-    expect(topOf(flights[1])).toBeGreaterThanOrEqual(topOf(two[0]) + 17);
+    expect(topOf(flights[1])).toBeGreaterThan(stopSlot);
+    expect(topOf(two[0])).toBeGreaterThanOrEqual(topOf(flights[1]) + 24);
     expect(topOf(host('mini-route-stop-flag')[0])).toBeLessThan(topOf(host('mini-route-leg-slot')[0]));
     expect(topOf(host('mini-route-leg-slot')[0])).toBeLessThan(stopSlot);
-    // On a short leg the delay shortens so it stays inside its own stretch.
-    const three = flags(['DFW', 'CLT', 'MIA', 'LGA'], [leg(), leg(), leg('Delayed 50m')]);
+    // The same words on a short leg: "50m late" fits a 2-stop ticket (round 157, John: "+25m doesn't
+    // really say much").
+    const three = flags(['DFW', 'CLT', 'MIA', 'LGA'], [leg(), leg(), leg('50m late')]);
     const short = three[0].findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string')[0];
-    expect(short.props.children).toBe('+50m');
+    expect(short.props.children).toBe('50m late');
   });
 
   it('puts a tiny seat icon over the open seats and a person over the listed, in the label color (round 147, John)', () => {
@@ -183,7 +205,7 @@ describe('MiniRoute (round 119)', () => {
         <MiniRoute
           airports={['DFW', 'MIA', 'LGA']}
           legs={[
-            { color: '#0a0', text: '#060', label: '21/12', counts, flag: 'Delayed 50m' },
+            { color: '#0a0', text: '#060', label: '21/12', counts, flag: '50m late' },
             { color: '#999', text: '#666', label: '' },
           ]}
         />,
@@ -224,5 +246,22 @@ describe('MiniRoute (round 119)', () => {
     expect(StyleSheet.flatten(pill[0].props.style).top as number).toBeLessThan(
       StyleSheet.flatten(host('mini-route-canceled')[0].props.style).top as number,
     );
+  });
+
+  it("drops the logos clear of a canceled leg's X (round 161, John)", () => {
+    const leg = (canceled: boolean) => ({
+      color: '#c00',
+      text: '#900',
+      label: canceled ? '' : '9/1',
+      canceled,
+      flight: { airline: 'AA', number: '1' },
+    });
+    const flat = (st: unknown) => Object.assign({}, ...[st].flat(5).filter(Boolean));
+    act(() => {
+      r = create(<MiniRoute airports={['DFW', 'LAX']} legs={[leg(true)]} />);
+    });
+    const x = flat(r!.root.find((n) => n.props.testID === 'mini-route-canceled' && typeof n.type === 'string').props.style);
+    const logo = flat(r!.root.find((n) => n.props.testID === 'mini-route-flight' && typeof n.type === 'string').props.style);
+    expect(logo.top - (x.top + x.height)).toBeGreaterThanOrEqual(6);
   });
 });

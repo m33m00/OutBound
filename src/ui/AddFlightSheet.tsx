@@ -25,6 +25,7 @@ import { minTapTarget, radius, spacing, textStyles, useColors, useColorSchemeNam
 
 import { Button } from './Buttons';
 import { DatePickerModal } from './DatePickerModal';
+import { useCardSurface } from './cardSurface';
 import { Icon } from './Icon';
 import { PASS_BARCODES, PassScanner } from './PassScanner';
 import { pressStyle } from './press';
@@ -54,8 +55,7 @@ const phoneTz = () => Intl.DateTimeFormat().resolvedOptions().timeZone ?? 'UTC';
 /** Screenshots on iPhone can only be read when the pass uses a square QR code. */
 export const PHOTO_MISS_IOS =
   'Couldn’t read a pass in that picture. Screenshots work when the pass has a square QR code. For other passes, scan it with the camera (a pass on another screen works) or type it in.';
-export const PHOTO_MISS =
-  'Couldn’t read a pass in that picture. Try scanning it with the camera, or type it in.';
+export const PHOTO_MISS = 'Couldn’t read a pass in that picture. Try scanning it with the camera, or type it in.';
 
 /**
  * Add a flight to the logbook: scan the boarding pass, pick a screenshot of
@@ -64,6 +64,7 @@ export const PHOTO_MISS =
  */
 export function AddFlightSheet({ visible, now, has, onAdd, onClose, editing }: AddFlightSheetProps) {
   const c = useColors();
+  const card = useCardSurface();
   const today = localDate(now, phoneTz());
   const [airline, setAirline] = useState('');
   const [flightNumber, setFlightNumber] = useState('');
@@ -171,7 +172,7 @@ export function AddFlightSheet({ visible, now, has, onAdd, onClose, editing }: A
             </Text>
           ) : null}
 
-          <View style={[styles.card, { backgroundColor: c.surface, borderColor: c.line }]}>
+          <View style={[card, styles.card]}>
             <View style={pair}>
               <Field
                 label="Airline"
@@ -299,8 +300,16 @@ export function AddFlightSheet({ visible, now, has, onAdd, onClose, editing }: A
 }
 
 /** Capitals and digits only, cut to `max`. */
-const clean = (t: string, max: number) => t.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, max);
-const letters = (t: string) => t.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3);
+const clean = (t: string, max: number) =>
+  t
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, '')
+    .slice(0, max);
+const letters = (t: string) =>
+  t
+    .toUpperCase()
+    .replace(/[^A-Z]/g, '')
+    .slice(0, 3);
 
 function Field({ label, ref, ...input }: { label: string; ref?: Ref<TextInputInstance> } & TextInputProps) {
   const c = useColors();
@@ -340,6 +349,7 @@ function WayButton({
   hint?: string;
 }) {
   const c = useColors();
+  const card = useCardSurface();
   return (
     <Pressable
       onPress={onPress}
@@ -348,9 +358,14 @@ function WayButton({
       accessibilityLabel={label}
       accessibilityHint={hint}
       accessibilityState={{ disabled }}
-      style={pressStyle([styles.way, { backgroundColor: c.surface, borderColor: c.line, opacity: disabled ? 0.5 : 1 }])}>
-      <Icon name={icon} size={26} tintColor={c.accent} fallback={null} />
-      <Text lineBreakStrategyIOS="push-out" style={[textStyles.bodyStrong, styles.wayText, { color: c.text }]}>{label}</Text>
+      style={pressStyle([card, styles.way, { opacity: disabled ? 0.5 : 1 }])}>
+      {/* The icon in a light blue circle, so the tile reads as a button (round 165). */}
+      <View style={[styles.wayIcon, { backgroundColor: c.accentSoft }]}>
+        <Icon name={icon} size={22} tintColor={c.accent} fallback={null} />
+      </View>
+      <Text lineBreakStrategyIOS="push-out" style={[textStyles.bodyStrong, styles.wayText, { color: c.text }]}>
+        {label}
+      </Text>
     </Pressable>
   );
 }
@@ -363,15 +378,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.group,
     padding: spacing.page,
-    borderRadius: radius.md,
-    borderWidth: StyleSheet.hairlineWidth,
     minHeight: minTapTarget * 2,
     justifyContent: 'center',
   },
+  wayIcon: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
   wayText: { textAlign: 'center' },
   card: {
-    borderRadius: radius.md,
-    borderWidth: StyleSheet.hairlineWidth,
     padding: spacing.page,
     gap: spacing.section,
   },

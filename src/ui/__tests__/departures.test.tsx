@@ -79,6 +79,19 @@ describe('at-airport card and departures (round 33)', () => {
     const row = r!.root.findAll((n) => n.props.testID === 'departure-row' && n.props.onPress)[0];
     expect(row.props.accessibilityLabel).toContain('You reported');
     expect(row.props.accessibilityHint).toBe('Opens Report Load again');
+    // Your report shows as the seat-colored count pill, and the board is one rounded card (round 165).
+    const pill = r!.root.findAll((n) => typeof n.type === 'string' && n.props.testID === 'departure-reported');
+    expect(pill).toHaveLength(1);
+    expect(
+      pill[0].findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string').map((n) => n.props.children),
+    ).toEqual(['9', '/', '0']);
+    const flat = (st: unknown) => Object.assign({}, ...[st].flat(5).filter(Boolean));
+    const rowStyle = (i: number) => {
+      const n = r!.root.findAll((x) => x.props.testID === 'departure-row' && x.props.onPress)[i];
+      return flat(typeof n.props.style === 'function' ? n.props.style({ pressed: false }) : n.props.style);
+    };
+    expect(rowStyle(0).borderTopLeftRadius).toBeGreaterThan(0);
+    expect(rowStyle(1).borderBottomLeftRadius).toBeGreaterThan(0);
   });
 
   it('an empty board says so', async () => {

@@ -186,3 +186,22 @@ Each item names its owner. One item per work session. spec-keeper runs a pre-fli
 | 179 | Design round 151: Save and swipe-to-tear on the result tickets, off the opened route; Canceled pill over the X (John) | main | P2 | Built (design round 151, branch claude/project-thread-fzqwou) |
 | 180 | Design round 152: canceled tickets fade to gray with a dashed gray edge; red edge stays for full routes (John) | main | P2 | Built (design round 152, branch claude/project-thread-fzqwou) |
 | 181 | Design round 153: canceled tickets get a solid gray edge at the normal weight, no dashes (John) | main | P2 | Built (design round 153, branch claude/project-thread-fzqwou) |
+| 182 | Design round 154: aircraft type stacked under the flight on the opened route; tickets and saved cards show airline and flight number only (John) | main | P2 | Built (design round 154, branch claude/project-thread-fzqwou) |
+| 183 | Design round 155: flight and aircraft stack centred under the route line on the opened route (John) | main | P2 | Built (design round 155, branch claude/project-thread-fzqwou) |
+| 184 | Design round 156: logo-only tickets with a tap-to-peek window, plain solid map lines with no key or arrows, dash for no seat reading, sky cyan Departed/Arrived pills (John) | main | P2 | Built (design round 156, branch claude/project-thread-fzqwou) |
+| 185 | Design round 157: airline logo above the delay pill under each leg; delays read "25m late" everywhere (John) | main | P2 | Built (design round 157, branch claude/project-thread-fzqwou) |
+| 186 | Design round 158: opened route shows logo only with tap-or-hold window; ticket logos sit just under the line; no delay line under Leave By (John) | main | P2 | Built (design round 158, branch claude/project-thread-fzqwou) |
+| 187 | Design round 159: one layout for every leg box, no "Continuing to", boarding wording on Leave By, walk to gate at the airport (John) | main | P2 | Built (design round 159, branch claude/project-thread-fzqwou) |
+| 188 | Design round 160: no sharing-loads line, centered area notes, canceled nonstop red edge and wash, connections left normal (John) | main | P2 | Built (design round 160, branch claude/project-thread-fzqwou) |
+| 189 | Design round 161: logos clear the canceled X, struck canceled nonstop time, round logo badges, state in area notes, no red edge for full, no late pills on tickets, seat icon over dash (John) | main | P2 | Built (design round 161, branch claude/project-thread-fzqwou) |
+| 190 | Design round 162: boarding 40m before domestic, 50m before international or widebody (John) | main | P2 | Built (design round 162, branch claude/project-thread-fzqwou) |
+| 191 | Design round 163: shared card look on list screens, airport picker as grouped card rows with code pills and city search, logbook highlight rows (John) | main | P2 | Built (design round 163, branch claude/project-thread-fzqwou) |
+| 192 | Design round 164: request rows lead with the airline badge, answers as a seat-colored count pill, round status pills (John) | main | P2 | Built (design round 164, branch claude/project-thread-fzqwou) |
+| 193 | Design round 165: sheets pass: Report Load icons, tinted tier box and blue steppers; Add flight tiles; Departures board as a card with badges and count pills; segmented Max stops (John) | main | P2 | Built (design round 165, branch claude/project-thread-fzqwou) |
+| 194 | Design round 166: icon tiles on Profile rows, filled tab icons, carded date picker, corner-bracket scanner frame (John) | main | P2 | Built (design round 166, branch claude/project-thread-fzqwou) |
+| 195 | Design round 167: Requests tab with badge, oldest asks first, ask age on its own, swipe and multiselect delete for saved routes, 24h auto-clear, My Trips section headers (John) | main | P2 | Built (design round 167, branch claude/project-thread-fzqwou) |
+| 196 | Merge App Store branch into design rounds so the launch intro and accounts show in Expo Go | Done (round 168) |
+| 197 | Native-thread launch exit; Leave By directions as a filled capsule with drive time | Done (round 169) |
+| 198 | Curved map route lines (sideways bow per leg); card line curves mocked up | Done (round 170) |
+| 199 | Route lines flow gently (map lean through stops, card 2.5pt wave) instead of arching | Reverted in round 172 |
+| 200 | Route lines back to straight on map and cards (curves dropped) | Done, round 172 |

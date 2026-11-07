@@ -9,7 +9,7 @@ import { GlobeMap, type LonLat, type MapAirport } from '@/map';
 import { nearestAirport } from '@/search/airports';
 import { otherEndExcludes, searchRequest, showGetHome } from '@/search/areas';
 import { dateChips } from '@/search/dates';
-import { driveQuery } from '@/search/leaveBy';
+import { boardingLeadMin, driveQuery } from '@/search/leaveBy';
 import { chooseOrigin, restSpot, showLocationCard, type RestSpot } from '@/search/origin';
 import { legLookup, resultsBanner, rowStatus, statusLookups } from '@/search/statusTags';
 import { SAMPLE_TZ, SCHEDULE_SOURCE, useRouteSearch } from '@/search/useRouteSearch';
@@ -437,6 +437,8 @@ export default function HomeScreen() {
   const filtersChanged = changedFilters(filters, settings.search);
   const selected = results.find((r) => r.id === selectedId);
   const firstLeg = selected?.legs[0].flight;
+  // Where to walk once you're at the airport (round 159): the first flight's posted gate, from live status.
+  const firstGate = firstLeg ? (flightStatuses.byKey[flightLookupKey(legLookup(firstLeg))]?.departure ?? null) : null;
   // Real drive time with traffic for the Leave By card (John, 2026-11-01); the rough guess until it answers.
   const trip = firstLeg
     ? driveQuery({
@@ -612,6 +614,9 @@ export default function HomeScreen() {
                           locationStatus={locationStatus}
                           mapsApp={settings.mapsApp}
                           liveDriveMin={liveDrive?.minutes ?? null}
+                          boardingMin={boardingLeadMin(firstLeg.from, firstLeg.to, firstLeg.aircraft)}
+                          gate={firstGate?.gate ?? null}
+                          terminal={firstGate?.terminal ?? null}
                           onUseLocation={async () => {
                             if (await requestLocation()) updateSettings({ useLocation: true });
                           }}

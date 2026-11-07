@@ -34,11 +34,37 @@ export function driveMinutes(km: number): number {
   return Math.round((((km * 1.3) / 55) * 60 + 10) / 5) * 5;
 }
 
+/**
+ * When boarding starts, since no feed gives a boarding time (round 162, John): 40 minutes before a domestic
+ * departure, 50 before an international or widebody one, which board sooner.
+ */
+export const BOARDING_DOMESTIC_MIN = 40;
+export const BOARDING_LONG_MIN = 50;
+
+/** Twin-aisle types as providers name them ("Boeing 777-300ER", "Airbus A350-900"); not the 757. */
+const WIDEBODY = /(?:^|[^0-9])7[4678]7(?![0-9])|\bA3[3458]\d|\bA380\b|\bMD-?11\b|\bDC-?10\b/i;
+
+export function isWidebody(aircraft: string | null | undefined): boolean {
+  return !!aircraft && WIDEBODY.test(aircraft);
+}
+
+/** Minutes before departure that boarding starts for a flight from `from` to `to` on `aircraft`. */
+export function boardingLeadMin(
+  from: string,
+  to: string,
+  aircraft?: string | null,
+  airports: Readonly<Record<string, { country?: string }>> = AIRPORTS,
+): number {
+  const country = (code: string) => airports[code]?.country ?? 'US';
+  const international = country(from) !== country(to);
+  return international || isWidebody(aircraft) ? BOARDING_LONG_MIN : BOARDING_DOMESTIC_MIN;
+}
+
 export type LeaveBy =
   | { kind: 'departed'; airport: string }
-  | { kind: 'atAirport'; airport: string; departUtc: number }
+  | { kind: 'atAirport'; airport: string; departUtc: number; boardUtc: number }
   | { kind: 'leaveBy'; airport: string; leaveUtc: number; beAtUtc: number; driveMin: number; live: boolean }
-  | { kind: 'leaveNow'; airport: string; beAtUtc: number }
+  | { kind: 'leaveNow'; airport: string; beAtUtc: number; driveMin?: number }
   | { kind: 'beAt'; airport: string; beAtUtc: number; bufferMin: number };
 
 export function computeLeaveBy(input: {
@@ -51,6 +77,8 @@ export function computeLeaveBy(input: {
   departed?: boolean;
   /** Drive minutes from a maps service, with traffic (John, 2026-11-01); else the rough estimate. */
   liveDriveMin?: number | null;
+  /** Boarding starts this long before departure (round 162); see boardingLeadMin. Default domestic. */
+  boardingMin?: number;
 }): LeaveBy {
   const { airport, departUtc, bufferMin, now } = input;
   const beAtUtc = departUtc - bufferMin * 60_000;
@@ -60,12 +88,15 @@ export function computeLeaveBy(input: {
 
   if (loc) {
     const km = distanceKm(loc.lat, loc.lon, airport.lat, airport.lon);
-    if (km < AT_AIRPORT_KM) return { kind: 'atAirport', airport: airport.code, departUtc };
+    if (km < AT_AIRPORT_KM) {
+      const boardUtc = departUtc - (input.boardingMin ?? BOARDING_DOMESTIC_MIN) * 60_000;
+      return { kind: 'atAirport', airport: airport.code, departUtc, boardUtc };
+    }
     if (km <= MAX_DRIVE_KM) {
       const live = input.liveDriveMin != null && input.liveDriveMin > 0;
       const driveMin = live ? Math.round(input.liveDriveMin!) : driveMinutes(km);
       const leaveUtc = beAtUtc - driveMin * 60_000;
-      if (leaveUtc <= now) return { kind: 'leaveNow', airport: airport.code, beAtUtc };
+      if (leaveUtc <= now) return { kind: 'leaveNow', airport: airport.code, beAtUtc, driveMin };
       return { kind: 'leaveBy', airport: airport.code, leaveUtc, beAtUtc, driveMin, live };
     }
   }
@@ -101,6 +132,16 @@ function youreAt(code: string): string {
   return name ? `You’re at ${code} (${name})` : `You’re at ${code}`;
 }
 
+/** "Arrive at DFW by 10:10 AM to begin boarding" (round 159, John). */
+function arriveBy(code: string, time: string): string {
+  return `Arrive at ${code} by ${time} to begin boarding`;
+}
+
+/** "Your flight begins boarding at 11:00 AM" (round 159, John), from boardingLeadMin (round 162). */
+function boardingAt(time: string): string {
+  return `Your flight begins boarding at ${time}`;
+}
+
 export interface LeaveByText {
   title: string;
   sub: string;
@@ -113,22 +154,34 @@ export function leaveByText(r: LeaveBy, tz: string): LeaveByText {
     case 'departed':
       return { title: 'Departed', sub: `This flight has left ${r.airport}. Pick a later route.` };
     case 'atAirport':
-      // The airport's name too, and "Flight departs at" (John, 2026-11-02).
-      return { title: youreAt(r.airport), sub: `Flight departs at ${t(r.departUtc)}` };
+      // The airport's name too (John, 2026-11-02), and boarding in his words (round 159, John).
+      return { title: youreAt(r.airport), sub: boardingAt(t(r.boardUtc)) };
     case 'leaveBy':
       // No "~" on the guess (round 138, John); a maps-service time adds "with traffic".
       return {
         title: `Leave by ${t(r.leaveUtc)}`,
-        sub: `${formatDuration(r.driveMin)} drive${r.live ? ' with traffic' : ''} · at ${r.airport} by ${t(r.beAtUtc)}`,
+        sub: `${formatDuration(r.driveMin)} drive${r.live ? ' with traffic' : ''}. ${arriveBy(r.airport, t(r.beAtUtc))}`,
       };
     case 'leaveNow':
-      return { title: 'Leave now', sub: `Be at ${r.airport} by ${t(r.beAtUtc)}` };
+      return { title: 'Leave now', sub: arriveBy(r.airport, t(r.beAtUtc)) };
     case 'beAt':
+      // John's words (round 159): "Arrive at DFW by 10:10 AM to begin boarding".
       return {
-        title: `Be at ${r.airport} by ${t(r.beAtUtc)}`,
+        title: arriveBy(r.airport, t(r.beAtUtc)),
         sub: `${formatDuration(r.bufferMin)} early to list and clear security`,
       };
   }
+}
+
+/**
+ * The drive time shown next to the car on the Leave By card's directions button (round 169, John:
+ * "can the estimated time to drive there be next to the car icon"). Null when there's no location,
+ * so no drive to time.
+ */
+export function driveTimeText(r: LeaveBy): string | null {
+  if (r.kind === 'leaveBy') return formatDuration(r.driveMin);
+  if (r.kind === 'leaveNow' && r.driveMin != null) return formatDuration(r.driveMin);
+  return null;
 }
 
 /**
@@ -141,13 +194,15 @@ export function leaveByShort(r: LeaveBy, tz: string): string {
     case 'departed':
       return 'Pick a later route';
     case 'atAirport':
-      return `Flight departs at ${t(r.departUtc)}`;
+      return boardingAt(t(r.boardUtc));
     case 'leaveBy':
-      return `${formatDuration(r.driveMin)} drive`;
+      // The drive time sits by the car on the directions button now (round 169, John).
+      return '';
     case 'leaveNow':
-      // Spelled out (John, 2026-11-03: "Arrive at DFW by 2:40 PM" instead of just "At DFW").
-      return `Arrive at ${r.airport} by ${t(r.beAtUtc)}`;
+      // Spelled out (John, 2026-11-03), ending "to begin boarding" (round 159, John).
+      return arriveBy(r.airport, t(r.beAtUtc));
     case 'beAt':
-      return `${formatDuration(r.bufferMin)} early`;
+      // The title already says it all (round 159), so no second detail beside it.
+      return '';
   }
 }
