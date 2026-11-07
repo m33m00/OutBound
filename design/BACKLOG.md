@@ -210,3 +210,7 @@ Each item names its owner. One item per work session. spec-keeper runs a pre-fli
 | 203 | Airport summary on hold: transit, hours, rental cars (12 airports checked Nov 7) | Done, round 174 |
 | 204 | Profile tab becomes Settings (cog), regrouped | Done, round 174 |
 | 205 | Departed pill bottom left, Arrived bottom right on each flight card of the opened route (round 175, John) | Done |
+| 206 | Membership plans picked from the Search tab, changeable in Settings (round 176 demo) | Done |
+| 207 | Free and Pay as you go: seats hidden until a route is requested for a credit; loads land in My Trips (round 176 demo) | Done |
+| 208 | Credits chip and sheet; answering loads earns credits (round 176 demo) | Done |
+| 209 | Buying credits on Pay as you go, real plans and server-side credits | Later |

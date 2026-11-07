@@ -84,7 +84,7 @@ export function FiltersForm({ filters: f, onChange }: { filters: SearchFilters; 
       {/* Round 174 filters (John, 2026-11-07). */}
       <View style={styles.block}>
         <Text lineBreakStrategyIOS="push-out" style={[textStyles.heading, { color: c.text }]}>
-          Time of day
+          Departure Time
         </Text>
         <View style={styles.pills} testID="filters-times">
           {TIMES_OF_DAY.map((t) => (

@@ -7,7 +7,9 @@ import { AccessibilityInfo } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { AccountProvider, canUseApp, useAccount } from '@/account/AccountProvider';
+import { markIntroDone } from '@/launch/introState';
 import { LaunchIntro } from '@/launch/LaunchIntro';
+import { MembershipProvider } from '@/membership/MembershipProvider';
 import { ModerationProvider } from '@/moderation/ModerationProvider';
 import { LogbookProvider } from '@/logbook/LogbookProvider';
 import { RequestsProvider } from '@/requests/RequestsProvider';
@@ -87,7 +89,14 @@ export default function RootLayout() {
         <ThemeProvider value={navTheme}>
           <StatusBar style={!introDone ? 'light' : scheme === 'dark' ? 'light' : 'dark'} />
           <AppStack />
-          {introDone ? null : <LaunchIntro onDone={() => setIntroDone(true)} />}
+          {introDone ? null : (
+            <LaunchIntro
+              onDone={() => {
+                setIntroDone(true);
+                markIntroDone();
+              }}
+            />
+          )}
         </ThemeProvider>
       </AccountProvider>
     </GestureHandlerRootView>
@@ -107,25 +116,27 @@ function AppStack() {
     <SettingsProvider key={account.epoch}>
       <SavedRoutesProvider>
         <LogbookProvider>
-          <RequestsProvider>
-            <LocationProvider>
-              <ModerationProvider>
-                <AirportSummaryProvider>
-                  <Stack screenOptions={{ headerShown: false }}>
-                    <Stack.Protected guard={inApp}>
-                      <Stack.Screen name="(tabs)" />
-                      <Stack.Screen name="settings" />
-                      <Stack.Screen name="account" />
-                    </Stack.Protected>
-                    <Stack.Protected guard={!inApp}>
-                      <Stack.Screen name="(auth)" />
-                    </Stack.Protected>
-                    <Stack.Screen name="legal/[doc]" />
-                  </Stack>
-                </AirportSummaryProvider>
-              </ModerationProvider>
-            </LocationProvider>
-          </RequestsProvider>
+          <MembershipProvider>
+            <RequestsProvider>
+              <LocationProvider>
+                <ModerationProvider>
+                  <AirportSummaryProvider>
+                    <Stack screenOptions={{ headerShown: false }}>
+                      <Stack.Protected guard={inApp}>
+                        <Stack.Screen name="(tabs)" />
+                        <Stack.Screen name="settings" />
+                        <Stack.Screen name="account" />
+                      </Stack.Protected>
+                      <Stack.Protected guard={!inApp}>
+                        <Stack.Screen name="(auth)" />
+                      </Stack.Protected>
+                      <Stack.Screen name="legal/[doc]" />
+                    </Stack>
+                  </AirportSummaryProvider>
+                </ModerationProvider>
+              </LocationProvider>
+            </RequestsProvider>
+          </MembershipProvider>
         </LogbookProvider>
       </SavedRoutesProvider>
     </SettingsProvider>

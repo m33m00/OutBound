@@ -43,14 +43,22 @@ describe('Icon', () => {
   it('shows the fallback on Android when there is no match', () => {
     withOS('android', () => {
       act(() => {
-        r = create(<Icon name="star.fill" fallback={<Text>Star</Text>} />);
+        r = create(<Icon name="moon.stars.fill" fallback={<Text>Star</Text>} />);
       });
     });
     expect(r!.root.findAllByType(Text).map((t) => t.props.children)).toContain('Star');
   });
 
   it('maps the tab bar, buttons and empty states to real Material glyphs', () => {
-    for (const name of ['magnifyingglass', 'text.bubble', 'suitcase', 'person.crop.circle', 'chevron.left', 'chevron.right', 'plus'] as const) {
+    for (const name of [
+      'magnifyingglass',
+      'text.bubble',
+      'suitcase',
+      'person.crop.circle',
+      'chevron.left',
+      'chevron.right',
+      'plus',
+    ] as const) {
       expect(MATERIAL[name]).toBeDefined();
     }
     for (const glyph of Object.values(MATERIAL)) expect(glyph! in MaterialIcons.glyphMap).toBe(true);

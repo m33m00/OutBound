@@ -679,3 +679,12 @@ Settings tab (was Profile, cog icon):
 - Each leg box on the opened route card now ends in one row: a left corner, the airline logo centred, a right corner. The corners are even (flex 1 each) so the logo stays centred.
 - Departed sits in the bottom left corner (under where it left from), Arrived in the bottom right (under where it landed), every time. They no longer sit over the route line.
 - Late, Canceled and Diverted pills keep their place over the line; the corners stay empty then.
+
+## Round 176: Membership plans and credits (demo), Departure Time filter
+
+- John: pick a membership tier from the main menu: Free, Pay as you go or Premium. Free sees itineraries but no seats until requested; a request goes straight to My Trips with dummy loads. Pay as you go and Free show credits on the main menu with the same icon; Free earns credits by answering loads. Premium sees every load, no credits.
+- The plan picker opens on the Search tab once the launch intro is done, until a plan is picked. Later closes it until next launch. The plan is kept with the settings (so Reset All Settings asks again) and changes any time under Settings > Membership.
+- Seats hide by taking them off each route before it reaches the screen, so tickets, the route card and the flight sheet all show "-" and gray lines. A note under the results count says why.
+- Opening a hidden route shows a "Seats are hidden" card above Leave By. Request Loads spends 1 credit, unlocks that route's flights for good, adds each flight to My Trips already answered with sample loads (the sample seats search has, else steady made-up numbers), saves the route and opens My Trips. Out of credits, the card offers Answer Loads (Requests tab) instead.
+- Credits: Free starts with 3, Pay as you go with 10, once per plan. Answering a load (Requests tab or Report Load) earns 1, once per flight. The ticket chip on the Search top bar shows the balance; a tap opens Credits: balance, earned, spent, how it works, recent entries, Answer Loads. Premium has no chip. No buying: Pay as you go says adding credits comes later. Everything is kept on the phone; nothing is charged.
+- John: rename "Time of day" to "Departure Time".

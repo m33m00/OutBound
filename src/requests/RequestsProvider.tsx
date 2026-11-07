@@ -1,9 +1,11 @@
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
 
 import type { Flight } from '@/engine';
+import { useMembershipOptional } from '@/membership/MembershipProvider';
 import { SCHEDULE_SOURCE } from '@/search/useRouteSearch';
 
 import {
+  addAnsweredAsk,
   addAsk,
   askFor,
   askState,
@@ -25,6 +27,8 @@ interface RequestsContextValue {
   askFor: (flight: Flight) => LoadRequest | null;
   /** Take back a waiting ask. */
   cancelAsk: (flight: Flight) => void;
+  /** A requested route's loads, already answered (round 176 demo: Free and Pay as you go). */
+  addAnswered: (flight: Flight, answer: LoadAnswer) => void;
   /** Your report on a flight this session, if any. */
   reportFor: (flight: Flight) => LoadAnswer | null;
   report: (flight: Flight, open: number, listed: number) => void;
@@ -50,9 +54,18 @@ export function RequestsProvider({ children }: { children: ReactNode }) {
 
   const ask = useCallback((flight: Flight) => setMine((list) => addAsk(list, flight, Date.now())), []);
   const cancel = useCallback((flight: Flight) => setMine((list) => cancelAsk(list, flight)), []);
+  const membership = useMembershipOptional();
+  const earn = membership?.earnForAnswer;
   const report = useCallback(
-    (flight: Flight, open: number, listed: number) =>
-      setReports((r) => ({ ...r, [flightKey(flight)]: { open, listed, at: Date.now(), byYou: true } })),
+    (flight: Flight, open: number, listed: number) => {
+      setReports((r) => ({ ...r, [flightKey(flight)]: { open, listed, at: Date.now(), byYou: true } }));
+      // Answering a load earns a credit on Free and Pay as you go (round 176), once per flight.
+      earn?.(flightKey(flight), `Answered ${flight.airline} ${flight.flightNumber}`);
+    },
+    [earn],
+  );
+  const addAnswered = useCallback(
+    (flight: Flight, answer: LoadAnswer) => setMine((list) => addAnsweredAsk(list, flight, answer)),
     [],
   );
 
@@ -63,13 +76,14 @@ export function RequestsProvider({ children }: { children: ReactNode }) {
       ask,
       askFor: (flight) => askFor(mine, flight),
       cancelAsk: cancel,
+      addAnswered,
       reportFor: (flight) => reports[flightKey(flight)] ?? null,
       report,
       feedAnswers,
       answerFeed,
       openFeedCount: (now) => feedAsks(now).filter((r) => !feedAnswers[r.id]).length,
     }),
-    [mine, reports, ask, cancel, report, feedAnswers, answerFeed],
+    [mine, reports, ask, cancel, addAnswered, report, feedAnswers, answerFeed],
   );
   return <RequestsContext.Provider value={value}>{children}</RequestsContext.Provider>;
 }

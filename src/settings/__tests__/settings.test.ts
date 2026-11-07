@@ -39,8 +39,16 @@ describe('parseSettings', () => {
       notify: { answers: true, airlineAsks: false },
       mapsApp: 'google',
       appearance: 'dark',
+      membership: 'payg',
     };
     expect(parseSettings(JSON.parse(JSON.stringify(saved)))).toEqual(saved);
+  });
+
+  it('keeps the plan once picked and asks again when there is none (round 176)', () => {
+    expect(DEFAULT_SETTINGS.membership).toBeNull();
+    expect(parseSettings({ membership: 'premium' }).membership).toBe('premium');
+    expect(parseSettings({ membership: 'gold' }).membership).toBeNull();
+    expect(parseSettings({}).membership).toBeNull();
   });
 
   it('follows the phone unless Light or Dark was picked (round 173)', () => {

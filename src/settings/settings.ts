@@ -5,6 +5,7 @@
  */
 import { AIRPORTS, areaFor, DEFAULT_SEARCH_OPTIONS, TIMES_OF_DAY, type SearchOptions } from '@/engine';
 import type { MapsApp } from '@/search/directions';
+import { parseTier, type Tier } from '@/membership/membership';
 import { DEFAULT_APPEARANCE, parseAppearance, type AppearancePref } from '@/theme/appearancePref';
 
 /**
@@ -86,6 +87,8 @@ export interface Settings {
   mapsApp: MapsApp;
   /** Light, Dark or System (round 173). System follows the phone and is the default. */
   appearance: AppearancePref;
+  /** Free, Pay as you go or Premium (round 176, demo). Null until picked, so the Search tab asks. */
+  membership: Tier | null;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -100,6 +103,7 @@ export const DEFAULT_SETTINGS: Settings = {
   notify: { answers: false, airlineAsks: false },
   mapsApp: 'apple',
   appearance: DEFAULT_APPEARANCE,
+  membership: null,
 };
 
 export const SETTINGS_KEY = 'outbound.settings.v1';
@@ -157,6 +161,7 @@ export function parseSettings(raw: unknown): Settings {
     },
     mapsApp: o.mapsApp === 'google' ? 'google' : 'apple',
     appearance: parseAppearance(o.appearance),
+    membership: parseTier(o.membership),
   };
 }
 

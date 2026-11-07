@@ -1,6 +1,7 @@
 import Constants from 'expo-constants';
 import { router } from 'expo-router';
 import type { SFSymbol } from 'expo-symbols';
+import { useState } from 'react';
 import { Linking, Platform, Pressable, StyleSheet, Text } from 'react-native';
 
 import { useAccount } from '@/account/AccountProvider';
@@ -17,8 +18,11 @@ import { Button } from '@/ui/Buttons';
 import { ListGroup, ListRow, SectionFooter } from '@/ui/ListGroup';
 import { useSharedLocation } from '@/ui/LocationProvider';
 import { pressStyle } from '@/ui/press';
-import { AppearanceChoice, ListControlRow, ListSwitchRow } from '@/ui/SettingsControls';
+import { AppearanceChoice, ListControlRow, ListSwitchRow, Segments } from '@/ui/SettingsControls';
 import { TabScreen } from '@/ui/TabScreen';
+import { CreditsSheet } from '@/ui/Credits';
+import { creditsWord, TIER_LABEL, TIERS } from '@/membership/membership';
+import { useMembershipOptional } from '@/membership/MembershipProvider';
 
 /**
  * The Settings tab (round 174, John: "Profile tab should be renamed to Settings and Cog icon. Inside
@@ -45,6 +49,8 @@ export default function SettingsTab() {
   const rows = profileSummary(settings, Platform.OS === 'ios');
   const summary = (key: SummaryRow['key']) => rows.find((r) => r.key === key);
   const version = Constants.expoConfig?.version;
+  const membership = useMembershipOptional();
+  const [creditsOpen, setCreditsOpen] = useState(false);
 
   const open = (key: SummaryRow['key']) => router.push({ pathname: '/settings', params: { section: settingsSectionFor(key) } });
   const row = (key: SummaryRow['key']) => {
@@ -85,6 +91,53 @@ export default function SettingsTab() {
         />
       </ListGroup>
 
+      {/* The plan picked on the Search tab, changeable here while it's a demo (round 176, John). */}
+      {membership ? (
+        <>
+          <ListGroup title="Membership">
+            <ListControlRow label="Plan" icon="star.fill">
+              <Segments
+                label="Plan"
+                testID="plan-choice"
+                options={TIERS}
+                value={membership.tier ?? ('' as (typeof TIERS)[number])}
+                name={(t) => TIER_LABEL[t]}
+                onChange={membership.setTier}
+              />
+            </ListControlRow>
+            {membership.tracksCredits ? (
+              <ListRow
+                icon="ticket.fill"
+                label="Credits"
+                value={creditsWord(membership.credits)}
+                onPress={() => setCreditsOpen(true)}
+                accessibilityHint="Opens your credits"
+              />
+            ) : null}
+          </ListGroup>
+          <SectionFooter>
+            {membership.tier === 'premium'
+              ? 'Every load shows, with no credits to track.'
+              : membership.tier
+                ? 'Seats stay hidden until you request a route’s loads. Answering loads earns credits.'
+                : 'Pick a plan to choose how you see loads.'}{' '}
+            A demo for now, so nothing is charged.
+          </SectionFooter>
+          {membership.tier ? (
+            <CreditsSheet
+              visible={creditsOpen}
+              tier={membership.tier}
+              wallet={membership.wallet}
+              onClose={() => setCreditsOpen(false)}
+              onAnswerLoads={() => {
+                setCreditsOpen(false);
+                router.navigate('/feed');
+              }}
+            />
+          ) : null}
+        </>
+      ) : null}
+
       <ListGroup title="Home airports">
         {row('home')}
         {row('otherHomes')}
@@ -116,7 +169,7 @@ export default function SettingsTab() {
             detail={
               moreFilters
                 ? `${moreFilters} more ${moreFilters === 1 ? 'filter' : 'filters'} set`
-                : 'Times, airlines, loads and airports'
+                : 'Departure time, airlines, loads and airports'
             }
             icon={ROW_ICON.search}
             onPress={() => open('search')}

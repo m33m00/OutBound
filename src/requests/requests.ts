@@ -283,6 +283,14 @@ export function addAsk(mine: LoadRequest[], flight: Flight, now: number): LoadRe
   return [{ id: `mine-${flightKey(flight)}`, flight, askedAt: now }, ...mine];
 }
 
+/** Your asks with this flight's answer in (round 176 demo): an ask already there gets the answer. */
+export function addAnsweredAsk(mine: LoadRequest[], flight: Flight, answer: LoadAnswer): LoadRequest[] {
+  const key = flightKey(flight);
+  if (mine.some((r) => flightKey(r.flight) === key))
+    return mine.map((r) => (flightKey(r.flight) === key && !r.answer ? { ...r, answer } : r));
+  return [{ id: `mine-${key}`, flight, askedAt: answer.at, answer }, ...mine];
+}
+
 /** Your ask on this flight, if any. */
 export const askFor = (mine: LoadRequest[], flight: Flight) => {
   const key = flightKey(flight);
