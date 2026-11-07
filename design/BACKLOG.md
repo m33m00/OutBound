@@ -209,3 +209,4 @@ Each item names its owner. One item per work session. spec-keeper runs a pre-fli
 | 202 | Filters: time of day, airports to avoid, only answered loads, airline picks, US airlines only | Done, round 174 |
 | 203 | Airport summary on hold: transit, hours, rental cars (12 airports checked Nov 7) | Done, round 174 |
 | 204 | Profile tab becomes Settings (cog), regrouped | Done, round 174 |
+| 205 | Departed pill bottom left, Arrived bottom right on each flight card of the opened route (round 175, John) | Done |

@@ -530,6 +530,58 @@ describe('ResultRow', () => {
     expect(group.findAll((n) => n.props.accessibilityLabel === 'American 1' && typeof n.type === 'string').length).toBe(1);
   });
 
+  it('route card: Departed sits in the bottom left corner, Arrived in the bottom right, never over the line (round 175, John)', async () => {
+    const it = await fullItinerary();
+    const words = (n: ReactTestInstance) =>
+      n.findAll((x) => typeof x.props.children === 'string').map((x) => x.props.children as string);
+    for (const [state, side, other] of [
+      ['departed', 'leg-corner-left', 'leg-corner-right'],
+      ['arrived', 'leg-corner-right', 'leg-corner-left'],
+    ] as const) {
+      await act(async () => {
+        r = create(
+          <ResultRow
+            itinerary={it}
+            selected
+            now={NOW}
+            onPress={jest.fn()}
+            onLegPress={jest.fn()}
+            status={statusFor(it, live(it, state))}
+          />,
+        );
+      });
+      const label = state === 'departed' ? 'Departed' : 'Arrived';
+      const box = r!.root.findAll((n) => n.props.testID === 'leg-box' && typeof n.type === 'string')[0];
+      const at = (id: string) => box.findAll((n) => n.props.testID === id && typeof n.type === 'string')[0];
+      expect(words(at(side))).toContain(label);
+      expect(words(at(other))).not.toContain(label);
+      // Not over the route line any more.
+      expect(box.findAll((n) => n.props.testID === 'leg-tag' && typeof n.type === 'string')).toHaveLength(0);
+      expect(words(at('leg-track'))).not.toContain(label);
+      // The corners sit on the bottom row, with the logo between them.
+      const bottom = at('leg-bottom');
+      const ids = (bottom.children as ReactTestInstance[]).map((n) => n.props.testID);
+      expect(ids).toEqual(['leg-corner-left', 'leg-flight', 'leg-corner-right']);
+    }
+    // A late leg keeps its pill over the line, with both corners empty.
+    await act(async () => {
+      r = create(
+        <ResultRow
+          itinerary={it}
+          selected
+          now={NOW}
+          onPress={jest.fn()}
+          onLegPress={jest.fn()}
+          status={statusFor(it, live(it, 'delayed', 25))}
+        />,
+      );
+    });
+    const box = r!.root.findAll((n) => n.props.testID === 'leg-box' && typeof n.type === 'string')[0];
+    expect(box.findAll((n) => n.props.testID === 'leg-tag' && typeof n.type === 'string')).toHaveLength(1);
+    for (const id of ['leg-corner-left', 'leg-corner-right'])
+      expect(words(box.findAll((n) => n.props.testID === id && typeof n.type === 'string')[0])).toEqual([]);
+  });
+
   it('route card: each leg box shows just the airline logo; a tap or hold opens the number and aircraft (rounds 155, 158, John)', async () => {
     const it = await fullItinerary();
     const withPlane = { ...it, legs: it.legs.map((l) => ({ ...l, flight: { ...l.flight, aircraft: 'Boeing 737-800' } })) };
@@ -542,9 +594,16 @@ describe('ResultRow', () => {
     // No number and no aircraft in the box, no pill around the logo.
     expect(strings(group)).toEqual([]);
     expect(group.findAll((n) => n.props.testID === 'airline-pill')).toHaveLength(0);
-    // Centred under the route line, across the whole box (round 155).
-    const flatStyle = Object.assign({}, ...([group.props.style] as unknown[]).flat(3).filter(Boolean));
-    expect(flatStyle).toMatchObject({ alignSelf: 'stretch', alignItems: 'center' });
+    // Centred under the route line, across the whole box (round 155), between two even corners (round 175).
+    const flat = (st: unknown) => Object.assign({}, ...([st] as unknown[]).flat(3).filter(Boolean));
+    expect(flat(group.props.style)).toMatchObject({ alignItems: 'center' });
+    const bottom = r!.root.findAll((n) => n.props.testID === 'leg-bottom' && typeof n.type === 'string')[0];
+    expect(flat(bottom.props.style)).toMatchObject({ alignSelf: 'stretch', flexDirection: 'row' });
+    const corners = ['leg-corner-left', 'leg-corner-right'].map((id) =>
+      flat(bottom.findAll((n) => n.props.testID === id && typeof n.type === 'string')[0].props.style),
+    );
+    expect(corners[0].flex).toBe(1);
+    expect(corners[1].flex).toBe(1);
     // A hold on the logo opens the little window with the number and aircraft.
     const logo = group.findAll((n) => n.props.testID === 'flight-peek-logo' && typeof n.props.onLongPress === 'function')[0];
     act(() => logo.props.onLongPress());

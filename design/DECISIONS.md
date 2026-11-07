@@ -672,3 +672,10 @@ Settings tab (was Profile, cog icon):
 - On/off and pick-one settings change right on the tab; anything bigger opens a page with just that section.
 - The route keeps its file name (profile) so links don't break.
 - Not seen on a device.
+
+## Round 175: Departed and Arrived in the flight card's corners
+
+- John: "On the flight summary page can the departed pill stay on the bottom left of the card and arrived pill on the bottom right of the flight card?"
+- Each leg box on the opened route card now ends in one row: a left corner, the airline logo centred, a right corner. The corners are even (flex 1 each) so the logo stays centred.
+- Departed sits in the bottom left corner (under where it left from), Arrived in the bottom right (under where it landed), every time. They no longer sit over the route line.
+- Late, Canceled and Diverted pills keep their place over the line; the corners stay empty then.
