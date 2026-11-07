@@ -9,7 +9,10 @@ describe('parseSettings', () => {
 
   it('starts with notifications off and keeps saved choices', () => {
     expect(DEFAULT_SETTINGS.notify).toEqual({ answers: false, airlineAsks: false });
-    expect(parseSettings({ notify: { answers: false, airlineAsks: true } }).notify).toEqual({ answers: false, airlineAsks: true });
+    expect(parseSettings({ notify: { answers: false, airlineAsks: true } }).notify).toEqual({
+      answers: false,
+      airlineAsks: true,
+    });
     expect(parseSettings({ notify: { answers: 'no' } }).notify).toEqual({ answers: false, airlineAsks: false });
   });
 
@@ -35,8 +38,18 @@ describe('parseSettings', () => {
       areaOn: { DAL: true, DFW: false },
       notify: { answers: true, airlineAsks: false },
       mapsApp: 'google',
+      appearance: 'dark',
     };
     expect(parseSettings(JSON.parse(JSON.stringify(saved)))).toEqual(saved);
+  });
+
+  it('follows the phone unless Light or Dark was picked (round 173)', () => {
+    expect(DEFAULT_SETTINGS.appearance).toBe('system');
+    expect(parseSettings({}).appearance).toBe('system');
+    expect(parseSettings({ appearance: 'light' }).appearance).toBe('light');
+    expect(parseSettings({ appearance: 'dark' }).appearance).toBe('dark');
+    expect(parseSettings({ appearance: 'sepia' }).appearance).toBe('system');
+    expect(parseSettings({ appearance: 1 }).appearance).toBe('system');
   });
 
   it('clamps and snaps out-of-range values', () => {

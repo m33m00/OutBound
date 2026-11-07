@@ -11,8 +11,8 @@ import { LaunchIntro } from '@/launch/LaunchIntro';
 import { ModerationProvider } from '@/moderation/ModerationProvider';
 import { LogbookProvider } from '@/logbook/LogbookProvider';
 import { RequestsProvider } from '@/requests/RequestsProvider';
-import { SettingsProvider } from '@/settings/SettingsProvider';
-import { applyBoldText, colors, fontAssets, useColorSchemeName } from '@/theme';
+import { readSavedAppearance, SettingsProvider } from '@/settings/SettingsProvider';
+import { applyAppearance, applyBoldText, colors, fontAssets, useColorSchemeName } from '@/theme';
 import { SavedRoutesProvider } from '@/trips/SavedRoutesProvider';
 import { LocationProvider } from '@/ui/LocationProvider';
 
@@ -44,7 +44,19 @@ export default function RootLayout() {
       sub.remove();
     };
   }, []);
-  const ready = (fontsLoaded || fontError != null) && boldChecked;
+  // Light, Dark or System is set before the first screen draws too (round 173), so the app the
+  // launch intro lifts off is already in the right mode.
+  const [appearanceChecked, setAppearanceChecked] = useState(false);
+  useEffect(() => {
+    let live = true;
+    readSavedAppearance()
+      .then(applyAppearance)
+      .finally(() => live && setAppearanceChecked(true));
+    return () => {
+      live = false;
+    };
+  }, []);
+  const ready = (fontsLoaded || fontError != null) && boldChecked && appearanceChecked;
   // The animated loading screen plays once per launch, over the app as it loads (App Store round 1).
   const [introDone, setIntroDone] = useState(false);
 
@@ -97,17 +109,17 @@ function AppStack() {
           <RequestsProvider>
             <LocationProvider>
               <ModerationProvider>
-              <Stack screenOptions={{ headerShown: false }}>
-                <Stack.Protected guard={inApp}>
-                  <Stack.Screen name="(tabs)" />
-                  <Stack.Screen name="settings" />
-                  <Stack.Screen name="account" />
-                </Stack.Protected>
-                <Stack.Protected guard={!inApp}>
-                  <Stack.Screen name="(auth)" />
-                </Stack.Protected>
-                <Stack.Screen name="legal/[doc]" />
-              </Stack>
+                <Stack screenOptions={{ headerShown: false }}>
+                  <Stack.Protected guard={inApp}>
+                    <Stack.Screen name="(tabs)" />
+                    <Stack.Screen name="settings" />
+                    <Stack.Screen name="account" />
+                  </Stack.Protected>
+                  <Stack.Protected guard={!inApp}>
+                    <Stack.Screen name="(auth)" />
+                  </Stack.Protected>
+                  <Stack.Screen name="legal/[doc]" />
+                </Stack>
               </ModerationProvider>
             </LocationProvider>
           </RequestsProvider>

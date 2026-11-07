@@ -23,6 +23,7 @@ const ROW_ICON: Record<ReturnType<typeof profileSummary>[number]['key'], SFSymbo
   home: 'house.fill',
   otherHomes: 'house',
   location: 'location.fill',
+  appearance: 'circle.lefthalf.filled',
   notify: 'bell.fill',
   buffer: 'clock',
   maps: 'map',
@@ -78,7 +79,10 @@ export default function ProfileScreen() {
         <ListRow label="Contact Support" onPress={() => Linking.openURL(supportLink())} />
       </ListGroup>
       {/* Apple 5.2: airline names and logos only identify flights; say plainly whose they are. */}
-      <SectionFooter>OutBound is independent and isn’t affiliated with or endorsed by any airline. Airline names and logos belong to their owners.</SectionFooter>
+      <SectionFooter>
+        OutBound is independent and isn’t affiliated with or endorsed by any airline. Airline names and logos belong to their
+        owners.
+      </SectionFooter>
     </TabScreen>
   );
 }

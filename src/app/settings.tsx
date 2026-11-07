@@ -10,7 +10,16 @@ import { parseSettingsSection, type SettingsSection } from '@/settings/profileSu
 import { MAPS_APP_NAME, type MapsApp } from '@/search/directions';
 import { formatDuration } from '@/search/format';
 import { homeAirports, LIMITS } from '@/settings/settings';
-import { minTapTarget, radius, spacing, textStyles, useColors } from '@/theme';
+import {
+  APPEARANCE_LABEL,
+  APPEARANCE_PREFS,
+  minTapTarget,
+  radius,
+  spacing,
+  textStyles,
+  useColors,
+  type AppearancePref,
+} from '@/theme';
 import { logosOn } from '@/ui/AirlinePill';
 import { AirportPicker } from '@/ui/AirportPicker';
 import { BackButton } from '@/ui/BackButton';
@@ -127,6 +136,15 @@ export default function SettingsScreen() {
               : // The switch's hint already says what it's for (round 65), so the footer keeps the privacy line.
                 'Only used while the app is open.'}
           </SectionFooter>
+        </View>
+
+        {/* Light, Dark or System; System follows the phone and is the default (John, 2026-11-07). */}
+        <View style={styles.section} onLayout={sectionLayout('appearance')}>
+          <SectionHeader title="Appearance" />
+          <View style={[card, styles.group]}>
+            <AppearanceChoice value={settings.appearance} onChange={(appearance) => update({ appearance })} />
+          </View>
+          <SectionFooter>System matches your phone’s light or dark setting.</SectionFooter>
         </View>
 
         {/* Moved here from a button on the map (John, 2026-11-01: "That should just be in the settings"). */}
@@ -279,32 +297,75 @@ function MapsChoice({ value, onChange }: { value: MapsApp; onChange: (app: MapsA
       <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, { color: c.text }]}>
         Directions open in
       </Text>
-      <View style={styles.segments} accessibilityRole="radiogroup" accessibilityLabel="Directions open in">
-        {(['apple', 'google'] as const).map((app) => {
-          const on = value === app;
-          return (
-            <Pressable
-              key={app}
-              onPress={withTick(() => onChange(app))}
-              accessibilityRole="radio"
-              accessibilityState={{ checked: on }}
-              accessibilityLabel={MAPS_APP_NAME[app]}
-              style={pressStyle([styles.segment, { backgroundColor: on ? c.accent : c.surface2 }])}>
-              <Text
-                style={[textStyles.bodyStrong, { color: on ? c.onAccent : c.text }]}
-                numberOfLines={1}
-                adjustsFontSizeToFit
-                minimumFontScale={0.8}>
-                {MAPS_APP_NAME[app]}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
+      <Segments
+        label="Directions open in"
+        options={['apple', 'google'] as const}
+        value={value}
+        name={(app) => MAPS_APP_NAME[app]}
+        onChange={onChange}
+      />
       {/* Always shown, so picking doesn't make the layout jump. */}
       <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>
         Google Maps opens in Safari if the app isn’t on this iPhone.
       </Text>
+    </View>
+  );
+}
+
+/** Light, Dark or System, as one row of segments (round 173). */
+function AppearanceChoice({ value, onChange }: { value: AppearancePref; onChange: (pref: AppearancePref) => void }) {
+  return (
+    <Segments
+      label="Appearance"
+      testID="appearance-choice"
+      options={APPEARANCE_PREFS}
+      value={value}
+      name={(pref) => APPEARANCE_LABEL[pref]}
+      onChange={onChange}
+    />
+  );
+}
+
+/** A row of equal segments, the picked one filled blue; VoiceOver reads it as a radio group. */
+function Segments<T extends string>({
+  label,
+  options,
+  value,
+  name,
+  onChange,
+  testID,
+}: {
+  label: string;
+  options: readonly T[];
+  value: T;
+  name: (v: T) => string;
+  onChange: (v: T) => void;
+  testID?: string;
+}) {
+  const c = useColors();
+  return (
+    <View testID={testID} style={styles.segments} accessibilityRole="radiogroup" accessibilityLabel={label}>
+      {options.map((opt) => {
+        const on = value === opt;
+        return (
+          <Pressable
+            key={opt}
+            testID={testID ? `${testID}-${opt}` : undefined}
+            onPress={withTick(() => onChange(opt))}
+            accessibilityRole="radio"
+            accessibilityState={{ checked: on }}
+            accessibilityLabel={name(opt)}
+            style={pressStyle([styles.segment, { backgroundColor: on ? c.accent : c.surface2 }])}>
+            <Text
+              style={[textStyles.bodyStrong, { color: on ? c.onAccent : c.text }]}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.8}>
+              {name(opt)}
+            </Text>
+          </Pressable>
+        );
+      })}
     </View>
   );
 }

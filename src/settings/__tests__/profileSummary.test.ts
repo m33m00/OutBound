@@ -45,11 +45,19 @@ describe('profileSummary', () => {
       'home',
       'otherHomes',
       'location',
+      'appearance',
       'notify',
       'buffer',
       'maps',
       'search',
     ]);
+  });
+
+  it('shows the appearance choice and opens Settings at it (round 173)', () => {
+    expect(row(DEFAULT_SETTINGS, 'appearance').value).toBe('System');
+    expect(row({ ...DEFAULT_SETTINGS, appearance: 'dark' }, 'appearance').value).toBe('Dark');
+    expect(settingsSectionFor('appearance')).toBe('appearance');
+    expect(parseSettingsSection('appearance')).toBe('appearance');
   });
 
   it('names the maps app on iPhone only (round 49)', () => {
@@ -61,7 +69,7 @@ describe('profileSummary', () => {
 describe('Profile rows open Settings at their section (backlog 56)', () => {
   it('every row has a section', () => {
     for (const row of profileSummary(DEFAULT_SETTINGS)) {
-      expect(['homes', 'location', 'notify', 'leaveBy', 'search']).toContain(settingsSectionFor(row.key));
+      expect(['homes', 'location', 'appearance', 'notify', 'leaveBy', 'search']).toContain(settingsSectionFor(row.key));
     }
     expect(settingsSectionFor('otherHomes')).toBe('homes');
     expect(settingsSectionFor('buffer')).toBe('leaveBy');

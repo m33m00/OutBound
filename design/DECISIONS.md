@@ -639,3 +639,14 @@ John (Nov 7): "No I dont like it go back to straight lines haha"
 
 - Map and card route lines are back to straight, exactly as they were before round 170 (arcs.ts, framing.ts, GlobeMap.tsx and MiniRoute.tsx restored; the card flow test removed).
 - Rule going forward: route lines stay straight. Don't revisit curves unless John asks.
+
+## Round 173: Appearance setting (Light, Dark, System)
+
+John (Nov 7): "Can you create a a system toggle for light/dark/system mode and automatically set the system mode by default"
+
+- Settings has an Appearance section (after Location) with three segments: Light, Dark, System. System is the default and follows the phone. Profile shows it as its own row that opens Settings there.
+- Saved with the other settings on the phone. Reset and Delete Account bring it back to System.
+- One switch for the whole app: every screen already takes its colors from useColorSchemeName, which now reads the choice first and the phone only for System. Appearance.setColorScheme makes the phone's own parts (keyboard, alerts, date pickers, status bar) match too.
+- The saved choice is read before the first screen draws, so the app the launch intro lifts off is already in the right mode with no flash.
+- The launch intro itself stays the icon's ink blue in every mode, same as the phone's splash screen, which can't read an in-app setting.
+- Not seen on a device.

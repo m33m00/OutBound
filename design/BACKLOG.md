@@ -205,3 +205,4 @@ Each item names its owner. One item per work session. spec-keeper runs a pre-fli
 | 198 | Curved map route lines (sideways bow per leg); card line curves mocked up | Done (round 170) |
 | 199 | Route lines flow gently (map lean through stops, card 2.5pt wave) instead of arching | Reverted in round 172 |
 | 200 | Route lines back to straight on map and cards (curves dropped) | Done, round 172 |
+| 201 | Appearance setting: Light, Dark, System (default System), saved, whole app follows | Done, round 173 |

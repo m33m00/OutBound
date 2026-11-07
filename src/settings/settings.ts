@@ -5,6 +5,7 @@
  */
 import { AIRPORTS, areaFor, DEFAULT_SEARCH_OPTIONS, type SearchOptions } from '@/engine';
 import type { MapsApp } from '@/search/directions';
+import { DEFAULT_APPEARANCE, parseAppearance, type AppearancePref } from '@/theme/appearancePref';
 
 /**
  * The search settings people can adjust (DECISIONS.md: "All adjustable").
@@ -70,6 +71,8 @@ export interface Settings {
   notify: NotifySettings;
   /** Where the Leave By card opens directions (provisional, John left it open 2026-10-30). */
   mapsApp: MapsApp;
+  /** Light, Dark or System (round 173). System follows the phone and is the default. */
+  appearance: AppearancePref;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -83,6 +86,7 @@ export const DEFAULT_SETTINGS: Settings = {
   areaOn: {},
   notify: { answers: false, airlineAsks: false },
   mapsApp: 'apple',
+  appearance: DEFAULT_APPEARANCE,
 };
 
 export const SETTINGS_KEY = 'outbound.settings.v1';
@@ -104,9 +108,7 @@ export function parseSettings(raw: unknown): Settings {
   const h = (o.homes && typeof o.homes === 'object' ? o.homes : {}) as Record<string, unknown>;
   const known = (v: unknown): v is string => typeof v === 'string' && v in AIRPORTS;
   const main = known(h.main) ? h.main : null;
-  const extras = Array.isArray(h.extras)
-    ? [...new Set(h.extras.filter(known))].filter((code) => code !== main)
-    : [];
+  const extras = Array.isArray(h.extras) ? [...new Set(h.extras.filter(known))].filter((code) => code !== main) : [];
   const a = (o.areaOn && typeof o.areaOn === 'object' ? o.areaOn : {}) as Record<string, unknown>;
   const areaOn = Object.fromEntries(
     Object.entries(a).filter((e): e is [string, boolean] => known(e[0]) && typeof e[1] === 'boolean'),
@@ -133,6 +135,7 @@ export function parseSettings(raw: unknown): Settings {
       airlineAsks: bool(n.airlineAsks, DEFAULT_SETTINGS.notify.airlineAsks),
     },
     mapsApp: o.mapsApp === 'google' ? 'google' : 'apple',
+    appearance: parseAppearance(o.appearance),
   };
 }
 
