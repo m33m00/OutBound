@@ -218,3 +218,5 @@ Each item names its owner. One item per work session. spec-keeper runs a pre-fli
 | 211 | Results day stepper becomes a labeled row of day buttons (round 177, John) | Done |
 | 212 | Appearance stops setting the phone-level override; launch clears an old one (round 178, map and intro fix) | Done |
 | 213 | Arrows at both ends of the day buttons row step a day; dim at the ends (round 179) | Done |
+| 214 | Day row shows whole buttons only, sized to fit between the arrows (round 180) | Done |
+| 215 | Yaoom sound when a request is answered: sound made; waiting on a yes to add expo-audio | Waiting on John |

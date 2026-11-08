@@ -707,3 +707,10 @@ Settings tab (was Profile, cog icon):
 - The labeled row of day buttons stays as is. A light blue arrow button sits at each end of the row (chevron left / right, full button height so it lines up with the days).
 - An arrow steps one day and searches it, same as tapping that day; the row scrolls to keep it in view. Each arrow dims at the end of the date window.
 - Screen readers hear "Previous day, <day>" / "Next day, <day>".
+
+## Round 180: whole day buttons only; the yaoom sound is made
+
+- John, on round 179's screenshot: "Why do the arrows overlap with a date? That doesn't look good." The row cut the next day button in half at its edge, right beside the arrow.
+- The row now measures the space between the arrows, fits as many whole buttons as there's room for (each at least 80 wide), and sizes them to fill it exactly. Swiping snaps one whole button at a time; the arrows and taps move the row just enough to keep the picked day in view. No button is ever cut off.
+- John also asked for a "yaoom" sound when a request is answered. assets/sounds/yaoom.wav is an original sound made from scratch for OutBound (a voice-like "ya-oom" with a low boom under it); no artist's audio is used or sampled.
+- Playing it needs Expo's audio package (expo-audio), which isn't in the app yet. Adding a package waits on John's yes, so the sound isn't wired up this round. Plan once he says yes: play it when one of your asks gets its answer, follow the phone's silent switch, mix with other audio, and add a Sound effects toggle in Settings.
