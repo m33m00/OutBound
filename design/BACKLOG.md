@@ -217,3 +217,4 @@ Each item names its owner. One item per work session. spec-keeper runs a pre-fli
 | 210 | Credits chip reads "N credits" (round 177, John) | Done |
 | 211 | Results day stepper becomes a labeled row of day buttons (round 177, John) | Done |
 | 212 | Appearance stops setting the phone-level override; launch clears an old one (round 178, map and intro fix) | Done |
+| 213 | Arrows at both ends of the day buttons row step a day; dim at the ends (round 179) | Done |

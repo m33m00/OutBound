@@ -66,6 +66,30 @@ describe('DayStepper', () => {
     expect(onDay).toHaveBeenCalledWith('2026-11-01');
   });
 
+  it('has arrows at both ends that step a day and dim at the ends of the window (round 179, John)', () => {
+    const onDay = jest.fn();
+    act(() => {
+      r = create(<DayStepper days={DAYS} date="2026-10-31" label="Sat, Oct 31" onDay={onDay} />);
+    });
+    const arrow = (dir: 'prev' | 'next') =>
+      r!.root.findAll((n) => n.props.testID === `day-${dir}` && n.props.accessibilityRole === 'button')[0];
+    // The day buttons sit between the two arrows.
+    expect(arrow('next').props.accessibilityLabel).toBe('Next day, Sunday, November 1');
+    act(() => arrow('next').props.onPress());
+    expect(onDay).toHaveBeenLastCalledWith('2026-11-01');
+    act(() => arrow('prev').props.onPress());
+    expect(onDay).toHaveBeenLastCalledWith('2026-10-30');
+    act(() => {
+      r!.update(<DayStepper days={DAYS} date="2026-10-30" label="Fri, Oct 30" onDay={onDay} />);
+    });
+    expect(arrow('prev').props.accessibilityState).toEqual({ disabled: true });
+    expect(arrow('prev').props.accessibilityLabel).toBe('Previous day');
+    act(() => {
+      r!.update(<DayStepper days={DAYS} date={DAYS[DAYS.length - 1].date} label="last" onDay={onDay} />);
+    });
+    expect(arrow('next').props.accessibilityState).toEqual({ disabled: true });
+  });
+
   it('fills the searched day blue and the others light blue, so they read as buttons', () => {
     act(() => {
       r = create(<DayStepper days={DAYS} date="2026-10-31" label="Sat, Oct 31" onDay={jest.fn()} />);

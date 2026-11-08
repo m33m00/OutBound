@@ -699,3 +699,11 @@ Settings tab (was Profile, cog icon):
 - John, after round 177: "I can't see the map and the loading screen only loads the words." Both are drawn with Skia, and neither file changed in rounds 173 to 177.
 - The only change in those rounds that reached native views was round 173's Appearance choice calling Appearance.setColorScheme, which sets a light/dark override on every app window. In Expo Go that override stays on the windows across reloads of an update. It's the prime suspect; not confirmed on a device.
 - Fix: the Appearance choice no longer sets the phone-level override. Light/Dark/System still changes every color in the app (useColorSchemeName). Launch clears any override an earlier version left, once. The phone's own parts (keyboard, alerts) follow the phone's setting again.
+- Confirmed Nov 8: John, after round 178: "They're back". Never set the phone-level override again.
+
+## Round 179: arrows beside the day buttons
+
+- John: "New row of day buttons are not obvious to scroll left and right ... add arrows but keep the buttons like that".
+- The labeled row of day buttons stays as is. A light blue arrow button sits at each end of the row (chevron left / right, full button height so it lines up with the days).
+- An arrow steps one day and searches it, same as tapping that day; the row scrolls to keep it in view. Each arrow dims at the end of the date window.
+- Screen readers hear "Previous day, <day>" / "Next day, <day>".
