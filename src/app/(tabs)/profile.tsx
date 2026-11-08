@@ -190,6 +190,14 @@ export default function SettingsTab() {
           value={settings.radarOn}
           onChange={(radarOn) => update({ radarOn })}
         />
+        <ListSwitchRow
+          testID="settings-sounds"
+          icon="speaker.wave.2.fill"
+          label="Sound effects"
+          detail="A yaoom when your request is answered"
+          value={settings.sounds}
+          onChange={(sounds) => update({ sounds })}
+        />
       </ListGroup>
 
       <ListGroup title="Notifications">{row('notify')}</ListGroup>

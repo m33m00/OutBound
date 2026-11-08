@@ -283,6 +283,13 @@ export function addAsk(mine: LoadRequest[], flight: Flight, now: number): LoadRe
   return [{ id: `mine-${flightKey(flight)}`, flight, askedAt: now }, ...mine];
 }
 
+/** Ids of your asks that have an answer. */
+export const answeredIds = (mine: LoadRequest[]): string[] => mine.filter((r) => r.answer).map((r) => r.id);
+
+/** Asks answered since `seen` (round 181: the yaoom plays once for these). */
+export const newlyAnswered = (seen: ReadonlySet<string>, mine: LoadRequest[]): string[] =>
+  answeredIds(mine).filter((id) => !seen.has(id));
+
 /** Your asks with this flight's answer in (round 176 demo): an ask already there gets the answer. */
 export function addAnsweredAsk(mine: LoadRequest[], flight: Flight, answer: LoadAnswer): LoadRequest[] {
   const key = flightKey(flight);

@@ -40,6 +40,7 @@ describe('parseSettings', () => {
       mapsApp: 'google',
       appearance: 'dark',
       membership: 'payg',
+      sounds: false,
     };
     expect(parseSettings(JSON.parse(JSON.stringify(saved)))).toEqual(saved);
   });

@@ -41,6 +41,7 @@ export const MATERIAL: Partial<Record<SFSymbol, keyof typeof MaterialIcons.glyph
   calendar: 'calendar-today',
   'arrow.left.arrow.right': 'swap-horiz',
   'cloud.rain': 'umbrella',
+  'speaker.wave.2.fill': 'volume-up',
   'line.3.horizontal.decrease.circle': 'filter-list',
   'exclamationmark.circle': 'error-outline',
   'exclamationmark.triangle': 'warning-amber',

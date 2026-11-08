@@ -714,3 +714,12 @@ Settings tab (was Profile, cog icon):
 - The row now measures the space between the arrows, fits as many whole buttons as there's room for (each at least 80 wide), and sizes them to fill it exactly. Swiping snaps one whole button at a time; the arrows and taps move the row just enough to keep the picked day in view. No button is ever cut off.
 - John also asked for a "yaoom" sound when a request is answered. assets/sounds/yaoom.wav is an original sound made from scratch for OutBound (a voice-like "ya-oom" with a low boom under it); no artist's audio is used or sampled.
 - Playing it needs Expo's audio package (expo-audio), which isn't in the app yet. Adding a package waits on John's yes, so the sound isn't wired up this round. Plan once he says yes: play it when one of your asks gets its answer, follow the phone's silent switch, mix with other audio, and add a Sound effects toggle in Settings.
+
+## Round 181: the yaoom plays, and changing days is smooth
+
+- John said yes to adding Expo's audio package ("Yes add it"). expo-audio ~58.0.10, the version bundled with SDK 58, so it runs in Expo Go. Not added as a config plugin, so the app asks for no microphone permission.
+- The yaoom (assets/sounds/yaoom.wav, original) plays when one of your asks gets its answer. Asks already answered when the app opens stay quiet. A requested route whose legs all land at once plays it once.
+- It follows the phone's silent switch (playsInSilentMode false) and mixes with other audio, so music keeps playing.
+- Settings > Display has a "Sound effects" switch ("A yaoom when your request is answered"). On by default.
+- John: changing days with the arrows "looks choppy ... like it's glitching out". Cause: each day change swapped the whole list for a loading view and back, which also rebuilt the day row (it snapped back to its first spot, then jumped). Now, while a new day loads for the same market, the last day's routes stay in place, dimmed and untappable, the count reads "Finding routes…", and the day row stays put and scrolls smoothly. The new day's routes rise in when they land. Reduce Motion skips the fade.
+- The day row is hidden for the one frame before it's measured, so buttons never jump between widths.

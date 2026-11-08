@@ -119,7 +119,8 @@ export function DayStepper({
         {arrow(prev, 'prev')}
         <ScrollView
           ref={scroll}
-          style={styles.scroll}
+          // Hidden for the one frame before it's measured, so buttons never jump from one width to another.
+          style={[styles.scroll, { opacity: fit ? 1 : 0 }]}
           onLayout={(e) => setWidth(e.nativeEvent.layout.width)}
           snapToInterval={step || undefined}
           decelerationRate={step ? 'fast' : undefined}

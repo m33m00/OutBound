@@ -89,6 +89,8 @@ export interface Settings {
   appearance: AppearancePref;
   /** Free, Pay as you go or Premium (round 176, demo). Null until picked, so the Search tab asks. */
   membership: Tier | null;
+  /** Sound effects, like the yaoom when your request is answered (round 181). On by default; the silent switch still mutes them. */
+  sounds: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -104,6 +106,7 @@ export const DEFAULT_SETTINGS: Settings = {
   mapsApp: 'apple',
   appearance: DEFAULT_APPEARANCE,
   membership: null,
+  sounds: true,
 };
 
 export const SETTINGS_KEY = 'outbound.settings.v1';
@@ -140,6 +143,7 @@ export function parseSettings(raw: unknown): Settings {
     locationAsked: useLocation || bool(o.locationAsked, false),
     lastOrigin: known(o.lastOrigin) ? o.lastOrigin : null,
     radarOn: bool(o.radarOn, DEFAULT_SETTINGS.radarOn),
+    sounds: bool(o.sounds, DEFAULT_SETTINGS.sounds),
     search: {
       maxStops: Math.min(3, Math.max(0, stops)),
       minConnectSameAirlineMin: num(s.minConnectSameAirlineMin, d.minConnectSameAirlineMin, LIMITS.minConnectSameAirlineMin),

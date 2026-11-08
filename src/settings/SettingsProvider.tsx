@@ -71,6 +71,11 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>;
 }
 
+/** Settings when inside SettingsProvider, else null (pieces tested on their own). */
+export function useSettingsOptional(): SettingsContextValue | null {
+  return useContext(SettingsContext);
+}
+
 export function useSettings(): SettingsContextValue {
   const ctx = useContext(SettingsContext);
   if (!ctx) throw new Error('useSettings must be used inside SettingsProvider');

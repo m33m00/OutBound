@@ -1,16 +1,20 @@
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 
 import type { Flight } from '@/engine';
 import { useMembershipOptional } from '@/membership/MembershipProvider';
 import { SCHEDULE_SOURCE } from '@/search/useRouteSearch';
+import { useSettingsOptional } from '@/settings/SettingsProvider';
+import { playYaoom } from '@/ui/sounds';
 
 import {
   addAnsweredAsk,
   addAsk,
+  answeredIds,
   askFor,
   askState,
   cancelAsk,
   flightKey,
+  newlyAnswered,
   sampleFeed,
   sampleMine,
   type AskState,
@@ -54,6 +58,20 @@ export function RequestsProvider({ children }: { children: ReactNode }) {
 
   const ask = useCallback((flight: Flight) => setMine((list) => addAsk(list, flight, Date.now())), []);
   const cancel = useCallback((flight: Flight) => setMine((list) => cancelAsk(list, flight)), []);
+  // Round 181, John: a yaoom when a request is answered. Asks already answered when the app opens stay
+  // quiet; one sound for each batch that comes in (a requested route's legs land together).
+  const sounds = useSettingsOptional()?.settings.sounds ?? false;
+  const seen = useRef<Set<string> | null>(null);
+  useEffect(() => {
+    if (!seen.current) {
+      seen.current = new Set(answeredIds(mine));
+      return;
+    }
+    const fresh = newlyAnswered(seen.current, mine);
+    if (!fresh.length) return;
+    fresh.forEach((id) => seen.current!.add(id));
+    if (sounds) playYaoom();
+  }, [mine]); // eslint-disable-line react-hooks/exhaustive-deps
   const membership = useMembershipOptional();
   const earn = membership?.earnForAnswer;
   const report = useCallback(
