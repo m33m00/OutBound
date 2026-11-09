@@ -763,3 +763,12 @@ John: "Delete the a in Yaoom sound effect. It should sound like Yooooooooom. And
 - The ooo is sung down from E4 toward F#3 with a wide vibrato, then snapped to E minor pentatonic with a 5 ms retune, so it steps between notes and flips back and forth at each change (the hard autotune warble) instead of sliding.
 - Light doubling (two voices detuned 9 cents) gives it the processed-vocal sound.
 - Same 2.4 s length, same low boom under it, same "m" close. Made by design/yoom-synth.py; the app's code names (playYaoom) stay, only what you read says yoooom.
+
+## Round 187: more autotune
+
+John: "More autotune".
+
+- Retune is now instant (1 ms instead of 5 ms), so every note change is a hard snap.
+- Vibrato is wider (2.6 semitones) and faster (6.2 Hz) with a slow sway on top, so the ooo flips between notes about twice as often.
+- A brighter, buzzier voice and a second autotuned voice a fifth above, like stacked T-Pain harmonies, plus octave doubling.
+- Still no "a", same 2.4 s length, boom and "m" close.
