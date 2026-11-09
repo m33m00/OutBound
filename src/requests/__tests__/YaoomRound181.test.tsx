@@ -42,7 +42,7 @@ describe('yaoom when a request is answered (round 181, John)', () => {
     expect(newlyAnswered(new Set(), mine).length).toBe(mine.filter((m) => m.answer).length);
   });
 
-  it('stays quiet for asks already answered at launch, then plays once when one comes in, following the silent switch', async () => {
+  it('stays quiet for asks already answered at launch, then plays once when one comes in', async () => {
     await act(async () => {
       r = create(
         <SettingsProvider>
@@ -64,7 +64,7 @@ describe('yaoom when a request is answered (round 181, John)', () => {
     });
     expect(created).toHaveBeenCalledTimes(1);
     expect(player.play).toHaveBeenCalledTimes(1);
-    expect(setAudioModeAsync).toHaveBeenCalledWith({ playsInSilentMode: false, interruptionMode: 'mixWithOthers' });
+    expect(setAudioModeAsync).toHaveBeenCalledWith({ playsInSilentMode: true, interruptionMode: 'mixWithOthers' });
   });
 
   it('plays nothing with Sound effects off', async () => {
@@ -92,58 +92,69 @@ describe('yaoom when a request is answered (round 181, John)', () => {
   });
 });
 
-describe('yaoom plays reliably (round 182, John: "I dont hear the yaoom")', () => {
+describe('the yaoom player (rounds 182 to 184, John: "I dont hear the yaoom")', () => {
+  const sounds = jest.requireActual('@/ui/sounds') as typeof import('@/ui/sounds');
   beforeEach(() => {
     created.mockClear();
-    resetSounds();
+    (setAudioModeAsync as jest.Mock).mockClear();
+    sounds.resetSounds();
   });
 
-  it('loads the sound ahead of time and plays a fresh player without rewinding it', async () => {
-    const { preloadSounds, playYaoom } = jest.requireActual('@/ui/sounds') as typeof import('@/ui/sounds');
-    preloadSounds();
+  it('sets the audio mode (plays on silent too, mixed with music) before it makes the player', async () => {
+    const order: string[] = [];
+    (setAudioModeAsync as jest.Mock).mockImplementationOnce(() => {
+      order.push('mode');
+      return Promise.resolve();
+    });
+    created.mockImplementationOnce(() => {
+      order.push('player');
+      return { currentTime: 0, play: jest.fn(), seekTo: jest.fn(() => Promise.resolve()), addListener: jest.fn() };
+    });
+    await sounds.playYaoom();
+    expect(order).toEqual(['mode', 'player']);
+    expect(setAudioModeAsync).toHaveBeenCalledWith({ playsInSilentMode: true, interruptionMode: 'mixWithOthers' });
+  });
+
+  it('loads once ahead of time and plays a fresh player without rewinding it', async () => {
+    sounds.preloadSounds();
+    await sounds.playYaoom();
     expect(created).toHaveBeenCalledTimes(1);
-    playYaoom();
     const player = created.mock.results[0].value;
-    expect(created).toHaveBeenCalledTimes(1);
     expect(player.seekTo).not.toHaveBeenCalled();
     expect(player.play).toHaveBeenCalledTimes(1);
   });
 
   it('rewinds a player that already played, then plays again', async () => {
-    const { playYaoom } = jest.requireActual('@/ui/sounds') as typeof import('@/ui/sounds');
-    playYaoom();
+    await sounds.playYaoom();
     const player = created.mock.results[0].value;
     player.currentTime = 1.2;
-    playYaoom();
-    await flush();
+    await sounds.playYaoom();
     expect(player.seekTo).toHaveBeenCalledWith(0);
     expect(player.play).toHaveBeenCalledTimes(2);
   });
-});
-
-describe('the yaoom loads on iPhone in Expo Go (round 183, John: "my phone is not muted I cant hear it")', () => {
-  beforeEach(() => {
-    created.mockClear();
-    resetSounds();
-  });
 
   it("gives iPhone a data URI, which never depends on an update file's name, and Android the bundled file", () => {
-    const { yaoomSource } = jest.requireActual('@/ui/sounds') as typeof import('@/ui/sounds');
-    const ios = yaoomSource('ios') as { uri: string };
+    const ios = sounds.yaoomSource('ios') as { uri: string };
     expect(ios.uri.startsWith('data:audio/mp4;base64,')).toBe(true);
     expect(ios.uri.length).toBeGreaterThan(5000);
-    expect(typeof yaoomSource('android')).not.toBe('string');
+    expect(typeof sounds.yaoomSource('android')).not.toBe('string');
   });
 
-  it('tracks whether the sound loaded, so Settings can say when it fails', () => {
-    const { preloadSounds, soundState } = jest.requireActual('@/ui/sounds') as typeof import('@/ui/sounds');
-    preloadSounds();
-    expect(soundState().kind).toBe('loading');
+  it('keeps what the sound last did and says it in words for Settings (round 184)', async () => {
+    const fmt = () => '9:41:00 AM';
+    expect(sounds.soundCheckText(sounds.soundState(), fmt)).toBe('Sound check: not loaded yet.');
+    sounds.preloadSounds();
+    expect(sounds.soundCheckText(sounds.soundState(), fmt)).toBe('Sound check: loading the yaoom…');
+    await flush();
     const player = created.mock.results[0].value;
     const onStatus = (player.addListener as jest.Mock).mock.calls.find((c) => c[0] === 'playbackStatusUpdate')![1];
-    onStatus({ isLoaded: true, error: null });
-    expect(soundState().kind).toBe('ready');
+    onStatus({ isLoaded: true, playing: false, error: null });
+    expect(sounds.soundCheckText(sounds.soundState(), fmt)).toBe('Sound check: loaded, not played yet.');
+    await sounds.playYaoom();
+    expect(sounds.soundCheckText(sounds.soundState(), fmt)).toBe('Sound check: playing now.');
+    onStatus({ isLoaded: true, playing: false, error: null });
+    expect(sounds.soundCheckText(sounds.soundState(), fmt)).toBe('Sound check: loaded, last played 9:41:00 AM.');
     onStatus({ isLoaded: false, error: 'Cannot Open' });
-    expect(soundState()).toEqual({ kind: 'failed', detail: 'Cannot Open' });
+    expect(sounds.soundCheckText(sounds.soundState(), fmt)).toBe("Sound check: the yaoom couldn't load (Cannot Open).");
   });
 });

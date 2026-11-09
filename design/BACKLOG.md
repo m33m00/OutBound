@@ -223,3 +223,4 @@ Each item names its owner. One item per work session. spec-keeper runs a pre-fli
 | 216 | Changing days keeps the last day dimmed in place while the next loads; day row no longer rebuilt (round 181) | Done |
 | 217 | Yaoom loads at launch, plays reliably, Sound effects switch plays a preview (round 182) | Done |
 | 218 | Yaoom plays from a built-in data URI on iPhone (update files have no extension), Settings says if it fails (round 183) | Done |
+| 219 | Design round in About, always-on Sound check line, yaoom plays on silent with a haptic (round 184) | Done |

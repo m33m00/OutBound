@@ -738,3 +738,12 @@ Settings tab (was Profile, cog icon):
 - Cause (found in the code, not yet confirmed on his phone): the yaoom was a bundled file. In Expo Go, an update keeps its files under bare content hashes with no file extension (expo-asset's own notes call extensions "legacy"). iPhone's player decides what a local file is from its extension, so it couldn't open the yaoom, failed without an error anyone could see, and nothing played. expo-audio's source even notes that AVPlayer fails when the type can't be inferred.
 - Fix: on iPhone the yaoom now comes from a data URI (AAC, audio/mp4, about 11 KB) built into the code. expo-audio writes it to a temp file with a real audio extension, so the player always knows what it is. Android keeps the bundled file (now assets/sounds/yaoom.m4a). The original WAV moved to design/yaoom-source.wav.
 - If it ever fails to load again, Settings shows a line under Display saying it couldn't load and why, instead of staying silent.
+
+## Round 184: see what the yaoom is doing, and let it play on silent
+
+- John, after round 183: "Still nothing", and no failure line under Display. So either his Expo Go isn't on round 183, or the player loads and plays but nothing comes out.
+- Settings > About now has a "Design round" row (src/buildInfo.ts, bump each round) so we can see which update his phone loaded.
+- Under Display, while Sound effects is on, a "Sound check" line always shows what the yaoom last did: not loaded yet, loading, loaded, playing now, last played at a time, or couldn't load and why. Temporary, until the sound is confirmed on his phone.
+- The audio mode is now set and waited for before the player is made (before, the first play could run before the mode applied).
+- The yaoom now plays even with the phone on silent (playback category, mixed with other audio so music keeps going). His Nov 8 screenshot showed silent mode on; on recent iPhones that's set from Control Center or the Action button, not a side switch, so "not muted" may not mean silent is off. The Sound effects switch turns it off.
+- Each yaoom also gives a success tap you can feel.

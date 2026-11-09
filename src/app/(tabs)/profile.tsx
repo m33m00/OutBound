@@ -18,7 +18,8 @@ import { Button } from '@/ui/Buttons';
 import { ListGroup, ListRow, SectionFooter } from '@/ui/ListGroup';
 import { useSharedLocation } from '@/ui/LocationProvider';
 import { pressStyle } from '@/ui/press';
-import { playYaoom, useSoundState } from '@/ui/sounds';
+import { DESIGN_ROUND } from '@/buildInfo';
+import { playYaoom, soundCheckText, useSoundState } from '@/ui/sounds';
 import { AppearanceChoice, ListControlRow, ListSwitchRow, Segments } from '@/ui/SettingsControls';
 import { TabScreen } from '@/ui/TabScreen';
 import { CreditsSheet } from '@/ui/Credits';
@@ -196,7 +197,7 @@ export default function SettingsTab() {
           testID="settings-sounds"
           icon="speaker.wave.2.fill"
           label="Sound effects"
-          detail="A yaoom when your request is answered. Quiet when your phone is on silent."
+          detail="A yaoom when your request is answered"
           value={settings.sounds}
           onChange={(sounds) => {
             update({ sounds });
@@ -205,9 +206,13 @@ export default function SettingsTab() {
           }}
         />
       </ListGroup>
-      {sound.kind === 'failed' && settings.sounds ? (
-        // Round 183: if the yaoom ever can't load, say so here instead of failing silently.
-        <SectionFooter>{`The yaoom couldn't load on this phone: ${sound.detail}`}</SectionFooter>
+      {settings.sounds ? (
+        // Round 184: what the yaoom last did, so a silent phone can be traced (temporary, while we find it).
+        <SectionFooter>
+          {soundCheckText(sound, (at) =>
+            new Date(at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', second: '2-digit' }),
+          )}
+        </SectionFooter>
       ) : null}
 
       <ListGroup title="Notifications">{row('notify')}</ListGroup>
@@ -225,6 +230,7 @@ export default function SettingsTab() {
         <ListRow icon="cloud.sun" label="Weather" value="NOAA Aviation Weather" />
         <ListRow icon="antenna.radiowaves.left.and.right" label="Radar" value="NOAA/NWS MRMS" />
         {version ? <ListRow icon="info.circle" label="Version" value={version} /> : null}
+        <ListRow icon="info.circle" label="Design round" value={String(DESIGN_ROUND)} />
       </ListGroup>
       {/* Logo.dev's free plan asks for a visible link wherever its logos show (round 133). */}
       {logosOn() ? (
