@@ -144,7 +144,7 @@ describe('the yaoom player (rounds 182 to 184, John: "I dont hear the yaoom")', 
     const fmt = () => '9:41:00 AM';
     expect(sounds.soundCheckText(sounds.soundState(), fmt)).toBe('Sound check: not loaded yet.');
     sounds.preloadSounds();
-    expect(sounds.soundCheckText(sounds.soundState(), fmt)).toBe('Sound check: loading the yaoom…');
+    expect(sounds.soundCheckText(sounds.soundState(), fmt)).toBe('Sound check: loading the yoooom…');
     await flush();
     const player = created.mock.results[0].value;
     const onStatus = (player.addListener as jest.Mock).mock.calls.find((c) => c[0] === 'playbackStatusUpdate')![1];
@@ -155,6 +155,6 @@ describe('the yaoom player (rounds 182 to 184, John: "I dont hear the yaoom")', 
     onStatus({ isLoaded: true, playing: false, error: null });
     expect(sounds.soundCheckText(sounds.soundState(), fmt)).toBe('Sound check: loaded, last played 9:41:00 AM.');
     onStatus({ isLoaded: false, error: 'Cannot Open' });
-    expect(sounds.soundCheckText(sounds.soundState(), fmt)).toBe("Sound check: the yaoom couldn't load (Cannot Open).");
+    expect(sounds.soundCheckText(sounds.soundState(), fmt)).toBe("Sound check: the yoooom couldn't load (Cannot Open).");
   });
 });

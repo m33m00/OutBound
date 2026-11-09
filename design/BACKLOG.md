@@ -225,3 +225,4 @@ Each item names its owner. One item per work session. spec-keeper runs a pre-fli
 | 218 | Yaoom plays from a built-in data URI on iPhone (update files have no extension), Settings says if it fails (round 183) | Done |
 | 219 | Design round in About, always-on Sound check line, yaoom plays on silent with a haptic (round 184) | Done |
 | 220 | Long yaoooooom (2.4 s, held "ooo"); Sound check only on failure (round 185) | Done |
+| 221 | Yoooom: no "a", autotuned ooo (round 186) | Done |

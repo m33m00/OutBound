@@ -754,3 +754,12 @@ Settings tab (was Profile, cog icon):
 - Remade from scratch (design/yaoom-source.wav): 2.4 seconds instead of 0.8. A quick "ya", then the "ooo" held for over a second with a slow vibrato that grows in, then it closes into a soft "m". The low boom sits under the whole "ooo" and fades slowly with it. Still original, no artist's audio.
 - Still built into the code for iPhone (AAC, about 30 KB).
 - The Sound check line under Display now only shows if the yaoom fails to load. Design round stays in About (now 185).
+
+## Round 186: yoooom with an autotuned ooo
+
+John: "Delete the a in Yaoom sound effect. It should sound like Yooooooooom. And adjust the ooooo to have an autotune effect."
+
+- The "a" opener is gone: the y glides straight into the ooo in about 0.14 s.
+- The ooo is sung down from E4 toward F#3 with a wide vibrato, then snapped to E minor pentatonic with a 5 ms retune, so it steps between notes and flips back and forth at each change (the hard autotune warble) instead of sliding.
+- Light doubling (two voices detuned 9 cents) gives it the processed-vocal sound.
+- Same 2.4 s length, same low boom under it, same "m" close. Made by design/yoom-synth.py; the app's code names (playYaoom) stay, only what you read says yoooom.

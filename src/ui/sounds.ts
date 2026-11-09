@@ -60,9 +60,9 @@ export function soundCheckText(s: SoundState, fmt: (at: number) => string): stri
     case 'idle':
       return 'Sound check: not loaded yet.';
     case 'loading':
-      return 'Sound check: loading the yaoom…';
+      return 'Sound check: loading the yoooom…';
     case 'failed':
-      return `Sound check: the yaoom couldn't load (${s.detail}).`;
+      return `Sound check: the yoooom couldn't load (${s.detail}).`;
     case 'ready':
       if (s.playing) return 'Sound check: playing now.';
       return s.playedAt ? `Sound check: loaded, last played ${fmt(s.playedAt)}.` : 'Sound check: loaded, not played yet.';
