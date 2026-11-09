@@ -4,7 +4,7 @@ import type { Flight } from '@/engine';
 import { useMembershipOptional } from '@/membership/MembershipProvider';
 import { SCHEDULE_SOURCE } from '@/search/useRouteSearch';
 import { useSettingsOptional } from '@/settings/SettingsProvider';
-import { playYaoom } from '@/ui/sounds';
+import { playYaoom, preloadSounds } from '@/ui/sounds';
 
 import {
   addAnsweredAsk,
@@ -62,6 +62,9 @@ export function RequestsProvider({ children }: { children: ReactNode }) {
   // quiet; one sound for each batch that comes in (a requested route's legs land together).
   const sounds = useSettingsOptional()?.settings.sounds ?? false;
   const seen = useRef<Set<string> | null>(null);
+  useEffect(() => {
+    if (sounds) preloadSounds();
+  }, [sounds]);
   useEffect(() => {
     if (!seen.current) {
       seen.current = new Set(answeredIds(mine));

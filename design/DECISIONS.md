@@ -723,3 +723,11 @@ Settings tab (was Profile, cog icon):
 - Settings > Display has a "Sound effects" switch ("A yaoom when your request is answered"). On by default.
 - John: changing days with the arrows "looks choppy ... like it's glitching out". Cause: each day change swapped the whole list for a loading view and back, which also rebuilt the day row (it snapped back to its first spot, then jumped). Now, while a new day loads for the same market, the last day's routes stay in place, dimmed and untappable, the count reads "Finding routes…", and the day row stays put and scrolls smoothly. The new day's routes rise in when they land. Reduce Motion skips the fade.
 - The day row is hidden for the one frame before it's measured, so buttons never jump between widths.
+
+## Round 182: the yaoom, made easier to hear
+
+- John, Nov 9: "I also dont hear the yaoom sound".
+- Most likely cause: his phone is on silent (the bell with a slash shows in his round 179 screenshot), and the yaoom follows the silent switch, so iPhone mutes it. Not confirmed on his phone.
+- Also hardened: the sound now loads when the app starts instead of at the moment of the answer, and a fresh player plays straight away (it only rewinds after it has played once). Before, the first play could wait on a cold load and a rewind of a player still loading.
+- Turning on Settings > Display > Sound effects now plays the yaoom once, so there's a quick way to hear it on any plan. The row says it's quiet on silent.
+- Still respects the silent switch. Asked John whether it should play on silent too.

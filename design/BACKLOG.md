@@ -221,3 +221,4 @@ Each item names its owner. One item per work session. spec-keeper runs a pre-fli
 | 214 | Day row shows whole buttons only, sized to fit between the arrows (round 180) | Done |
 | 215 | Yaoom sound when a request is answered, Sound effects switch in Settings (round 181) | Done |
 | 216 | Changing days keeps the last day dimmed in place while the next loads; day row no longer rebuilt (round 181) | Done |
+| 217 | Yaoom loads at launch, plays reliably, Sound effects switch plays a preview (round 182) | Done |

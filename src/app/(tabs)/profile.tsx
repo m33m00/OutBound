@@ -18,6 +18,7 @@ import { Button } from '@/ui/Buttons';
 import { ListGroup, ListRow, SectionFooter } from '@/ui/ListGroup';
 import { useSharedLocation } from '@/ui/LocationProvider';
 import { pressStyle } from '@/ui/press';
+import { playYaoom } from '@/ui/sounds';
 import { AppearanceChoice, ListControlRow, ListSwitchRow, Segments } from '@/ui/SettingsControls';
 import { TabScreen } from '@/ui/TabScreen';
 import { CreditsSheet } from '@/ui/Credits';
@@ -194,9 +195,13 @@ export default function SettingsTab() {
           testID="settings-sounds"
           icon="speaker.wave.2.fill"
           label="Sound effects"
-          detail="A yaoom when your request is answered"
+          detail="A yaoom when your request is answered. Quiet when your phone is on silent."
           value={settings.sounds}
-          onChange={(sounds) => update({ sounds })}
+          onChange={(sounds) => {
+            update({ sounds });
+            // Turning it on plays it once, so you know what you'll hear (round 182).
+            if (sounds) playYaoom();
+          }}
         />
       </ListGroup>
 

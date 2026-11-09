@@ -53,14 +53,16 @@ describe('yaoom when a request is answered (round 181, John)', () => {
       );
       await flush();
     });
-    expect(created).not.toHaveBeenCalled();
+    // Loaded ahead of time (round 182) but not played.
+    expect(created).toHaveBeenCalledTimes(1);
+    const player = created.mock.results[0].value;
+    expect(player.play).not.toHaveBeenCalled();
     const waiting = req.mine.find((m) => !m.answer)!;
     await act(async () => {
       req.addAnswered(waiting.flight, { open: 20, listed: 3, at: Date.now() });
       await flush();
     });
     expect(created).toHaveBeenCalledTimes(1);
-    const player = created.mock.results[0].value;
     expect(player.play).toHaveBeenCalledTimes(1);
     expect(setAudioModeAsync).toHaveBeenCalledWith({ playsInSilentMode: false, interruptionMode: 'mixWithOthers' });
   });
@@ -85,6 +87,36 @@ describe('yaoom when a request is answered (round 181, John)', () => {
       req.addAnswered(waiting.flight, { open: 20, listed: 3, at: Date.now() });
       await flush();
     });
-    expect(created).not.toHaveBeenCalled();
+    const played = created.mock.results.some((x) => (x.value.play as jest.Mock).mock.calls.length > 0);
+    expect(played).toBe(false);
+  });
+});
+
+describe('yaoom plays reliably (round 182, John: "I dont hear the yaoom")', () => {
+  beforeEach(() => {
+    created.mockClear();
+    resetSounds();
+  });
+
+  it('loads the sound ahead of time and plays a fresh player without rewinding it', async () => {
+    const { preloadSounds, playYaoom } = jest.requireActual('@/ui/sounds') as typeof import('@/ui/sounds');
+    preloadSounds();
+    expect(created).toHaveBeenCalledTimes(1);
+    playYaoom();
+    const player = created.mock.results[0].value;
+    expect(created).toHaveBeenCalledTimes(1);
+    expect(player.seekTo).not.toHaveBeenCalled();
+    expect(player.play).toHaveBeenCalledTimes(1);
+  });
+
+  it('rewinds a player that already played, then plays again', async () => {
+    const { playYaoom } = jest.requireActual('@/ui/sounds') as typeof import('@/ui/sounds');
+    playYaoom();
+    const player = created.mock.results[0].value;
+    player.currentTime = 1.2;
+    playYaoom();
+    await flush();
+    expect(player.seekTo).toHaveBeenCalledWith(0);
+    expect(player.play).toHaveBeenCalledTimes(2);
   });
 });
