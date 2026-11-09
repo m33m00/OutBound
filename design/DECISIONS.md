@@ -747,3 +747,10 @@ Settings tab (was Profile, cog icon):
 - The audio mode is now set and waited for before the player is made (before, the first play could run before the mode applied).
 - The yaoom now plays even with the phone on silent (playback category, mixed with other audio so music keeps going). His Nov 8 screenshot showed silent mode on; on recent iPhones that's set from Control Center or the Action button, not a side switch, so "not muted" may not mean silent is off. The Sound effects switch turns it off.
 - Each yaoom also gives a success tap you can feel.
+
+## Round 185: a long yaoooooom
+
+- Round 184 worked: John can hear it. His next ask: "Can the sound effect be more.. yooooom. Like yaoooooooooooom".
+- Remade from scratch (design/yaoom-source.wav): 2.4 seconds instead of 0.8. A quick "ya", then the "ooo" held for over a second with a slow vibrato that grows in, then it closes into a soft "m". The low boom sits under the whole "ooo" and fades slowly with it. Still original, no artist's audio.
+- Still built into the code for iPhone (AAC, about 30 KB).
+- The Sound check line under Display now only shows if the yaoom fails to load. Design round stays in About (now 185).

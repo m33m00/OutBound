@@ -206,13 +206,9 @@ export default function SettingsTab() {
           }}
         />
       </ListGroup>
-      {settings.sounds ? (
-        // Round 184: what the yaoom last did, so a silent phone can be traced (temporary, while we find it).
-        <SectionFooter>
-          {soundCheckText(sound, (at) =>
-            new Date(at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', second: '2-digit' }),
-          )}
-        </SectionFooter>
+      {settings.sounds && sound.kind === 'failed' ? (
+        // Round 185: the yaoom is confirmed on John's phone, so the sound check only shows if it fails.
+        <SectionFooter>{soundCheckText(sound, () => '')}</SectionFooter>
       ) : null}
 
       <ListGroup title="Notifications">{row('notify')}</ListGroup>
