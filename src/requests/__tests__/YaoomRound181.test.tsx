@@ -120,3 +120,30 @@ describe('yaoom plays reliably (round 182, John: "I dont hear the yaoom")', () =
     expect(player.play).toHaveBeenCalledTimes(2);
   });
 });
+
+describe('the yaoom loads on iPhone in Expo Go (round 183, John: "my phone is not muted I cant hear it")', () => {
+  beforeEach(() => {
+    created.mockClear();
+    resetSounds();
+  });
+
+  it("gives iPhone a data URI, which never depends on an update file's name, and Android the bundled file", () => {
+    const { yaoomSource } = jest.requireActual('@/ui/sounds') as typeof import('@/ui/sounds');
+    const ios = yaoomSource('ios') as { uri: string };
+    expect(ios.uri.startsWith('data:audio/mp4;base64,')).toBe(true);
+    expect(ios.uri.length).toBeGreaterThan(5000);
+    expect(typeof yaoomSource('android')).not.toBe('string');
+  });
+
+  it('tracks whether the sound loaded, so Settings can say when it fails', () => {
+    const { preloadSounds, soundState } = jest.requireActual('@/ui/sounds') as typeof import('@/ui/sounds');
+    preloadSounds();
+    expect(soundState().kind).toBe('loading');
+    const player = created.mock.results[0].value;
+    const onStatus = (player.addListener as jest.Mock).mock.calls.find((c) => c[0] === 'playbackStatusUpdate')![1];
+    onStatus({ isLoaded: true, error: null });
+    expect(soundState().kind).toBe('ready');
+    onStatus({ isLoaded: false, error: 'Cannot Open' });
+    expect(soundState()).toEqual({ kind: 'failed', detail: 'Cannot Open' });
+  });
+});

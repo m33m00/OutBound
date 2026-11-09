@@ -731,3 +731,10 @@ Settings tab (was Profile, cog icon):
 - Also hardened: the sound now loads when the app starts instead of at the moment of the answer, and a fresh player plays straight away (it only rewinds after it has played once). Before, the first play could wait on a cold load and a rewind of a player still loading.
 - Turning on Settings > Display > Sound effects now plays the yaoom once, so there's a quick way to hear it on any plan. The row says it's quiet on silent.
 - Still respects the silent switch. Asked John whether it should play on silent too.
+
+## Round 183: the real reason the yaoom was silent
+
+- John, Nov 9: "Im turning it on and off and my phone is not muted I cant hear it". So it wasn't the silent switch.
+- Cause (found in the code, not yet confirmed on his phone): the yaoom was a bundled file. In Expo Go, an update keeps its files under bare content hashes with no file extension (expo-asset's own notes call extensions "legacy"). iPhone's player decides what a local file is from its extension, so it couldn't open the yaoom, failed without an error anyone could see, and nothing played. expo-audio's source even notes that AVPlayer fails when the type can't be inferred.
+- Fix: on iPhone the yaoom now comes from a data URI (AAC, audio/mp4, about 11 KB) built into the code. expo-audio writes it to a temp file with a real audio extension, so the player always knows what it is. Android keeps the bundled file (now assets/sounds/yaoom.m4a). The original WAV moved to design/yaoom-source.wav.
+- If it ever fails to load again, Settings shows a line under Display saying it couldn't load and why, instead of staying silent.

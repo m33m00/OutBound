@@ -18,7 +18,7 @@ import { Button } from '@/ui/Buttons';
 import { ListGroup, ListRow, SectionFooter } from '@/ui/ListGroup';
 import { useSharedLocation } from '@/ui/LocationProvider';
 import { pressStyle } from '@/ui/press';
-import { playYaoom } from '@/ui/sounds';
+import { playYaoom, useSoundState } from '@/ui/sounds';
 import { AppearanceChoice, ListControlRow, ListSwitchRow, Segments } from '@/ui/SettingsControls';
 import { TabScreen } from '@/ui/TabScreen';
 import { CreditsSheet } from '@/ui/Credits';
@@ -45,6 +45,7 @@ const ROW_ICON: Record<SummaryRow['key'], SFSymbol> = {
 export default function SettingsTab() {
   const c = useColors();
   const { settings, update, reset } = useSettings();
+  const sound = useSoundState();
   const account = useAccount();
   const { status, request } = useSharedLocation();
   const rows = profileSummary(settings, Platform.OS === 'ios');
@@ -204,6 +205,10 @@ export default function SettingsTab() {
           }}
         />
       </ListGroup>
+      {sound.kind === 'failed' && settings.sounds ? (
+        // Round 183: if the yaoom ever can't load, say so here instead of failing silently.
+        <SectionFooter>{`The yaoom couldn't load on this phone: ${sound.detail}`}</SectionFooter>
+      ) : null}
 
       <ListGroup title="Notifications">{row('notify')}</ListGroup>
 
