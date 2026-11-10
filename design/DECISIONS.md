@@ -772,3 +772,11 @@ John: "More autotune".
 - Vibrato is wider (2.6 semitones) and faster (6.2 Hz) with a slow sway on top, so the ooo flips between notes about twice as often.
 - A brighter, buzzier voice and a second autotuned voice a fifth above, like stacked T-Pain harmonies, plus octave doubling.
 - Still no "a", same 2.4 s length, boom and "m" close.
+
+## Round 188: two people building
+
+John (Nov 10): "I want to be able to make changes both him and I. Do what is best to make it happen." A friend joins with his own Claude, as a GitHub collaborator and an Expo member.
+
+- `CLAUDE.md` is now the guide every Claude reads first: how the two of them work together (start from the latest main, own branch, small PR for every change, John merges, nothing left unmerged at the end of a session, check open PRs before touching a screen) and John's design rules in one place. `AGENTS.md` points to it.
+- Expo Go now publishes every branch that's pushed, not just main and the design branch, so each person can try their own work on a phone.
+- Design rounds now go out as small PRs that merge often, so main stays current for whoever works next.

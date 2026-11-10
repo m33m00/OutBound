@@ -1,5 +1,5 @@
-# Publishes the app to EAS Update on every push to main and the design
-# branch, so the latest version opens in Expo Go on a phone without a Mac
+# Publishes the app to EAS Update on every push to main and every other
+# branch (round 188: so John and his friend each see their own branch), so the latest version opens in Expo Go on a phone without a Mac
 # running `npx expo start`. Free tier; needs the EXPO_TOKEN repository secret
 # (Settings > Secrets and variables > Actions). Without it the job skips.
 #
@@ -11,7 +11,7 @@ name: Publish to Expo Go
 
 on:
   push:
-    branches: [main, claude/project-thread-fzqwou, claude/app-store-ready]
+    branches: ['**']
   workflow_dispatch:
 
 concurrency:
