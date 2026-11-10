@@ -1,3 +1,7 @@
+# OutBound: read CLAUDE.md first
+
+Before any change, read `CLAUDE.md` in this folder. It has how John and his friend work together on this repo (start from the latest main, your own branch, a small PR for every change, John merges) and John's design rules. The rest of this file is Expo guidance.
+
 This is an Expo/React Native mobile application. Prioritize mobile-first patterns, performance, and cross-platform compatibility.
 
 ## Expo has changed — do not trust your training data

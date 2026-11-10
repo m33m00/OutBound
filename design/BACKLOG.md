@@ -227,3 +227,4 @@ Each item names its owner. One item per work session. spec-keeper runs a pre-fli
 | 220 | Long yaoooooom (2.4 s, held "ooo"); Sound check only on failure (round 185) | Done |
 | 221 | Yoooom: no "a", autotuned ooo (round 186) | Done |
 | 222 | More autotune on the yoooom (round 187) | Done |
+| 223 | CLAUDE.md guide for two builders; Expo Go publishes every branch (round 188) | Done |
