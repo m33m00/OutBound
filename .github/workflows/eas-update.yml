@@ -11,7 +11,7 @@ name: Publish to Expo Go
 
 on:
   push:
-    branches: [main, claude/project-thread-fzqwou]
+    branches: [main, claude/project-thread-fzqwou, claude/app-store-ready]
   workflow_dispatch:
 
 concurrency:

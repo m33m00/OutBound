@@ -41,3 +41,30 @@ describe('real airline logos (round 133)', () => {
     expect(r.root.findAll((n) => n.props.testID === 'airline-mark' && typeof n.type === 'string')).toHaveLength(1);
   });
 });
+
+describe('round badges (round 161, John)', () => {
+  const flat = (st: unknown) => Object.assign({}, ...[st].flat(5).filter(Boolean));
+  it('draws every mark as the same circle, logo or not', () => {
+    for (const key of ['pk_test', undefined]) {
+      let r!: ReturnType<typeof create>;
+      act(() => {
+        r = create(<AirlineMark airline="DL" size={24} logoKey={key} />);
+      });
+      const badge = r.root.find((n) => ['airline-logo', 'airline-mark'].includes(n.props.testID) && typeof n.type === 'string');
+      const st = flat(badge.props.style);
+      expect(st).toMatchObject({ width: 24, height: 24, borderRadius: 12, overflow: 'hidden' });
+      expect(st.borderWidth).toBeGreaterThan(0);
+    }
+  });
+
+  it('fills the circle with the logo, so a square logo reads as a round one', () => {
+    let r!: ReturnType<typeof create>;
+    act(() => {
+      r = create(<AirlineMark airline="DL" size={24} logoKey="pk_test" />);
+    });
+    const img = r.root.find((n) => n.props.testID === 'logo-image' && typeof n.props.onError === 'function');
+    expect(img.props.contentFit).toBe('cover');
+    // The white disc always gets the light logo.
+    expect(img.props.source.uri).not.toContain('theme=dark');
+  });
+});

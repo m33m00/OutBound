@@ -2,7 +2,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { fonts, useColors } from '@/theme';
 
-import { AIRLINE_MARKS, AirlineMark } from './AirlinePill';
+import { FlightPeek, PEEK_LOGO } from './FlightPeek';
 import { Icon } from './Icon';
 
 /** Room above the line for each leg's seat numbers, and below it for a stop's code. */
@@ -19,9 +19,12 @@ const ICON = 11;
 export const COUNT_ICON = { seats: 'carseat.right.fill', listed: 'person.fill' } as const;
 /** The X on a canceled leg. */
 const X_SIZE = 12;
-/** Room under the stop codes for each leg's flight and aircraft (round 145). */
-const FLIGHT_H = 40;
-/** With this many legs or more, a known airline's flight shows its logo and number without the code, to fit. */
+/** Room under the stop codes for each leg's airline logo (round 156: logo only, the number and aircraft
+ * open from it). */
+const FLIGHT_H = PEEK_LOGO + 6;
+/** How far the logos drop under a route with a canceled leg, clear of the X's disc. */
+const CANCELED_DROP = 6;
+/** With this many legs or more, a diversion pill says just "Diverted" to fit its short stretch. */
 const COMPACT_LEGS = 3;
 
 /** One leg of the line: the color it's drawn in and the seat numbers shown above it (round 140). */
@@ -40,11 +43,15 @@ export interface MiniRouteLeg {
   /** Canceled: drawn red with an X in the middle (round 143, John). */
   canceled?: boolean;
   /**
-   * A live word for this flight ("Delayed 50m"), in a pill centred over its own stretch of line (round 146,
-   * John: "The delayed pill, can that be over on top of that route line ... centered on that route line").
+   * A live word for this flight ("50m late"), in a pill centred on its own stretch of line, under its airline
+   * logo (rounds 146, 148, 157, John: "Can the logos sit on top of the delayed pill and delay pill sits
+   * underneath the logo?").
    */
   flag?: string | null;
-  /** The leg's flight, shown under its stretch of line (round 145, John). */
+  /**
+   * The leg's flight: its airline's logo under its stretch of line, which opens the number and aircraft
+   * (rounds 145, 156, John).
+   */
   flight?: { airline: string; number: string; aircraft?: string | null };
 }
 
@@ -93,23 +100,30 @@ export function MiniRoute({
   const withFlights = !!segs?.some((l) => l.flight);
   // Room above the line for count icons, and for a canceled leg's pill (round 151).
   const withIcons = !!segs?.some((l) => (l.label && l.counts?.length) || l.canceled);
-  // Short legs (2 or more stops on a small phone) drop the airline code beside a known airline's logo.
+  // Short legs (2 or more stops on a small phone) shorten a diversion's pill.
   const compact = n >= COMPACT_LEGS;
   // A stop's flag (At risk) sits above the line over its stop. A flight's flag (a delay) sits under the
-  // line, below the stop codes and right over that flight's number (round 148, John: "can the delayed pill
-  // sit right above the airline and the flight number, but underneath the route line?").
+  // line: the stop codes, then the airline logo, then the delay under the logo (round 157, John: "Can the
+  // logos sit on top of the delayed pill and delay pill sits underneath the logo?").
   const stopFlagTop = 0;
   // Everything in the track sits this far lower when there are flags or count icons above it.
   const top = (stopFlagged ? FLAG_H : 0) + (withIcons ? ICON_H : 0);
   const below = (y: number) => ({ top: top + y });
-  // Room under the stop codes for the delay pills, then each flight.
-  const under = legFlagged ? FLAG_H : 0;
-  const tail = under + (withFlights ? FLIGHT_H : 0);
-  const legFlagY = LABEL_H + DOT + LABEL_H + 2;
+  // Each leg's logo sits just under the line, level with the stop codes beside it (round 158, John: "Can the
+  // airline logo be scooted up closer to the route line"); a logo centred on its leg clears the codes centred
+  // on the dots, even on a 2-stop ticket. A delay pill goes under the logo.
+  // A canceled leg's X hangs below the line, so its logos drop a little to keep clear of it (round 161,
+  // John: the logo "almost touches the canceled X").
+  const anyCanceled = !!segs?.some((l) => l.canceled);
+  const flightY = LABEL_H + DOT + 3 + (anyCanceled ? CANCELED_DROP : 0);
+  const legFlagY = withFlights ? flightY + FLIGHT_H - 4 : LABEL_H + DOT + LABEL_H + 2;
+  const base = LABEL_H + DOT + LABEL_H;
+  const tail = Math.max(0, (withFlights ? flightY + FLIGHT_H : 0) - base, legFlagged ? legFlagY + FLAG_H - base : 0);
   return (
     <View
       style={[styles.row, segs && styles.rowLabeled, top > 0 && { paddingTop: 6 + top }, tail > 0 && { paddingBottom: 6 + tail }]}
       testID="mini-route"
+      // Drawn only for VoiceOver: the card's own label says the route, flights and seats.
       importantForAccessibility="no-hide-descendants"
       accessibilityElementsHidden>
       <Text style={[styles.code, { color: ends }]} maxFontSizeMultiplier={1.3}>
@@ -175,7 +189,7 @@ export function MiniRoute({
             {segs.map((leg, i) => {
               if (!leg.flag) return null;
               // On a short leg the delay reads "+50m" so it stays inside its own stretch.
-              const word = compact ? leg.flag.replace(/^Delayed /, '+').replace(/^Diverted.*/, 'Diverted') : leg.flag;
+              const word = compact ? leg.flag.replace(/^Diverted.*/, 'Diverted') : leg.flag;
               return (
                 <View
                   key={`lf${i}`}
@@ -193,41 +207,17 @@ export function MiniRoute({
               );
             })}
             {segs.map((leg, i) => {
-              // Each leg's flight under its own stretch, below the stop codes so the two never meet: the
-              // airline's mark and the flight number, then the aircraft in small gray (round 145, John:
-              // "fit the airline and aircraft underneath the route line ... aligned underneath").
+              // Each leg's airline logo under its own stretch, below the stop codes so the two never meet. Only
+              // the logo: a tap or hold opens the flight number and aircraft (round 156, John).
               const f = leg.flight;
               if (!f) return null;
-              const known = !!AIRLINE_MARKS[f.airline];
-              const number = compact && known ? f.number : `${f.airline} ${f.number}`;
               return (
                 <View
                   key={`fl${i}`}
-                  style={[styles.flightSlot, below(legFlagY + under), { left: pct(i), width: pct(1) }]}
+                  pointerEvents="box-none"
+                  style={[styles.flightSlot, below(flightY), { left: pct(i), width: pct(1) }]}
                   testID="mini-route-flight">
-                  <View style={styles.flightLine}>
-                    {known ? <AirlineMark airline={f.airline} size={15} /> : null}
-                    <Text
-                      style={[styles.flightText, { color: ends }]}
-                      numberOfLines={1}
-                      adjustsFontSizeToFit
-                      minimumFontScale={0.8}
-                      maxFontSizeMultiplier={1.15}
-                      testID="mini-route-flight-number">
-                      {number}
-                    </Text>
-                  </View>
-                  {f.aircraft ? (
-                    <Text
-                      style={[styles.planeText, { color: c.muted }]}
-                      numberOfLines={1}
-                      adjustsFontSizeToFit
-                      minimumFontScale={0.8}
-                      maxFontSizeMultiplier={1.15}
-                      testID="mini-route-aircraft">
-                      {f.aircraft}
-                    </Text>
-                  ) : null}
+                  <FlightPeek airline={f.airline} number={f.number} aircraft={f.aircraft} />
                 </View>
               );
             })}
@@ -377,9 +367,6 @@ const styles = StyleSheet.create({
   count: { alignItems: 'center', height: ICON_H + LABEL_H, justifyContent: 'flex-end', gap: 1 },
   stop: { position: 'absolute', width: STOP_W, marginLeft: -STOP_W / 2, alignItems: 'center' },
   flightSlot: { position: 'absolute', height: FLIGHT_H - 2, alignItems: 'center', paddingHorizontal: 3 },
-  flightLine: { flexDirection: 'row', alignItems: 'center', gap: 3, maxWidth: '100%' },
-  flightText: { flexShrink: 1, fontFamily: fonts.monoMedium, fontSize: 13, lineHeight: 18 },
-  planeText: { fontFamily: fonts.monoMedium, fontSize: 12, lineHeight: 16, maxWidth: '100%' },
   stopCode: { fontFamily: fonts.monoMedium, fontSize: 12, lineHeight: LABEL_H, letterSpacing: 0.3 },
   dot: { width: DOT, height: DOT, borderRadius: DOT / 2, borderWidth: 2 },
 });

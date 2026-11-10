@@ -19,6 +19,18 @@ describe('matchAirports', () => {
   it('returns nothing for no match', () => {
     expect(matchAirports('zzz')).toEqual([]);
   });
+  it('finds an airport by its city or state when the name has neither (round 163)', () => {
+    const base = SEARCH_AIRPORTS.find((a) => a.code === 'DFW')!;
+    const list = [
+      { ...base, code: 'AAA', name: 'Will Rogers World', city: 'Oklahoma City', region: 'OK' },
+      { ...base, code: 'BBB', name: 'Bush Intercontinental', city: 'Houston', region: 'TX' },
+    ];
+    expect(matchAirports('houston', list).map((a) => a.code)).toEqual(['BBB']);
+    expect(matchAirports('ok', list).map((a) => a.code)).toEqual(['AAA']);
+    expect(matchAirports('tx', list).map((a) => a.code)).toEqual(['BBB']);
+    // Codes and names still come first.
+    expect(matchAirports('bush', list).map((a) => a.code)).toEqual(['BBB']);
+  });
 });
 
 describe('dateChips', () => {

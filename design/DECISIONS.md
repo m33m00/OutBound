@@ -505,3 +505,270 @@ John: "Canceled flights should have the red border on the card. Not when it's fu
 ## Design round 153: solid gray edge on canceled tickets (John, Nov 5)
 
 John didn't like the dashed border after all. A canceled ticket now has a solid gray edge, the same 1pt weight as every other ticket, and keeps the gray fade, the red X on its canceled leg and the Canceled pill. Red stays for full flights.
+
+## Design round 154: aircraft type only on the opened route, stacked under the flight (John, Nov 5)
+
+John: "stack the airline and equipment type like on the previous page summary. In the previous page only show the airline and flight number. Don't put the equipment type unless you select to view more." On the opened route, each leg box now stacks the aircraft type under the airline and flight number chip instead of beside it. The results tickets and saved route cards show only the airline and flight number under each leg, so the space under the route line shrinks by one line.
+
+## Design round 155: flight stack centred under the route line (John, Nov 5)
+
+John: "It's not aligned center underneath the route line when I open more details." On the opened route, each leg box's airline and flight number chip, with its aircraft stacked under it, is now centred across the box, under the middle of the route line, the way the results tickets centre each flight under its leg.
+
+## Design round 156: logo-only tickets, plain map lines, dashes for no seats, colored Departed/Arrived (John, Nov 5)
+
+- Results tickets and saved cards: each leg shows only its airline's logo under the route line, with no tile behind it and no flight number. A tap or hold on a logo opens a small window over it with the flight number and aircraft type; a tap anywhere else closes it (FlightPeek). An airline with no logo shows its code. The tail-mark fallback is drawn bare (a plane in the airline's color) instead of a colored square. Some logos from Logo.dev come with their own colored square baked in (Delta's is navy), which the app can't strip.
+- Map: no map key, no dashed lines, no direction chevrons. Every selected leg is a plain solid line in its seat color. The route pulse stays.
+- A leg with no seat reading shows a dash over it on the route line instead of nothing.
+- Departed and Arrived pills: sky cyan (light #0b6782 on #dcf1f7, 5.5:1; dark #8adcf0 on #0e2a33). No other meaning uses cyan: blue is for things you tap, green to red for seats and lateness, violet for delays, amber for you.
+
+## Design round 157: logo above the delay pill, "25m late" (John, Nov 5)
+
+John: "Can the logos sit on top of the delayed pill and delay pill sits underneath the logo? Also +25m doesn't really say much." Under each leg of a ticket's route line the order is now: stop codes, the airline logo, then the delay pill. A delay reads "25m late" everywhere (tickets, the opened route, the flight sheet already used it), which fits even a 2-stop ticket's short legs (about 63pt, measured with Geist SemiBold 12, against about 69pt per leg on a 375pt phone), so the "+25m" short form is gone. VoiceOver still says "Delayed 25 minutes, was ..., now ...".
+
+## Design round 158: logo peek on the opened route, logos closer to the line, no delay line under Leave By (John, Nov 5)
+
+- Opened route: each flight box shows only the airline's logo (28pt, no pill) centred under its route line, with the same tap-or-hold window as the tickets for the flight number and aircraft type. The box's spoken label now includes the aircraft. Tapping elsewhere in the box still opens the flight sheet.
+- Tickets: each leg's logo moved up to sit just under the line, level with the stop codes beside it (a logo centred on its leg clears the codes centred on the dots, even on a 2-stop ticket); a delay pill sits right under the logo.
+- Leave By card: the "Flight delayed to 5:35 PM" line is gone; the route's own times show the change. VoiceOver still hears it with the title.
+
+## Round 159 (2026-11-05, John)
+
+- Opened route: no "Continuing to SEA" note on a diverted leg. Every leg box now has one layout: both airport columns are a fixed 74pt (the width of "10:40 AM"), the line is always raised the same amount, any status pill sits over the line and the flight's length is always under it. So lines start, end and sit at the same height in every box.
+- Leave By before the airport: "Arrive at DFW by 10:10 AM to begin boarding" (airport and time from the data), with nothing beside it. Leave now's detail ends the same way.
+- At the airport: "Your flight begins boarding at 11:40 AM". The time is still the scheduled departure, since we have no boarding time data.
+- At the airport the card opens walking directions (Apple Maps dirflg=w, Google walking) to "DFW Terminal C Gate C12", built from the first flight's live gate and terminal. The car becomes a walking person with the gate under it. No gate posted yet: the person alone, routed to the terminal or airport. Whether the maps app finds the gate depends on its indoor map for that airport.
+
+## Round 160 (2026-11-05, John)
+
+- No "Follow your airline's rules on sharing loads" line anywhere: gone from the bottom of results and from Profile. The report sheet keeps only "Reports are anonymous to other employees."
+- The notes over the results ("Leaving from any Dallas airport (DAL, DFW)", the summary and the like) are centered.
+- Replaces the round 152/153 gray fade: a canceled nonstop gets a 2pt red edge (canceled red) and a light red wash over the whole card (canceledTint, light #fef1f2, dark #24141d), with gray top times. A 1, 2 or 3-stop route with a canceled leg is left as a normal card, with only the red X and Canceled pill on that leg's line.
+
+## Round 161 (2026-11-06, John)
+
+- Ticket logos drop 6pt under a route with a canceled leg so they clear the X's disc.
+- A canceled nonstop's gray top times get a red line through them (textDecorationColor canceled).
+- Every airline mark is the same round badge: a white disc with a hairline ring that the logo fills (cover), or the airline's color with a white plane when there's no logo. A square logo like Delta's reads as a circle. The disc is always white, so the logo is asked for in its light form.
+- Area notes name the state: "Leaving from any Dallas, TX airport (DAL, DFW)" (country code outside the US).
+- No red edge on a full route; it keeps the gray fill and the plain edge. Red edges are only for a canceled nonstop.
+- No late pills on results tickets; the opened route keeps them. A diversion still shows on the ticket.
+- A leg with nothing reported shows the seat icon over a dash.
+
+## Round 162 (2026-11-06, John)
+
+- Boarding time, since no feed gives one: 40 minutes before a domestic departure, 50 before an international (airports in different countries) or widebody one (747, 767, 777, 787, A330, A340, A350, A380, MD-11, DC-10; not the 757). "Your flight begins boarding at" uses it. Widebody detection needs the aircraft type, so until real flights carry it, a domestic widebody gets 40.
+
+## Round 163: premium pass on the less-touched screens, part 1 (John, Nov 6)
+
+John: the home screen, results and flight details have had all the attention; the station picker, Settings, Trips, the Logbook and the other menus need the same premium pass.
+
+Audit of screens not yet polished: Airport picker, Settings, Trips, Logbook (totals card, logged flight rows), Feed and request rows, Add flight sheet, Report sheet, Filters, Departures sheet, Profile, Date picker, Pass scanner, the tab bar.
+
+This round:
+- One shared card look (`useCardSurface`): surface fill, card-edge border, 1pt, medium radius, and a soft lift in light mode only. ListGroup, EmptyState, the Settings groups, SavedRouteCard edges and the Logbook totals card all use it, so every list screen matches the results tickets.
+- Airport picker: each section is one rounded card of rows with inset hairlines; the code sits in a mono pill; the airport name is in text color with "Dallas, TX" under it; amber tags are now round pills; the search field uses the card look. Search finds a city or a state too, as the placeholder already promised.
+- Logbook totals: the highlights are rows (icon, label left, answer right, miles or flights muted) instead of plain sentences. VoiceOver reads the same.
+- Settings keeps its structure so the App Store thread's Account section merges cleanly; no auth screens here.
+
+Not rendered here: sizes checked against the fonts only.
+
+## Round 164: premium pass part 2, Feed and requests (Nov 6)
+
+- Every request row (Feed and My Trips) leads with the same round airline badge as the tickets.
+- An answered request shows its numbers the way the route line does: a pill in the seat color with the seat icon and open seats, a slash, the person icon and people listed, then "answered 2m ago" in gray. No tier dot, no sentence of numbers. VoiceOver still reads "20 seats, 17 listed, answered 2m ago".
+- Answered and Waiting badges are round pills with semibold text, like the other pills.
+
+## Round 165: premium pass part 3, the sheets (Nov 6)
+
+- Report Load: the two number cards and the tier box use the shared card look. Each count card has the same seat or person icon as the route line, in a small circle by its label. − and + are secondary buttons now (light blue tint, blue glyph). Once you set numbers, the tier box fills with the seat color. The flight line under the header leads with its round airline badge.
+- Add flight: the form card and the Scan / Photo tiles use the card look; the tile icons sit in a light blue circle so the tiles read as buttons.
+- Departures board: one rounded card of rows with inset hairlines, like the airport picker. Each flight leads with its airline badge, and "You reported" shows the same seat-colored count pill as an answered request (shared SeatCountPill).
+- Filters: Max stops is one segmented track with the pick filled blue and the others in blue text. Steppers everywhere (Filters, Settings) use the secondary tint for − and +.
+
+## Round 166: premium pass part 4, Profile, date picker, scanner, tab bar (Nov 6)
+
+- ListRow takes an optional icon: a small rounded tile in the quiet fill with the icon in text color (not blue, since the tile isn't the button; the row is). A hairline under a row with a tile starts at the text, like iOS Settings. Profile's setup rows (home, other homes, location, notifications, buffer, directions, search defaults) and About rows use it.
+- Tab bar: the picked tab shows its filled icon; the bar's top line uses the card edge.
+- Date picker: the calendar sits on the shared card, with the note centered under it.
+- Pass scanner: four white corner brackets frame the pass instead of a full box; the hint is a rounder dark pill; the camera ask leads with a camera in a light circle.
+- Settings' structure is unchanged, so the App Store thread's Account section still merges cleanly.
+
+## Round 167: Requests tab, My Trips cleanup (John, Nov 6)
+
+John: "Add badges to open requests on the feed tab and rename the feed tab to 'Requests'", "sorted by oldest from the top so that those get answered quickly", "When it was asked the text gets wrapped onto the 2nd row", "swipe left to delete a saved route or multiselect to delete", "Saved routes should also auto delete after 24 hours when the last leg of the route arrives", "Your requests answered should stay until the last leg of your request arrives and it's been 24 hours", "Your Requests and Saved Routes should have a better design to separate both".
+
+- Feed is now Requests (tab and screen). The tab shows a count badge of asks still waiting for your answer (system red, the iOS meaning). Answers you give live in RequestsProvider so the badge drops as you answer.
+- Open asks sort oldest first.
+- Request rows: when it was asked (or answered) sits on its own at the right, over the Answer button or the Waiting/Answered pill, so the departure line never wraps. At 393pt wide the departure line has about 195pt; "Departs tomorrow 10:55 AM" measures 158pt in Geist Medium 12.
+- Saved routes: swipe left slides the card over a red Delete (a long swipe or hard flick deletes at once; a short one stays open on Delete; a tap on the card closes it). After a swipe delete, "Route deleted" with Undo shows for 5 seconds. Select in the section header turns on checkboxes and a bottom bar with Select All and a red Delete N, which confirms first. The trash button stays for VoiceOver.
+- Saved routes come off by themselves 24 hours after their last flight lands (checked on app open and each time My Trips shows). Answered asks stay in Your requests until 24 hours after their flight lands; waiting ones still go when the flight leaves.
+- My Trips sections have real headers: an icon in a circle, the name at 20pt, a count pill, and the section's action on the right; a rule and space sit between Your requests and Saved routes.
+
+## Round 168: App Store work ships with the design rounds
+
+John saw no launch screen in Expo Go. Cause: the publish workflow sends each git branch to its own Expo Go branch, and John opens `claude/project-thread-fzqwou`. The animated launch intro, welcome page, sign up and log in, Delete Account, legal pages and report tools were built on `claude/app-store-ready`, so they never reached the update he opens.
+
+Fix: merged `claude/app-store-ready` into the design branch (clean merge, no conflicts). From now on every design round merges the latest `claude/app-store-ready` before it pushes, so both sets of work publish together.
+
+Checked in code and tests (not on a device): `LaunchIntro` plays once per cold start over the app, then lifts onto the welcome page. Expo Go builds are `preview`, so "Look Around First" shows and opens the tabs, and it's remembered so later launches go straight in after the intro.
+
+## Round 169: smooth launch exit, Leave By reads as a button
+
+- Launch intro exit (John: "It looks choppy when it's coming off the screen. It looks awesome though"). Cause: every frame of the lift was a JS re-render of the whole intro while the app mounted underneath, so frames dropped. Now the drawing freezes at take-off and the plane's flight and the panel's lift run as native-driver Animated timings (same curves as before), so the JS thread being busy can't stall them. The plane sits on its own layer so it can fly without redrawing. The exit is a bit longer (520 to 640ms) so the lift glides. Reduce Motion's fade runs natively too. Whole intro is 2.44s.
+- Leave By (John: "doesn't look obvious to select and can the estimated time to drive there be next to the car icon or walking icon"). The car is now a filled blue capsule button with the drive time beside it ("🚗 32m"), also on "Leave now" when the drive is known. At the airport the capsule holds the walking person and the gate; there's no walking-time source, so no walk time is shown. The title stands alone ("Leave by 10:45 AM"); the arrive-by line stays in the spoken label. Measured: "Leave by 10:45 AM" 126pt + "1h 15m" capsule 93pt fits the ~330pt row.
+
+## Round 170: curved map route lines
+
+John: "None scrap this idea" (destination art on tickets: dropped, nothing built). Then: "Can you make the route lines curve or look more natural free flowing than a straight line?"
+
+- Map: the arcs were already lifted great circles, but on a domestic leg seen from above the lift points at the camera, so they read as ruler lines. Each leg now also bows sideways by 13% of its length (BOW in arcs.ts), toward the nearer pole like a flight map; legs within 45 degrees of due north or south bow east. Both directions of a pair bow the same way, so a round trip reads as one curve. Ends stay exactly on the airports. Everything drawn from the samples follows: lines, ground shadow, time pills, tap targets, and camera framing (legFramePoints uses the bowed path). Map rules kept: plain lines in seat colors, no dots, arrows or legend.
+- Cards: mocked up only (outbound-frames/r170_card_line_options.png): A soft arch per leg, B one flowing wave. Not built until John picks.
+- Frame: outbound-frames/r170_map_curves.png, drawn from the app's own projection on the dev sample routes.
+
+## Round 171: route lines flow instead of arching
+
+John (Nov 7): "The arch is too much. Not every line also has to be an arch. I just want it to look like it flows nicely."
+
+- Map: the sideways bow drops from 13% of the leg to 4%, and only a lone nonstop keeps it. Legs that meet at a stop lose the bow and instead lean gently (at most about 17 degrees) so the line runs through the stop with no corner. Most lines now read nearly straight.
+- Cards: connections drift 2.5pt off straight in one low wave that passes through every stop dot, alternating up and down per leg. Nonstops stay straight. Seat numbers, stop codes and the canceled X stay put (the X follows the line by its drift).
+- Drawn from the app's own numbers (r171_map_flow.png, r172_card_flow.png), not seen on a device.
+
+## Round 172: straight route lines again
+
+John (Nov 7): "No I dont like it go back to straight lines haha"
+
+- Map and card route lines are back to straight, exactly as they were before round 170 (arcs.ts, framing.ts, GlobeMap.tsx and MiniRoute.tsx restored; the card flow test removed).
+- Rule going forward: route lines stay straight. Don't revisit curves unless John asks.
+
+## Round 173: Appearance setting (Light, Dark, System)
+
+John (Nov 7): "Can you create a a system toggle for light/dark/system mode and automatically set the system mode by default"
+
+- Settings has an Appearance section (after Location) with three segments: Light, Dark, System. System is the default and follows the phone. Profile shows it as its own row that opens Settings there.
+- Saved with the other settings on the phone. Reset and Delete Account bring it back to System.
+- One switch for the whole app: every screen already takes its colors from useColorSchemeName, which now reads the choice first and the phone only for System. Appearance.setColorScheme makes the phone's own parts (keyboard, alerts, date pickers, status bar) match too.
+- The saved choice is read before the first screen draws, so the app the launch intro lifts off is already in the right mode with no flash.
+- The launch intro itself stays the icon's ink blue in every mode, same as the phone's splash screen, which can't read an in-app setting.
+- Not seen on a device.
+
+## Round 174: five new filters, airport summary, Settings tab
+
+John (Nov 7): "Time of day filter, Airports to avoid, Only answered loads, Airline filter, US airlines only or all ... Can you also build these additional filters", then "The airport summary should be when you select an airport or hold to select it", then "Profile tab should be renamed to Settings and Cog icon ... Organize it logically".
+
+Filters (Filters sheet and Settings > Search defaults, saved like the rest):
+- Time of day: Morning 5 AM to 12 PM, Afternoon 12 to 5 PM, Evening 5 to 9 PM, Night 9 PM to 5 AM, any mix. Judged by the first flight's local departure. None picked = any time. Window bounds are provisional.
+- Airlines: All airlines or US airlines (segments), then airline pills with logos. Picked airlines must fly every flight; none picked = every airline. US only hides and drops foreign airlines. US list = mainline plus the regionals flying for them; an unknown code counts as not US.
+- Loads: Only answered loads = every flight has a crowd-reported load (source 'reported').
+- Airports to avoid: removable pills plus Add Airport. No connection there, and an avoided area airport is skipped at either end; the airports typed in From and To always stay.
+- The empty-list "your filters hid N routes" count loosens these too.
+
+Airport summary:
+- Hold an airport (From/To card, an airport pill on an opened route, a row in the airport picker) for a sheet with local time, public transit, hours and rental cars. VoiceOver gets an "Airport info" action.
+- Facts for all 12 airports were checked on each airport's or transit agency's own site on Nov 7, 2026 (sources in design/airport-info-sources.json). What couldn't be confirmed says "Couldn't confirm this one yet" instead of guessing: hours for DAL, DEN, DFW, LAX and LGA. Most airport sites list TSA checkpoint hours rather than terminal hours, so that's what Hours shows.
+- Moves to the schedule DB later, so new airports get their own facts.
+
+Settings tab (was Profile, cog icon):
+- Groups: Account, Home airports, Getting to the airport (buffer, directions app, location switch), Search (search defaults), Display (Appearance segments, Rain radar switch), Notifications, Help and legal, About (credits, version, Logo.dev), then Reset All Settings.
+- On/off and pick-one settings change right on the tab; anything bigger opens a page with just that section.
+- The route keeps its file name (profile) so links don't break.
+- Not seen on a device.
+
+## Round 175: Departed and Arrived in the flight card's corners
+
+- John: "On the flight summary page can the departed pill stay on the bottom left of the card and arrived pill on the bottom right of the flight card?"
+- Each leg box on the opened route card now ends in one row: a left corner, the airline logo centred, a right corner. The corners are even (flex 1 each) so the logo stays centred.
+- Departed sits in the bottom left corner (under where it left from), Arrived in the bottom right (under where it landed), every time. They no longer sit over the route line.
+- Late, Canceled and Diverted pills keep their place over the line; the corners stay empty then.
+
+## Round 176: Membership plans and credits (demo), Departure Time filter
+
+- John: pick a membership tier from the main menu: Free, Pay as you go or Premium. Free sees itineraries but no seats until requested; a request goes straight to My Trips with dummy loads. Pay as you go and Free show credits on the main menu with the same icon; Free earns credits by answering loads. Premium sees every load, no credits.
+- The plan picker opens on the Search tab once the launch intro is done, until a plan is picked. Later closes it until next launch. The plan is kept with the settings (so Reset All Settings asks again) and changes any time under Settings > Membership.
+- Seats hide by taking them off each route before it reaches the screen, so tickets, the route card and the flight sheet all show "-" and gray lines. A note under the results count says why.
+- Opening a hidden route shows a "Seats are hidden" card above Leave By. Request Loads spends 1 credit, unlocks that route's flights for good, adds each flight to My Trips already answered with sample loads (the sample seats search has, else steady made-up numbers), saves the route and opens My Trips. Out of credits, the card offers Answer Loads (Requests tab) instead.
+- Credits: Free starts with 3, Pay as you go with 10, once per plan. Answering a load (Requests tab or Report Load) earns 1, once per flight. The ticket chip on the Search top bar shows the balance; a tap opens Credits: balance, earned, spent, how it works, recent entries, Answer Loads. Premium has no chip. No buying: Pay as you go says adding credits comes later. Everything is kept on the phone; nothing is charged.
+- John: rename "Time of day" to "Departure Time".
+
+## Round 177: Credits say "credits", the day picker says what it is
+
+- John: "add some labeling to the credit icon. It's not obvious from a first look." The chip on the Search top bar now reads "3 credits" beside the ticket icon.
+- John: "It's not obvious that you can switch days or that's what it means." The results header's day stepper (arrows either side of the date) is now a labeled day picker: "Departing Tue, Oct 20" with the route count beside it, over a row of day buttons for the whole 0-7 day window (Today, Tomorrow, then weekday names, each with its date). The searched day is filled blue, the others light blue, so each reads as a button. The row scrolls to keep the picked day in view. VoiceOver reads it as a "Departure day" radio group.
+
+## Round 178: map and launch animation missing (fix)
+
+- John, after round 177: "I can't see the map and the loading screen only loads the words." Both are drawn with Skia, and neither file changed in rounds 173 to 177.
+- The only change in those rounds that reached native views was round 173's Appearance choice calling Appearance.setColorScheme, which sets a light/dark override on every app window. In Expo Go that override stays on the windows across reloads of an update. It's the prime suspect; not confirmed on a device.
+- Fix: the Appearance choice no longer sets the phone-level override. Light/Dark/System still changes every color in the app (useColorSchemeName). Launch clears any override an earlier version left, once. The phone's own parts (keyboard, alerts) follow the phone's setting again.
+- Confirmed Nov 8: John, after round 178: "They're back". Never set the phone-level override again.
+
+## Round 179: arrows beside the day buttons
+
+- John: "New row of day buttons are not obvious to scroll left and right ... add arrows but keep the buttons like that".
+- The labeled row of day buttons stays as is. A light blue arrow button sits at each end of the row (chevron left / right, full button height so it lines up with the days).
+- An arrow steps one day and searches it, same as tapping that day; the row scrolls to keep it in view. Each arrow dims at the end of the date window.
+- Screen readers hear "Previous day, <day>" / "Next day, <day>".
+
+## Round 180: whole day buttons only; the yaoom sound is made
+
+- John, on round 179's screenshot: "Why do the arrows overlap with a date? That doesn't look good." The row cut the next day button in half at its edge, right beside the arrow.
+- The row now measures the space between the arrows, fits as many whole buttons as there's room for (each at least 80 wide), and sizes them to fill it exactly. Swiping snaps one whole button at a time; the arrows and taps move the row just enough to keep the picked day in view. No button is ever cut off.
+- John also asked for a "yaoom" sound when a request is answered. assets/sounds/yaoom.wav is an original sound made from scratch for OutBound (a voice-like "ya-oom" with a low boom under it); no artist's audio is used or sampled.
+- Playing it needs Expo's audio package (expo-audio), which isn't in the app yet. Adding a package waits on John's yes, so the sound isn't wired up this round. Plan once he says yes: play it when one of your asks gets its answer, follow the phone's silent switch, mix with other audio, and add a Sound effects toggle in Settings.
+
+## Round 181: the yaoom plays, and changing days is smooth
+
+- John said yes to adding Expo's audio package ("Yes add it"). expo-audio ~58.0.10, the version bundled with SDK 58, so it runs in Expo Go. Not added as a config plugin, so the app asks for no microphone permission.
+- The yaoom (assets/sounds/yaoom.wav, original) plays when one of your asks gets its answer. Asks already answered when the app opens stay quiet. A requested route whose legs all land at once plays it once.
+- It follows the phone's silent switch (playsInSilentMode false) and mixes with other audio, so music keeps playing.
+- Settings > Display has a "Sound effects" switch ("A yaoom when your request is answered"). On by default.
+- John: changing days with the arrows "looks choppy ... like it's glitching out". Cause: each day change swapped the whole list for a loading view and back, which also rebuilt the day row (it snapped back to its first spot, then jumped). Now, while a new day loads for the same market, the last day's routes stay in place, dimmed and untappable, the count reads "Finding routes…", and the day row stays put and scrolls smoothly. The new day's routes rise in when they land. Reduce Motion skips the fade.
+- The day row is hidden for the one frame before it's measured, so buttons never jump between widths.
+
+## Round 182: the yaoom, made easier to hear
+
+- John, Nov 9: "I also dont hear the yaoom sound".
+- Most likely cause: his phone is on silent (the bell with a slash shows in his round 179 screenshot), and the yaoom follows the silent switch, so iPhone mutes it. Not confirmed on his phone.
+- Also hardened: the sound now loads when the app starts instead of at the moment of the answer, and a fresh player plays straight away (it only rewinds after it has played once). Before, the first play could wait on a cold load and a rewind of a player still loading.
+- Turning on Settings > Display > Sound effects now plays the yaoom once, so there's a quick way to hear it on any plan. The row says it's quiet on silent.
+- Still respects the silent switch. Asked John whether it should play on silent too.
+
+## Round 183: the real reason the yaoom was silent
+
+- John, Nov 9: "Im turning it on and off and my phone is not muted I cant hear it". So it wasn't the silent switch.
+- Cause (found in the code, not yet confirmed on his phone): the yaoom was a bundled file. In Expo Go, an update keeps its files under bare content hashes with no file extension (expo-asset's own notes call extensions "legacy"). iPhone's player decides what a local file is from its extension, so it couldn't open the yaoom, failed without an error anyone could see, and nothing played. expo-audio's source even notes that AVPlayer fails when the type can't be inferred.
+- Fix: on iPhone the yaoom now comes from a data URI (AAC, audio/mp4, about 11 KB) built into the code. expo-audio writes it to a temp file with a real audio extension, so the player always knows what it is. Android keeps the bundled file (now assets/sounds/yaoom.m4a). The original WAV moved to design/yaoom-source.wav.
+- If it ever fails to load again, Settings shows a line under Display saying it couldn't load and why, instead of staying silent.
+
+## Round 184: see what the yaoom is doing, and let it play on silent
+
+- John, after round 183: "Still nothing", and no failure line under Display. So either his Expo Go isn't on round 183, or the player loads and plays but nothing comes out.
+- Settings > About now has a "Design round" row (src/buildInfo.ts, bump each round) so we can see which update his phone loaded.
+- Under Display, while Sound effects is on, a "Sound check" line always shows what the yaoom last did: not loaded yet, loading, loaded, playing now, last played at a time, or couldn't load and why. Temporary, until the sound is confirmed on his phone.
+- The audio mode is now set and waited for before the player is made (before, the first play could run before the mode applied).
+- The yaoom now plays even with the phone on silent (playback category, mixed with other audio so music keeps going). His Nov 8 screenshot showed silent mode on; on recent iPhones that's set from Control Center or the Action button, not a side switch, so "not muted" may not mean silent is off. The Sound effects switch turns it off.
+- Each yaoom also gives a success tap you can feel.
+
+## Round 185: a long yaoooooom
+
+- Round 184 worked: John can hear it. His next ask: "Can the sound effect be more.. yooooom. Like yaoooooooooooom".
+- Remade from scratch (design/yaoom-source.wav): 2.4 seconds instead of 0.8. A quick "ya", then the "ooo" held for over a second with a slow vibrato that grows in, then it closes into a soft "m". The low boom sits under the whole "ooo" and fades slowly with it. Still original, no artist's audio.
+- Still built into the code for iPhone (AAC, about 30 KB).
+- The Sound check line under Display now only shows if the yaoom fails to load. Design round stays in About (now 185).
+
+## Round 186: yoooom with an autotuned ooo
+
+John: "Delete the a in Yaoom sound effect. It should sound like Yooooooooom. And adjust the ooooo to have an autotune effect."
+
+- The "a" opener is gone: the y glides straight into the ooo in about 0.14 s.
+- The ooo is sung down from E4 toward F#3 with a wide vibrato, then snapped to E minor pentatonic with a 5 ms retune, so it steps between notes and flips back and forth at each change (the hard autotune warble) instead of sliding.
+- Light doubling (two voices detuned 9 cents) gives it the processed-vocal sound.
+- Same 2.4 s length, same low boom under it, same "m" close. Made by design/yoom-synth.py; the app's code names (playYaoom) stay, only what you read says yoooom.
+
+## Round 187: more autotune
+
+John: "More autotune".
+
+- Retune is now instant (1 ms instead of 5 ms), so every note change is a hard snap.
+- Vibrato is wider (2.6 semitones) and faster (6.2 Hz) with a slow sway on top, so the ooo flips between notes about twice as often.
+- A brighter, buzzier voice and a second autotuned voice a fifth above, like stacked T-Pain harmonies, plus octave doubling.
+- Still no "a", same 2.4 s length, boom and "m" close.

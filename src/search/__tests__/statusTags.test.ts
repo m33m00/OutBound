@@ -68,7 +68,7 @@ describe('legStatus', () => {
     const v = legStatus(a, status(a, 'delayed', 25));
     expect(v.tag).toEqual({
       kind: 'delayed',
-      label: 'Delayed 25m',
+      label: '25m late',
       spoken: 'Delayed 25 minutes, was 3:10 PM, now 3:35 PM',
     });
     expect(v).toMatchObject({ struck: true, newUtc: a.departUtc + 25 * MIN, newText: '3:35 PM' });
@@ -78,7 +78,7 @@ describe('legStatus', () => {
     const s = status(a, 'delayed', 30);
     s.departure.actualUtc = iso(a.departUtc + 90 * MIN);
     const v = legStatus(a, s);
-    expect(v.tag?.label).toBe('Delayed 1h 30m');
+    expect(v.tag?.label).toBe('1h 30m late');
     expect(v.tag?.spoken).toBe('Delayed 1 hour 30 minutes, was 3:10 PM, now 4:40 PM');
   });
 

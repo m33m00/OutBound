@@ -37,8 +37,9 @@ export function Stepper({
         accessibilityLabel={`${sign > 0 ? 'Increase' : 'Decrease'}: ${label}`}
         accessibilityValue={{ text: forSpeech(format(value)) }}
         accessibilityState={{ disabled }}
-        style={pressStyle([styles.stepBtn, { backgroundColor: c.surface2, opacity: disabled ? 0.4 : 1 }])}>
-        <Text lineBreakStrategyIOS="push-out" style={[textStyles.heading, { color: c.text }]}>
+        // − and + are secondary buttons: light blue tint, blue glyph (round 165).
+        style={pressStyle([styles.stepBtn, { backgroundColor: c.accentSoft, opacity: disabled ? 0.4 : 1 }])}>
+        <Text lineBreakStrategyIOS="push-out" style={[textStyles.heading, { color: c.accent }]}>
           {sign > 0 ? '+' : '−'}
         </Text>
       </Pressable>

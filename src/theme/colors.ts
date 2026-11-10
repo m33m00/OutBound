@@ -75,7 +75,14 @@ export const colors = {
     // from Full so a canceled flight never reads as a full one).
     canceled: '#c8102e',
     canceledBg: '#fde0e3',
+    // A canceled nonstop's whole card, a light wash of red (round 160, John).
+    canceledTint: '#fef1f2',
     canceledFg: '#9e0d24',
+
+    // Departed and Arrived pills (round 156, John: "A color for the pill when it has departed or arrived"):
+    // a sky cyan no other meaning uses (blue is for things you tap, green to red for seats and lateness).
+    done: '#0b6782',
+    doneBg: '#dcf1f7',
 
     // A time that moved, tinted by how far (John, 2026-11-02): early green; late yellow, orange, red.
     // Text colors, kept soft so they tint the number rather than shout.
@@ -134,7 +141,11 @@ export const colors = {
     // Provisional, pending John (see light).
     canceled: '#ff4d5e',
     canceledBg: '#3a1018',
+    canceledTint: '#24141d',
     canceledFg: '#ffa3ad',
+
+    done: '#8adcf0',
+    doneBg: '#0e2a33',
 
     timeEarly: '#7fdca6',
     timeSlight: '#e8d27a',

@@ -7,6 +7,8 @@
  */
 import type { LineSource, SeatTier } from '@/map';
 
+import type { AirlineRegion, TimeOfDay } from './filters';
+
 export type { LineSource, SeatTier };
 
 export interface Airport {
@@ -152,6 +154,19 @@ export interface SearchOptions {
   maxLayoverMin: number;
   /** Provisional: max first departure to last arrival. Default 24h. */
   maxTripMin: number;
+  /** Parts of the day the first flight may leave in, local time (round 174). Empty = any time. */
+  departTimes: TimeOfDay[];
+  /**
+   * Airports a route never uses (round 174): no connection there, and an area's other airport is
+   * skipped at either end. The airports typed in From and To are always kept.
+   */
+  avoidAirports: string[];
+  /** Only routes where every flight has a load someone reported (round 174). */
+  answeredOnly: boolean;
+  /** Only these airlines, on every flight (round 174). Empty = every airline. */
+  airlines: string[];
+  /** 'us': every flight on a US airline (round 174). */
+  airlineRegion: AirlineRegion;
   /** Results returned. Default 10 (top 10 routes). */
   limit: number;
   /** Clock, injectable for tests. Default Date.now(). */

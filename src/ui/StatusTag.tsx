@@ -34,7 +34,7 @@ export function StatusTag({
       onLayout={onLayout}
       style={[
         styles.statusTag,
-        { backgroundColor: c[TONE_BG[tone]], borderColor: tone === 'gone' ? c.line2 : c[TONE_BG[tone]] },
+        { backgroundColor: c[TONE_BG[tone]], borderColor: c[TONE_BG[tone]] },
         minWidth ? { minWidth } : null,
       ]}>
       {/* Icon keeps Canceled / Diverted from reading as a Full-tier red edge; the word stays. */}

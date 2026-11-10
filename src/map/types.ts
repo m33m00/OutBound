@@ -190,8 +190,8 @@ export interface GlobeMapProps {
   interactive?: boolean;
   /**
    * Show the line legend while a route is selected (DECISIONS.md "Map").
-   * Default true; it sits bottom-left inside `insets`. Set false to place
-   * `RouteLegend` yourself.
+   * Default false since round 156 (the result tickets explain the colors and numbers); when on it sits
+   * inside `insets`.
    */
   showLegend?: boolean;
   style?: StyleProp<ViewStyle>;

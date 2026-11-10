@@ -9,7 +9,10 @@ describe('parseSettings', () => {
 
   it('starts with notifications off and keeps saved choices', () => {
     expect(DEFAULT_SETTINGS.notify).toEqual({ answers: false, airlineAsks: false });
-    expect(parseSettings({ notify: { answers: false, airlineAsks: true } }).notify).toEqual({ answers: false, airlineAsks: true });
+    expect(parseSettings({ notify: { answers: false, airlineAsks: true } }).notify).toEqual({
+      answers: false,
+      airlineAsks: true,
+    });
     expect(parseSettings({ notify: { answers: 'no' } }).notify).toEqual({ answers: false, airlineAsks: false });
   });
 
@@ -35,8 +38,27 @@ describe('parseSettings', () => {
       areaOn: { DAL: true, DFW: false },
       notify: { answers: true, airlineAsks: false },
       mapsApp: 'google',
+      appearance: 'dark',
+      membership: 'payg',
+      sounds: false,
     };
     expect(parseSettings(JSON.parse(JSON.stringify(saved)))).toEqual(saved);
+  });
+
+  it('keeps the plan once picked and asks again when there is none (round 176)', () => {
+    expect(DEFAULT_SETTINGS.membership).toBeNull();
+    expect(parseSettings({ membership: 'premium' }).membership).toBe('premium');
+    expect(parseSettings({ membership: 'gold' }).membership).toBeNull();
+    expect(parseSettings({}).membership).toBeNull();
+  });
+
+  it('follows the phone unless Light or Dark was picked (round 173)', () => {
+    expect(DEFAULT_SETTINGS.appearance).toBe('system');
+    expect(parseSettings({}).appearance).toBe('system');
+    expect(parseSettings({ appearance: 'light' }).appearance).toBe('light');
+    expect(parseSettings({ appearance: 'dark' }).appearance).toBe('dark');
+    expect(parseSettings({ appearance: 'sepia' }).appearance).toBe('system');
+    expect(parseSettings({ appearance: 1 }).appearance).toBe('system');
   });
 
   it('clamps and snaps out-of-range values', () => {
@@ -143,5 +165,37 @@ describe('area toggle memory (Q-048)', () => {
     const s = parseSettings({ areaOn: { DAL: true, DFW: false, XXX: true, ORD: 'yes' } });
     expect(s.areaOn).toEqual({ DAL: true, DFW: false });
     expect(parseSettings({ areaOn: 'nope' }).areaOn).toEqual({});
+  });
+});
+
+describe('round 174 filters in saved defaults', () => {
+  it('keeps valid picks and drops anything else', () => {
+    const s = parseSettings({
+      search: {
+        departTimes: ['night', 'morning', 'noon', 'morning'],
+        avoidAirports: ['ORD', 'XXX', 'ORD', 4],
+        answeredOnly: true,
+        airlines: ['WN', 'wn', 'UA', 'WN', 'TOOLONG'],
+        airlineRegion: 'us',
+      },
+    }).search;
+    expect(s.departTimes).toEqual(['morning', 'night']);
+    expect(s.avoidAirports).toEqual(['ORD']);
+    expect(s.answeredOnly).toBe(true);
+    expect(s.airlines).toEqual(['WN', 'UA']);
+    expect(s.airlineRegion).toBe('us');
+  });
+
+  it('old saves get the open defaults', () => {
+    const s = parseSettings({ search: { maxStops: 1 } }).search;
+    expect(s).toMatchObject({ departTimes: [], avoidAirports: [], answeredOnly: false, airlines: [], airlineRegion: 'all' });
+  });
+
+  it('counts each changed filter once, lists in any order', () => {
+    expect(changedFilters({ ...DEFAULT_FILTERS, departTimes: [], airlines: [] })).toBe(0);
+    expect(changedFilters({ ...DEFAULT_FILTERS, departTimes: ['morning', 'night'], answeredOnly: true })).toBe(2);
+    const saved = { ...DEFAULT_FILTERS, airlines: ['WN', 'UA'] };
+    expect(changedFilters({ ...DEFAULT_FILTERS, airlines: ['UA', 'WN'] }, saved)).toBe(0);
+    expect(changedFilters({ ...DEFAULT_FILTERS, airlines: ['UA'] }, saved)).toBe(1);
   });
 });

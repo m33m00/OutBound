@@ -17,6 +17,8 @@ export function matchAirports(query: string, airports: readonly Airport[] = SEAR
     if (code === q) return 0;
     if (code.startsWith(q)) return 1;
     if (a.name.toLowerCase().includes(q)) return 2;
+    // A city or state works too, as the search box says ("Dallas", "TX"; round 163).
+    if (a.city?.toLowerCase().includes(q) || a.region?.toLowerCase() === q) return 3;
     return -1;
   };
   return airports

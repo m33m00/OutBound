@@ -5,11 +5,12 @@
 import { AIRPORTS } from '@/engine';
 import { MAPS_APP_NAME } from '@/search/directions';
 import { formatDuration } from '@/search/format';
+import { APPEARANCE_LABEL } from '@/theme/appearancePref';
 
 import { homeAirports, type Settings } from './settings';
 
 export interface SummaryRow {
-  key: 'home' | 'otherHomes' | 'buffer' | 'maps' | 'location' | 'notify' | 'search';
+  key: 'home' | 'otherHomes' | 'buffer' | 'maps' | 'location' | 'appearance' | 'notify' | 'search';
   label: string;
   value: string;
   /** Second line under the label (airport name, etc.). */
@@ -52,6 +53,7 @@ export function profileSummary(s: Settings, ios = true): SummaryRow[] {
     },
     // Same order as the Settings sections they open.
     { key: 'location', label: 'Use your location', value: s.useLocation ? 'On' : 'Off' },
+    { key: 'appearance', label: 'Appearance', value: APPEARANCE_LABEL[s.appearance] },
     { key: 'notify', label: 'Notifications', value: notifyText(s) },
     { key: 'buffer', label: 'Airport buffer', value: formatDuration(s.bufferMin), detail: 'Before departure' },
     // Where the Leave By card opens directions (round 49); Android has no choice.
@@ -61,7 +63,7 @@ export function profileSummary(s: Settings, ios = true): SummaryRow[] {
 }
 
 /** Settings sections a Profile row can open at (backlog 56). */
-export type SettingsSection = 'homes' | 'location' | 'notify' | 'leaveBy' | 'search';
+export type SettingsSection = 'homes' | 'location' | 'appearance' | 'notify' | 'leaveBy' | 'search';
 
 const SECTION_FOR: Record<SummaryRow['key'], SettingsSection> = {
   home: 'homes',
@@ -69,6 +71,7 @@ const SECTION_FOR: Record<SummaryRow['key'], SettingsSection> = {
   buffer: 'leaveBy',
   maps: 'leaveBy',
   location: 'location',
+  appearance: 'appearance',
   notify: 'notify',
   search: 'search',
 };
@@ -77,6 +80,7 @@ const SECTION_FOR: Record<SummaryRow['key'], SettingsSection> = {
 export const SETTINGS_SECTION_TITLE: Record<SettingsSection, string> = {
   homes: 'Homes',
   location: 'Location',
+  appearance: 'Appearance',
   notify: 'Notifications',
   leaveBy: 'Leave-by',
   search: 'Search defaults',
@@ -88,5 +92,7 @@ export const settingsSectionFor = (key: SummaryRow['key']): SettingsSection => S
 /** A section from the route's query, or null for anything else. */
 export function parseSettingsSection(raw: unknown): SettingsSection | null {
   const v = Array.isArray(raw) ? raw[0] : raw;
-  return v === 'homes' || v === 'location' || v === 'notify' || v === 'leaveBy' || v === 'search' ? v : null;
+  return v === 'homes' || v === 'location' || v === 'appearance' || v === 'notify' || v === 'leaveBy' || v === 'search'
+    ? v
+    : null;
 }

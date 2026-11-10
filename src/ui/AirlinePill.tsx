@@ -1,8 +1,8 @@
 import { Image } from 'expo-image';
-import { useContext, useState } from 'react';
+import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { fonts, InkContext, radius, textStyles, useColors, useColorSchemeName } from '@/theme';
+import { fonts, radius, textStyles, useColors } from '@/theme';
 
 import { Icon } from './Icon';
 
@@ -64,23 +64,36 @@ export function airlineName(code: string): string {
 }
 
 /**
- * The airline's logo straight on the card, no tile behind it (round 134, John: "bigger with a
- * transparent background"), or its tail mark when there's no logo. `size` points square.
+ * The airline's logo in a round badge, the same circle for every airline (round 161, John: "Can the airline
+ * logos all be in a round circle badges so it's all consistent"). The logo fills a white disc with a hairline
+ * ring, so a logo that comes as a colored square (Delta's navy one) reads as a colored circle like the rest.
+ * With no logo, the disc takes the airline's tail color with a white plane. `size` points across.
  */
-export function AirlineMark({ airline, size = 18, logoKey = LOGO_KEY }: { airline: string; size?: number; logoKey?: string }) {
+export function AirlineMark({
+  airline,
+  size = 18,
+  logoKey = LOGO_KEY,
+}: {
+  airline: string;
+  size?: number;
+  logoKey?: string;
+  /** Kept for callers; every mark is the same round badge now (round 161). */
+  bare?: boolean;
+}) {
+  const c = useColors();
   const m = AIRLINE_MARKS[airline];
   const [failed, setFailed] = useState(false);
-  const ink = useContext(InkContext);
-  const dark = useColorSchemeName() === 'dark' || ink;
   if (!m) return null;
-  const url = failed ? null : airlineLogoUrl(airline, size, logoKey, dark);
+  // The disc is always white, so the logo is asked for in its light form.
+  const url = failed ? null : airlineLogoUrl(airline, size, logoKey, false);
+  const disc = { width: size, height: size, borderRadius: size / 2, borderColor: c.line };
   if (url) {
     return (
-      <View style={[styles.mark, { width: size, height: size }]} testID="airline-logo">
+      <View style={[styles.mark, styles.badge, disc, { backgroundColor: '#ffffff' }]} testID="airline-logo">
         <Image
           source={{ uri: url }}
           style={{ width: size, height: size }}
-          contentFit="contain"
+          contentFit="cover"
           cachePolicy="disk"
           accessibilityIgnoresInvertColors
           onError={() => setFailed(true)}
@@ -89,21 +102,12 @@ export function AirlineMark({ airline, size = 18, logoKey = LOGO_KEY }: { airlin
     );
   }
   return (
-    <View
-      style={[styles.mark, { width: size, height: size, borderRadius: size * 0.28, backgroundColor: m.tail }]}
-      testID="airline-mark">
-      {/* A stripe across the lower corner, like a painted tail. */}
-      <View
-        style={[
-          styles.stripe,
-          { width: size * 1.6, height: size * 0.34, top: size * 0.72, left: -size * 0.1, backgroundColor: m.stripe },
-        ]}
-      />
+    <View style={[styles.mark, styles.badge, disc, { backgroundColor: m.tail }]} testID="airline-mark">
       <Icon
         name="airplane"
-        size={size * 0.62}
+        size={size * 0.56}
         tintColor={m.glyph}
-        fallback={<Text style={{ color: m.glyph, fontSize: size * 0.55, lineHeight: size * 0.7 }}>✈</Text>}
+        fallback={<Text style={{ color: m.glyph, fontSize: size * 0.5, lineHeight: size * 0.65 }}>✈</Text>}
       />
     </View>
   );
@@ -160,5 +164,5 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
   },
   mark: { overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
-  stripe: { position: 'absolute', transform: [{ rotate: '-28deg' }] },
+  badge: { borderWidth: StyleSheet.hairlineWidth },
 });

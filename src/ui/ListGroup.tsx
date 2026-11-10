@@ -1,8 +1,10 @@
-import { Children, Fragment, type ReactNode } from 'react';
+import type { SFSymbol } from 'expo-symbols';
+import { Children, Fragment, isValidElement, type ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
 import { minTapTarget, radius, spacing, textStyles, useColors } from '@/theme';
 
+import { useCardSurface } from './cardSurface';
 import { Icon } from './Icon';
 
 /** From this text size a row's value goes under its label. */
@@ -21,7 +23,11 @@ export function SectionHeader({ title }: { title: string }) {
 /** Explanation under a grouped card. */
 export function SectionFooter({ children }: { children: ReactNode }) {
   const c = useColors();
-  return <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, styles.footer, { color: c.muted }]}>{children}</Text>;
+  return (
+    <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, styles.footer, { color: c.muted }]}>
+      {children}
+    </Text>
+  );
 }
 
 /**
@@ -30,17 +36,32 @@ export function SectionFooter({ children }: { children: ReactNode }) {
  */
 export function ListGroup({ title, children }: { title?: string; children: ReactNode }) {
   const c = useColors();
+  const card = useCardSurface();
   const rows = Children.toArray(children).filter(Boolean);
   return (
     <View style={styles.wrap}>
       {title ? <SectionHeader title={title} /> : null}
-      <View style={[styles.card, { backgroundColor: c.surface, borderColor: c.line }]}>
-        {rows.map((row, i) => (
-          <Fragment key={i}>
-            {i > 0 ? <View style={[styles.sep, { backgroundColor: c.line }]} /> : null}
-            {row}
-          </Fragment>
-        ))}
+      {/* The shared card look (round 163); the inner view clips a pressed row's corners without clipping the lift. */}
+      <View style={card} testID="list-group-card">
+        <View style={styles.clip}>
+          {rows.map((row, i) => (
+            <Fragment key={i}>
+              {/* Under a row with an icon tile, its hairline starts at the text, like iOS (round 166). */}
+              {i > 0 ? (
+                <View
+                  style={[
+                    styles.sep,
+                    isValidElement<ListRowProps>(rows[i - 1]) && (rows[i - 1] as { props: ListRowProps }).props.icon
+                      ? styles.sepIcon
+                      : null,
+                    { backgroundColor: c.line },
+                  ]}
+                />
+              ) : null}
+              {row}
+            </Fragment>
+          ))}
+        </View>
       </View>
     </View>
   );
@@ -56,10 +77,12 @@ export interface ListRowProps {
   accessibilityHint?: string;
   /** The value is an action to take (accent), not a setting. */
   valueAccent?: boolean;
+  /** A small icon tile before the label, like iOS Settings (round 166). Decorative. */
+  icon?: SFSymbol;
 }
 
 /** One row: label (+ detail) on the left, value and chevron on the right. */
-export function ListRow({ label, value, detail, onPress, accessibilityHint, valueAccent }: ListRowProps) {
+export function ListRow({ label, value, detail, onPress, accessibilityHint, valueAccent, icon }: ListRowProps) {
   const c = useColors();
   // Big text: the value goes under the label so neither gets cut off.
   const stacked = useWindowDimensions().fontScale >= STACK_VALUE_SCALE;
@@ -72,10 +95,21 @@ export function ListRow({ label, value, detail, onPress, accessibilityHint, valu
   ) : null;
   const content = (
     <>
+      {icon ? (
+        <View style={[styles.iconTile, { backgroundColor: c.surface2 }]} testID="list-row-icon">
+          <Icon name={icon} size={15} tintColor={c.text} fallback={null} />
+        </View>
+      ) : null}
       <View style={styles.left}>
-        <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, { color: c.text }]}>{label}</Text>
+        <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, { color: c.text }]}>
+          {label}
+        </Text>
         {stacked ? valueText : null}
-        {detail ? <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>{detail}</Text> : null}
+        {detail ? (
+          <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>
+            {detail}
+          </Text>
+        ) : null}
       </View>
       {stacked ? null : valueText}
       {onPress ? (
@@ -113,8 +147,10 @@ const styles = StyleSheet.create({
   wrap: { gap: spacing.group },
   title: { paddingHorizontal: spacing.rowX, letterSpacing: 0.6 },
   footer: { paddingHorizontal: spacing.rowX },
-  card: { borderRadius: radius.md, borderWidth: StyleSheet.hairlineWidth, overflow: 'hidden' },
+  clip: { borderRadius: radius.md - 1, overflow: 'hidden' },
   sep: { height: StyleSheet.hairlineWidth, marginLeft: spacing.rowX },
+  // rowX + the 30pt tile + its 2pt margin + the row gap.
+  sepIcon: { marginLeft: spacing.rowX + 32 + spacing.group },
   row: {
     minHeight: minTapTarget,
     paddingHorizontal: spacing.rowX,
@@ -124,5 +160,6 @@ const styles = StyleSheet.create({
     gap: spacing.group,
   },
   left: { flex: 1, gap: 2 },
+  iconTile: { width: 30, height: 30, borderRadius: 8, alignItems: 'center', justifyContent: 'center', marginRight: 2 },
   value: { flexShrink: 1, maxWidth: '45%', textAlign: 'right' },
 });

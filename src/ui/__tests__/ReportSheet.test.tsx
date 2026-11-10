@@ -2,10 +2,11 @@ import React from 'react';
 import { View } from 'react-native';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 
-import { sampleFeed, sampleMine } from '@/requests/requests';
+import { answerTier, sampleFeed, sampleMine } from '@/requests/requests';
 
 import { ReportSheet } from '../ReportSheet';
 import { RequestRow } from '../RequestRow';
+import { TIER_BG } from '../tierColors';
 import { lineTexts } from '@/testing/lineTexts';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -78,6 +79,23 @@ describe('ReportSheet', () => {
     expect(box().props.value).toBe('');
     act(() => box().props.onBlur());
     expect(box().props.value).toBe('0');
+  });
+
+  it('the tier box takes the seat color once you set numbers, and − / + are blue secondary buttons (round 165)', async () => {
+    await act(async () => {
+      r = create(<ReportSheet flight={flight} now={NOW} onCancel={jest.fn()} onSubmit={jest.fn()} />);
+    });
+    const flat = (st: unknown) => Object.assign({}, ...[st].flat(5).filter(Boolean));
+    const tierBox = () => flat(r!.root.find((n) => typeof n.type === 'string' && n.props.testID === 'report-tier').props.style);
+    const { colors } = jest.requireActual('@/theme');
+    expect(tierBox().backgroundColor).toBe(colors.light.surface);
+    const box = r!.root.find((n) => n.props.accessibilityLabel === 'Seats left, On the departure board' && n.props.onChangeText);
+    act(() => box.props.onChangeText('30'));
+    expect(tierBox().backgroundColor).toBe(colors.light[TIER_BG[answerTier({ open: 30, listed: 0 })]]);
+    const plus = button(r!, 'Increase: Seats left');
+    expect(
+      flat(typeof plus.props.style === 'function' ? plus.props.style({ pressed: false }) : plus.props.style).backgroundColor,
+    ).toBe(colors.light.accentSoft);
   });
 
   it('Cancel leaves without a report', async () => {
@@ -184,7 +202,25 @@ describe('RequestRow', () => {
     });
     const texts = hostTexts(r!);
     expect(texts).toEqual(expect.arrayContaining(['Answered', 'Waiting']));
-    expect(lineTexts(r!.root).some((t) => / seats \| \d+ listed \| answered /.test(t))).toBe(true);
+    // The numbers sit in a seat-colored pill with the seat and person icons, then "answered 2m ago" (round 164).
+    const pill = r!.root.findAll((n) => typeof n.type === 'string' && n.props.testID === 'request-counts');
+    expect(pill).toHaveLength(1);
+    const pillTexts = pill[0]
+      .findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string')
+      .map((n) => n.props.children);
+    expect(pillTexts).toEqual([String(answered.answer!.open), '/', String(answered.answer!.listed)]);
+    // When it was asked or answered sits on its own at the right, never wrapping the line (round 167).
+    const ages = r!.root
+      .findAll((n) => typeof n.type === 'string' && n.props.testID === 'request-age')
+      .map((n) => String(n.props.children));
+    expect(ages).toHaveLength(2);
+    expect(ages.every((t) => /^(\d+[mhd] ago|just now)$/.test(t))).toBe(true);
+    expect(r!.root.findAll((n) => typeof n.type === 'string' && n.props.testID === 'request-departs')).toHaveLength(1);
+    expect(lineTexts(r!.root).some((t) => / asked /.test(t))).toBe(false);
+    // Both rows lead with the round airline badge.
+    expect(
+      r!.root.findAll((n) => ['airline-mark', 'airline-logo'].includes(n.props.testID) && typeof n.type === 'string').length,
+    ).toBeGreaterThanOrEqual(2);
     expect(r!.root.findAll((n) => n.props.testID === 'answer-request')).toHaveLength(0);
     // VoiceOver hears "answered" once (in the detail), and Waiting at the end.
     const labels = r!.root

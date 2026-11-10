@@ -9,12 +9,28 @@ import { Platform, type ColorValue } from 'react-native';
  */
 export const MATERIAL: Partial<Record<SFSymbol, keyof typeof MaterialIcons.glyphMap>> = {
   magnifyingglass: 'search',
+  // Round 176: plans and credits.
+  'ticket.fill': 'confirmation-number',
+  'lock.fill': 'lock',
+  'star.fill': 'star',
+  'creditcard.fill': 'credit-card',
+  // Round 174: Settings tab, airport summary.
+  gearshape: 'settings',
+  'gearshape.fill': 'settings',
+  envelope: 'mail-outline',
+  'hand.raised': 'privacy-tip',
+  'doc.text': 'description',
+  'cloud.sun': 'wb-cloudy',
+  'tram.fill': 'tram',
+  'clock.fill': 'schedule',
+  'circle.lefthalf.filled': 'contrast',
   'text.bubble': 'chat-bubble-outline',
   suitcase: 'luggage',
   'person.crop.circle': 'account-circle',
   airplane: 'flight',
   'airplane.departure': 'flight-takeoff',
   'car.fill': 'directions-car',
+  'figure.walk': 'directions-walk',
   'arrow.triangle.turn.up.right.diamond.fill': 'directions',
   xmark: 'close',
   'xmark.circle': 'cancel',
@@ -25,6 +41,7 @@ export const MATERIAL: Partial<Record<SFSymbol, keyof typeof MaterialIcons.glyph
   calendar: 'calendar-today',
   'arrow.left.arrow.right': 'swap-horiz',
   'cloud.rain': 'umbrella',
+  'speaker.wave.2.fill': 'volume-up',
   'line.3.horizontal.decrease.circle': 'filter-list',
   'exclamationmark.circle': 'error-outline',
   'exclamationmark.triangle': 'warning-amber',
@@ -36,6 +53,21 @@ export const MATERIAL: Partial<Record<SFSymbol, keyof typeof MaterialIcons.glyph
   trash: 'delete-outline',
   'carseat.right.fill': 'airline-seat-recline-normal',
   'person.fill': 'person',
+  'mappin.and.ellipse': 'place',
+  // Profile row icons and filled tab icons (round 166).
+  house: 'home',
+  camera: 'photo-camera',
+  'location.fill': 'location-on',
+  'bell.fill': 'notifications',
+  clock: 'schedule',
+  map: 'map',
+  'info.circle': 'info-outline',
+  'antenna.radiowaves.left.and.right': 'radar',
+  'book.closed': 'menu-book',
+  'book.closed.fill': 'menu-book',
+  'text.bubble.fill': 'chat-bubble',
+  'suitcase.fill': 'luggage',
+  'person.crop.circle.fill': 'account-circle',
 };
 
 export interface IconProps {

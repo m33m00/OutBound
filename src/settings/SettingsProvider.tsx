@@ -1,7 +1,22 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 
+import { applyAppearance, parseAppearance, type AppearancePref } from '@/theme/appearance';
+
 import { DEFAULT_SETTINGS, parseSettings, SETTINGS_KEY, type Settings } from './settings';
+
+/**
+ * The saved Appearance choice, read before the first screen draws (round 173) so a phone in
+ * light mode with Dark picked never flashes light. Anything unreadable follows the phone.
+ */
+export async function readSavedAppearance(): Promise<AppearancePref> {
+  try {
+    const raw = await AsyncStorage.getItem(SETTINGS_KEY);
+    return parseAppearance(raw ? (JSON.parse(raw) as { appearance?: unknown })?.appearance : undefined);
+  } catch {
+    return 'system';
+  }
+}
 
 interface SettingsContextValue {
   settings: Settings;
@@ -33,6 +48,11 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  // The whole app (and the phone's keyboard, alerts and pickers) follows the saved choice.
+  useEffect(() => {
+    if (loaded) applyAppearance(settings.appearance);
+  }, [loaded, settings.appearance]);
+
   const save = useCallback((next: Settings) => {
     setSettings(next);
     AsyncStorage.setItem(SETTINGS_KEY, JSON.stringify(next)).catch(() => {});
@@ -49,6 +69,11 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   );
 
   return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>;
+}
+
+/** Settings when inside SettingsProvider, else null (pieces tested on their own). */
+export function useSettingsOptional(): SettingsContextValue | null {
+  return useContext(SettingsContext);
 }
 
 export function useSettings(): SettingsContextValue {

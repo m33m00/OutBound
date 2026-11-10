@@ -2,8 +2,9 @@ import type { SFSymbol } from 'expo-symbols';
 import type { ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { radius, spacing, textStyles, useColors } from '@/theme';
+import { spacing, textStyles, useColors } from '@/theme';
 
+import { useCardSurface } from './cardSurface';
 import { Icon } from './Icon';
 
 export interface EmptyStateProps {
@@ -24,9 +25,10 @@ export interface EmptyStateProps {
  */
 export function EmptyState({ icon, title, body, points, action }: EmptyStateProps) {
   const c = useColors();
+  const card = useCardSurface();
   const label = [title, body, ...(points ?? [])].map((t) => t.replace(/[.\s]+$/, '')).join('. ');
   return (
-    <View style={[styles.card, { backgroundColor: c.surface, borderColor: c.line }]}>
+    <View style={[card, styles.card]} testID="empty-state">
       <View accessible accessibilityLabel={label} style={styles.text}>
         {/* Gray, not the accent: nothing here is tappable (round 139). */}
         <View style={[styles.icon, { backgroundColor: c.surface2 }]}>
@@ -60,8 +62,6 @@ const ICON = 56;
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: radius.md,
-    borderWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: spacing.page,
     paddingVertical: spacing.page * 1.5,
     gap: spacing.page,

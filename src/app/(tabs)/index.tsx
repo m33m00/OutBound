@@ -9,7 +9,7 @@ import { GlobeMap, type LonLat, type MapAirport } from '@/map';
 import { nearestAirport } from '@/search/airports';
 import { otherEndExcludes, searchRequest, showGetHome } from '@/search/areas';
 import { dateChips } from '@/search/dates';
-import { driveQuery } from '@/search/leaveBy';
+import { boardingLeadMin, driveQuery } from '@/search/leaveBy';
 import { chooseOrigin, restSpot, showLocationCard, type RestSpot } from '@/search/origin';
 import { legLookup, resultsBanner, rowStatus, statusLookups } from '@/search/statusTags';
 import { SAMPLE_TZ, SCHEDULE_SOURCE, useRouteSearch } from '@/search/useRouteSearch';
@@ -36,6 +36,13 @@ import { ResultsBanner } from '@/ui/ResultsBanner';
 import { neighborDays } from '@/ui/DayStepper';
 import { ResultsPanel } from '@/ui/ResultsPanel';
 import { SearchPanel } from '@/ui/SearchPanel';
+import { CreditsChip } from '@/ui/Credits';
+import { PlanPicker } from '@/ui/PlanPicker';
+import { RequestLoadsCard } from '@/ui/RequestLoadsCard';
+import { demoLoad, hideSeats, seatsLocked, TIER_LABEL } from '@/membership/membership';
+import { useMembership } from '@/membership/MembershipProvider';
+import { useIntroDone } from '@/launch/introState';
+import { flightKey } from '@/requests/requests';
 import { growFit, halfSnap, Sheet, SHEET_HANDLE_H, SHEET_LOCKED_TOP, sheetMode, type FitHeight } from '@/ui/Sheet';
 import { useRadarLayers } from '@/ui/useRadarLayers';
 import { useSheetContent } from '@/ui/useSheetContent';
@@ -109,7 +116,31 @@ export default function HomeScreen() {
   const [bodyHeight, setBodyHeight] = useState(0);
   const [sheetIndex, setSheetIndex] = useState<number>(SHEET.half);
   const listRef = useRef<FlatList<Itinerary>>(null);
-  const { state, search, reset } = useRouteSearch();
+  const { state: rawState, search, reset } = useRouteSearch();
+  // Free and Pay as you go: routes show without seats until their loads are requested (round 176, John).
+  const membership = useMembership();
+  const state = useMemo(() => {
+    if (rawState.status !== 'done' || !seatsLocked(membership.tier)) return rawState;
+    const view = (it: Itinerary) => (membership.isLocked(it) ? hideSeats(it) : it);
+    return { ...rawState, results: rawState.results.map(view), hiddenResults: rawState.hiddenResults.map(view) };
+  }, [rawState, membership]);
+  const [planLater, setPlanLater] = useState(false);
+  const introDone = useIntroDone();
+  const planPrompt = introDone && settingsLoaded && membership.tier == null && !planLater;
+  const answerLoads = () => router.navigate('/feed');
+  // A request in this demo answers at once with sample loads, saves the route and opens My Trips.
+  const requestLoads = (it: Itinerary) => {
+    if (state.status !== 'done') return;
+    const raw =
+      rawState.status === 'done' ? [...rawState.results, ...rawState.hiddenResults].find((r) => r.id === it.id) : undefined;
+    const full = raw ?? it;
+    const title = [full.origin, ...full.legs.map((l) => l.flight.to)].join(' to ');
+    if (membership.requestRoute(full, `Requested ${title}`) !== 'requested') return;
+    const at = Date.now();
+    for (const l of full.legs) requests.addAnswered(l.flight, { ...demoLoad(l.seats, flightKey(l.flight)), at });
+    saved.save(savedRouteFrom(full, state.request, at));
+    router.navigate('/trips');
+  };
   const saved = useSavedRoutes();
 
   // 0-7 days out, counted in the origin's local calendar (sample-data zone while From is empty).
@@ -437,6 +468,8 @@ export default function HomeScreen() {
   const filtersChanged = changedFilters(filters, settings.search);
   const selected = results.find((r) => r.id === selectedId);
   const firstLeg = selected?.legs[0].flight;
+  // Where to walk once you're at the airport (round 159): the first flight's posted gate, from live status.
+  const firstGate = firstLeg ? (flightStatuses.byKey[flightLookupKey(legLookup(firstLeg))]?.departure ?? null) : null;
   // Real drive time with traffic for the Leave By card (John, 2026-11-01); the rough guess until it answers.
   const trip = firstLeg
     ? driveQuery({
@@ -460,6 +493,8 @@ export default function HomeScreen() {
           <Text style={[textStyles.wordmark, { color: c.text }]} accessibilityRole="header">
             OutBound
           </Text>
+          {/* Free and Pay as you go keep count of credits here; Premium doesn't (round 176). */}
+          <CreditsChip onAnswerLoads={answerLoads} />
         </View>
 
         <View style={styles.body} onLayout={onBodyLayout}>
@@ -592,7 +627,12 @@ export default function HomeScreen() {
                     onRouteBarHeight={setRouteBar}
                     onFilters={openFilters}
                     filtersChanged={filtersChanged}
-                    note={missingNote}
+                    note={
+                      missingNote ??
+                      (membership.tier && seatsLocked(membership.tier) && results.some((it) => membership.isLocked(it))
+                        ? `Seats are hidden on ${TIER_LABEL[membership.tier]}. Open a route to request its loads.`
+                        : undefined)
+                    }
                     isSaved={(it) => saved.isSaved(savedKey(it, state.request.date))}
                     onToggleSave={(it) => {
                       const key = savedKey(it, state.request.date);
@@ -601,21 +641,34 @@ export default function HomeScreen() {
                     }}
                     selectedCard={
                       firstLeg ? (
-                        <LeaveByCard
-                          airport={AIRPORTS[firstLeg.from]}
-                          departUtc={firstLeg.departUtc}
-                          departed={!!(selected && rowStatuses?.[selected.id]?.dimmed)}
-                          delayedText={selected ? (rowStatuses?.[selected.id]?.legs[0]?.newText ?? null) : null}
-                          bufferMin={settings.bufferMin}
-                          now={now}
-                          location={location}
-                          locationStatus={locationStatus}
-                          mapsApp={settings.mapsApp}
-                          liveDriveMin={liveDrive?.minutes ?? null}
-                          onUseLocation={async () => {
-                            if (await requestLocation()) updateSettings({ useLocation: true });
-                          }}
-                        />
+                        <>
+                          {selected && membership.tier && membership.isLocked(selected) ? (
+                            <RequestLoadsCard
+                              tier={membership.tier}
+                              credits={membership.credits}
+                              onRequest={() => requestLoads(selected)}
+                              onAnswerLoads={answerLoads}
+                            />
+                          ) : null}
+                          <LeaveByCard
+                            airport={AIRPORTS[firstLeg.from]}
+                            departUtc={firstLeg.departUtc}
+                            departed={!!(selected && rowStatuses?.[selected.id]?.dimmed)}
+                            delayedText={selected ? (rowStatuses?.[selected.id]?.legs[0]?.newText ?? null) : null}
+                            bufferMin={settings.bufferMin}
+                            now={now}
+                            location={location}
+                            locationStatus={locationStatus}
+                            mapsApp={settings.mapsApp}
+                            liveDriveMin={liveDrive?.minutes ?? null}
+                            boardingMin={boardingLeadMin(firstLeg.from, firstLeg.to, firstLeg.aircraft)}
+                            gate={firstGate?.gate ?? null}
+                            terminal={firstGate?.terminal ?? null}
+                            onUseLocation={async () => {
+                              if (await requestLocation()) updateSettings({ useLocation: true });
+                            }}
+                          />
+                        </>
                       ) : null
                     }
                   />
@@ -681,6 +734,7 @@ export default function HomeScreen() {
           onClose={closeFilters}
         />
       </TearAwayHost>
+      <PlanPicker visible={planPrompt} onPick={(tier) => membership.setTier(tier)} onLater={() => setPlanLater(true)} />
     </SafeAreaView>
   );
 }

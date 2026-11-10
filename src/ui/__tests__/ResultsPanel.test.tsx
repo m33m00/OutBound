@@ -83,6 +83,48 @@ describe('ResultsPanel', () => {
     raf.mockRestore();
   });
 
+  it('keeps the last day dimmed in place while the next day loads, so changing days never blanks (round 181, John)', async () => {
+    const { request, list } = await results();
+    const days = dateChips('2026-10-19');
+    const props = {
+      selectedId: null,
+      now: NOW,
+      onSelect: jest.fn(),
+      onBack: jest.fn(),
+      onRetry: jest.fn(),
+      days,
+      onDay: jest.fn(),
+    };
+    const done = { status: 'done' as const, request, results: list, hiddenCount: 0, hiddenResults: [], searchedAt: NOW };
+    await act(async () => {
+      r = create(<ResultsPanel state={done} {...props} />);
+    });
+    const picker = () => r!.root.findAll((n) => n.props.testID === 'day-picker' && typeof n.type === 'string')[0];
+    const before = picker();
+    const next = { ...request, date: '2026-10-21' };
+    await act(async () => {
+      r!.update(<ResultsPanel state={{ status: 'loading', request: next }} {...props} />);
+    });
+    const text = (id: string) => r!.root.findAll((n) => n.props.testID === id && typeof n.type === 'string')[0]?.props.children;
+    // Same day row (not rebuilt), now on the new day, saying it's loading.
+    expect(picker()).toBe(before);
+    expect(text('day-title')).toBe('Departing Wed, Oct 21');
+    expect(text('day-detail')).toBe('Finding routes…');
+    // The last day's routes stay on screen, busy and not tappable, instead of the loading view.
+    const listBox = r!.root.findAll((n) => n.props.testID === 'results-list' && n.props.pointerEvents != null)[0];
+    expect(listBox.props.pointerEvents).toBe('none');
+    expect(listBox.props.accessibilityState).toEqual({ busy: true });
+    expect(r!.root.findAllByType(FlatList)[0].props.data.length).toBe(list.length);
+    expect(r!.root.findAll((n) => n.props.accessibilityLabel === 'Finding routes').length).toBe(0);
+    await act(async () => {
+      r!.update(<ResultsPanel state={{ ...done, request: next, searchedAt: NOW + 1 }} {...props} />);
+    });
+    expect(picker()).toBe(before);
+    expect(
+      r!.root.findAll((n) => n.props.testID === 'results-list' && n.props.pointerEvents != null)[0].props.pointerEvents,
+    ).toBe('auto');
+  });
+
   it('reports the open route height (title bar plus content) so the panel fits it without scrolling (round 56)', async () => {
     const { request, list } = await results();
     const state = { status: 'done' as const, request, results: list, hiddenCount: 0, hiddenResults: [], searchedAt: NOW };
@@ -203,10 +245,10 @@ describe('ResultsPanel', () => {
 describe('areaLines', () => {
   it('names the whole area when a side searched it', () => {
     expect(areaLines({ origin: 'LAX', destination: 'DAL', date: '2026-10-20', destinationArea: true })).toEqual([
-      'Landing at any Dallas airport (DAL, DFW)',
+      'Landing at any Dallas, TX airport (DAL, DFW)',
     ]);
     expect(areaLines({ origin: 'DFW', destination: 'BNA', date: '2026-10-20', originArea: true })).toEqual([
-      'Leaving from any Dallas airport (DAL, DFW)',
+      'Leaving from any Dallas, TX airport (DAL, DFW)',
     ]);
   });
 
@@ -246,11 +288,11 @@ describe('ResultsPanel day and filters (Q-057)', () => {
         />,
       );
     });
-    // The count sits under the day in the full-width stepper (John, 2026-10-30).
+    // The count sits beside "Departing Tue, Oct 20" over the day buttons (round 177, John).
     const detail = r!.root.findAll((n) => n.props.testID === 'day-detail' && typeof n.type === 'string')[0];
     expect(detail.props.children).toBe('2 routes');
-    expect(texts()).toContain('Tue, Oct 20');
-    const next = r!.root.findAll((n) => n.props.testID === 'day-next' && n.props.accessibilityRole === 'button')[0];
+    expect(texts()).toContain('Departing Tue, Oct 20');
+    const next = r!.root.findAll((n) => n.props.testID === 'day-2026-10-21' && n.props.accessibilityRole === 'radio')[0];
     act(() => next.props.onPress());
     expect(onDay).toHaveBeenCalledWith('2026-10-21');
     const filters = r!.root.findAll((n) => n.props.accessibilityLabel === 'Filters, 2 changed' && n.props.onPress)[0];
@@ -269,7 +311,7 @@ describe('ResultsPanel day and filters (Q-057)', () => {
     });
     const summary = r!.root.findAll((n) => n.props.testID === 'results-summary' && typeof n.type === 'string')[0];
     expect(summary.props.children).toBe('Tue, Oct 20\n2 routes');
-    expect(r!.root.findAll((n) => n.props.testID === 'day-next').length).toBe(0);
+    expect(r!.root.findAll((n) => n.props.testID === 'day-picker').length).toBe(0);
   });
 });
 

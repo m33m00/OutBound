@@ -3,8 +3,10 @@
  * moves to the account when login exists. Values are clamped on read so a
  * bad or old saved value can't break search.
  */
-import { AIRPORTS, areaFor, DEFAULT_SEARCH_OPTIONS, type SearchOptions } from '@/engine';
+import { AIRPORTS, areaFor, DEFAULT_SEARCH_OPTIONS, TIMES_OF_DAY, type SearchOptions } from '@/engine';
 import type { MapsApp } from '@/search/directions';
+import { parseTier, type Tier } from '@/membership/membership';
+import { DEFAULT_APPEARANCE, parseAppearance, type AppearancePref } from '@/theme/appearancePref';
 
 /**
  * The search settings people can adjust (DECISIONS.md: "All adjustable").
@@ -13,7 +15,15 @@ import type { MapsApp } from '@/search/directions';
  */
 export type SearchFilters = Pick<
   SearchOptions,
-  'maxStops' | 'minConnectSameAirlineMin' | 'minConnectSwitchMin' | 'maxLayoverMin'
+  | 'maxStops'
+  | 'minConnectSameAirlineMin'
+  | 'minConnectSwitchMin'
+  | 'maxLayoverMin'
+  | 'departTimes'
+  | 'avoidAirports'
+  | 'answeredOnly'
+  | 'airlines'
+  | 'airlineRegion'
 >;
 
 export const DEFAULT_FILTERS: SearchFilters = {
@@ -21,6 +31,11 @@ export const DEFAULT_FILTERS: SearchFilters = {
   minConnectSameAirlineMin: DEFAULT_SEARCH_OPTIONS.minConnectSameAirlineMin,
   minConnectSwitchMin: DEFAULT_SEARCH_OPTIONS.minConnectSwitchMin,
   maxLayoverMin: DEFAULT_SEARCH_OPTIONS.maxLayoverMin,
+  departTimes: [],
+  avoidAirports: [],
+  answeredOnly: false,
+  airlines: [],
+  airlineRegion: 'all',
 };
 
 /** Stepper limits, shared by settings and the Filters panel (provisional ranges). */
@@ -70,6 +85,12 @@ export interface Settings {
   notify: NotifySettings;
   /** Where the Leave By card opens directions (provisional, John left it open 2026-10-30). */
   mapsApp: MapsApp;
+  /** Light, Dark or System (round 173). System follows the phone and is the default. */
+  appearance: AppearancePref;
+  /** Free, Pay as you go or Premium (round 176, demo). Null until picked, so the Search tab asks. */
+  membership: Tier | null;
+  /** Sound effects, like the yaoom when your request is answered (round 181). On by default; the silent switch still mutes them. */
+  sounds: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -83,6 +104,9 @@ export const DEFAULT_SETTINGS: Settings = {
   areaOn: {},
   notify: { answers: false, airlineAsks: false },
   mapsApp: 'apple',
+  appearance: DEFAULT_APPEARANCE,
+  membership: null,
+  sounds: true,
 };
 
 export const SETTINGS_KEY = 'outbound.settings.v1';
@@ -104,9 +128,7 @@ export function parseSettings(raw: unknown): Settings {
   const h = (o.homes && typeof o.homes === 'object' ? o.homes : {}) as Record<string, unknown>;
   const known = (v: unknown): v is string => typeof v === 'string' && v in AIRPORTS;
   const main = known(h.main) ? h.main : null;
-  const extras = Array.isArray(h.extras)
-    ? [...new Set(h.extras.filter(known))].filter((code) => code !== main)
-    : [];
+  const extras = Array.isArray(h.extras) ? [...new Set(h.extras.filter(known))].filter((code) => code !== main) : [];
   const a = (o.areaOn && typeof o.areaOn === 'object' ? o.areaOn : {}) as Record<string, unknown>;
   const areaOn = Object.fromEntries(
     Object.entries(a).filter((e): e is [string, boolean] => known(e[0]) && typeof e[1] === 'boolean'),
@@ -121,11 +143,20 @@ export function parseSettings(raw: unknown): Settings {
     locationAsked: useLocation || bool(o.locationAsked, false),
     lastOrigin: known(o.lastOrigin) ? o.lastOrigin : null,
     radarOn: bool(o.radarOn, DEFAULT_SETTINGS.radarOn),
+    sounds: bool(o.sounds, DEFAULT_SETTINGS.sounds),
     search: {
       maxStops: Math.min(3, Math.max(0, stops)),
       minConnectSameAirlineMin: num(s.minConnectSameAirlineMin, d.minConnectSameAirlineMin, LIMITS.minConnectSameAirlineMin),
       minConnectSwitchMin: num(s.minConnectSwitchMin, d.minConnectSwitchMin, LIMITS.minConnectSwitchMin),
       maxLayoverMin: num(s.maxLayoverMin, d.maxLayoverMin, LIMITS.maxLayoverMin),
+      // Round 174 filters; old saves lack them and get the open defaults.
+      departTimes: TIMES_OF_DAY.filter((t) => Array.isArray(s.departTimes) && s.departTimes.includes(t)),
+      avoidAirports: Array.isArray(s.avoidAirports) ? [...new Set(s.avoidAirports.filter(known))] : [],
+      answeredOnly: bool(s.answeredOnly, false),
+      airlines: Array.isArray(s.airlines)
+        ? [...new Set(s.airlines.filter((a): a is string => typeof a === 'string' && /^[A-Z0-9]{2}$/.test(a)))]
+        : [],
+      airlineRegion: s.airlineRegion === 'us' ? 'us' : 'all',
     },
     areaOn,
     notify: {
@@ -133,12 +164,17 @@ export function parseSettings(raw: unknown): Settings {
       airlineAsks: bool(n.airlineAsks, DEFAULT_SETTINGS.notify.airlineAsks),
     },
     mapsApp: o.mapsApp === 'google' ? 'google' : 'apple',
+    appearance: parseAppearance(o.appearance),
+    membership: parseTier(o.membership),
   };
 }
 
-/** How many search filters differ from `base`. */
+const sameValue = (a: unknown, b: unknown) =>
+  Array.isArray(a) && Array.isArray(b) ? a.length === b.length && a.every((x) => b.includes(x)) : a === b;
+
+/** How many search filters differ from `base`. Lists count as one each, whatever their order. */
 export function changedFilters(f: SearchFilters, base: SearchFilters = DEFAULT_FILTERS): number {
-  return (Object.keys(base) as (keyof SearchFilters)[]).filter((k) => f[k] !== base[k]).length;
+  return (Object.keys(base) as (keyof SearchFilters)[]).filter((k) => !sameValue(f[k], base[k])).length;
 }
 
 export interface HomeAirport {

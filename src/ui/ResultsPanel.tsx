@@ -85,17 +85,40 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
   const { fontScale } = useWindowDimensions();
   // At big text sizes Back and Filters shrink to their icons so the route title keeps room.
   const tight = fontScale >= COMPACT_BAR_SCALE;
+  const reduceMotion = useReducedMotion();
+  // Round 181, John: changing days "looks choppy ... like it's glitching out". The list used to swap
+  // to a loading view and back, which also rebuilt the day row. Now, while a new day loads for the same
+  // market, the last day's routes stay put, dimmed, and the new day's routes rise in when they land.
+  const lastDone = useRef<Extract<SearchState, { status: 'done' }> | null>(null);
+  if (p.state.status === 'done') lastDone.current = p.state;
+  else if (p.state.status !== 'loading') lastDone.current = null;
+  const prev = lastDone.current;
+  const paging =
+    p.state.status === 'loading' &&
+    !!prev &&
+    prev.request.origin === p.state.request.origin &&
+    prev.request.destination === p.state.request.destination;
+  const shown: SearchState = paging && prev ? prev : p.state;
+  const dim = useRef(new Animated.Value(1)).current;
+  useEffect(() => {
+    const to = paging ? 0.45 : 1;
+    if (reduceMotion) {
+      dim.setValue(to);
+      return;
+    }
+    const run = Animated.timing(dim, { toValue: to, duration: paging ? 120 : 200, useNativeDriver: true });
+    run.start();
+    return () => run.stop();
+  }, [paging, reduceMotion, dim]);
   const { request } = p.state;
+  const listDate = shown.request.date;
   const routeTitle = `${request.origin} → ${request.destination}`;
   const routeSpoken = `${request.origin} to ${request.destination}`;
-  const results = departedFirst(
-    p.state.status !== 'done' ? [] : p.showingHidden ? p.state.hiddenResults : p.state.results,
-    p.statuses,
-  );
+  const results = departedFirst(shown.status !== 'done' ? [] : p.showingHidden ? shown.hiddenResults : shown.results, p.statuses);
   const full = results.filter((r) => r.isFull).length;
   // The Now line is for today's flights only (John, 2026-11-02), by the origin's own date.
   const originTz = AIRPORTS[results[0]?.legs[0]?.flight.from ?? '']?.tz ?? AIRPORTS[request.origin]?.tz;
-  const onToday = !originTz || localDate(p.now, originTz) === request.date;
+  const onToday = !originTz || localDate(p.now, originTz) === listDate;
   const nowAt = onToday ? nowLineIndex(results, p.now, p.statuses) : -1;
 
   // Today's list opens at the "Now" line (Q-066, John 2026-10-30): routes that already
@@ -109,7 +132,7 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
     },
     [ref],
   );
-  const searchKey = p.state.status === 'done' ? `${p.state.searchedAt}:${!!p.showingHidden}` : null;
+  const searchKey = shown.status === 'done' ? `${shown.searchedAt}:${!!p.showingHidden}` : null;
   const userScrolled = useRef(false);
   const retries = useRef(0);
   // When this list first showed: rows that mount soon after rise in; later ones just appear.
@@ -147,7 +170,7 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
   // title, and coming back lands on the list's title, instead of staying on a button that's gone.
   const routeTitleRef = useRef<ComponentRef<typeof View>>(null);
   const listTitleRef = useRef<ComponentRef<typeof Text>>(null);
-  const shownRoute = p.state.status === 'done' ? p.selectedId : null;
+  const shownRoute = shown.status === 'done' ? p.selectedId : null;
   const lastRoute = useRef(shownRoute);
   useEffect(() => {
     const was = lastRoute.current;
@@ -164,9 +187,11 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
   // With the day stepper the date is in the stepper, so this line keeps only the count.
   const summary = [
     stepsDays ? null : shortDate(request.date),
-    p.state.status === 'done' && results.length
-      ? `${results.length} ${results.length === 1 ? 'route' : 'routes'}${full ? `, ${full} full` : ''}`
-      : null,
+    paging
+      ? 'Finding routes…'
+      : p.state.status === 'done' && results.length
+        ? `${results.length} ${results.length === 1 ? 'route' : 'routes'}${full ? `, ${full} full` : ''}`
+        : null,
   ]
     .filter(Boolean)
     // Stacked, not dotted (round 123, John: no dots between text).
@@ -234,7 +259,10 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
   const header = notes.length ? (
     <View style={styles.header}>
       {notes.map((n) => (
-        <Text key={n.key} testID={n.testID} style={[n.strong ? textStyles.body : textStyles.small, { color: c.muted }]}>
+        <Text
+          key={n.key}
+          testID={n.testID}
+          style={[n.strong ? textStyles.body : textStyles.small, styles.headerNote, { color: c.muted }]}>
           {n.text}
         </Text>
       ))}
@@ -303,7 +331,6 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
   });
   // The first time a route opens with others beside it, the card slides a little left and back.
   const nudge = useRef(new Animated.Value(0)).current;
-  const reduceMotion = useReducedMotion();
   const canFlip = !!focusedId && results.length > 1;
   useEffect(() => {
     if (!canFlip || reduceMotion) return;
@@ -332,7 +359,7 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
     };
   }, [canFlip, reduceMotion, nudge]);
 
-  if (p.state.status === 'loading') {
+  if (shown.status === 'loading') {
     return (
       <View style={styles.fill}>
         {topRow}
@@ -489,82 +516,83 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
       {/* Back from a route, the list fades back in where you left it. */}
       <Appear trigger={!focused} style={focused && styles.hidden}>
         {topRow}
-        <FlatList
-          ref={setListRef}
-          data={results}
-          // White cards on the page color, like passes on a counter (round 114).
-          style={{ backgroundColor: c.bg }}
-          onScrollBeginDrag={() => {
-            userScrolled.current = true;
-          }}
-          onContentSizeChange={pinNow}
-          onLayout={pinNow}
-          onScrollEndDrag={pullDown}
-          keyExtractor={(it) => it.id}
-          contentContainerStyle={styles.list}
-          ListHeaderComponent={header}
-          ItemSeparatorComponent={() => <View style={styles.sep} />}
-          renderItem={({ item, index }) => {
-            const selected = item.id === p.selectedId;
-            const row = (
-              <ResultRow
-                itinerary={item}
-                selected={selected}
-                now={p.now}
-                onPress={p.onSelect}
-                impact={p.impacts?.[item.id]}
-                impactLoading={p.impactsLoading}
-                onImpactPress={p.onImpactPress}
-                onLegPress={p.onLegPress}
-                status={p.statuses?.[item.id]}
-                saved={p.isSaved?.(item)}
-                // Saving lives on the ticket in the list now, not the opened route (round 151, John): the
-                // bookmark top right, or a swipe left that tears it along the perforation, with Undo after.
-                onSwipeSave={
-                  p.onToggleSave && !p.isSaved?.(item)
-                    ? () => {
-                        p.onToggleSave?.(item);
-                        setSwipeSaved(item);
-                      }
-                    : undefined
-                }
-                topAction={
-                  p.onToggleSave ? (
-                    <SaveRouteButton saved={!!p.isSaved?.(item)} onPress={() => p.onToggleSave?.(item)} />
-                  ) : undefined
-                }
-              />
-            );
-            // A fresh list's rows rise in one after another from the top of what you see (round 113).
-            const block = (
-              <StaggerIn step={index - Math.max(0, nowAt)} play={Date.now() - listShownAt.current < STAGGER_WINDOW_MS}>
-                {row}
-              </StaggerIn>
-            );
-            if (index !== nowAt) return block;
-            const tz = AIRPORTS[item.origin]?.tz;
-            return (
-              <View style={styles.selectedBlock}>
-                <NowLine time={tz ? formatTime(p.now, tz) : null} />
-                {block}
-              </View>
-            );
-          }}
-          // Rows aren't measured yet: jump near the row by its average height, then try again once
-          // they are (a few times at most).
-          onScrollToIndexFailed={(info) => {
-            listRef.current?.scrollToOffset({ offset: info.averageItemLength * info.index, animated: false });
-            if (retries.current < 5) {
-              retries.current += 1;
-              setTimeout(pinNow, 50);
-            }
-          }}
-          ListFooterComponent={
-            <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, styles.footer, { color: c.muted }]}>
-              Follow your airline’s rules on sharing loads.
-            </Text>
-          }
-        />
+        <Animated.View
+          style={[styles.fill, { opacity: dim }]}
+          pointerEvents={paging ? 'none' : 'auto'}
+          accessibilityState={{ busy: paging }}
+          testID="results-list">
+          <FlatList
+            ref={setListRef}
+            data={results}
+            // White cards on the page color, like passes on a counter (round 114).
+            style={{ backgroundColor: c.bg }}
+            onScrollBeginDrag={() => {
+              userScrolled.current = true;
+            }}
+            onContentSizeChange={pinNow}
+            onLayout={pinNow}
+            onScrollEndDrag={pullDown}
+            keyExtractor={(it) => it.id}
+            contentContainerStyle={styles.list}
+            ListHeaderComponent={header}
+            ItemSeparatorComponent={() => <View style={styles.sep} />}
+            renderItem={({ item, index }) => {
+              const selected = item.id === p.selectedId;
+              const row = (
+                <ResultRow
+                  itinerary={item}
+                  selected={selected}
+                  now={p.now}
+                  onPress={p.onSelect}
+                  impact={p.impacts?.[item.id]}
+                  impactLoading={p.impactsLoading}
+                  onImpactPress={p.onImpactPress}
+                  onLegPress={p.onLegPress}
+                  status={p.statuses?.[item.id]}
+                  saved={p.isSaved?.(item)}
+                  // Saving lives on the ticket in the list now, not the opened route (round 151, John): the
+                  // bookmark top right, or a swipe left that tears it along the perforation, with Undo after.
+                  onSwipeSave={
+                    p.onToggleSave && !p.isSaved?.(item)
+                      ? () => {
+                          p.onToggleSave?.(item);
+                          setSwipeSaved(item);
+                        }
+                      : undefined
+                  }
+                  topAction={
+                    p.onToggleSave ? (
+                      <SaveRouteButton saved={!!p.isSaved?.(item)} onPress={() => p.onToggleSave?.(item)} />
+                    ) : undefined
+                  }
+                />
+              );
+              // A fresh list's rows rise in one after another from the top of what you see (round 113).
+              const block = (
+                <StaggerIn step={index - Math.max(0, nowAt)} play={Date.now() - listShownAt.current < STAGGER_WINDOW_MS}>
+                  {row}
+                </StaggerIn>
+              );
+              if (index !== nowAt) return block;
+              const tz = AIRPORTS[item.origin]?.tz;
+              return (
+                <View style={styles.selectedBlock}>
+                  <NowLine time={tz ? formatTime(p.now, tz) : null} />
+                  {block}
+                </View>
+              );
+            }}
+            // Rows aren't measured yet: jump near the row by its average height, then try again once
+            // they are (a few times at most).
+            onScrollToIndexFailed={(info) => {
+              listRef.current?.scrollToOffset({ offset: info.averageItemLength * info.index, animated: false });
+              if (retries.current < 5) {
+                retries.current += 1;
+                setTimeout(pinNow, 50);
+              }
+            }}
+          />
+        </Animated.View>
         {!focused && swipeSaved ? (
           <SavedToast
             key={swipeSaved.id}
@@ -726,12 +754,17 @@ function PagerMarks({ count, index, onPick }: { count: number; index: number; on
 
 /**
  * Says when a side searched its whole area (Q-048), since the title shows only
- * the picked airports: "Leaving from any Dallas airport (DAL, DFW)".
+ * the picked airports: "Leaving from any Dallas, TX airport (DAL, DFW)".
  */
 export function areaLines(request: SearchRequest): string[] {
   const line = (code: string, on: boolean | undefined, lead: string) => {
     const area = on ? areaFor(code) : null;
-    return area ? `${lead} any ${area.city} airport (${area.airports.join(', ')})` : null;
+    if (!area) return null;
+    // "Dallas, TX": the state for a US area, the country code elsewhere (round 161, John).
+    const a = AIRPORTS[area.airports[0]];
+    const tail = !a?.country || a.country === 'US' ? a?.region : a.country;
+    const place = tail ? `${area.city}, ${tail}` : area.city;
+    return `${lead} any ${place} airport (${area.airports.join(', ')})`;
   };
   return [
     line(request.origin, request.originArea, 'Leaving from'),
@@ -792,6 +825,8 @@ const styles = StyleSheet.create({
   pad: { paddingHorizontal: spacing.page },
   list: { paddingHorizontal: spacing.page, paddingBottom: spacing.page * 2 },
   header: { gap: 2, paddingTop: spacing.group, paddingBottom: spacing.section },
+  // Centered over the tickets, not hugging the left (round 160, John).
+  headerNote: { textAlign: 'center' },
   headerGap: { height: spacing.group },
   bar: { gap: 4, paddingBottom: spacing.group, borderBottomWidth: StyleSheet.hairlineWidth },
   title: { textAlign: 'center' },
@@ -825,7 +860,6 @@ const styles = StyleSheet.create({
   placeholderBar: { borderRadius: 4 },
   errorTop: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.section },
   errorText: { flex: 1, gap: 2 },
-  footer: { paddingTop: spacing.section },
   nowLine: { flexDirection: 'row', alignItems: 'center', gap: spacing.group, paddingTop: 2 },
   rule: { flex: 1, height: StyleSheet.hairlineWidth * 2 },
 });

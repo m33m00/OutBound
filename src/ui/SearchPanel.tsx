@@ -11,6 +11,7 @@ import {
   type LayoutChangeEvent,
 } from 'react-native';
 
+import { useAirportHold } from './AirportSummary';
 import { AIRPORTS, areaFor } from '@/engine';
 import { QUICK_DATE_CHIPS, type DateChip } from '@/search/dates';
 import { minTapTarget, radius, spacing, textStyles, useColors } from '@/theme';
@@ -124,6 +125,8 @@ export function AirportCard({
   const c = useColors();
   const name = code ? AIRPORTS[code]?.name : undefined;
   const area = code ? areaFor(code) : null;
+  // Hold the card for the airport's summary (round 174).
+  const hold = useAirportHold(code);
   const whole = area != null && areaOn;
   const ink = areaOn ? c.onAccent : c.muted;
   return (
@@ -164,6 +167,8 @@ export function AirportCard({
       ) : null}
       <Pressable
         onPress={onPress}
+        {...hold}
+        accessibilityHint={hold.onLongPress ? 'Hold for airport info' : undefined}
         accessibilityRole="button"
         accessibilityLabel={
           code

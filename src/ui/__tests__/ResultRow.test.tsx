@@ -392,7 +392,8 @@ describe('ResultRow', () => {
       );
     });
     const root = r!.root;
-    expect(strings(root)).toContain('Delayed 25m');
+    // No late pill on the ticket any more (round 161, John): the opened route says it.
+    expect(strings(root)).not.toContain('25m late');
     const struck = root.findAll(
       (n) =>
         (n.type as unknown) === 'Text' &&
@@ -417,11 +418,9 @@ describe('ResultRow', () => {
     // The big line keeps only the times now, on one line, so a moved row never wraps (John, 2026-11-02).
     expect(flat(times.props.children)).toBe('9:25\u00a0AM – 11:45\u00a0AM');
     expect(flat(struck[0].props.children)).toBe('9:00\u00a0AM – 11:20\u00a0AM');
-    // The delay rides over its own leg on the route line, not in a tag under the card (round 146, John).
+    // No tag under the card, and no late pill on the route line either: the opened route says it (round 161).
     expect(root.findAll((n) => n.props.testID === 'row-tag' && typeof n.type === 'string')).toHaveLength(0);
-    const flags = root.findAll((n) => n.props.testID === 'mini-route-leg-flag' && typeof n.type === 'string');
-    expect(flags).toHaveLength(1);
-    expect(flat(flags[0].props.children)).toBe('Delayed 25m');
+    expect(root.findAll((n) => n.props.testID === 'mini-route-leg-flag' && typeof n.type === 'string')).toHaveLength(0);
     const row = root.findAll((n) => n.props.accessibilityRole === 'button')[0];
     expect(row.props.accessibilityLabel).toContain('Delayed 25 minutes, was 9:00 AM, now 9:25 AM');
   });
@@ -468,6 +467,36 @@ describe('ResultRow', () => {
     }
   });
 
+  it('route card: every leg box has one layout, length always under the line, same-width ends (round 159, John)', async () => {
+    const it = await fullItinerary();
+    const flat = (st: unknown) => Object.assign({}, ...[st].flat(Infinity).filter(Boolean));
+    for (const status of [undefined, statusFor(it, live(it, 'delayed', 25))]) {
+      await act(async () => {
+        r = create(<ResultRow itinerary={it} selected now={NOW} onPress={jest.fn()} onLegPress={jest.fn()} status={status} />);
+      });
+      const lines = r!.root.findAll((n) => n.props.testID === 'leg-line' && typeof n.type === 'string');
+      expect(lines.length).toBeGreaterThan(0);
+      for (const line of lines) {
+        const track = line.findAll((n) => n.props.testID === 'leg-track' && typeof n.type === 'string')[0];
+        const ids = track
+          .findAll((n) => typeof n.type === 'string' && ['leg-tag', 'leg-length'].includes(n.props.testID))
+          .map((n) => n.props.testID);
+        // The length is always the last thing, under the line, tagged or not.
+        expect(ids[ids.length - 1]).toBe('leg-length');
+        // Both end columns are the same fixed width and raised the same amount in every box.
+        const ends = (line.children as ReactTestInstance[]).filter(
+          (n) => typeof n !== 'string' && n.props.testID !== 'leg-track',
+        );
+        expect(ends).toHaveLength(2);
+        const [left, right] = ends.map((n) => flat(n.props.style));
+        expect(left.width).toBeGreaterThanOrEqual(72);
+        expect(right.width).toBe(left.width);
+        expect(left.marginBottom).toBe(right.marginBottom);
+        expect(left.marginBottom).toBeGreaterThan(0);
+      }
+    }
+  });
+
   it("route card: a leg's tag sits centered just above its route line (round 136, John)", async () => {
     const it = await fullItinerary();
     await act(async () => {
@@ -491,29 +520,98 @@ describe('ResultRow', () => {
       .findAll((n) => typeof n.type === 'string' && ['leg-tag', 'leg-length'].includes(n.props.testID))
       .map((n) => n.props.testID);
     expect(order).toEqual(['leg-tag', 'leg-length']);
-    expect(words(track.findAll((n) => n.props.testID === 'leg-tag' && typeof n.type === 'string')[0])).toContain('Delayed 25m');
+    expect(words(track.findAll((n) => n.props.testID === 'leg-tag' && typeof n.type === 'string')[0])).toContain('25m late');
     // Not on the flight chip's row any more.
     const group = box.findAll((n) => n.props.testID === 'leg-flight' && typeof n.type === 'string')[0];
-    expect(words(group)).not.toContain('Delayed 25m');
-    // The chip shows American's mark and the code with the number again (round 136, John: "like DL, WN").
+    expect(words(group)).not.toContain('25m late');
+    // Just American's mark under the line, no number (round 158, John): the number opens from it.
     expect(group.findAll((n) => n.props.testID === 'airline-mark' && typeof n.type === 'string').length).toBeGreaterThan(0);
-    expect(words(group)).toContain('AA 1');
+    expect(words(group)).not.toContain('AA 1');
     expect(group.findAll((n) => n.props.accessibilityLabel === 'American 1' && typeof n.type === 'string').length).toBe(1);
   });
 
-  it('route card: each leg box shows its aircraft type beside the flight chip (round 138, John)', async () => {
+  it('route card: Departed sits in the bottom left corner, Arrived in the bottom right, never over the line (round 175, John)', async () => {
+    const it = await fullItinerary();
+    const words = (n: ReactTestInstance) =>
+      n.findAll((x) => typeof x.props.children === 'string').map((x) => x.props.children as string);
+    for (const [state, side, other] of [
+      ['departed', 'leg-corner-left', 'leg-corner-right'],
+      ['arrived', 'leg-corner-right', 'leg-corner-left'],
+    ] as const) {
+      await act(async () => {
+        r = create(
+          <ResultRow
+            itinerary={it}
+            selected
+            now={NOW}
+            onPress={jest.fn()}
+            onLegPress={jest.fn()}
+            status={statusFor(it, live(it, state))}
+          />,
+        );
+      });
+      const label = state === 'departed' ? 'Departed' : 'Arrived';
+      const box = r!.root.findAll((n) => n.props.testID === 'leg-box' && typeof n.type === 'string')[0];
+      const at = (id: string) => box.findAll((n) => n.props.testID === id && typeof n.type === 'string')[0];
+      expect(words(at(side))).toContain(label);
+      expect(words(at(other))).not.toContain(label);
+      // Not over the route line any more.
+      expect(box.findAll((n) => n.props.testID === 'leg-tag' && typeof n.type === 'string')).toHaveLength(0);
+      expect(words(at('leg-track'))).not.toContain(label);
+      // The corners sit on the bottom row, with the logo between them.
+      const bottom = at('leg-bottom');
+      const ids = (bottom.children as ReactTestInstance[]).map((n) => n.props.testID);
+      expect(ids).toEqual(['leg-corner-left', 'leg-flight', 'leg-corner-right']);
+    }
+    // A late leg keeps its pill over the line, with both corners empty.
+    await act(async () => {
+      r = create(
+        <ResultRow
+          itinerary={it}
+          selected
+          now={NOW}
+          onPress={jest.fn()}
+          onLegPress={jest.fn()}
+          status={statusFor(it, live(it, 'delayed', 25))}
+        />,
+      );
+    });
+    const box = r!.root.findAll((n) => n.props.testID === 'leg-box' && typeof n.type === 'string')[0];
+    expect(box.findAll((n) => n.props.testID === 'leg-tag' && typeof n.type === 'string')).toHaveLength(1);
+    for (const id of ['leg-corner-left', 'leg-corner-right'])
+      expect(words(box.findAll((n) => n.props.testID === id && typeof n.type === 'string')[0])).toEqual([]);
+  });
+
+  it('route card: each leg box shows just the airline logo; a tap or hold opens the number and aircraft (rounds 155, 158, John)', async () => {
     const it = await fullItinerary();
     const withPlane = { ...it, legs: it.legs.map((l) => ({ ...l, flight: { ...l.flight, aircraft: 'Boeing 737-800' } })) };
     await act(async () => {
       r = create(<ResultRow itinerary={withPlane} selected now={NOW} onPress={jest.fn()} onLegPress={jest.fn()} />);
     });
     const group = r!.root.findAll((n) => n.props.testID === 'leg-flight' && typeof n.type === 'string')[0];
-    const plane = group.findAll((n) => n.props.testID === 'leg-aircraft' && typeof n.type === 'string');
-    expect(plane).toHaveLength(1);
-    expect(plane[0].findAll((n) => n.props.children === '737-800').length).toBeGreaterThan(0);
-    // No type known: nothing extra.
-    act(() => r!.update(<ResultRow itinerary={it} selected now={NOW} onPress={jest.fn()} onLegPress={jest.fn()} />));
-    expect(r!.root.findAll((n) => n.props.testID === 'leg-aircraft')).toHaveLength(0);
+    const strings = (n: ReactTestInstance) =>
+      n.findAll((x) => typeof x.type === 'string' && typeof x.props.children === 'string').map((x) => x.props.children as string);
+    // No number and no aircraft in the box, no pill around the logo.
+    expect(strings(group)).toEqual([]);
+    expect(group.findAll((n) => n.props.testID === 'airline-pill')).toHaveLength(0);
+    // Centred under the route line, across the whole box (round 155), between two even corners (round 175).
+    const flat = (st: unknown) => Object.assign({}, ...([st] as unknown[]).flat(3).filter(Boolean));
+    expect(flat(group.props.style)).toMatchObject({ alignItems: 'center' });
+    const bottom = r!.root.findAll((n) => n.props.testID === 'leg-bottom' && typeof n.type === 'string')[0];
+    expect(flat(bottom.props.style)).toMatchObject({ alignSelf: 'stretch', flexDirection: 'row' });
+    const corners = ['leg-corner-left', 'leg-corner-right'].map((id) =>
+      flat(bottom.findAll((n) => n.props.testID === id && typeof n.type === 'string')[0].props.style),
+    );
+    expect(corners[0].flex).toBe(1);
+    expect(corners[1].flex).toBe(1);
+    // A hold on the logo opens the little window with the number and aircraft.
+    const logo = group.findAll((n) => n.props.testID === 'flight-peek-logo' && typeof n.props.onLongPress === 'function')[0];
+    act(() => logo.props.onLongPress());
+    const peek = r!.root.find((n) => n.props.testID === 'flight-peek' && typeof n.type === 'string');
+    expect(strings(peek)).toEqual(['AA 1', '737-800']);
+    // The box's own spoken label carries the aircraft too.
+    const box = r!.root.findAll((n) => n.props.testID === 'leg-box' && typeof n.props.accessibilityLabel === 'string')[0];
+    expect(box.props.accessibilityLabel).toContain('737-800');
   });
 
   it('canceled: no tag, a red X on the line and the spoken text; departed: gray tag (round 144, John)', async () => {
@@ -565,12 +663,11 @@ describe('ResultRow', () => {
         <ResultRow itinerary={it} selected large now={NOW} onPress={jest.fn()} status={statusFor(it, live(it, 'canceled'))} />,
       );
     });
-    // The leg keeps its scheduled times, both ends struck; the top times go grey, not struck (on the
-    // pass's navy stub, its own grey).
+    // The leg keeps its scheduled times, both ends struck. A connection's top times are left as they
+    // are (round 160, John: "leave it alone"); only a canceled nonstop grays them.
     const struck = struckTexts();
     expect(struck.map((n) => n.props.testID)).toEqual(['leg-clock', 'leg-arrive']);
-    const top = r!.root.findAll((n) => n.props.testID === 'row-times-canceled' && typeof n.type === 'string')[0];
-    expect(top.props.style).toEqual({ color: inkColors.light.muted });
+    expect(r!.root.findAll((n) => n.props.testID === 'row-times-canceled')).toHaveLength(0);
     const after = r!.root.findAll((n) => n.props.testID === 'leg-timeline' && typeof n.type === 'string')[0];
     const words = after
       .findAll((n) => typeof n.type === 'string')
@@ -688,9 +785,9 @@ describe('ResultRow', () => {
     });
     const strings = (n: ReactTestInstance) =>
       n.findAll((x) => typeof x.props.children === 'string').map((x) => x.props.children as string);
-    const notes = r!.root.findAll((n) => n.props.testID === 'leg-diverted-note' && typeof n.type === 'string');
-    expect(notes).toHaveLength(1);
-    expect(strings(notes[0]).join('')).toBe('Continuing to DEN');
+    // No "Continuing to" note (round 159, John: "I don't care it's continuing to SEA").
+    expect(r!.root.findAll((n) => n.props.testID === 'leg-diverted-note')).toHaveLength(0);
+    expect(strings(r!.root).some((x) => x.startsWith('Continuing to'))).toBe(false);
     // Its arrival slot reads TBD, in the same place as every other leg's arrival (John, 2026-11-02).
     const arrives = r!.root.findAll((n) => n.props.testID === 'leg-arrive' && typeof n.type === 'string');
     expect(arrives.map((n) => [n.props.children].flat().join(''))).toContain('TBD');
@@ -867,7 +964,7 @@ describe('ResultRow at big text sizes (design round 26)', () => {
     expect(r!.root.findAll((n) => n.props.testID === 'row-tag')).toHaveLength(0);
   });
 
-  it('puts each flight and its aircraft under its own leg of the route line (round 145, John)', async () => {
+  it('puts each airline logo under its own leg of the route line; number and aircraft only in its window (rounds 145, 154, 156)', async () => {
     const it = await twoLegItinerary();
     const withPlanes = {
       ...it,
@@ -882,12 +979,15 @@ describe('ResultRow at big text sizes (design round 26)', () => {
       ['0%', '50%'],
       ['50%', '50%'],
     ]);
-    const pick = (n: ReactTestInstance, id: string) =>
-      allText(n.find((m) => m.props.testID === id && typeof m.type === 'string'));
-    expect(slots.map((n) => [pick(n, 'mini-route-flight-number'), pick(n, 'mini-route-aircraft')])).toEqual([
-      ['AA 1', '737-800'],
-      ['AA 2', 'A321neo'],
-    ]);
+    // Only the logo on the ticket: no number, no aircraft (round 156, John).
+    expect(
+      slots.every((n) => n.findAll((m) => m.props.testID === 'flight-peek-logo' && typeof m.type === 'string').length === 1),
+    ).toBe(true);
+    expect(allText(r!.root)).not.toMatch(/AA 1|AA 2|737-800|A321neo/);
+    // A tap on the first logo opens its number and aircraft.
+    const logo = slots[0].findAll((m) => m.props.testID === 'flight-peek-logo' && typeof m.props.onPress === 'function')[0];
+    act(() => logo.props.onPress());
+    expect(allText(r!.root.find((n) => n.props.testID === 'flight-peek' && typeof n.type === 'string'))).toBe('AA 1737-800');
     // Never wraps: one line each, shrinking a touch on a short leg.
     const texts = slots.flatMap((n) => n.findAll((m) => typeof m.type === 'string' && m.props.numberOfLines != null));
     expect(texts.every((m) => m.props.numberOfLines === 1 && m.props.adjustsFontSizeToFit)).toBe(true);
@@ -971,7 +1071,8 @@ describe('seatCounts (round 147)', () => {
     expect(seatCounts({ ...base, source: 'typical', netSeats: 30, openSeats: 40, listed: 10 } as never)).toEqual([
       { kind: 'seats', value: '30' },
     ]);
-    expect(seatCounts({ ...base, source: 'unknown', netSeats: null } as never)).toEqual([]);
+    // Nothing reported: the seat icon over a dash (round 161, John).
+    expect(seatCounts({ ...base, source: 'unknown', netSeats: null } as never)).toEqual([{ kind: 'seats', value: '–' }]);
   });
 });
 
@@ -1026,7 +1127,7 @@ describe('canceled ticket (round 152)', () => {
       { [flightLookupKey(legLookup(it.legs[0].flight))]: s },
       { minConnectSameAirlineMin: 60, minConnectSwitchMin: 90 },
     );
-  it('fades to gray with a solid gray edge, even on a full route, and keeps the red X and pill (rounds 152, 153)', async () => {
+  it('a canceled nonstop gets a red edge and a light red wash, even on a full route, with the red X and pill (round 160)', async () => {
     const it = await fullItinerary();
     expect(it.isFull).toBe(true);
     let r: ReactTestRenderer;
@@ -1037,10 +1138,17 @@ describe('canceled ticket (round 152)', () => {
     });
     const card = r!.root.findAll((n) => n.props.accessibilityRole === 'button' && typeof n.type === 'string')[0];
     const style = Object.assign({}, ...([card.props.style] as unknown[]).flat(5).filter(Boolean));
-    // Red stays for full flights; a canceled one is gray instead, solid and the same weight as any ticket.
-    expect(style).toMatchObject({ borderColor: colors.light.faint, borderWidth: CARD_EDGE_W });
+    // Red edge like a full one, but the wash, not the gray fill, says canceled (round 160, John).
+    expect(style).toMatchObject({ borderColor: colors.light.canceled, borderWidth: 2 });
     expect(style.borderStyle).toBeUndefined();
-    expect(style.backgroundColor).toBe(colors.light.surface2);
+    expect(style.backgroundColor).toBe(colors.light.canceledTint);
+    const top = r!.root.findAll((n) => n.props.testID === 'row-times-canceled' && typeof n.type === 'string');
+    expect(top).toHaveLength(1);
+    // A red line through the time (round 161, John).
+    expect(Object.assign({}, ...[top[0].props.style].flat(5).filter(Boolean))).toMatchObject({
+      textDecorationLine: 'line-through',
+      textDecorationColor: colors.light.canceled,
+    });
     const host = (id: string) => r!.root.findAll((n) => n.props.testID === id && typeof n.type === 'string');
     expect(host('mini-route-canceled')).toHaveLength(1);
     expect(host('mini-route-canceled-pill')).toHaveLength(1);
@@ -1050,7 +1158,44 @@ describe('canceled ticket (round 152)', () => {
     );
   });
 
-  it('keeps the red edge on a full route that is not canceled', async () => {
+  it('a connection with a canceled leg stays a normal card, just the X on that leg (round 160, John)', async () => {
+    const it = await twoLegItinerary();
+    let r: ReactTestRenderer;
+    const first = it.legs[0].flight;
+    const s: FlightStatus = {
+      ...live(it as Awaited<ReturnType<typeof fullItinerary>>, 'canceled'),
+      departure: { ...live(it as Awaited<ReturnType<typeof fullItinerary>>, 'canceled').departure, airport: first.from },
+    };
+    const status = rowStatus(
+      it,
+      { [flightLookupKey(legLookup(first))]: s },
+      { minConnectSameAirlineMin: 60, minConnectSwitchMin: 90 },
+    );
+    expect(status.canceled).toBe(true);
+    await act(async () => {
+      r = create(<ResultRow itinerary={it} selected={false} now={NOW} onPress={jest.fn()} status={status} />);
+    });
+    const cardStyle = () => {
+      const card = r!.root.findAll((n) => n.props.accessibilityRole === 'button' && typeof n.type === 'string')[0];
+      const st = Object.assign({}, ...([card.props.style] as unknown[]).flat(5).filter(Boolean));
+      return { borderColor: st.borderColor, borderWidth: st.borderWidth, backgroundColor: st.backgroundColor };
+    };
+    const withCancel = cardStyle();
+    // Exactly the card it would be with no live status at all.
+    await act(async () => {
+      r!.update(<ResultRow itinerary={it} selected={false} now={NOW} onPress={jest.fn()} />);
+    });
+    expect(withCancel).toEqual(cardStyle());
+    expect(withCancel.backgroundColor).not.toBe(colors.light.canceledTint);
+    await act(async () => {
+      r!.update(<ResultRow itinerary={it} selected={false} now={NOW} onPress={jest.fn()} status={status} />);
+    });
+    const host = (id: string) => r!.root.findAll((n) => n.props.testID === id && typeof n.type === 'string');
+    expect(host('mini-route-canceled')).toHaveLength(1);
+    expect(host('row-times-canceled')).toHaveLength(0);
+  });
+
+  it('a full route has no red edge, just the plain one (round 161, John)', async () => {
     const it = await fullItinerary();
     let r: ReactTestRenderer;
     await act(async () => {
@@ -1058,7 +1203,41 @@ describe('canceled ticket (round 152)', () => {
     });
     const card = r!.root.findAll((n) => n.props.accessibilityRole === 'button' && typeof n.type === 'string')[0];
     const style = Object.assign({}, ...([card.props.style] as unknown[]).flat(5).filter(Boolean));
-    expect(style).toMatchObject({ borderColor: colors.light.full, borderWidth: 2 });
+    expect(style).toMatchObject({ borderColor: colors.light.cardEdge, borderWidth: CARD_EDGE_W });
     expect(style.borderStyle).toBeUndefined();
+  });
+});
+
+describe('round 156 (John)', () => {
+  it('shows a dash over a leg with no seat reading, never a 0', async () => {
+    const it = await twoLegItinerary();
+    const blank = {
+      ...it,
+      legs: it.legs.map((l, i) =>
+        i === 0 ? { ...l, seats: { source: 'unknown', tier: 'unknown', netSeats: null, asOf: null } } : l,
+      ),
+    } as typeof it;
+    let r: ReactTestRenderer;
+    await act(async () => {
+      r = create(<ResultRow itinerary={blank} selected={false} now={NOW} onPress={jest.fn()} />);
+    });
+    // The seat icon still shows, over a dash (round 161, John).
+    const slots = r!.root.findAll((n) => n.props.testID === 'mini-route-leg-slot' && typeof n.type === 'string');
+    expect(slots[0].findAll((n) => n.props.testID === 'mini-route-count-seats' && typeof n.type === 'string')).toHaveLength(1);
+    const values = r!.root.findAll((n) => n.props.testID === 'mini-route-count-value' && typeof n.type === 'string');
+    expect(values.map(allText)).toContain('–');
+    expect(values.map(allText)).not.toContain('0');
+  });
+
+  it('gives Departed and Arrived pills their own sky cyan, not gray', () => {
+    let r: ReactTestRenderer;
+    act(() => {
+      r = create(<StatusTag label="Arrived" tone="gone" />);
+    });
+    const pill = r!.root.findAll((n) => typeof n.type === 'string')[0];
+    const style = Object.assign({}, ...([pill.props.style] as unknown[]).flat(5).filter(Boolean));
+    expect(style).toMatchObject({ backgroundColor: colors.light.doneBg, borderColor: colors.light.doneBg });
+    const word = r!.root.find((n) => typeof n.type === 'string' && n.props.children === 'Arrived');
+    expect(Object.assign({}, ...([word.props.style] as unknown[]).flat(5).filter(Boolean)).color).toBe(colors.light.done);
   });
 });

@@ -1,4 +1,5 @@
 import { endAirports } from './airports';
+import { airlineAllowed, leavesInTimes } from './filters';
 import { legSeats, routeTier, tierRank } from './seats';
 import { addDays, daysBetween, localDate, minutes, zonedToUtc } from './time';
 import type { Flight, FlightDataProvider, Itinerary, LegSeats, SearchOptions, SearchOutcome, SearchRequest } from './types';
@@ -12,6 +13,11 @@ export const DEFAULT_SEARCH_OPTIONS: Omit<SearchOptions, 'now'> = {
   minConnectSwitchMin: 90,
   maxLayoverMin: 240,
   maxTripMin: 24 * 60,
+  departTimes: [],
+  avoidAirports: [],
+  answeredOnly: false,
+  airlines: [],
+  airlineRegion: 'all',
   limit: 10,
 };
 
@@ -126,9 +132,12 @@ async function findAll(
     throw new RangeError(`Date ${request.date} is not 0-${MAX_DAYS_OUT} days out`);
   }
 
-  // Area toggle on (Q-048): that end searches every airport in its area.
-  const origins = new Map(endAirports(request.origin, !!request.originArea));
-  const destinations = new Map(endAirports(request.destination, !!request.destinationArea));
+  // Area toggle on (Q-048): that end searches every airport in its area. An avoided area airport is
+  // dropped, but the airport typed in From or To always stays (round 174).
+  const avoid = new Set(opt.avoidAirports.filter((c) => c !== request.origin && c !== request.destination));
+  const origins = new Map(endAirports(request.origin, !!request.originArea).filter(([c]) => !avoid.has(c)));
+  const destinations = new Map(endAirports(request.destination, !!request.destinationArea).filter(([c]) => !avoid.has(c)));
+  const airlineOk = (f: Flight) => airlineAllowed(f.airline, opt.airlines, opt.airlineRegion);
   // Intermediate stops never use an origin- or destination-end airport.
   const ends = new Set([...origins.keys(), ...destinations.keys()]);
 
@@ -159,6 +168,7 @@ async function findAll(
       const minConnect = next.airline === last.airline ? opt.minConnectSameAirlineMin : opt.minConnectSwitchMin;
       if (layover < minConnect || layover > opt.maxLayoverMin) continue;
       if (visited.has(next.to)) continue;
+      if (avoid.has(next.to) || !airlineOk(next)) continue;
       if (ends.has(next.to) && !destinations.has(next.to)) continue;
       if ((next.arriveUtc - path[0].departUtc) / MIN > opt.maxTripMin) continue;
       await extend([...path, next], new Set(visited).add(next.to));
@@ -170,6 +180,8 @@ async function findAll(
     if (!airport) continue;
     for (const f of await departuresFrom(code)) {
       if (localDate(f.departUtc, airport.tz) !== request.date) continue;
+      if (!leavesInTimes(f.departUtc, airport.tz, opt.departTimes)) continue;
+      if (avoid.has(f.to) || !airlineOk(f)) continue;
       if (f.to === code || (ends.has(f.to) && !destinations.has(f.to))) continue;
       if ((f.arriveUtc - f.departUtc) / MIN > opt.maxTripMin) continue;
       await extend([f], new Set([code, f.to]));
@@ -217,5 +229,7 @@ async function findAll(
     }),
   );
 
-  return itineraries.sort(compareItineraries);
+  // Only answered loads (round 174): every flight has a load someone reported.
+  const kept = opt.answeredOnly ? itineraries.filter((it) => it.legs.every((l) => l.seats.source === 'reported')) : itineraries;
+  return kept.sort(compareItineraries);
 }

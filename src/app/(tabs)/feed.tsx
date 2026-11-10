@@ -4,8 +4,8 @@ import { StyleSheet, View } from 'react-native';
 
 import { flightLookupKey, useFlightStatuses } from '@/live';
 import { spacing } from '@/theme';
-import { answerText, requestTitle, sampleFeed, type LoadAnswer } from '@/requests/requests';
-import { useRequests } from '@/requests/RequestsProvider';
+import { answerText, requestTitle, type LoadAnswer } from '@/requests/requests';
+import { feedAsks, useRequests } from '@/requests/RequestsProvider';
 import { forSpeech } from '@/search/format';
 import { legLookup, legStatus } from '@/search/statusTags';
 import { SCHEDULE_SOURCE } from '@/search/useRouteSearch';
@@ -27,9 +27,8 @@ export default function FeedScreen() {
   // Read the clock each time the tab shows, so "asked 12m ago" stays true.
   const [now, setNow] = useState(Date.now());
   useFocusEffect(useCallback(() => setNow(Date.now()), []));
-  const asks = useMemo(() => (SCHEDULE_SOURCE === 'live' ? [] : sampleFeed(now)), [now]);
-  const { report } = useRequests();
-  const [answers, setAnswers] = useState<Record<string, LoadAnswer>>({});
+  const asks = useMemo(() => feedAsks(now), [now]);
+  const { report, feedAnswers: answers, answerFeed } = useRequests();
   const [reporting, setReporting] = useState<string | null>(null);
   const sheet = useSheetContent(reporting);
   // Said once the sheet has closed, or VoiceOver drops it.
@@ -49,7 +48,7 @@ export default function FeedScreen() {
     const req = asks.find((r) => r.id === reporting);
     if (!req) return;
     const answer: LoadAnswer = { open: o, listed: l, at: Date.now(), byYou: true };
-    setAnswers((a) => ({ ...a, [req.id]: answer }));
+    answerFeed(req.id, answer);
     // Your answer is your report on that flight, so Search shows it too.
     report(req.flight, o, l);
     setReporting(null);
@@ -57,7 +56,7 @@ export default function FeedScreen() {
   };
 
   return (
-    <TabScreen title="Feed">
+    <TabScreen title="Requests">
       {open.length ? (
         <View style={styles.section}>
           <ListGroup title="Requests on your airline’s flights">
@@ -81,13 +80,7 @@ export default function FeedScreen() {
           ))}
         </ListGroup>
       ) : null}
-      <ReportSheet
-        flight={sheetFlight}
-        visible={sheet.visible}
-        now={now}
-        onCancel={() => setReporting(null)}
-        onSubmit={submit}
-      />
+      <ReportSheet flight={sheetFlight} visible={sheet.visible} now={now} onCancel={() => setReporting(null)} onSubmit={submit} />
     </TabScreen>
   );
 }

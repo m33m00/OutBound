@@ -17,7 +17,7 @@ export interface SheetHeaderProps {
   title: string;
   subtitle?: string;
   /** "Done" keeps what you did; "Cancel" leaves without a change. */
-  action: 'Done' | 'Cancel';
+  action: 'Done' | 'Cancel' | 'Later';
   onAction: () => void;
   /** VoiceOver starts on the title (a page swapped in inside a sheet). */
   focusTitle?: boolean;
