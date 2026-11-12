@@ -65,8 +65,9 @@ describe('computeLeaveBy', () => {
       title: 'Leave by 7:13 AM',
       sub: '32m drive with traffic. Arrive at BNA by 7:45 AM to begin boarding',
     });
-    // The drive time moved next to the car (round 169), so nothing sits beside the title.
-    expect(leaveByShort(r, BNA.tz)).toBe('');
+    // The drive time moved next to the car (round 169); the boarding line sits beside the title, like
+    // Leave now's (round 193, John).
+    expect(leaveByShort(r, BNA.tz)).toBe('Arrive at BNA by 7:45 AM to begin boarding');
     expect(driveTimeText(r)).toBe('32m');
     // No live answer: the rough guess, marked with ~.
     expect(run({ location: { ...downtown, at: EARLY - 5 * MIN }, liveDriveMin: null })).toMatchObject({

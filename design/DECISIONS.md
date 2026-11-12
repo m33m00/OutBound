@@ -818,3 +818,10 @@ John: "Remove the 'Seats are hidden' ... when you are searching a market. Change
 - Pills follow each other: when a later leg has left, an earlier on-time or departed leg that should have landed reads Arrived (or at least Departed). A delayed, canceled or diverted earlier leg keeps its own pill.
 - Sample statuses move on with the clock too (they used to stay on time forever), which is what made leg 1 sit blank next to an Arrived leg 2.
 - No credit box and no part of the request total for a canceled leg, nor one that has departed, arrived or diverted (no seat left to get). A route with nothing left to board shows no request button.
+
+## Round 193 (Nov 12): every Leave By shows the boarding line
+
+John: "Why do some have the Leave By time but no description about the arrival time to boarding and some do?"
+
+- Cause: since round 169 moved the drive time onto the car button, a "Leave by 3:10 PM" card had nothing beside its time, while "Leave now" kept "Arrive at DFW by ... to begin boarding". Which one you saw depended on whether it was already time to go.
+- Now "Leave by" shows the same "Arrive at DFW by 4:05 PM to begin boarding" line beside (or under) its time. With no location the card's title is that line already, and at the airport it says when boarding starts.
