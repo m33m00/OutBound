@@ -302,7 +302,11 @@ describe('ResultsPanel day and filters (Q-057)', () => {
     const flat = Object.assign({}, ...[row.props.style].flat(3).filter(Boolean));
     expect(flat).toMatchObject({ flexDirection: 'row', justifyContent: 'space-between' });
     const kids = (row.children as ReactTestInstance[]).map((k) => k.props.testID);
-    expect(kids).toEqual(['results-leaving', 'results-count']);
+    expect(kids).toEqual(['results-leaving', 'results-count-pills']);
+    // Round 195, John: the count is a pill so it reads at a glance; no red pill while nothing is full.
+    const pills = r!.root.findAll((n) => n.props.testID === 'results-count-pills' && typeof n.type === 'string')[0];
+    expect(pills.props.accessibilityLabel).toBe('2 routes');
+    expect(r!.root.findAll((n) => n.props.testID === 'results-full-pill')).toHaveLength(0);
     const next = r!.root.findAll((n) => n.props.testID === 'day-2026-10-21' && n.props.accessibilityRole === 'radio')[0];
     act(() => next.props.onPress());
     expect(onDay).toHaveBeenCalledWith('2026-10-21');
@@ -310,6 +314,33 @@ describe('ResultsPanel day and filters (Q-057)', () => {
     expect(texts()).toContain('Filters (2)');
     act(() => filters.props.onPress());
     expect(onFilters).toHaveBeenCalled();
+  });
+
+  it('shows a red full pill beside the routes pill when some are full (round 195, John)', async () => {
+    const { request, list } = await results();
+    const marked = list.map((it, i) => (i === 0 ? { ...it, isFull: true } : it));
+    const state = { status: 'done' as const, request, results: marked, hiddenCount: 0, hiddenResults: [], searchedAt: NOW };
+    await act(async () => {
+      r = create(
+        <ResultsPanel
+          state={state}
+          selectedId={null}
+          now={NOW}
+          onSelect={jest.fn()}
+          onBack={jest.fn()}
+          onRetry={jest.fn()}
+          days={dateChips('2026-10-19')}
+          onDay={jest.fn()}
+          onFilters={jest.fn()}
+        />,
+      );
+    });
+    expect(texts()).toEqual(expect.arrayContaining(['2 routes', '1 full']));
+    const pills = r!.root.findAll((n) => n.props.testID === 'results-count-pills' && typeof n.type === 'string')[0];
+    expect(pills.props.accessibilityLabel).toBe('2 routes, 1 full');
+    const fullPill = r!.root.findAll((n) => n.props.testID === 'results-full-pill' && typeof n.type === 'string')[0];
+    const flat = Object.assign({}, ...[fullPill.props.style].flat(3).filter(Boolean));
+    expect(flat.backgroundColor).toBe('#fbe5e5');
   });
 
   it('keeps the plain date line when the header has no day stepper', async () => {

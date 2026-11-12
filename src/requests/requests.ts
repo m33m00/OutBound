@@ -344,6 +344,16 @@ export function groupRequests(requests: readonly LoadRequest[]): RequestGroup[] 
   return groups.sort((a, b) => a.requests[0].flight.departUtc - b.requests[0].flight.departUtc);
 }
 
+/** Take requests off My Trips (round 195, John: "I should also be able to remove some requests that I've submitted"). */
+export const removeRequests = (mine: readonly LoadRequest[], ids: readonly string[]): LoadRequest[] =>
+  mine.filter((r) => !ids.includes(r.id));
+
+/** Put deleted requests back (the Undo after a delete), newest asked first, never twice. */
+export function restoreRequests(mine: readonly LoadRequest[], back: readonly LoadRequest[]): LoadRequest[] {
+  const ids = new Set(back.map((r) => r.id));
+  return [...mine.filter((r) => !ids.has(r.id)), ...back].sort((a, b) => b.askedAt - a.askedAt);
+}
+
 /** Your ask on this flight, if any. */
 export const askFor = (mine: LoadRequest[], flight: Flight) => {
   const key = flightKey(flight);

@@ -234,3 +234,4 @@ Each item names its owner. One item per work session. spec-keeper runs a pre-fli
 | 227 | Leg pills follow the clock and each other; no load requests for canceled, departed or arrived legs; "14 credits remaining"; no Seats are hidden line on results (round 192) | Done |
 | 228 | Every Leave By card shows "Arrive at ... to begin boarding", not just Leave now (round 193) | Done |
 | 229 | Fart sound for answered requests; requested routes grouped in My Trips; no Departing line, route count beside Leaving from (round 194) | Done |
+| 230 | Real fart then a separate moan; delete your requests (swipe, Select, Undo); route count and full count as pills (round 195) | Done |

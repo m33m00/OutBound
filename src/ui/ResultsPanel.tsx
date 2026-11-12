@@ -258,14 +258,34 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
       ? [{ key: 'hidden', text: 'Showing routes your filters hid, for this search only.', testID: undefined, strong: false }]
       : []),
   ];
+  const countPills = !paging && p.state.status === 'done' && results.length > 0;
   const countRow = countBeside ? (
     <View style={styles.countRow} testID="results-count-row">
       <Text style={[textStyles.small, styles.countLead, { color: c.muted }]} testID="results-leaving">
         {areas[0] ?? ''}
       </Text>
-      <Text style={[textStyles.small, { color: c.muted }]} numberOfLines={1} testID="results-count">
-        {summary}
-      </Text>
+      {/* Pills, not words, so the count reads at a glance (round 195, John: "can we change that from just text to
+          like a pill? Right now it kind of blends in"). Gray for routes, red only when some are full. */}
+      {countPills ? (
+        <View style={styles.countPills} accessible accessibilityLabel={summary} testID="results-count-pills">
+          <View style={[styles.countPill, { backgroundColor: c.unknownBg }]}>
+            <Text style={[styles.countPillText, { color: c.unknownFg }]} maxFontSizeMultiplier={1.4} testID="results-count">
+              {`${results.length} ${results.length === 1 ? 'route' : 'routes'}`}
+            </Text>
+          </View>
+          {full ? (
+            <View style={[styles.countPill, { backgroundColor: c.fullBg }]} testID="results-full-pill">
+              <Text style={[styles.countPillText, { color: c.fullFg }]} maxFontSizeMultiplier={1.4} testID="results-full">
+                {`${full} full`}
+              </Text>
+            </View>
+          ) : null}
+        </View>
+      ) : (
+        <Text style={[textStyles.small, { color: c.muted }]} numberOfLines={1} testID="results-count">
+          {summary}
+        </Text>
+      )}
     </View>
   ) : null;
   const header =
@@ -845,7 +865,10 @@ const styles = StyleSheet.create({
   headerNote: { textAlign: 'center' },
   headerGap: { height: spacing.group },
   // "Leaving from ..." on the left, the route count on the right of the same line (round 194, John).
-  countRow: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 12 },
+  countRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
+  countPills: { flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 0 },
+  countPill: { paddingHorizontal: 9, paddingVertical: 3, borderRadius: 999 },
+  countPillText: { fontFamily: fonts.bodySemiBold, fontSize: 13, lineHeight: 17 },
   countLead: { flexShrink: 1 },
   bar: { gap: 4, paddingBottom: spacing.group, borderBottomWidth: StyleSheet.hairlineWidth },
   title: { textAlign: 'center' },

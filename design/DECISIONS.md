@@ -833,3 +833,14 @@ John: "Remove the yaoom sound effect and do a fart sound effect." / "When I requ
 - The answered-request sound is now a fart (original, made by design/fart-synth.py; 1.35 s, buzzy and wobbly with a sputter and a squeaky rise at the end). The yoooom files are removed. Same trigger, same Settings > Display > Sound effects toggle (plays once when switched on). Settings detail: "A fart when your request is answered".
 - My Trips > Your requests: legs requested from a connecting route sit together in their own card under the route's name ("DAL TO DEN TO LAX, 2 LEGS"), in flight order. Lone flights share one card. Requesting a route's other leg later joins the same card.
 - Results: no "Departing Thu, Nov 12" line over the day buttons (the picked day button already says it). The route count ("10 routes, 1 full") sits on the line over the tickets, off to the right of "Leaving from any Dallas, TX airport (DAL, DFW)".
+
+## Round 195 (Nov 12): a real fart then a moan, delete your requests, count pills
+
+John: "It just sounds like distorted bass. Can you make it more of a fart and add a separate moan noise." / "I should also be able to remove some requests that I've submitted. I can't delete those." / "the number of routes listed and how many are full, can we change that from just text to like a pill? Right now it kind of blends in."
+
+- The fart is rebuilt (design/fart-synth.py, 1.42 s): irregular puffs that ring in the mids (330 to 2300 Hz) with air and wet pops, instead of a low buzz. Slow opening flaps, a main rip, a catch, a second push, wet flaps and a squeak at the end. Almost no energy under 150 Hz now.
+- A separate moan (design/moan-synth.py, 1.7 s): a comedic relieved "uhhh-ahhh" voice, its own clip and its own player, starting 1.55 s after the fart (just after it ends). If the moan can't load, the fart still plays. Settings detail: "A fart, then a moan, when your request is answered".
+- My Trips > Your requests: swipe left to delete a request, or a whole requested route (all its legs). "Request deleted" / "Route deleted" with Undo, like saved routes. Select on the Your requests header picks requests or routes, Select All, Delete N with a confirm. Saved routes keep their own Select; only one section selects at a time.
+- So each one swipes on its own, a lone flight now has its own card (round 194 had lone flights share one).
+- Requests tab is others' asks to answer, not yours, so nothing to delete there.
+- Results header: the count is now pills on the right of "Leaving from ...": a gray "10 routes" pill and a red "1 full" pill only when some are full. Not blue (blue is for tappable things). VoiceOver reads "10 routes, 1 full".

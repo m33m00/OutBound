@@ -4,6 +4,7 @@ import { Platform } from 'react-native';
 
 import { successTap } from './haptics';
 import { FART_DATA_URI } from './fartData';
+import { MOAN_DATA_URI } from './moanData';
 
 /**
  * Sound effects (round 181). John: "add a sound sound effect when a request is answered". Round 194, John:
@@ -23,9 +24,17 @@ import { FART_DATA_URI } from './fartData';
  */
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const ANSWER_SOUND_FILE = require('../../assets/sounds/fart.m4a');
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const MOAN_FILE = require('../../assets/sounds/moan.m4a');
 
 export const answerSoundSource = (os: string = Platform.OS): AudioSource | number =>
   os === 'ios' ? { uri: FART_DATA_URI } : ANSWER_SOUND_FILE;
+
+/** The relieved moan that follows the fart as its own clip (round 195, John: "add a separate moan noise"). */
+export const moanSource = (os: string = Platform.OS): AudioSource | number => (os === 'ios' ? { uri: MOAN_DATA_URI } : MOAN_FILE);
+
+/** The fart runs 1.42 s; the moan starts just after it ends. */
+export const MOAN_AFTER_MS = 1550;
 
 /**
  * What the sound last did, shown under Settings > Display (round 184) so we can see on John's phone
@@ -71,6 +80,8 @@ export function soundCheckText(s: SoundState, fmt: (at: number) => string): stri
 }
 
 let loading: Promise<AudioPlayer | null> | null = null;
+let moan: AudioPlayer | null = null;
+let moanTimer: ReturnType<typeof setTimeout> | null = null;
 let playedAt: number | null = null;
 
 const fail = (e: unknown) => setState({ kind: 'failed', detail: e instanceof Error ? e.message : String(e) });
@@ -88,6 +99,12 @@ function ready(): Promise<AudioPlayer | null> {
     try {
       await setAudioModeAsync({ playsInSilentMode: true, interruptionMode: 'mixWithOthers' }).catch(() => {});
       const p = createAudioPlayer(answerSoundSource());
+      // The moan is its own player; if it can't load, the fart still plays.
+      try {
+        moan = createAudioPlayer(moanSource());
+      } catch {
+        moan = null;
+      }
       p.addListener?.('playbackStatusUpdate', (st) => {
         if (st.error) fail(st.error);
         else if (st.isLoaded) setState({ kind: 'ready', playedAt, playing: !!st.playing });
@@ -117,6 +134,20 @@ export async function playAnswerSound(): Promise<void> {
     if (p.currentTime > 0) await p.seekTo(0).catch(() => {});
     p.play();
     playedAt = Date.now();
+    // Then the moan, once the fart is done (round 195).
+    if (moanTimer) clearTimeout(moanTimer);
+    const m = moan;
+    if (m) {
+      moanTimer = setTimeout(() => {
+        moanTimer = null;
+        try {
+          if (m.currentTime > 0) void m.seekTo(0).catch(() => {});
+          m.play();
+        } catch {
+          // A missed moan is fine.
+        }
+      }, MOAN_AFTER_MS);
+    }
     if (state.kind === 'ready') setState({ kind: 'ready', playedAt, playing: true });
   } catch (e) {
     fail(e);
@@ -126,6 +157,9 @@ export async function playAnswerSound(): Promise<void> {
 /** For tests: forget the player, audio mode and state. */
 export function resetSounds(): void {
   loading = null;
+  moan = null;
+  if (moanTimer) clearTimeout(moanTimer);
+  moanTimer = null;
   playedAt = null;
   state = { kind: 'idle' };
 }

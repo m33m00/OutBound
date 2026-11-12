@@ -54,7 +54,7 @@ describe('the answer sound when a request is answered (round 181; a fart since r
       await flush();
     });
     // Loaded ahead of time (round 182) but not played.
-    expect(created).toHaveBeenCalledTimes(1);
+    expect(created).toHaveBeenCalledTimes(2); // the fart, then the moan (round 195)
     const player = created.mock.results[0].value;
     expect(player.play).not.toHaveBeenCalled();
     const waiting = req.mine.find((m) => !m.answer)!;
@@ -62,7 +62,7 @@ describe('the answer sound when a request is answered (round 181; a fart since r
       req.addAnswered(waiting.flight, { open: 20, listed: 3, at: Date.now() });
       await flush();
     });
-    expect(created).toHaveBeenCalledTimes(1);
+    expect(created).toHaveBeenCalledTimes(2);
     expect(player.play).toHaveBeenCalledTimes(1);
     expect(setAudioModeAsync).toHaveBeenCalledWith({ playsInSilentMode: true, interruptionMode: 'mixWithOthers' });
   });
@@ -118,7 +118,8 @@ describe('the answer sound player (rounds 182 to 184, John: "I dont hear the yao
   it('loads once ahead of time and plays a fresh player without rewinding it', async () => {
     sounds.preloadSounds();
     await sounds.playAnswerSound();
-    expect(created).toHaveBeenCalledTimes(1);
+    // The fart's player, then the moan's (round 195).
+    expect(created).toHaveBeenCalledTimes(2);
     const player = created.mock.results[0].value;
     expect(player.seekTo).not.toHaveBeenCalled();
     expect(player.play).toHaveBeenCalledTimes(1);
@@ -144,6 +145,31 @@ describe('the answer sound player (rounds 182 to 184, John: "I dont hear the yao
     const { FART_DATA_URI } = jest.requireActual('@/ui/fartData') as { FART_DATA_URI: string };
     expect((sounds.answerSoundSource('ios') as { uri: string }).uri).toBe(FART_DATA_URI);
     expect(FART_DATA_URI).not.toContain('yaoom');
+  });
+
+  it('plays the moan as its own clip right after the fart (round 195, John: "add a separate moan noise")', async () => {
+    jest.useFakeTimers();
+    try {
+      const { MOAN_DATA_URI } = jest.requireActual('@/ui/moanData') as { MOAN_DATA_URI: string };
+      expect((sounds.moanSource('ios') as { uri: string }).uri).toBe(MOAN_DATA_URI);
+      sounds.preloadSounds();
+      await Promise.resolve();
+      await Promise.resolve();
+      await sounds.playAnswerSound();
+      expect(created.mock.calls[0][0]).toEqual(sounds.answerSoundSource());
+      expect(created.mock.calls[1][0]).toEqual(sounds.moanSource());
+      const fart = created.mock.results[0].value;
+      const moan = created.mock.results[1].value;
+      expect(fart.play).toHaveBeenCalledTimes(1);
+      expect(moan.play).not.toHaveBeenCalled();
+      jest.advanceTimersByTime(sounds.MOAN_AFTER_MS - 1);
+      expect(moan.play).not.toHaveBeenCalled();
+      jest.advanceTimersByTime(1);
+      expect(moan.play).toHaveBeenCalledTimes(1);
+      expect(sounds.MOAN_AFTER_MS).toBeGreaterThanOrEqual(1420);
+    } finally {
+      jest.useRealTimers();
+    }
   });
 
   it('keeps what the sound last did and says it in words for Settings (round 184)', async () => {

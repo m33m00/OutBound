@@ -1,56 +1,67 @@
-# The OutBound fart (round 194, John: "Remove the yaoom sound effect and do a fart sound effect").
-# An original sound, synthesized here: a buzzy low tone pulsed by a flapping "valve", with a wobbly pitch,
-# some breath noise, a sputter in the middle and a short squeaky rise at the end.
+# The OutBound fart (round 194, John: "do a fart sound effect"; round 195: "It just sounds like distorted bass.
+# Can you make it more of a fart"). An original sound, synthesized here.
+# A real one is a flapping valve: a train of separate, irregular puffs (40 to 140 a second), each a short
+# brassy "buzz" ringing in the mids, with wet crackle and air between them. So: no smooth bass tone. Each puff
+# is its own little burst through mid resonances, the spacing jitters, it stalls and sputters, and it ends in
+# a few slow, wet flaps and a tiny squeak.
 # Run: python3 design/fart-synth.py design/fart-source.wav
 import numpy as np, wave, sys
-rng = np.random.default_rng(194)
-sr = 44100; dur = 1.35; n = int(sr * dur); t = np.arange(n) / sr
-
-# Pitch: starts around 120 Hz, sags to ~72 Hz, sputters, then a quick squeaky rise to ~210 Hz to finish.
-keys_t = [0.00, 0.08, 0.45, 0.70, 0.78, 0.86, 1.05, 1.18, 1.30, 1.35]
-keys_f = [95, 122, 92, 74, 98, 70, 78, 150, 210, 190]
-f0 = np.interp(t, keys_t, keys_f)
-# Wobble: slow drift plus fast jitter, smoothed so it flutters instead of crackles.
-jit = rng.normal(0, 1, n)
-a = np.exp(-1 / (sr * 0.004)); sm = np.empty(n); s = 0.0
-for i in range(n):
-    s = a * s + (1 - a) * jit[i]; sm[i] = s
-sm /= np.max(np.abs(sm))
-f0 = f0 * (1 + 0.10 * np.sin(2 * np.pi * 7.5 * t) + 0.18 * sm)
-ph = 2 * np.pi * np.cumsum(f0) / sr
-
-# The valve: a narrow pulse train at f0 (buzzy, lots of low harmonics) rather than a clean sine.
-pulse = np.maximum(0, np.cos(ph)) ** 6
-buzz = pulse - np.mean(pulse)
-
-# Flap: the amplitude chops on and off at 18 to 32 Hz, with a stall in the middle (the sputter).
-flap_f = np.interp(t, [0, 0.6, 0.75, 0.9, 1.35], [24, 30, 18, 26, 32])
-flap = 0.55 + 0.45 * np.sign(np.sin(2 * np.pi * np.cumsum(flap_f) / sr)) * 0.6 + 0.4 * np.sin(2 * np.pi * np.cumsum(flap_f) / sr)
-flap = np.clip(flap, 0, 1)
-gap = 1 - 0.85 * np.exp(-((t - 0.74) / 0.025) ** 2)  # a little hitch before the second push
-
-# Breath noise, low-passed, so it's wet and airy rather than hissy.
-noise = rng.normal(0, 1, n)
-def lowpass(x, fc):
-    y = np.empty_like(x); a = np.exp(-2 * np.pi * fc / sr); s = 0.0
-    for i in range(len(x)):
-        s = a * s + (1 - a) * x[i]; y[i] = s
-    return y
-air = lowpass(noise, 900) * (0.25 + 0.6 * pulse)
+rng = np.random.default_rng(1951)
+sr = 44100
 
 def reson(x, F, bw):
     y = np.zeros_like(x); y1 = y2 = 0.0; r = np.exp(-np.pi * bw / sr); c = 2 * r * np.cos(2 * np.pi * F / sr)
     for i in range(len(x)):
         yi = (1 - r) * x[i] + c * y1 - r * r * y2; y[i] = yi; y2 = y1; y1 = yi
     return y
-# A body to it: a low cavity resonance and a mid "rasp".
-v = buzz + 0.35 * air
-v = 1.0 * reson(v, 160, 120) + 0.55 * reson(v, 420, 220) + 0.25 * reson(v, 1100, 400) + 0.35 * lowpass(v, 300)
-v = v * flap * gap
+def onepole(x, fc, high=False):
+    y = np.empty_like(x); a = np.exp(-2 * np.pi * fc / sr); s = 0.0
+    for i in range(len(x)):
+        s = a * s + (1 - a) * x[i]; y[i] = s
+    return x - y if high else y
 
-env = np.clip(t / 0.015, 0, 1) * np.interp(t, [0, 0.1, 0.6, 1.0, 1.25, 1.35], [0.7, 1.0, 0.9, 0.75, 0.8, 0.0])
-out = np.tanh(2.2 * v * env / np.max(np.abs(v)))  # soft clip for the raspy edge
+# The puff rate over time (puffs a second) and how hard each puff is.
+plan = [  # (start s, end s, rate from, rate to, loudness)
+    (0.00, 0.07, 30, 55, 0.6),    # a couple of slow opening flaps
+    (0.07, 0.55, 95, 120, 1.0),   # the main brassy rip
+    (0.55, 0.62, 0, 0, 0.0),      # catches
+    (0.62, 0.95, 80, 60, 0.9),    # second push, lower
+    (0.95, 1.20, 38, 22, 0.75),   # slows into wet, separate flaps
+    (1.22, 1.34, 150, 190, 0.35), # a tiny squeak to finish
+]
+dur = 1.42; n = int(sr * dur)
+pulses = np.zeros(n); amps = []
+for (a, b, r0, r1, loud) in plan:
+    if loud == 0: continue
+    t = a
+    while t < b:
+        frac = (t - a) / (b - a)
+        rate = r0 + (r1 - r0) * frac
+        i = int(t * sr)
+        if i < n:
+            # Uneven puffs: some strong, some weak, a few doubled.
+            pulses[i] += loud * rng.uniform(0.55, 1.0)
+            if rng.random() < 0.12 and i + 40 < n: pulses[i + 40] += loud * 0.5
+        t += (1 / rate) * rng.uniform(0.75, 1.3)
+
+# Each puff rings through the mid "brass" resonances (cheeks and valve), never a low hum.
+burst = 0.9 * reson(pulses, 330, 90) + 1.0 * reson(pulses, 620, 140) + 0.7 * reson(pulses, 1150, 260) + 0.35 * reson(pulses, 2300, 500)
+# Air pushed through with every puff, plus a steady hiss under it.
+noise = rng.normal(0, 1, n)
+gate = onepole(np.abs(pulses) > 0, 60)  # where the puffs are dense
+gate = gate / (gate.max() or 1)
+air = onepole(onepole(noise, 3500), 250, high=True) * (0.15 + 0.85 * gate)
+# Wet: random tiny crackles and bubbles, thicker in the slow flaps at the end.
+t = np.arange(n) / sr
+wet_rate = np.interp(t, [0, 0.9, 1.0, 1.2, 1.42], [25, 35, 120, 160, 20])
+pops = (rng.random(n) < wet_rate / sr).astype(float) * rng.uniform(0.3, 1.0, n)
+wet = reson(pops, 1800, 600) + 0.6 * reson(pops, 900, 300)
+
+v = burst / np.max(np.abs(burst)) + 0.22 * air / np.max(np.abs(air)) + 0.25 * wet / np.max(np.abs(wet))
+v = onepole(v, 110, high=True)  # nothing down in bass territory
+env = np.clip(t / 0.01, 0, 1) * np.clip((dur - t) / 0.05, 0, 1)
+out = np.tanh(1.6 * v * env / np.max(np.abs(v)))
 out *= 10 ** (-1 / 20) / np.max(np.abs(out))
 w = wave.open(sys.argv[1], 'wb'); w.setnchannels(1); w.setsampwidth(2); w.setframerate(sr)
 w.writeframes((out * 32767).astype('<i2').tobytes()); w.close()
-print(f'{dur}s, pitch {min(keys_f)} to {max(keys_f)} Hz')
+print(f'fart {dur}s')

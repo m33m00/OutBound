@@ -15,6 +15,8 @@ import {
   cancelAsk,
   flightKey,
   newlyAnswered,
+  removeRequests,
+  restoreRequests,
   sampleFeed,
   sampleMine,
   type AskState,
@@ -34,6 +36,9 @@ interface RequestsContextValue {
   cancelAsk: (flight: Flight) => void;
   /** A requested route's loads, already answered (round 176 demo: Free and Pay as you go). */
   addAnswered: (flight: Flight, answer: LoadAnswer, route?: RequestRoute) => void;
+  /** Delete requests from My Trips, and bring them back with Undo (round 195). */
+  removeRequests: (ids: string[]) => void;
+  restoreRequests: (back: LoadRequest[]) => void;
   /** Your report on a flight this session, if any. */
   reportFor: (flight: Flight) => LoadAnswer | null;
   report: (flight: Flight, open: number, listed: number) => void;
@@ -90,6 +95,8 @@ export function RequestsProvider({ children }: { children: ReactNode }) {
     (flight: Flight, answer: LoadAnswer, route?: RequestRoute) => setMine((list) => addAnsweredAsk(list, flight, answer, route)),
     [],
   );
+  const remove = useCallback((ids: string[]) => setMine((list) => removeRequests(list, ids)), []);
+  const restore = useCallback((back: LoadRequest[]) => setMine((list) => restoreRequests(list, back)), []);
 
   const value = useMemo<RequestsContextValue>(
     () => ({
@@ -99,13 +106,15 @@ export function RequestsProvider({ children }: { children: ReactNode }) {
       askFor: (flight) => askFor(mine, flight),
       cancelAsk: cancel,
       addAnswered,
+      removeRequests: remove,
+      restoreRequests: restore,
       reportFor: (flight) => reports[flightKey(flight)] ?? null,
       report,
       feedAnswers,
       answerFeed,
       openFeedCount: (now) => feedAsks(now).filter((r) => !feedAnswers[r.id]).length,
     }),
-    [mine, reports, ask, cancel, addAnswered, report, feedAnswers, answerFeed],
+    [mine, reports, ask, cancel, addAnswered, remove, restore, report, feedAnswers, answerFeed],
   );
   return <RequestsContext.Provider value={value}>{children}</RequestsContext.Provider>;
 }
