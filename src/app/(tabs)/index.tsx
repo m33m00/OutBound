@@ -38,7 +38,8 @@ import { ResultsPanel } from '@/ui/ResultsPanel';
 import { SearchPanel } from '@/ui/SearchPanel';
 import { CreditsChip } from '@/ui/Credits';
 import { PlanPicker } from '@/ui/PlanPicker';
-import { RequestLoadsCard } from '@/ui/RequestLoadsCard';
+import { RequestLoadsBar } from '@/ui/RequestLoadsBar';
+import type { LegPicks } from '@/ui/ResultRow';
 import { creditsWord, demoLoad, hideSeats, REQUEST_COST, seatsLocked, TIER_LABEL } from '@/membership/membership';
 import { useMembership } from '@/membership/MembershipProvider';
 import { useIntroDone } from '@/launch/introState';
@@ -155,6 +156,27 @@ export default function HomeScreen() {
     if (lockedBefore.every((i) => legs.includes(i))) router.navigate('/trips');
   };
   const saved = useSavedRoutes();
+  // Round 190 (John): each hidden leg on the open route has a credit checkbox, checked to start; the
+  // pinned bar requests the checked ones. Unchecked legs are kept by flight, so paging back keeps them.
+  const [unchecked, setUnchecked] = useState<Record<string, true>>({});
+  const [requestBarH, setRequestBarH] = useState(0);
+  const legPicks = (it: Itinerary): LegPicks | undefined => {
+    const locked = membership.lockedLegs(it);
+    if (!locked.length) return undefined;
+    return {
+      locked: it.legs.map((_, i) => locked.includes(i)),
+      checked: it.legs.map((l) => !unchecked[flightKey(l.flight)]),
+      onToggle: (i) => {
+        const key = flightKey(it.legs[i].flight);
+        setUnchecked((was) => {
+          const next = { ...was };
+          if (next[key]) delete next[key];
+          else next[key] = true;
+          return next;
+        });
+      },
+    };
+  };
 
   // 0-7 days out, counted in the origin's local calendar (sample-data zone while From is empty).
   const today = localDate(Date.now(), origin ? AIRPORTS[origin].tz : SAMPLE_TZ);
@@ -481,6 +503,10 @@ export default function HomeScreen() {
   const filtersChanged = changedFilters(filters, settings.search);
   const selected = results.find((r) => r.id === selectedId);
   const firstLeg = selected?.legs[0].flight;
+  const selectedPicks = selected && routeOpen ? legPicks(selected) : undefined;
+  const selectedPicked = selectedPicks
+    ? selectedPicks.locked.flatMap((locked, i) => (locked && selectedPicks.checked[i] ? [i] : []))
+    : [];
   // Where to walk once you're at the airport (round 159): the first flight's posted gate, from live status.
   const firstGate = firstLeg ? (flightStatuses.byKey[flightLookupKey(legLookup(firstLeg))]?.departure ?? null) : null;
   // Real drive time with traffic for the Leave By card (John, 2026-11-01); the rough guess until it answers.
@@ -637,6 +663,8 @@ export default function HomeScreen() {
                       rerun(d);
                     }}
                     onRouteHeight={onRouteHeight}
+                    legPicks={legPicks}
+                    bottomInset={selectedPicks ? requestBarH : 0}
                     onRouteBarHeight={setRouteBar}
                     onFilters={openFilters}
                     filtersChanged={filtersChanged}
@@ -655,20 +683,6 @@ export default function HomeScreen() {
                     selectedCard={
                       firstLeg ? (
                         <>
-                          {selected && membership.tier && membership.isLocked(selected) ? (
-                            <RequestLoadsCard
-                              tier={membership.tier}
-                              credits={membership.credits}
-                              legs={selected.legs.map((l, i) => ({
-                                from: l.flight.from,
-                                to: l.flight.to,
-                                departText: formatTime(l.flight.departUtc, AIRPORTS[l.flight.from].tz),
-                                locked: membership.lockedLegs(selected).includes(i),
-                              }))}
-                              onRequest={(legs) => requestLoads(selected, legs)}
-                              onAnswerLoads={answerLoads}
-                            />
-                          ) : null}
                           <LeaveByCard
                             airport={AIRPORTS[firstLeg.from]}
                             departUtc={firstLeg.departUtc}
@@ -694,6 +708,17 @@ export default function HomeScreen() {
                 )}
               </Appear>
             </Sheet>
+          ) : null}
+          {/* Pinned over the bottom of the open route, just above the tab bar (round 190, John). */}
+          {selected && selectedPicks && membership.tier ? (
+            <RequestLoadsBar
+              picked={selectedPicked.length}
+              locked={selectedPicks.locked.filter(Boolean).length}
+              credits={membership.credits}
+              onRequest={() => requestLoads(selected, selectedPicked)}
+              onAnswerLoads={answerLoads}
+              onHeight={setRequestBarH}
+            />
           ) : null}
         </View>
 

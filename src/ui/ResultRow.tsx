@@ -2,6 +2,7 @@ import { type ComponentRef, memo, type ReactNode, useRef, useState } from 'react
 import { Animated, Pressable, StyleSheet, Text, type TextStyle, useWindowDimensions, View } from 'react-native';
 
 import { AIRPORTS, aircraftLabel, type Flight, type Itinerary, type LegSeats } from '@/engine';
+import { creditsWord, REQUEST_COST } from '@/membership/membership';
 import type { RouteImpact } from '@/live';
 import {
   forSpeech,
@@ -69,6 +70,49 @@ export interface ResultRowProps {
   topAction?: ReactNode;
   /** Swiping left tears the ticket along its perforation and calls this: on a result ticket since round 151. */
   onSwipeSave?: () => void;
+  /**
+   * Round 190 (John): on the open route, each leg whose seats are hidden carries a credit checkbox,
+   * checked to start; the pinned button below requests the checked ones.
+   */
+  legPicks?: LegPicks;
+}
+
+export interface LegPicks {
+  locked: readonly boolean[];
+  checked: readonly boolean[];
+  onToggle: (legIndex: number) => void;
+}
+
+/** The credit checkbox on a leg box whose seats are hidden (round 190, John: "each leg has a credit box"). */
+function LegCreditCheck({
+  checked,
+  name,
+  onToggle,
+  index,
+}: {
+  checked: boolean;
+  name: string;
+  onToggle: () => void;
+  index: number;
+}) {
+  const c = useColors();
+  return (
+    <Pressable
+      onPress={withTick(onToggle)}
+      hitSlop={8}
+      accessibilityRole="checkbox"
+      accessibilityState={{ checked }}
+      accessibilityLabel={`Request ${name} loads, ${creditsWord(REQUEST_COST)}`}
+      testID={`leg-credit-${index}`}
+      style={({ pressed }) => [styles.creditPill, { backgroundColor: c.accentSoft, opacity: pressed ? 0.7 : 1 }]}>
+      <View style={[styles.creditBox, { borderColor: c.accent, backgroundColor: checked ? c.accent : 'transparent' }]}>
+        {checked ? <Icon name="checkmark" size={11} weight="bold" tintColor={c.onAccent} fallback={null} /> : null}
+      </View>
+      <Text style={[styles.creditText, { color: c.accent }]} numberOfLines={1}>
+        {creditsWord(REQUEST_COST)}
+      </Text>
+    </Pressable>
+  );
 }
 
 /** From this text size the seat chip and delay badge sit left-aligned under the times. */
@@ -329,6 +373,7 @@ function LegTimeline({
   large,
   dimmed,
   onLegPress,
+  legPicks,
 }: {
   itinerary: Itinerary;
   status?: RowStatus;
@@ -336,6 +381,7 @@ function LegTimeline({
   large: boolean;
   dimmed: boolean;
   onLegPress?: (flight: Flight) => void;
+  legPicks?: LegPicks;
 }) {
   const c = useColors();
   const openAirport = useOpenAirportSummary();
@@ -383,6 +429,14 @@ function LegTimeline({
             </View>
             <View style={[styles.legCorner, styles.legCornerRight]} testID="leg-corner-right">
               {corner?.kind === 'arrived' ? cornerPill : null}
+              {legPicks?.locked[i] ? (
+                <LegCreditCheck
+                  index={i}
+                  checked={!!legPicks.checked[i]}
+                  name={`${leg.flight.from} to ${leg.flight.to}`}
+                  onToggle={() => legPicks.onToggle(i)}
+                />
+              ) : null}
             </View>
           </View>
         );
@@ -539,6 +593,7 @@ export const ResultRow = memo(function ResultRow({
   saved,
   topAction,
   onSwipeSave,
+  legPicks,
 }: ResultRowProps) {
   const c = useColors();
   const scheme = useColorSchemeName();
@@ -679,7 +734,15 @@ export const ResultRow = memo(function ResultRow({
   // The flights under the perforation; the save tear draws a copy of it too (round 129).
   const ticketBodyView = (
     <View style={large ? styles.ticketBody : styles.stubSlim}>
-      <LegTimeline itinerary={it} status={status} now={now} large={!!large} dimmed={dimmed} onLegPress={onLegPress} />
+      <LegTimeline
+        itinerary={it}
+        status={status}
+        now={now}
+        large={!!large}
+        dimmed={dimmed}
+        onLegPress={onLegPress}
+        legPicks={large ? legPicks : undefined}
+      />
       {cardAge && SHOW_SEAT_AGE ? (
         <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]} testID="seat-age">
           {cardAge}
@@ -1161,7 +1224,19 @@ const styles = StyleSheet.create({
   // Logo centred, with an even corner on each side for Departed (left) and Arrived (right).
   legBottom: { flexDirection: 'row', alignItems: 'center', alignSelf: 'stretch', columnGap: 6 },
   legCorner: { flex: 1, flexBasis: 0, alignItems: 'flex-start' },
-  legCornerRight: { alignItems: 'flex-end' },
+  legCornerRight: { alignItems: 'flex-end', gap: 4 },
+  // The credit checkbox (round 190): a soft blue pill, a square that fills when checked, then "1 credit".
+  creditPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    borderRadius: 999,
+    paddingLeft: 7,
+    paddingRight: 9,
+    minHeight: 28,
+  },
+  creditBox: { width: 16, height: 16, borderRadius: 4, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
+  creditText: { fontFamily: fonts.bodySemiBold, fontSize: 13, lineHeight: 17 },
   connection: { flex: 1, alignItems: 'center', gap: 4 },
   connectionText: { textAlign: 'center', alignSelf: 'stretch' },
   struck: { textDecorationLine: 'line-through' },

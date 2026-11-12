@@ -790,3 +790,13 @@ John (Nov 12): "it should be 1 credit per leg. Not route. It should be easy to s
 - The filled main button requests every leg still hidden and names the cost: "Request All Legs, 2 credits" (a nonstop: "Request Loads, 1 credit"). It shows only when you have enough credits for all of them; otherwise the note says how many legs you can afford ("You have 1, enough for 1 leg.") and you pick legs one at a time. Once one leg is left, its quick request is the only button.
 - A requested leg shows its seats right away, even while the route's other legs stay hidden. A request that finishes the route opens My Trips as before; one that leaves legs hidden stays on the route.
 - The credits sheet, Settings line and results note say per leg.
+
+## Round 190 (Nov 12): request loads from the pass itself
+
+John: "Having it split like this is redundant. Rework this. I want to see the whole boarding pass layout with a large 'request all legs for X credits' button that is static at the bottom (above the menu bar). Then each leg has a credit box on it that is already checked off. Deselecting the legs/check boxes adjusts the total request amount and button at the bottom."
+
+- The separate request card under the pass is gone. The open route shows the whole pass.
+- Each leg with hidden seats has a "1 credit" checkbox in its box's top right corner, checked by default. Requested legs show their seats and no box.
+- One large filled button pinned at the bottom of the screen, above the tab bar: "Request All Legs for 2 credits" when every hidden leg is checked, "Request 1 Leg for 1 credit" when some are unchecked, "Check a Leg to Request" (disabled) when none are.
+- A small line over the button says the price per leg and your credits, or how many legs your credits cover when you're short. Out of credits: the button becomes Answer Loads.
+- The route scroll leaves room at the bottom so the pinned button never covers the pass.

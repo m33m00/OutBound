@@ -34,7 +34,7 @@ import { withTick } from './haptics';
 import { useReducedMotion } from './useReducedMotion';
 import { pressStyle } from './press';
 import { Icon } from './Icon';
-import { ResultRow } from './ResultRow';
+import { ResultRow, type LegPicks } from './ResultRow';
 import { SavedToast } from './SavedToast';
 import { SaveRouteButton } from './SaveRouteButton';
 import { StaggerIn } from './StaggerIn';
@@ -78,6 +78,10 @@ export interface ResultsPanelProps {
   onRouteBarHeight?: (height: number) => void;
   /** A hard pull down on the route or list while it's at its top: the panel steps down a size (round 58). */
   onPullDown?: () => void;
+  /** The open route's credit checkboxes, one per leg whose seats are hidden (round 190, John). */
+  legPicks?: (it: Itinerary) => LegPicks | undefined;
+  /** Room kept under the open route for a bar pinned over the panel's bottom (round 190: Request Loads). */
+  bottomInset?: number;
 }
 
 export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(function ResultsPanel(p, ref) {
@@ -496,7 +500,9 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
                       onImpactPress={p.onImpactPress}
                       onLegPress={p.onLegPress}
                       status={p.statuses?.[focused.id]}
+                      legPicks={p.legPicks?.(focused)}
                     />
+                    {p.bottomInset ? <View style={{ height: p.bottomInset }} testID="route-bottom-inset" /> : null}
                   </ScrollView>
                 </Animated.View>
               </GestureDetector>
