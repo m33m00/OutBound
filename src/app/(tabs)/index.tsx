@@ -152,7 +152,12 @@ export default function HomeScreen() {
     if (legs.some((i) => !allowed.has(i))) return;
     if (membership.requestLegs(full, legs, `Requested ${title}`) !== 'requested') return;
     const at = Date.now();
-    for (const l of picked) requests.addAnswered(l.flight, { ...demoLoad(l.seats, flightKey(l.flight)), at });
+    // A connecting route's legs keep its name, so My Trips shows them together (round 194, John).
+    const route =
+      full.legs.length > 1
+        ? { id: `${full.id}-${state.request.date}`, title: [full.origin, ...full.legs.map((l) => l.flight.to)].join(' to ') }
+        : undefined;
+    for (const l of picked) requests.addAnswered(l.flight, { ...demoLoad(l.seats, flightKey(l.flight)), at }, route);
     saved.save(savedRouteFrom(full, state.request, at));
     if (lockedBefore.every((i) => legs.includes(i))) router.navigate('/trips');
   };

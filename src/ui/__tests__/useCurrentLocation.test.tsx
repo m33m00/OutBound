@@ -34,9 +34,9 @@ describe('useCurrentLocation (Q-023, Q-051)', () => {
 
   beforeEach(() => {
     jest.spyOn(Date, 'now').mockImplementation(() => now);
-    mockGetPosition.mockReset().mockImplementation(() =>
-      Promise.resolve({ coords: { latitude: 36.16, longitude: -86.78 }, timestamp: now }),
-    );
+    mockGetPosition
+      .mockReset()
+      .mockImplementation(() => Promise.resolve({ coords: { latitude: 36.16, longitude: -86.78 }, timestamp: now }));
     mockRequest.mockReset();
     mockPermission.current = { granted: true, status: 'granted' };
   });

@@ -28,13 +28,17 @@ describe('SheetHeader', () => {
     });
     const header = r!.root.findAll((n) => n.props.accessibilityRole === 'header' && typeof n.type === 'string')[0];
     expect(header.props.maxFontSizeMultiplier).toBe(1.6);
-    const row = r!.root.findAll((n) => typeof n.type === 'string' && StyleSheet.flatten(n.props.style)?.paddingVertical != null)[0];
+    const row = r!.root.findAll(
+      (n) => typeof n.type === 'string' && StyleSheet.flatten(n.props.style)?.paddingVertical != null,
+    )[0];
     expect(StyleSheet.flatten(row.props.style).flexDirection).toBe('column-reverse');
   });
 
   const actionText = () =>
     StyleSheet.flatten(
-      r!.root.findAll((n) => n.props.testID === 'sheet-action' && typeof n.type === 'string')[0].findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string')[0].props.style,
+      r!.root
+        .findAll((n) => n.props.testID === 'sheet-action' && typeof n.type === 'string')[0]
+        .findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string')[0].props.style,
     );
 
   it('shows the title and a filled blue Done button (round 79)', () => {

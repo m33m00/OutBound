@@ -3,11 +3,12 @@ import { useSyncExternalStore } from 'react';
 import { Platform } from 'react-native';
 
 import { successTap } from './haptics';
-import { YAOOM_DATA_URI } from './yaoomData';
+import { FART_DATA_URI } from './fartData';
 
 /**
- * Sound effects (round 181). John: "add a yaoom sound effect when a request is answered". The yaoom is
- * an original sound made for OutBound (design/yaoom-source.wav); no artist's audio is used.
+ * Sound effects (round 181). John: "add a sound sound effect when a request is answered". Round 194, John:
+ * "Remove the sound sound effect and do a fart sound effect". The fart is an original sound made for OutBound
+ * (design/fart-synth.py); no one else's audio is used.
  *
  * It plays over whatever else is on (mixWithOthers), so it never stops someone's music. Never throws:
  * a missed sound is fine.
@@ -21,13 +22,13 @@ import { YAOOM_DATA_URI } from './yaoomData';
  * Whether it loaded is kept (useSoundState), so Settings can say so if it ever fails again.
  */
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const YAOOM_FILE = require('../../assets/sounds/yaoom.m4a');
+const ANSWER_SOUND_FILE = require('../../assets/sounds/fart.m4a');
 
-export const yaoomSource = (os: string = Platform.OS): AudioSource | number =>
-  os === 'ios' ? { uri: YAOOM_DATA_URI } : YAOOM_FILE;
+export const answerSoundSource = (os: string = Platform.OS): AudioSource | number =>
+  os === 'ios' ? { uri: FART_DATA_URI } : ANSWER_SOUND_FILE;
 
 /**
- * What the yaoom last did, shown under Settings > Display (round 184) so we can see on John's phone
+ * What the sound last did, shown under Settings > Display (round 184) so we can see on John's phone
  * whether it loaded and played, since it can't be heard from here.
  */
 export type SoundState =
@@ -60,9 +61,9 @@ export function soundCheckText(s: SoundState, fmt: (at: number) => string): stri
     case 'idle':
       return 'Sound check: not loaded yet.';
     case 'loading':
-      return 'Sound check: loading the yoooom…';
+      return 'Sound check: loading the sound…';
     case 'failed':
-      return `Sound check: the yoooom couldn't load (${s.detail}).`;
+      return `Sound check: the sound couldn't load (${s.detail}).`;
     case 'ready':
       if (s.playing) return 'Sound check: playing now.';
       return s.playedAt ? `Sound check: loaded, last played ${fmt(s.playedAt)}.` : 'Sound check: loaded, not played yet.';
@@ -76,7 +77,7 @@ const fail = (e: unknown) => setState({ kind: 'failed', detail: e instanceof Err
 
 /**
  * Round 184 (still silent after round 183): the audio mode is set and waited for before the player
- * is made, so the first play never runs ahead of it. The yaoom now plays even with the phone on
+ * is made, so the first play never runs ahead of it. The sound now plays even with the phone on
  * silent (the playback category, mixed with other audio, so music keeps going); the Sound effects
  * switch is the way to turn it off.
  */
@@ -86,7 +87,7 @@ function ready(): Promise<AudioPlayer | null> {
   loading = (async () => {
     try {
       await setAudioModeAsync({ playsInSilentMode: true, interruptionMode: 'mixWithOthers' }).catch(() => {});
-      const p = createAudioPlayer(yaoomSource());
+      const p = createAudioPlayer(answerSoundSource());
       p.addListener?.('playbackStatusUpdate', (st) => {
         if (st.error) fail(st.error);
         else if (st.isLoaded) setState({ kind: 'ready', playedAt, playing: !!st.playing });
@@ -101,13 +102,13 @@ function ready(): Promise<AudioPlayer | null> {
   return loading;
 }
 
-/** Loads the yaoom ahead of time (round 182), so the first answer plays it right away. */
+/** Loads the sound ahead of time (round 182), so the first answer plays it right away. */
 export function preloadSounds(): void {
   void ready();
 }
 
-export async function playYaoom(): Promise<void> {
-  // A tap you can feel with every yaoom (round 184), even where sound can't play.
+export async function playAnswerSound(): Promise<void> {
+  // A tap you can feel with every sound (round 184), even where sound can't play.
   successTap();
   const p = await ready();
   if (!p) return;

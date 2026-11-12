@@ -25,7 +25,15 @@ describe('no sample labels (design round 30, John 2026-10-30)', () => {
     for (const selectedId of [null, list[0].id]) {
       await act(async () => {
         r = create(
-          <ResultsPanel state={state} selectedId={selectedId} now={NOW} onSelect={jest.fn()} onBack={jest.fn()} onRetry={jest.fn()} sampleFlights />,
+          <ResultsPanel
+            state={state}
+            selectedId={selectedId}
+            now={NOW}
+            onSelect={jest.fn()}
+            onBack={jest.fn()}
+            onRetry={jest.fn()}
+            sampleFlights
+          />,
         );
       });
       const texts = r!.root

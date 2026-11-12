@@ -825,3 +825,11 @@ John: "Why do some have the Leave By time but no description about the arrival t
 
 - Cause: since round 169 moved the drive time onto the car button, a "Leave by 3:10 PM" card had nothing beside its time, while "Leave now" kept "Arrive at DFW by ... to begin boarding". Which one you saw depended on whether it was already time to go.
 - Now "Leave by" shows the same "Arrive at DFW by 4:05 PM to begin boarding" line beside (or under) its time. With no location the card's title is that line already, and at the airport it says when boarding starts.
+
+## Round 194 (Nov 12): fart sound, routes grouped in My Trips, tidier results header
+
+John: "Remove the yaoom sound effect and do a fart sound effect." / "When I request a route and I go to my trips. Can you group that route and not treat them as single flights." / "You also don't need it to say Departing Thu, Nov 12 text above the date selected. That's redundant. Move the number of routes and how many are full next to the text where it says Leaving from ... Have it off to the right."
+
+- The answered-request sound is now a fart (original, made by design/fart-synth.py; 1.35 s, buzzy and wobbly with a sputter and a squeaky rise at the end). The yoooom files are removed. Same trigger, same Settings > Display > Sound effects toggle (plays once when switched on). Settings detail: "A fart when your request is answered".
+- My Trips > Your requests: legs requested from a connecting route sit together in their own card under the route's name ("DAL TO DEN TO LAX, 2 LEGS"), in flight order. Lone flights share one card. Requesting a route's other leg later joins the same card.
+- Results: no "Departing Thu, Nov 12" line over the day buttons (the picked day button already says it). The route count ("10 routes, 1 full") sits on the line over the tickets, off to the right of "Leaving from any Dallas, TX airport (DAL, DFW)".

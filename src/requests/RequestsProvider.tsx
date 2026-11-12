@@ -4,7 +4,7 @@ import type { Flight } from '@/engine';
 import { useMembershipOptional } from '@/membership/MembershipProvider';
 import { SCHEDULE_SOURCE } from '@/search/useRouteSearch';
 import { useSettingsOptional } from '@/settings/SettingsProvider';
-import { playYaoom, preloadSounds } from '@/ui/sounds';
+import { playAnswerSound, preloadSounds } from '@/ui/sounds';
 
 import {
   addAnsweredAsk,
@@ -20,6 +20,7 @@ import {
   type AskState,
   type LoadAnswer,
   type LoadRequest,
+  type RequestRoute,
 } from './requests';
 
 interface RequestsContextValue {
@@ -32,7 +33,7 @@ interface RequestsContextValue {
   /** Take back a waiting ask. */
   cancelAsk: (flight: Flight) => void;
   /** A requested route's loads, already answered (round 176 demo: Free and Pay as you go). */
-  addAnswered: (flight: Flight, answer: LoadAnswer) => void;
+  addAnswered: (flight: Flight, answer: LoadAnswer, route?: RequestRoute) => void;
   /** Your report on a flight this session, if any. */
   reportFor: (flight: Flight) => LoadAnswer | null;
   report: (flight: Flight, open: number, listed: number) => void;
@@ -73,7 +74,7 @@ export function RequestsProvider({ children }: { children: ReactNode }) {
     const fresh = newlyAnswered(seen.current, mine);
     if (!fresh.length) return;
     fresh.forEach((id) => seen.current!.add(id));
-    if (sounds) playYaoom();
+    if (sounds) playAnswerSound();
   }, [mine]); // eslint-disable-line react-hooks/exhaustive-deps
   const membership = useMembershipOptional();
   const earn = membership?.earnForAnswer;
@@ -86,7 +87,7 @@ export function RequestsProvider({ children }: { children: ReactNode }) {
     [earn],
   );
   const addAnswered = useCallback(
-    (flight: Flight, answer: LoadAnswer) => setMine((list) => addAnsweredAsk(list, flight, answer)),
+    (flight: Flight, answer: LoadAnswer, route?: RequestRoute) => setMine((list) => addAnsweredAsk(list, flight, answer, route)),
     [],
   );
 

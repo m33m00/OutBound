@@ -16,7 +16,9 @@ describe('Stepper big text (design round 46)', () => {
   afterEach(() => act(() => r?.unmount()));
   const render = () =>
     act(() => {
-      r = create(<Stepper label="Be at the airport before departure" value={75} step={5} min={30} max={180} onChange={jest.fn()} />);
+      r = create(
+        <Stepper label="Be at the airport before departure" value={75} step={5} min={30} max={180} onChange={jest.fn()} />,
+      );
     });
   // Is the label in the same row as the − button, or on a line of its own?
   const labelBesideButtons = () => {

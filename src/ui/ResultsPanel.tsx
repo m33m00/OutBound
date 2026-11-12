@@ -240,40 +240,50 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
       />
       {stepsDays && p.days && p.onDay ? (
         // Full width: arrows at the panel edges, the day and route count centered (John, 2026-10-30).
-        <DayStepper
-          days={p.days}
-          date={request.date}
-          label={shortDate(request.date)}
-          onDay={p.onDay}
-          detail={summary || undefined}
-        />
+        <DayStepper days={p.days} date={request.date} onDay={p.onDay} detail={summary || undefined} />
       ) : null}
     </View>
   );
 
-  // Scrolls with the list: notes that matter once.
+  // Scrolls with the list: notes that matter once. With the day row, the route count sits on the first line
+  // over the tickets, off to the right of "Leaving from ..." (round 194, John: "Move the number of routes and how
+  // many are full next to the text where it says Leaving from").
+  const areas = areaLines(request);
+  const countBeside = stepsDays && !!summary;
   const notes = [
     ...(!stepsDays && summary ? [{ key: 'summary', text: summary, testID: 'results-summary', strong: true }] : []),
-    ...areaLines(request).map((text) => ({ key: text, text, testID: undefined, strong: false })),
+    ...(countBeside ? areas.slice(1) : areas).map((text) => ({ key: text, text, testID: undefined, strong: false })),
     ...(p.note ? [{ key: 'note', text: p.note, testID: 'results-note', strong: false }] : []),
     ...(p.showingHidden
       ? [{ key: 'hidden', text: 'Showing routes your filters hid, for this search only.', testID: undefined, strong: false }]
       : []),
   ];
-  const header = notes.length ? (
-    <View style={styles.header}>
-      {notes.map((n) => (
-        <Text
-          key={n.key}
-          testID={n.testID}
-          style={[n.strong ? textStyles.body : textStyles.small, styles.headerNote, { color: c.muted }]}>
-          {n.text}
-        </Text>
-      ))}
+  const countRow = countBeside ? (
+    <View style={styles.countRow} testID="results-count-row">
+      <Text style={[textStyles.small, styles.countLead, { color: c.muted }]} testID="results-leaving">
+        {areas[0] ?? ''}
+      </Text>
+      <Text style={[textStyles.small, { color: c.muted }]} numberOfLines={1} testID="results-count">
+        {summary}
+      </Text>
     </View>
-  ) : (
-    <View style={styles.headerGap} />
-  );
+  ) : null;
+  const header =
+    notes.length || countRow ? (
+      <View style={styles.header}>
+        {countRow}
+        {notes.map((n) => (
+          <Text
+            key={n.key}
+            testID={n.testID}
+            style={[n.strong ? textStyles.body : textStyles.small, styles.headerNote, { color: c.muted }]}>
+            {n.text}
+          </Text>
+        ))}
+      </View>
+    ) : (
+      <View style={styles.headerGap} />
+    );
 
   // A picked route gets its own view (John, 2026-10-30); found here, above the loading and
   // error returns, so the hooks below run on every render.
@@ -834,6 +844,9 @@ const styles = StyleSheet.create({
   // Centered over the tickets, not hugging the left (round 160, John).
   headerNote: { textAlign: 'center' },
   headerGap: { height: spacing.group },
+  // "Leaving from ..." on the left, the route count on the right of the same line (round 194, John).
+  countRow: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 12 },
+  countLead: { flexShrink: 1 },
   bar: { gap: 4, paddingBottom: spacing.group, borderBottomWidth: StyleSheet.hairlineWidth },
   title: { textAlign: 'center' },
   // The route view's bar (round 134): back on the left, the market and its dots centered.

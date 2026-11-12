@@ -89,7 +89,7 @@ export interface Settings {
   appearance: AppearancePref;
   /** Free, Pay as you go or Premium (round 176, demo). Null until picked, so the Search tab asks. */
   membership: Tier | null;
-  /** Sound effects, like the yaoom when your request is answered (round 181). On by default; the silent switch still mutes them. */
+  /** Sound effects, like the fart when your request is answered (round 181; a fart since round 194). On by default; the silent switch still mutes them. */
   sounds: boolean;
 }
 

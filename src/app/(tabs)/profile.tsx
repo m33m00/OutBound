@@ -19,7 +19,7 @@ import { ListGroup, ListRow, SectionFooter } from '@/ui/ListGroup';
 import { useSharedLocation } from '@/ui/LocationProvider';
 import { pressStyle } from '@/ui/press';
 import { DESIGN_ROUND } from '@/buildInfo';
-import { playYaoom, soundCheckText, useSoundState } from '@/ui/sounds';
+import { playAnswerSound, soundCheckText, useSoundState } from '@/ui/sounds';
 import { AppearanceChoice, ListControlRow, ListSwitchRow, Segments } from '@/ui/SettingsControls';
 import { TabScreen } from '@/ui/TabScreen';
 import { CreditsSheet } from '@/ui/Credits';
@@ -197,12 +197,12 @@ export default function SettingsTab() {
           testID="settings-sounds"
           icon="speaker.wave.2.fill"
           label="Sound effects"
-          detail="A yoooom when your request is answered"
+          detail="A fart when your request is answered"
           value={settings.sounds}
           onChange={(sounds) => {
             update({ sounds });
             // Turning it on plays it once, so you know what you'll hear (round 182).
-            if (sounds) playYaoom();
+            if (sounds) playAnswerSound();
           }}
         />
       </ListGroup>

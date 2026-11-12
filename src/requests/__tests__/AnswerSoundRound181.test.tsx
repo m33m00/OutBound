@@ -21,7 +21,7 @@ function Probe() {
 
 const flush = () => new Promise((r) => setTimeout(r, 0));
 
-describe('yaoom when a request is answered (round 181, John)', () => {
+describe('the answer sound when a request is answered (round 181; a fart since round 194, John)', () => {
   let r: ReactTestRenderer | undefined;
   beforeEach(() => {
     created.mockClear();
@@ -92,7 +92,7 @@ describe('yaoom when a request is answered (round 181, John)', () => {
   });
 });
 
-describe('the yaoom player (rounds 182 to 184, John: "I dont hear the yaoom")', () => {
+describe('the answer sound player (rounds 182 to 184, John: "I dont hear the yaoom")', () => {
   const sounds = jest.requireActual('@/ui/sounds') as typeof import('@/ui/sounds');
   beforeEach(() => {
     created.mockClear();
@@ -110,14 +110,14 @@ describe('the yaoom player (rounds 182 to 184, John: "I dont hear the yaoom")', 
       order.push('player');
       return { currentTime: 0, play: jest.fn(), seekTo: jest.fn(() => Promise.resolve()), addListener: jest.fn() };
     });
-    await sounds.playYaoom();
+    await sounds.playAnswerSound();
     expect(order).toEqual(['mode', 'player']);
     expect(setAudioModeAsync).toHaveBeenCalledWith({ playsInSilentMode: true, interruptionMode: 'mixWithOthers' });
   });
 
   it('loads once ahead of time and plays a fresh player without rewinding it', async () => {
     sounds.preloadSounds();
-    await sounds.playYaoom();
+    await sounds.playAnswerSound();
     expect(created).toHaveBeenCalledTimes(1);
     const player = created.mock.results[0].value;
     expect(player.seekTo).not.toHaveBeenCalled();
@@ -125,36 +125,42 @@ describe('the yaoom player (rounds 182 to 184, John: "I dont hear the yaoom")', 
   });
 
   it('rewinds a player that already played, then plays again', async () => {
-    await sounds.playYaoom();
+    await sounds.playAnswerSound();
     const player = created.mock.results[0].value;
     player.currentTime = 1.2;
-    await sounds.playYaoom();
+    await sounds.playAnswerSound();
     expect(player.seekTo).toHaveBeenCalledWith(0);
     expect(player.play).toHaveBeenCalledTimes(2);
   });
 
   it("gives iPhone a data URI, which never depends on an update file's name, and Android the bundled file", () => {
-    const ios = sounds.yaoomSource('ios') as { uri: string };
+    const ios = sounds.answerSoundSource('ios') as { uri: string };
     expect(ios.uri.startsWith('data:audio/mp4;base64,')).toBe(true);
     expect(ios.uri.length).toBeGreaterThan(5000);
-    expect(typeof sounds.yaoomSource('android')).not.toBe('string');
+    expect(typeof sounds.answerSoundSource('android')).not.toBe('string');
+  });
+
+  it('is the fart now, not the yoooom (round 194, John: "Remove the yaoom sound effect and do a fart sound effect")', () => {
+    const { FART_DATA_URI } = jest.requireActual('@/ui/fartData') as { FART_DATA_URI: string };
+    expect((sounds.answerSoundSource('ios') as { uri: string }).uri).toBe(FART_DATA_URI);
+    expect(FART_DATA_URI).not.toContain('yaoom');
   });
 
   it('keeps what the sound last did and says it in words for Settings (round 184)', async () => {
     const fmt = () => '9:41:00 AM';
     expect(sounds.soundCheckText(sounds.soundState(), fmt)).toBe('Sound check: not loaded yet.');
     sounds.preloadSounds();
-    expect(sounds.soundCheckText(sounds.soundState(), fmt)).toBe('Sound check: loading the yoooom…');
+    expect(sounds.soundCheckText(sounds.soundState(), fmt)).toBe('Sound check: loading the sound…');
     await flush();
     const player = created.mock.results[0].value;
     const onStatus = (player.addListener as jest.Mock).mock.calls.find((c) => c[0] === 'playbackStatusUpdate')![1];
     onStatus({ isLoaded: true, playing: false, error: null });
     expect(sounds.soundCheckText(sounds.soundState(), fmt)).toBe('Sound check: loaded, not played yet.');
-    await sounds.playYaoom();
+    await sounds.playAnswerSound();
     expect(sounds.soundCheckText(sounds.soundState(), fmt)).toBe('Sound check: playing now.');
     onStatus({ isLoaded: true, playing: false, error: null });
     expect(sounds.soundCheckText(sounds.soundState(), fmt)).toBe('Sound check: loaded, last played 9:41:00 AM.');
     onStatus({ isLoaded: false, error: 'Cannot Open' });
-    expect(sounds.soundCheckText(sounds.soundState(), fmt)).toBe("Sound check: the yoooom couldn't load (Cannot Open).");
+    expect(sounds.soundCheckText(sounds.soundState(), fmt)).toBe("Sound check: the sound couldn't load (Cannot Open).");
   });
 });

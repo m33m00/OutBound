@@ -4,7 +4,14 @@ import { Alert, Pressable, StyleSheet, View } from 'react-native';
 
 import type { Flight } from '@/engine';
 import { flightLookupKey, useFlightStatuses } from '@/live';
-import { MAX_OPEN_REQUESTS, openRequestCount, upcomingRequests } from '@/requests/requests';
+import {
+  groupRequests,
+  MAX_OPEN_REQUESTS,
+  routeHeading,
+  openRequestCount,
+  upcomingRequests,
+  type LoadRequest,
+} from '@/requests/requests';
 import { useRequests } from '@/requests/RequestsProvider';
 import { legLookup, legStatus } from '@/search/statusTags';
 import { SCHEDULE_SOURCE } from '@/search/useRouteSearch';
@@ -158,23 +165,39 @@ export default function TripsScreen() {
     />
   ) : null;
 
+  // Routes in their own card; lone flights next to each other share one (round 194).
+  const requestBlocks = groupRequests(requests).reduce<
+    { key: string; route: { title: string } | null; requests: LoadRequest[] }[]
+  >((out, g) => {
+    const last = out[out.length - 1];
+    if (!g.route && last && !last.route) last.requests.push(...g.requests);
+    else out.push({ key: g.key, route: g.route, requests: [...g.requests] });
+    return out;
+  }, []);
+  const requestRow = (r: LoadRequest) => (
+    <RequestRow
+      key={r.id}
+      request={r}
+      now={now}
+      mine
+      leg={legStatus(r.flight, statuses.byKey[flightLookupKey(legLookup(r.flight))], now)}
+      onOpen={() => setFlightOpen(r.flight)}
+    />
+  );
+
   return (
     <TabScreen title="My Trips" overlay={selectBar}>
       {requests.length ? (
         <View style={styles.section}>
           <TripsSectionHeader icon="text.bubble.fill" title="Your requests" count={requests.length} testID="requests-header" />
-          <ListGroup>
-            {requests.map((r) => (
-              <RequestRow
-                key={r.id}
-                request={r}
-                now={now}
-                mine
-                leg={legStatus(r.flight, statuses.byKey[flightLookupKey(legLookup(r.flight))], now)}
-                onOpen={() => setFlightOpen(r.flight)}
-              />
-            ))}
-          </ListGroup>
+          {/* A requested route's legs sit together under its name (round 194, John); lone flights share one card. */}
+          {requestBlocks.map((b) => (
+            <View key={b.key} testID={b.route ? 'request-route' : 'request-flights'}>
+              <ListGroup title={b.route ? routeHeading(b.route.title, b.requests.length) : undefined}>
+                {b.requests.map(requestRow)}
+              </ListGroup>
+            </View>
+          ))}
           <SectionFooter>{`${openCount} of ${MAX_OPEN_REQUESTS} requests open`}</SectionFooter>
         </View>
       ) : null}
