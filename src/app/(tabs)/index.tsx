@@ -39,10 +39,11 @@ import { SearchPanel } from '@/ui/SearchPanel';
 import { CreditsChip } from '@/ui/Credits';
 import { PlanPicker } from '@/ui/PlanPicker';
 import { RequestLoadsCard } from '@/ui/RequestLoadsCard';
-import { demoLoad, hideSeats, seatsLocked, TIER_LABEL } from '@/membership/membership';
+import { creditsWord, demoLoad, hideSeats, REQUEST_COST, seatsLocked, TIER_LABEL } from '@/membership/membership';
 import { useMembership } from '@/membership/MembershipProvider';
 import { useIntroDone } from '@/launch/introState';
 import { flightKey } from '@/requests/requests';
+import { formatTime } from '@/search/format';
 import { growFit, halfSnap, Sheet, SHEET_HANDLE_H, SHEET_LOCKED_TOP, sheetMode, type FitHeight } from '@/ui/Sheet';
 import { useRadarLayers } from '@/ui/useRadarLayers';
 import { useSheetContent } from '@/ui/useSheetContent';
@@ -121,25 +122,37 @@ export default function HomeScreen() {
   const membership = useMembership();
   const state = useMemo(() => {
     if (rawState.status !== 'done' || !seatsLocked(membership.tier)) return rawState;
-    const view = (it: Itinerary) => (membership.isLocked(it) ? hideSeats(it) : it);
+    // Round 189: a leg whose loads were requested shows its seats even while its route's other legs hide.
+    const view = (it: Itinerary) => {
+      const locked = membership.lockedLegs(it);
+      return locked.length ? hideSeats(it, (i) => !locked.includes(i)) : it;
+    };
     return { ...rawState, results: rawState.results.map(view), hiddenResults: rawState.hiddenResults.map(view) };
   }, [rawState, membership]);
   const [planLater, setPlanLater] = useState(false);
   const introDone = useIntroDone();
   const planPrompt = introDone && settingsLoaded && membership.tier == null && !planLater;
   const answerLoads = () => router.navigate('/feed');
-  // A request in this demo answers at once with sample loads, saves the route and opens My Trips.
-  const requestLoads = (it: Itinerary) => {
+  // A request in this demo answers at once with sample loads and saves the route. Round 189 (John):
+  // a credit per leg, for the legs picked. Once every leg is requested it opens My Trips as before;
+  // a request that leaves legs hidden stays on the route so you can see the seats you got.
+  const requestLoads = (it: Itinerary, legs: readonly number[]) => {
     if (state.status !== 'done') return;
     const raw =
       rawState.status === 'done' ? [...rawState.results, ...rawState.hiddenResults].find((r) => r.id === it.id) : undefined;
     const full = raw ?? it;
-    const title = [full.origin, ...full.legs.map((l) => l.flight.to)].join(' to ');
-    if (membership.requestRoute(full, `Requested ${title}`) !== 'requested') return;
+    const picked = legs.map((i) => full.legs[i]).filter((l) => l != null);
+    if (!picked.length) return;
+    const title =
+      picked.length === full.legs.length
+        ? [full.origin, ...full.legs.map((l) => l.flight.to)].join(' to ')
+        : picked.map((l) => `${l.flight.from} to ${l.flight.to}`).join(', ');
+    const lockedBefore = membership.lockedLegs(full);
+    if (membership.requestLegs(full, legs, `Requested ${title}`) !== 'requested') return;
     const at = Date.now();
-    for (const l of full.legs) requests.addAnswered(l.flight, { ...demoLoad(l.seats, flightKey(l.flight)), at });
+    for (const l of picked) requests.addAnswered(l.flight, { ...demoLoad(l.seats, flightKey(l.flight)), at });
     saved.save(savedRouteFrom(full, state.request, at));
-    router.navigate('/trips');
+    if (lockedBefore.every((i) => legs.includes(i))) router.navigate('/trips');
   };
   const saved = useSavedRoutes();
 
@@ -630,7 +643,7 @@ export default function HomeScreen() {
                     note={
                       missingNote ??
                       (membership.tier && seatsLocked(membership.tier) && results.some((it) => membership.isLocked(it))
-                        ? `Seats are hidden on ${TIER_LABEL[membership.tier]}. Open a route to request its loads.`
+                        ? `Seats are hidden on ${TIER_LABEL[membership.tier]}. Open a route to request loads, ${creditsWord(REQUEST_COST)} per leg.`
                         : undefined)
                     }
                     isSaved={(it) => saved.isSaved(savedKey(it, state.request.date))}
@@ -646,7 +659,13 @@ export default function HomeScreen() {
                             <RequestLoadsCard
                               tier={membership.tier}
                               credits={membership.credits}
-                              onRequest={() => requestLoads(selected)}
+                              legs={selected.legs.map((l, i) => ({
+                                from: l.flight.from,
+                                to: l.flight.to,
+                                departText: formatTime(l.flight.departUtc, AIRPORTS[l.flight.from].tz),
+                                locked: membership.lockedLegs(selected).includes(i),
+                              }))}
+                              onRequest={(legs) => requestLoads(selected, legs)}
                               onAnswerLoads={answerLoads}
                             />
                           ) : null}

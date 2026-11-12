@@ -780,3 +780,13 @@ John (Nov 10): "I want to be able to make changes both him and I. Do what is bes
 - `CLAUDE.md` is now the guide every Claude reads first: how the two of them work together (start from the latest main, own branch, small PR for every change, John merges, nothing left unmerged at the end of a session, check open PRs before touching a screen) and John's design rules in one place. `AGENTS.md` points to it.
 - Expo Go now publishes every branch that's pushed, not just main and the design branch, so each person can try their own work on a phone.
 - Design rounds now go out as small PRs that merge often, so main stays current for whoever works next.
+
+## Round 189: load requests cost 1 credit per leg
+
+John (Nov 12): "it should be 1 credit per leg. Not route. It should be easy to select which legs in a route you want to request loads for. Maybe have a 'quick request' button on each leg so that I have the option to either request the full route or select single/multiple legs at a time. The number of credits per route/leg should be clearly visible."
+
+- A request costs 1 credit per leg. Requesting legs that were already requested costs nothing.
+- The Seats are hidden card says "loads are 1 credit per leg". On a route with more than one leg it lists each leg (codes and departure time) with its own quick request pill, "1 credit". A requested leg shows a gray check and "Requested" instead.
+- The filled main button requests every leg still hidden and names the cost: "Request All Legs, 2 credits" (a nonstop: "Request Loads, 1 credit"). It shows only when you have enough credits for all of them; otherwise the note says how many legs you can afford ("You have 1, enough for 1 leg.") and you pick legs one at a time. Once one leg is left, its quick request is the only button.
+- A requested leg shows its seats right away, even while the route's other legs stay hidden. A request that finishes the route opens My Trips as before; one that leaves legs hidden stays on the route.
+- The credits sheet, Settings line and results note say per leg.

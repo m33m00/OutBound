@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import React from 'react';
 import { act, create, type ReactTestInstance, type ReactTestRenderer } from 'react-test-renderer';
 
-import { EMPTY_WALLET, requestRoute, welcome } from '@/membership/membership';
+import { EMPTY_WALLET, requestLegs, welcome } from '@/membership/membership';
 import { MembershipProvider, useMembership } from '@/membership/MembershipProvider';
 import { addAnsweredAsk } from '@/requests/requests';
 import { RequestsProvider, useRequests } from '@/requests/RequestsProvider';
@@ -20,6 +20,7 @@ jest.mock('@react-native-async-storage/async-storage', () =>
 );
 
 const NOW = Date.UTC(2026, 10, 7, 18);
+const ONE_LEG = [{ from: 'DAL', to: 'LAX', departText: '9:00 AM', locked: true }];
 const words = (n: ReactTestInstance) =>
   n
     .findAll((x) => (x.type as unknown) === 'Text')
@@ -60,19 +61,23 @@ describe('plans and credits (round 176)', () => {
     const onAnswer = jest.fn();
     let r!: ReactTestRenderer;
     act(() => {
-      r = create(<RequestLoadsCard tier="free" credits={2} onRequest={onRequest} onAnswerLoads={onAnswer} />);
+      r = create(<RequestLoadsCard tier="free" credits={2} legs={ONE_LEG} onRequest={onRequest} onAnswerLoads={onAnswer} />);
     });
-    expect(words(r.root).join(' ')).toContain('request this route’s loads for 1 credit');
-    act(() => r.root.findAll((n) => n.props.accessibilityLabel === 'Request Loads' && n.props.onPress)[0].props.onPress());
-    expect(onRequest).toHaveBeenCalled();
-    act(() => r.update(<RequestLoadsCard tier="free" credits={0} onRequest={onRequest} onAnswerLoads={onAnswer} />));
+    expect(words(r.root).join(' ')).toContain('loads are 1 credit per leg');
+    act(() =>
+      r.root.findAll((n) => n.props.accessibilityLabel === 'Request Loads, 1 credit' && n.props.onPress)[0].props.onPress(),
+    );
+    expect(onRequest).toHaveBeenCalledWith([0]);
+    act(() =>
+      r.update(<RequestLoadsCard tier="free" credits={0} legs={ONE_LEG} onRequest={onRequest} onAnswerLoads={onAnswer} />),
+    );
     expect(words(r.root).join(' ')).toContain('out of credits');
     act(() => r.root.findAll((n) => n.props.accessibilityLabel === 'Answer Loads' && n.props.onPress)[0].props.onPress());
     expect(onAnswer).toHaveBeenCalled();
   });
 
   it('credits sheet: balance, earned, spent and recent entries', () => {
-    const w = requestRoute(welcome(EMPTY_WALLET, 'free', NOW), ['A'], 'Requested DAL to LAX', NOW).wallet;
+    const w = requestLegs(welcome(EMPTY_WALLET, 'free', NOW), ['A'], 'Requested DAL to LAX', NOW).wallet;
     let r!: ReactTestRenderer;
     act(() => {
       r = create(<CreditsSheet visible tier="free" wallet={w} onClose={jest.fn()} onAnswerLoads={jest.fn()} now={NOW} />);

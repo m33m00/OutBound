@@ -108,7 +108,7 @@ export function CreditsSheet({
               How credits work
             </Text>
             <HowLine delta={`+${EARN_PER_ANSWER}`} text="Answer a load on a flight at your airline" />
-            <HowLine delta={`−${REQUEST_COST}`} text="Request a route’s loads. They go to My Trips." />
+            <HowLine delta={`−${REQUEST_COST}`} text="Request a leg’s loads. They go to My Trips." />
             {tier === 'payg' ? (
               <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>
                 Adding credits comes later. For now you start with 10.

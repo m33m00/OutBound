@@ -228,3 +228,4 @@ Each item names its owner. One item per work session. spec-keeper runs a pre-fli
 | 221 | Yoooom: no "a", autotuned ooo (round 186) | Done |
 | 222 | More autotune on the yoooom (round 187) | Done |
 | 223 | CLAUDE.md guide for two builders; Expo Go publishes every branch (round 188) | Done |
+| 224 | Load requests: 1 credit per leg, quick request on each leg, Request All Legs with its cost (round 189) | Done |

@@ -122,7 +122,7 @@ export default function SettingsTab() {
             {membership.tier === 'premium'
               ? 'Every load shows, with no credits to track.'
               : membership.tier
-                ? 'Seats stay hidden until you request a route’s loads. Answering loads earns credits.'
+                ? 'Seats stay hidden until you request loads, 1 credit per leg. Answering loads earns credits.'
                 : 'Pick a plan to choose how you see loads.'}{' '}
             A demo for now, so nothing is charged.
           </SectionFooter>
