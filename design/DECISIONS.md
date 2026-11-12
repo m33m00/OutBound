@@ -800,3 +800,10 @@ John: "Having it split like this is redundant. Rework this. I want to see the wh
 - One large filled button pinned at the bottom of the screen, above the tab bar: "Request All Legs for 2 credits" when every hidden leg is checked, "Request 1 Leg for 1 credit" when some are unchecked, "Check a Leg to Request" (disabled) when none are.
 - A small line over the button says the price per leg and your credits, or how many legs your credits cover when you're short. Out of credits: the button becomes Answer Loads.
 - The route scroll leaves room at the bottom so the pinned button never covers the pass.
+
+## Round 191 (Nov 12): Departed and Arrived back on the route line
+
+John: "Departed and Arrived buttons should actually sit ontop of the route line ... instead of the bottom right below the time. I don't like that it creates this stacked look with the credit toggle to select. Align the subtext above the request all legs button as well."
+
+- On the opened route, Departed and Arrived sit over each leg's route line like every other status pill (replaces round 175's corners). The bottom row is just the airline logo with the credit checkbox on the right.
+- The "Seats are hidden..." line over the pinned request button is centred to line up with the button.

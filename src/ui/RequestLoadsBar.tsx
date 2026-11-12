@@ -59,7 +59,10 @@ export function RequestLoadsBar({
       style={[styles.bar, { backgroundColor: c.surface, borderTopColor: c.line }]}
       onLayout={(e: LayoutChangeEvent) => onHeight?.(e.nativeEvent.layout.height)}
       testID="request-loads">
-      <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]} testID="request-loads-note">
+      <Text
+        lineBreakStrategyIOS="push-out"
+        style={[textStyles.small, styles.note, { color: c.muted }]}
+        testID="request-loads-note">
         {requestNote(picked, credits)}
       </Text>
       {out ? (
@@ -89,4 +92,6 @@ const styles = StyleSheet.create({
     gap: 8,
     borderTopWidth: StyleSheet.hairlineWidth,
   },
+  // Centred over the button, like its label (round 191, John: "Align the subtext above the request all legs button").
+  note: { textAlign: 'center', alignSelf: 'stretch' },
 });

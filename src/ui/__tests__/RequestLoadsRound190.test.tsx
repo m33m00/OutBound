@@ -103,3 +103,16 @@ describe('request loads from the pass (round 190, John)', () => {
     expect(btn('Request All Legs for 2 credits').props.disabled).toBe(true);
   });
 });
+
+describe('round 191 (John): the note lines up with the button', () => {
+  it('centres the line over the request button', () => {
+    let r!: ReactTestRenderer;
+    act(() => {
+      r = create(<RequestLoadsBar picked={2} locked={2} credits={3} onRequest={jest.fn()} onAnswerLoads={jest.fn()} />);
+    });
+    const note = r.root.findAll((n) => n.props.testID === 'request-loads-note' && typeof n.type === 'string')[0];
+    const flat = Object.assign({}, ...[note.props.style].flat(3).filter(Boolean));
+    expect(flat.textAlign).toBe('center');
+    act(() => r.unmount());
+  });
+});

@@ -530,14 +530,11 @@ describe('ResultRow', () => {
     expect(group.findAll((n) => n.props.accessibilityLabel === 'American 1' && typeof n.type === 'string').length).toBe(1);
   });
 
-  it('route card: Departed sits in the bottom left corner, Arrived in the bottom right, never over the line (round 175, John)', async () => {
+  it('route card: Departed and Arrived sit over the route line like every other pill (round 191, John; was corners in 175)', async () => {
     const it = await fullItinerary();
     const words = (n: ReactTestInstance) =>
       n.findAll((x) => typeof x.props.children === 'string').map((x) => x.props.children as string);
-    for (const [state, side, other] of [
-      ['departed', 'leg-corner-left', 'leg-corner-right'],
-      ['arrived', 'leg-corner-right', 'leg-corner-left'],
-    ] as const) {
+    for (const state of ['departed', 'arrived'] as const) {
       await act(async () => {
         r = create(
           <ResultRow
@@ -553,12 +550,12 @@ describe('ResultRow', () => {
       const label = state === 'departed' ? 'Departed' : 'Arrived';
       const box = r!.root.findAll((n) => n.props.testID === 'leg-box' && typeof n.type === 'string')[0];
       const at = (id: string) => box.findAll((n) => n.props.testID === id && typeof n.type === 'string')[0];
-      expect(words(at(side))).toContain(label);
-      expect(words(at(other))).not.toContain(label);
-      // Not over the route line any more.
-      expect(box.findAll((n) => n.props.testID === 'leg-tag' && typeof n.type === 'string')).toHaveLength(0);
-      expect(words(at('leg-track'))).not.toContain(label);
-      // The corners sit on the bottom row, with the logo between them.
+      // On top of the route line, before the flight's length.
+      expect(words(at('leg-tag'))).toContain(label);
+      expect(words(at('leg-track'))).toContain(label);
+      // Not down in the corners any more.
+      for (const id of ['leg-corner-left', 'leg-corner-right']) expect(words(at(id))).not.toContain(label);
+      // The corners still sit on the bottom row, with the logo between them.
       const bottom = at('leg-bottom');
       const ids = (bottom.children as ReactTestInstance[]).map((n) => n.props.testID);
       expect(ids).toEqual(['leg-corner-left', 'leg-flight', 'leg-corner-right']);

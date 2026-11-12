@@ -230,3 +230,4 @@ Each item names its owner. One item per work session. spec-keeper runs a pre-fli
 | 223 | CLAUDE.md guide for two builders; Expo Go publishes every branch (round 188) | Done |
 | 224 | Load requests: 1 credit per leg, quick request on each leg, Request All Legs with its cost (round 189) | Done |
 | 225 | Request loads from the pass: checked credit box on each leg, request button pinned above the tab bar (round 190) | Done |
+| 226 | Departed and Arrived pills over the route line on the opened route; note centred over the request button (round 191) | Done |

@@ -410,15 +410,11 @@ function LegTimeline({
         // The flight is its airline's logo alone, centred just under the route line; a tap or hold opens its
         // number and aircraft, as on the tickets (round 158, John: "Can you do the same select or hold on the
         // airline icon ... when you open up a route"). Any status pill sits over the route line (round 136).
-        // Departed and Arrived sit in the box's bottom corners, Departed left under where it left from,
-        // Arrived right under where it landed (round 175, John). Every other pill stays over the line.
-        const corner = view?.tag && (view.tag.kind === 'departed' || view.tag.kind === 'arrived') ? view.tag : null;
-        const cornerPill = corner ? <StatusTag label={corner.label} tone={TAG_TONE[corner.kind]} /> : null;
+        // Every status pill, Departed and Arrived included, sits over the route line (round 191, John: "Departed
+        // and Arrived ... should actually sit on top of the route line", not stacked over the credit box).
         const pills = (
           <View style={styles.legBottom} testID="leg-bottom">
-            <View style={styles.legCorner} testID="leg-corner-left">
-              {corner?.kind === 'departed' ? cornerPill : null}
-            </View>
+            <View style={styles.legCorner} testID="leg-corner-left" />
             <View style={styles.legMeta} testID="leg-flight">
               <FlightPeek
                 airline={leg.flight.airline}
@@ -428,7 +424,6 @@ function LegTimeline({
               />
             </View>
             <View style={[styles.legCorner, styles.legCornerRight]} testID="leg-corner-right">
-              {corner?.kind === 'arrived' ? cornerPill : null}
               {legPicks?.locked[i] ? (
                 <LegCreditCheck
                   index={i}
@@ -448,7 +443,7 @@ function LegTimeline({
               view={view}
               dimmed={dimmed}
               showTimes={!nonstop}
-              tag={view?.tag && !corner ? <StatusTag label={view.tag.label} tone={TAG_TONE[view.tag.kind]} /> : undefined}
+              tag={view?.tag ? <StatusTag label={view.tag.label} tone={TAG_TONE[view.tag.kind]} /> : undefined}
               onTapCode={onLegPress ? withTick(() => onLegPress(leg.flight)) : undefined}
             />
             {/* No "Continuing to" note on a diverted leg (round 159, John: "I don't care it's continuing to SEA"). */}
@@ -1221,7 +1216,7 @@ const styles = StyleSheet.create({
   // "It's not aligned center underneath the route line").
   // Pulled up toward the route line (round 158, John: "Can the airline logo be scooted up closer").
   legMeta: { alignItems: 'center', marginTop: -2 },
-  // Logo centred, with an even corner on each side for Departed (left) and Arrived (right).
+  // Logo centred, with an even corner on each side; the right one holds the credit checkbox (round 190).
   legBottom: { flexDirection: 'row', alignItems: 'center', alignSelf: 'stretch', columnGap: 6 },
   legCorner: { flex: 1, flexBasis: 0, alignItems: 'flex-start' },
   legCornerRight: { alignItems: 'flex-end', gap: 4 },
