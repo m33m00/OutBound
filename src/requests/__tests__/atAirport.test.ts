@@ -42,7 +42,7 @@ describe('at the airport (round 33)', () => {
   });
 
   it('card line counts departures, or says there are none', () => {
-    expect(atAirportNote('DAL', 4)).toBe('4 departures in the next 5 hours. Pick yours from the board.');
+    expect(atAirportNote('DAL', 4)).toBe('4 departures in the next 5 hours.');
     expect(atAirportNote('DAL', 1)).toContain('1 departure in');
     expect(atAirportNote('DAL', 0)).toBe('No more departures from DAL in the next 5 hours.');
   });

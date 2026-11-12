@@ -630,6 +630,12 @@ describe('ResultRow', () => {
       );
     });
     expect(strings(r!.root)).toContain('Departed');
+    // Round 196, John: the pill sits at the top, right of the times, not down at the bottom of the ticket.
+    const line = r!.root.find((n) => n.props.testID === 'row-times-line' && typeof n.type === 'string');
+    const kids = (line.children as ReactTestInstance[]).map((n) => n.props.testID);
+    expect(kids).toEqual(['row-times', 'row-tag']);
+    expect(strings(line)).toContain('Departed');
+    expect(r!.root.findAll((n) => n.props.testID === 'flights-line')).toHaveLength(0);
   });
 
   it('route card legs show both times: new ones when moved, a canceled leg keeps its schedule, struck (John, 2026-11-02)', async () => {

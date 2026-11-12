@@ -671,6 +671,8 @@ export const ResultRow = memo(function ResultRow({
   // Canceled legs, connections at risk, delays and diversions are all drawn on the route line now (rounds
   // 143 to 146, John), so the row's own tag is left only for a route whose first flight has gone.
   const rowTag = headline?.tone === 'gone' ? headline : null;
+  // On a results ticket it rides the time line (round 196).
+  const topTag = large ? null : rowTag;
   const ageWords = summaryAge ? summaryAge[0].toLowerCase() + summaryAge.slice(1) : null;
   const cardAge = ageWords ? `Seats ${ageWords}` : null;
   // A moved time (John, 2026-11-02): the schedule sits small and struck on its own line above, and the big
@@ -685,45 +687,55 @@ export const ResultRow = memo(function ResultRow({
           {t.depart} – {t.arrive}
         </Text>
       ) : null}
-      <Text
-        style={[textStyles.number, { color: timeColor }]}
-        numberOfLines={stacked ? undefined : 1}
-        adjustsFontSizeToFit={!stacked}
-        minimumFontScale={0.7}
-        testID="row-times">
-        {canceledRoute ? (
-          // A canceled nonstop: the top times go grey, not struck; the leg's pill and struck times say it
-          // (John, 2026-11-02).
-          // A red line through it too (round 161, John).
-          <Text style={[{ color: hc.muted }, styles.struck, { textDecorationColor: c.canceled }]} testID="row-times-canceled">
-            {t.depart} – {t.arrive}
-          </Text>
-        ) : (
-          <>
-            {departMoved ? (
-              <Text style={departTint} testID="row-new-depart">
-                {keep(first!.newText!)}
-              </Text>
-            ) : (
-              t.depart
-            )}
-            {' – '}
-            {pendingArrival ? (
-              // A diversion on the route: the arrival isn't known yet, like the leg's own TBD (John, 2026-11-02).
-              <Text style={{ color: hc.muted }} testID="row-arrive-tbd">
-                {ARRIVAL_TBD}
-              </Text>
-            ) : arriveMoved ? (
-              <Text style={arriveTint} testID="row-new-arrive">
-                {keep(status!.arrival!.newText)}
-              </Text>
-            ) : (
-              t.arrive
-            )}
-          </>
-        )}
-        {t.plusDays ? <Text style={[textStyles.small, { color: hc.muted }]}> {t.plusDays}</Text> : null}
-      </Text>
+      {/* Departed and Arrived sit up here, right of the times now (round 196, John: "Move the Departed and
+          Arrived pill to the right of the new scheduled time ... I think it looks better at the top portion of
+          the ticket"). The opened route keeps each leg's own pill on its line. */}
+      <View style={styles.timesRow} testID="row-times-line">
+        <Text
+          style={[textStyles.number, styles.timesText, { color: timeColor }]}
+          numberOfLines={stacked ? undefined : 1}
+          adjustsFontSizeToFit={!stacked}
+          minimumFontScale={0.7}
+          testID="row-times">
+          {canceledRoute ? (
+            // A canceled nonstop: the top times go grey, not struck; the leg's pill and struck times say it
+            // (John, 2026-11-02).
+            // A red line through it too (round 161, John).
+            <Text style={[{ color: hc.muted }, styles.struck, { textDecorationColor: c.canceled }]} testID="row-times-canceled">
+              {t.depart} – {t.arrive}
+            </Text>
+          ) : (
+            <>
+              {departMoved ? (
+                <Text style={departTint} testID="row-new-depart">
+                  {keep(first!.newText!)}
+                </Text>
+              ) : (
+                t.depart
+              )}
+              {' – '}
+              {pendingArrival ? (
+                // A diversion on the route: the arrival isn't known yet, like the leg's own TBD (John, 2026-11-02).
+                <Text style={{ color: hc.muted }} testID="row-arrive-tbd">
+                  {ARRIVAL_TBD}
+                </Text>
+              ) : arriveMoved ? (
+                <Text style={arriveTint} testID="row-new-arrive">
+                  {keep(status!.arrival!.newText)}
+                </Text>
+              ) : (
+                t.arrive
+              )}
+            </>
+          )}
+          {t.plusDays ? <Text style={[textStyles.small, { color: hc.muted }]}> {t.plusDays}</Text> : null}
+        </Text>
+        {topTag ? (
+          <View style={styles.timesTag} testID="row-tag">
+            <StatusTag label={topTag.label} tone={topTag.tone} />
+          </View>
+        ) : null}
+      </View>
     </View>
   );
   // The flights under the perforation; the save tear draws a copy of it too (round 129).
@@ -846,16 +858,11 @@ export const ResultRow = memo(function ResultRow({
             row never stacks (John, 2026-10-31). */}
       {/* The flights live under their legs on the route line now (round 145, John); this line keeps only
             a live tag (delays, a diversion) and the seat age when ages are on. */}
-      {rowTag || shownAge ? (
+      {shownAge ? (
         <View style={styles.legLine} testID="flights-line">
           {/* A connection at risk is flagged on its stop and a canceled leg is drawn red with an X on the
               route line now (round 143, John), so the row's tag skips both ("Drop the tag", round 144).
               VoiceOver still says it. */}
-          {rowTag ? (
-            <View style={styles.flight} testID="row-tag">
-              <StatusTag label={rowTag.label} tone={rowTag.tone} />
-            </View>
-          ) : null}
           {shownAge ? (
             <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]} testID="seat-age">
               {shownAge}
@@ -1076,6 +1083,9 @@ export const ResultRow = memo(function ResultRow({
 const EDGE_W = 5;
 
 const styles = StyleSheet.create({
+  timesRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  timesText: { flexShrink: 1 },
+  timesTag: { flexShrink: 0 },
   tearLine: { zIndex: 2 },
   // No overflow clip, so the soft shadow shows; the edge rounds its own corners instead.
   row: {

@@ -48,5 +48,5 @@ export function sampleDepartures(code: string, now: number, airline = SAMPLE_MY_
 /** The card's second line. */
 export function atAirportNote(code: string, count: number): string {
   if (!count) return `No more departures from ${code} in the next 5 hours.`;
-  return `${count} ${count === 1 ? 'departure' : 'departures'} in the next 5 hours. Pick yours from the board.`;
+  return `${count} ${count === 1 ? 'departure' : 'departures'} in the next 5 hours.`;
 }

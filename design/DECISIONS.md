@@ -844,3 +844,11 @@ John: "It just sounds like distorted bass. Can you make it more of a fart and ad
 - So each one swipes on its own, a lone flight now has its own card (round 194 had lone flights share one).
 - Requests tab is others' asks to answer, not yours, so nothing to delete there.
 - Results header: the count is now pills on the right of "Leaving from ...": a gray "10 routes" pill and a red "1 full" pill only when some are full. Not blue (blue is for tappable things). VoiceOver reads "10 routes, 1 full".
+
+## Round 196 (Nov 12): shorter report banner, status pill up top
+
+John: "Remove 'Pick yours from the board'. Move the Departed and Arrived pill to the right of the new scheduled time if it's changed or original scheduled time. I think it looks better at the top portion of the ticket."
+
+- The "At DAL? Report a load" banner now reads just "7 departures in the next 5 hours."
+- Results tickets: the Departed or Arrived pill sits on the big time line, right of the times (the new times when they moved, under the struck schedule). It no longer sits alone at the bottom of the ticket. The bookmark stays top right.
+- The opened route keeps each leg's own pill over that leg's route line (round 191), since a connection's legs can be in different states. CLAUDE.md updated.
