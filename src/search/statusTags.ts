@@ -116,12 +116,44 @@ function delayedDeparture(f: Flight, dep: Movement): { newUtc: number; delayMin:
   return delayMin > 0 ? { newUtc, delayMin } : null;
 }
 
+/** An hour past its expected landing, a flight the data still lists as on its way has landed. */
+export const SETTLED_AFTER_MIN = 60;
+
+/**
+ * Brings a leg's live state up to what the clock and its own times already say (round 192, John: "Why does the
+ * Arrived pill show for the 2nd leg but the first leg it doesn't say Arrived either?"). A feed can stop updating
+ * a flight once it's in, so: an actual landing time that has passed is Arrived, an actual takeoff that has
+ * passed is at least Departed, and a flight an hour past its expected landing is Arrived. Never from the
+ * schedule alone before then, so a delayed flight that hasn't left never reads as gone. Canceled and diverted
+ * stay as they are.
+ */
+export function settleByClock(f: Flight, status: FlightStatus | undefined, now: number | undefined): FlightStatus | undefined {
+  if (!status || now == null || !Number.isFinite(now)) return status;
+  if (status.state === 'arrived' || status.state === 'canceled' || status.state === 'diverted') return status;
+  const landed = ms(status.arrival.actualUtc);
+  if (Number.isFinite(landed) && landed <= now) return { ...status, state: 'arrived' };
+  if (expectedLanding(f, status) + SETTLED_AFTER_MIN * MIN <= now) return { ...status, state: 'arrived' };
+  if (status.state === 'departed') return status;
+  const tookOff = ms(status.departure.actualUtc);
+  if (Number.isFinite(tookOff) && tookOff <= now) return { ...status, state: 'departed' };
+  return status;
+}
+
+/** When a leg should be on the ground: actual, else estimated, else scheduled moved by any departure delay. */
+function expectedLanding(f: Flight, status: FlightStatus): number {
+  const a = firstValid(ms(status.arrival.actualUtc), ms(status.arrival.estimatedUtc));
+  if (Number.isFinite(a)) return a;
+  const dep = status.state === 'delayed' ? delayedDeparture(f, status.departure) : null;
+  return dep ? f.arriveUtc + (dep.newUtc - f.departUtc) : f.arriveUtc;
+}
+
 /**
  * Tag and time display for one leg. `status` undefined = no live data: no
  * tag, never a guess from the schedule (a delayed flight that hasn't left
  * must never read as gone).
  */
-export function legStatus(f: Flight, status: FlightStatus | undefined): LegStatusView {
+export function legStatus(f: Flight, raw: FlightStatus | undefined, now?: number): LegStatusView {
+  const status = settleByClock(f, raw, now);
   const scheduledUtc = f.departUtc;
   const scheduledText = formatTime(scheduledUtc, tz(f.from));
   const base: LegStatusView = { tag: null, struck: false, scheduledUtc, scheduledText, newUtc: null, newText: null };
@@ -198,7 +230,50 @@ function withLegArrival(f: Flight, status: FlightStatus | undefined, view: LegSt
 }
 
 const GONE: ReadonlySet<LegTagKind> = new Set(['departed', 'arrived']);
+
+/** Pills that mean a leg can't be boarded any more. */
+const UNBOARDABLE: ReadonlySet<LegTagKind> = new Set(['canceled', 'departed', 'arrived', 'diverted']);
+
+/**
+ * The hidden legs whose loads can still be requested (round 192, John: "If a flight is canceled there should be
+ * no way to request the loads for that flight. It would be a waste of a token"). The same goes for a leg that has
+ * left, landed or diverted: there's no seat on it to get.
+ */
+export function requestableLegs(locked: readonly number[], status: RowStatus | undefined): number[] {
+  return locked.filter((i) => {
+    const kind = status?.legs[i]?.tag?.kind;
+    return !kind || !UNBOARDABLE.has(kind);
+  });
+}
 const BROKEN: ReadonlySet<LegTagKind> = new Set(['canceled']);
+
+/**
+ * An earlier leg never reads as less far along than a later one (round 192, John: "make sure ... these pills
+ * make logical sense"). When a later leg has left, an earlier leg with no news of its own (on time, or
+ * departed) that was due to land by now reads Arrived, and one that was due to leave by now reads at least
+ * Departed. A delayed, canceled or diverted earlier leg keeps its own pill: that's a real missed connection.
+ */
+function inLegOrder(
+  it: Itinerary,
+  statuses: (FlightStatus | undefined)[],
+  now: number | undefined,
+): (FlightStatus | undefined)[] {
+  if (now == null || !Number.isFinite(now)) return statuses;
+  const out = [...statuses];
+  let laterGone = false;
+  for (let i = out.length - 1; i >= 0; i--) {
+    const s = out[i];
+    const f = it.legs[i].flight;
+    if (laterGone && s && (s.state === 'scheduled' || s.state === 'departed')) {
+      if (expectedLanding(f, s) <= now) out[i] = { ...s, state: 'arrived' };
+      else if (s.state === 'scheduled' && firstValid(ms(s.departure.estimatedUtc), f.departUtc) <= now)
+        out[i] = { ...s, state: 'departed' };
+    }
+    const st = out[i]?.state;
+    if (st === 'departed' || st === 'arrived') laterGone = true;
+  }
+  return out;
+}
 
 /**
  * Tags for a whole row. A connection is at risk when the live times leave
@@ -206,8 +281,17 @@ const BROKEN: ReadonlySet<LegTagKind> = new Set(['canceled']);
  * the schedule did, so it only ever comes from real live times. Checked only while the onward leg hasn't departed; a
  * canceled or diverted leg on either side shows that tag only.
  */
-export function rowStatus(it: Itinerary, byKey: Readonly<Record<string, FlightStatus>>, mins: ConnectionMins): RowStatus {
-  const statuses = it.legs.map((l) => byKey[flightLookupKey(legLookup(l.flight))]);
+export function rowStatus(
+  it: Itinerary,
+  byKey: Readonly<Record<string, FlightStatus>>,
+  mins: ConnectionMins,
+  now?: number,
+): RowStatus {
+  const statuses = inLegOrder(
+    it,
+    it.legs.map((l) => settleByClock(l.flight, byKey[flightLookupKey(legLookup(l.flight))], now)),
+    now,
+  );
   // Each leg's own new arrival, so its box can show both times (John, 2026-11-02).
   const legs = it.legs.map((l, i) => withLegArrival(l.flight, statuses[i], legStatus(l.flight, statuses[i])));
   const risks: ConnectionRisk[] = [];

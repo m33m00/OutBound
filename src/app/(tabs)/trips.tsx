@@ -90,7 +90,7 @@ export default function TripsScreen() {
   const statuses = useFlightStatuses(lookups, live ? {} : SAMPLE_STATUS_OPTIONS);
   // Only flights still to leave; one that live data says departed or arrived drops off too.
   const requests = upcomingRequests(mine, now, (r) => {
-    const kind = legStatus(r.flight, statuses.byKey[flightLookupKey(legLookup(r.flight))]).tag?.kind;
+    const kind = legStatus(r.flight, statuses.byKey[flightLookupKey(legLookup(r.flight))], now).tag?.kind;
     return kind === 'departed' || kind === 'arrived';
   });
   // Tick at the next departure so that flight drops off while the tab is open.
@@ -170,7 +170,7 @@ export default function TripsScreen() {
                 request={r}
                 now={now}
                 mine
-                leg={legStatus(r.flight, statuses.byKey[flightLookupKey(legLookup(r.flight))])}
+                leg={legStatus(r.flight, statuses.byKey[flightLookupKey(legLookup(r.flight))], now)}
                 onOpen={() => setFlightOpen(r.flight)}
               />
             ))}

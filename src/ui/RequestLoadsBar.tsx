@@ -23,9 +23,10 @@ export function requestNote(picked: number, credits: number): string {
   const cost = picked * REQUEST_COST;
   if (cost > credits) {
     const fits = Math.floor(credits / REQUEST_COST);
-    return `You have ${creditsWord(credits)}, enough for ${fits} ${fits === 1 ? 'leg' : 'legs'}. Uncheck the rest.`;
+    return `${creditsWord(credits)} remaining, enough for ${fits} ${fits === 1 ? 'leg' : 'legs'}. Uncheck the rest.`;
   }
-  return `Seats are hidden. Loads are ${creditsWord(REQUEST_COST)} per leg. You have ${credits}.`;
+  // "14 credits remaining" (round 192, John: was "You have 14").
+  return `Seats are hidden. Loads are ${creditsWord(REQUEST_COST)} per leg. ${creditsWord(credits)} remaining.`;
 }
 
 /**

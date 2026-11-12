@@ -37,7 +37,7 @@ export default function FeedScreen() {
   const live = SCHEDULE_SOURCE === 'live';
   const lookups = useMemo(() => asks.map((r) => legLookup(r.flight)), [asks]);
   const statuses = useFlightStatuses(lookups, live ? {} : SAMPLE_STATUS_OPTIONS);
-  const legFor = (r: (typeof asks)[number]) => legStatus(r.flight, statuses.byKey[flightLookupKey(legLookup(r.flight))]);
+  const legFor = (r: (typeof asks)[number]) => legStatus(r.flight, statuses.byKey[flightLookupKey(legLookup(r.flight))], now);
   const sheetFlight = asks.find((r) => r.id === sheet.shown)?.flight ?? null;
 
   const withAnswers = asks.map((r) => (answers[r.id] ? { ...r, answer: answers[r.id] } : r));

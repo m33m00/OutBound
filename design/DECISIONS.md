@@ -807,3 +807,14 @@ John: "Departed and Arrived buttons should actually sit ontop of the route line 
 
 - On the opened route, Departed and Arrived sit over each leg's route line like every other status pill (replaces round 175's corners). The bottom row is just the airline logo with the credit checkbox on the right.
 - The "Seats are hidden..." line over the pinned request button is centred to line up with the button.
+
+## Round 192 (Nov 12): pills in order, no requests for canceled legs, credit wording
+
+John: "Remove the 'Seats are hidden' ... when you are searching a market. Change the text on remaining credits 'You have 14' to '14 credits remaining'. Why does the Arrived pill show for the 2nd leg but the first leg it doesn't say Arrived either? ... these pills should make logical sense. If a flight is canceled there should be no way to request the loads for that flight. It would be a waste of a token."
+
+- Results list: no "Seats are hidden on Pay as you go..." line under the search header.
+- Pinned bar note: "Seats are hidden. Loads are 1 credit per leg. 14 credits remaining." Short: "1 credit remaining, enough for 1 leg. Uncheck the rest."
+- Pills follow the clock: an actual takeoff that has passed is Departed, an actual landing that has passed is Arrived, and a flight an hour past its expected landing is Arrived even if the feed never moved it on. Never from the schedule before then, so a late flight that hasn't left stays late. Canceled and diverted stay.
+- Pills follow each other: when a later leg has left, an earlier on-time or departed leg that should have landed reads Arrived (or at least Departed). A delayed, canceled or diverted earlier leg keeps its own pill.
+- Sample statuses move on with the clock too (they used to stay on time forever), which is what made leg 1 sit blank next to an Arrived leg 2.
+- No credit box and no part of the request total for a canceled leg, nor one that has departed, arrived or diverted (no seat left to get). A route with nothing left to board shows no request button.

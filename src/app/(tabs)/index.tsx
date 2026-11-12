@@ -11,7 +11,7 @@ import { otherEndExcludes, searchRequest, showGetHome } from '@/search/areas';
 import { dateChips } from '@/search/dates';
 import { boardingLeadMin, driveQuery } from '@/search/leaveBy';
 import { chooseOrigin, restSpot, showLocationCard, type RestSpot } from '@/search/origin';
-import { legLookup, resultsBanner, rowStatus, statusLookups } from '@/search/statusTags';
+import { legLookup, requestableLegs, resultsBanner, rowStatus, statusLookups } from '@/search/statusTags';
 import { SAMPLE_TZ, SCHEDULE_SOURCE, useRouteSearch } from '@/search/useRouteSearch';
 import { minTapTarget, spacing, textStyles, useColors } from '@/theme';
 import { openRequest, reopenOutcome, savedKey, savedRouteFrom, type SavedRoute } from '@/trips/savedRoutes';
@@ -40,11 +40,10 @@ import { CreditsChip } from '@/ui/Credits';
 import { PlanPicker } from '@/ui/PlanPicker';
 import { RequestLoadsBar } from '@/ui/RequestLoadsBar';
 import type { LegPicks } from '@/ui/ResultRow';
-import { creditsWord, demoLoad, hideSeats, REQUEST_COST, seatsLocked, TIER_LABEL } from '@/membership/membership';
+import { demoLoad, hideSeats, seatsLocked } from '@/membership/membership';
 import { useMembership } from '@/membership/MembershipProvider';
 import { useIntroDone } from '@/launch/introState';
 import { flightKey } from '@/requests/requests';
-import { formatTime } from '@/search/format';
 import { growFit, halfSnap, Sheet, SHEET_HANDLE_H, SHEET_LOCKED_TOP, sheetMode, type FitHeight } from '@/ui/Sheet';
 import { useRadarLayers } from '@/ui/useRadarLayers';
 import { useSheetContent } from '@/ui/useSheetContent';
@@ -148,7 +147,9 @@ export default function HomeScreen() {
       picked.length === full.legs.length
         ? [full.origin, ...full.legs.map((l) => l.flight.to)].join(' to ')
         : picked.map((l) => `${l.flight.from} to ${l.flight.to}`).join(', ');
-    const lockedBefore = membership.lockedLegs(full);
+    const lockedBefore = requestable(it);
+    const allowed = new Set(lockedBefore);
+    if (legs.some((i) => !allowed.has(i))) return;
     if (membership.requestLegs(full, legs, `Requested ${title}`) !== 'requested') return;
     const at = Date.now();
     for (const l of picked) requests.addAnswered(l.flight, { ...demoLoad(l.seats, flightKey(l.flight)), at });
@@ -160,8 +161,11 @@ export default function HomeScreen() {
   // pinned bar requests the checked ones. Unchecked legs are kept by flight, so paging back keeps them.
   const [unchecked, setUnchecked] = useState<Record<string, true>>({});
   const [requestBarH, setRequestBarH] = useState(0);
+  // Only legs you could still board can be requested (round 192, John: "If a flight is canceled there should be
+  // no way to request the loads for that flight. It would be a waste"). Same for one that has left or diverted.
+  const requestable = (it: Itinerary) => requestableLegs(membership.lockedLegs(it), rowStatuses?.[it.id]);
   const legPicks = (it: Itinerary): LegPicks | undefined => {
-    const locked = membership.lockedLegs(it);
+    const locked = requestable(it);
     if (!locked.length) return undefined;
     return {
       locked: it.legs.map((_, i) => locked.includes(i)),
@@ -291,8 +295,8 @@ export default function HomeScreen() {
   // Sample flights get sample statuses; real flights from the schedule DB get live ones.
   const flightStatuses = useFlightStatuses(lookups, LIVE_FLIGHTS ? LIVE_STATUS_OPTIONS : SAMPLE_STATUS_OPTIONS);
   const rowStatuses = useMemo(
-    () => Object.fromEntries(results.map((it) => [it.id, rowStatus(it, flightStatuses.byKey, filters)])),
-    [results, flightStatuses.byKey, filters],
+    () => Object.fromEntries(results.map((it) => [it.id, rowStatus(it, flightStatuses.byKey, filters, now)])),
+    [results, flightStatuses.byKey, filters, now],
   );
   const [impactFor, setImpactFor] = useState<string | null>(null);
   const [statusFlight, setStatusFlight] = useState<Flight | null>(null);
@@ -668,12 +672,8 @@ export default function HomeScreen() {
                     onRouteBarHeight={setRouteBar}
                     onFilters={openFilters}
                     filtersChanged={filtersChanged}
-                    note={
-                      missingNote ??
-                      (membership.tier && seatsLocked(membership.tier) && results.some((it) => membership.isLocked(it))
-                        ? `Seats are hidden on ${TIER_LABEL[membership.tier]}. Open a route to request loads, ${creditsWord(REQUEST_COST)} per leg.`
-                        : undefined)
-                    }
+                    // No "Seats are hidden" line on the results (round 192, John): the open route says it by its button.
+                    note={missingNote ?? undefined}
                     isSaved={(it) => saved.isSaved(savedKey(it, state.request.date))}
                     onToggleSave={(it) => {
                       const key = savedKey(it, state.request.date);

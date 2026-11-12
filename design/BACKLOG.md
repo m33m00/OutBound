@@ -231,3 +231,4 @@ Each item names its owner. One item per work session. spec-keeper runs a pre-fli
 | 224 | Load requests: 1 credit per leg, quick request on each leg, Request All Legs with its cost (round 189) | Done |
 | 225 | Request loads from the pass: checked credit box on each leg, request button pinned above the tab bar (round 190) | Done |
 | 226 | Departed and Arrived pills over the route line on the opened route; note centred over the request button (round 191) | Done |
+| 227 | Leg pills follow the clock and each other; no load requests for canceled, departed or arrived legs; "14 credits remaining"; no Seats are hidden line on results (round 192) | Done |

@@ -3,6 +3,8 @@
  * Deterministic from the flight id (flight number + date + origin), so a row never flickers between renders.
  * Mix by hash % 12: 6 on time, then landing early, delayed (10, 25, 50 or 80 min, so every time tint
  * shows up), departed, canceled, arrived, diverted (one each; John, 2026-11-02).
+ * Every flight moves on with the clock (round 192): on time, early and delayed ones read Departed once they've
+ * left and Arrived once they've landed, so legs of one route always read in order.
  * Departed, arrived and diverted only once the clock allows it: a flight that hasn't left yet
  * reads on time, and one in the air reads departed, never arrived (John, 2026-11-03: an evening
  * leg showed Arrived while the route was still ahead).
@@ -50,13 +52,39 @@ export function sampleFlightStatus(lookup: FlightLookup, nowMs: number): FlightS
   let state: FlightStatusEntry['state'] = 'scheduled';
   let d = mv(lookup.from || null, dep, null, null);
   let a = mv(null, arr, null, null);
-  if (bucket === 6) {
-    // Leaves on time, a tailwind lands it early.
-    a = mv(null, arr, arr - early, null);
+  if (bucket <= 6) {
+    // On time, or (bucket 6) a tailwind lands it early. Like every other flight it moves on with the clock
+    // (round 192, John: an earlier leg sat on no pill while the later leg read Arrived).
+    const lands = bucket === 6 ? arr - early : arr;
+    if (lands <= nowMs) {
+      state = 'arrived';
+      d = mv(lookup.from || null, dep, null, dep);
+      a = mv(null, arr, null, lands);
+    } else if (dep + 2 * MIN <= nowMs) {
+      state = 'departed';
+      d = mv(lookup.from || null, dep, null, dep);
+      a = mv(null, arr, bucket === 6 ? lands : null, null);
+    } else if (bucket === 6) {
+      a = mv(null, arr, lands, null);
+    }
   } else if (bucket === 7) {
-    state = 'delayed';
-    d = mv(lookup.from || null, dep, dep + late, null);
-    a = mv(null, arr, arr + late, null);
+    if (arr + late <= nowMs) {
+      state = 'arrived';
+      d = mv(lookup.from || null, dep, null, dep + late);
+      a = mv(null, arr, null, arr + late);
+    } else if (dep + late + 2 * MIN <= nowMs) {
+      state = 'departed';
+      d = mv(lookup.from || null, dep, null, dep + late);
+      a = mv(null, arr, arr + late, null);
+    } else {
+      state = 'delayed';
+      d = mv(lookup.from || null, dep, dep + late, null);
+      a = mv(null, arr, arr + late, null);
+    }
+  } else if (bucket === 8 && arr + 5 * MIN <= nowMs) {
+    state = 'arrived';
+    d = mv(lookup.from || null, dep, null, dep + 5 * MIN);
+    a = mv(null, arr, null, arr + 5 * MIN);
   } else if (bucket === 8 && dep <= nowMs) {
     state = 'departed';
     d = mv(lookup.from || null, dep, null, dep + 5 * MIN);

@@ -38,8 +38,8 @@ describe('request loads from the pass (round 190, John)', () => {
   });
 
   it('the note says the price, and what to do when credits run short', () => {
-    expect(requestNote(2, 2)).toBe('Seats are hidden. Loads are 1 credit per leg. You have 2.');
-    expect(requestNote(2, 1)).toBe('You have 1 credit, enough for 1 leg. Uncheck the rest.');
+    expect(requestNote(2, 2)).toBe('Seats are hidden. Loads are 1 credit per leg. 2 credits remaining.');
+    expect(requestNote(2, 1)).toBe('1 credit remaining, enough for 1 leg. Uncheck the rest.');
     expect(requestNote(1, 0)).toContain('out of credits');
   });
 
