@@ -3,6 +3,7 @@ import { AccessibilityInfo, Linking, Pressable, StyleSheet, Text, useWindowDimen
 
 import type { Airport } from '@/engine';
 import { forSpeech } from '@/search/format';
+import { useSettingsOptional } from '@/settings/SettingsProvider';
 import { MAPS_APP_NAME, type MapsApp } from '@/search/directions';
 import {
   computeLeaveBy,
@@ -18,6 +19,7 @@ import { Button } from './Buttons';
 import { Icon } from './Icon';
 import { openDirections } from './openDirections';
 import { pressStyle } from './press';
+import { playSound } from './sounds';
 import type { LocationStatus } from './useCurrentLocation';
 import { Divided } from './MetaLine';
 
@@ -95,6 +97,14 @@ export function LeaveByCard(p: LeaveByCardProps) {
     if (delayLine && delayLine !== lastDelay.current) AccessibilityInfo.announceForAccessibility?.(delayLine);
     lastDelay.current = delayLine;
   }, [delayLine]);
+  // Round 197: the falling three-note chime when "Leave by" turns to "Leave now" while the card is on screen.
+  // Only on that change, never when a card opens already saying Leave now.
+  const sounds = useSettingsOptional()?.settings.sounds ?? false;
+  const lastKind = useRef(result.kind);
+  useEffect(() => {
+    if (sounds && result.kind === 'leaveNow' && lastKind.current === 'leaveBy') void playSound('leave');
+    lastKind.current = result.kind;
+  }, [result.kind, sounds]);
   // Which line wrapped; a new line gets a fresh try at one row.
   const lineKey = `${text.title}|${short}|${fontScale}`;
   const [wrapped, setWrapped] = useState<string | null>(null);

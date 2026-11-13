@@ -329,3 +329,53 @@ describe('LeaveByCard location button', () => {
     expect(t2.props.accessibilityHint).toBe('Opens walking directions to your terminal in Apple Maps');
   });
 });
+
+describe('the leave chime (round 197, John: subtle sounds on key actions only)', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const sounds = require('../sounds') as typeof import('../sounds');
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { SettingsProvider } = require('@/settings/SettingsProvider') as typeof import('@/settings/SettingsProvider');
+  let r: ReactTestRenderer | undefined;
+  afterEach(() => {
+    act(() => r?.unmount());
+    jest.restoreAllMocks();
+  });
+  const card = (now: number) => (
+    <SettingsProvider>
+      <LeaveByCard
+        airport={AIRPORTS.DFW}
+        departUtc={NOW + 4 * 3600_000}
+        bufferMin={60}
+        now={now}
+        location={{ lat: 32.85, lon: -96.85, at: NOW }}
+        locationStatus="idle"
+        onUseLocation={jest.fn()}
+        liveDriveMin={32}
+      />
+    </SettingsProvider>
+  );
+
+  it('chimes once when Leave by turns to Leave now on screen', () => {
+    mockFontScale = 1;
+    const play = jest.spyOn(sounds, 'playSound').mockResolvedValue();
+    act(() => {
+      r = create(card(NOW));
+    });
+    expect(lineText(r!)).toMatch(/^Leave by/);
+    expect(play).not.toHaveBeenCalled();
+    act(() => r!.update(card(NOW + 3 * 3600_000)));
+    expect(lineText(r!)).toMatch(/^Leave now/);
+    expect(play).toHaveBeenCalledWith('leave');
+    act(() => r!.update(card(NOW + 3 * 3600_000 + 60_000)));
+    expect(play).toHaveBeenCalledTimes(1);
+  });
+
+  it('stays quiet when the card opens already saying Leave now', () => {
+    const play = jest.spyOn(sounds, 'playSound').mockResolvedValue();
+    act(() => {
+      r = create(card(NOW + 3 * 3600_000));
+    });
+    expect(lineText(r!)).toMatch(/^Leave now/);
+    expect(play).not.toHaveBeenCalled();
+  });
+});

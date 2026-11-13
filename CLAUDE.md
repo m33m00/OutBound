@@ -39,6 +39,7 @@ Full history in `design/DECISIONS.md`; these are the ones that come up most.
 - Buttons must look like buttons, not tappable words. One filled main button style, one light tint for secondary.
 - Consistent formats and font sizes everywhere. Cards can be taller and text bigger if it helps.
 - Subtle animations are fine; keep sway toned down.
+- Sounds are subtle and only on key moments (round 197): a soft two-note chime when your load request is answered, one light tap when a request goes out, and a three-note falling chime when Leave by turns to Leave now on screen. Nothing jokey, nothing on ordinary taps. All behind Settings > Display > Sound effects. New sounds are original (design/chimes-synth.py), mixed quiet.
 - **No middle dots (·) anywhere.** No "~" on estimates. Don't use the word "open".
 - No "follow the rules for sharing loads" footer.
 

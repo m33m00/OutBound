@@ -19,7 +19,7 @@ import { ListGroup, ListRow, SectionFooter } from '@/ui/ListGroup';
 import { useSharedLocation } from '@/ui/LocationProvider';
 import { pressStyle } from '@/ui/press';
 import { DESIGN_ROUND } from '@/buildInfo';
-import { playAnswerSound, soundCheckText, useSoundState } from '@/ui/sounds';
+import { playSound, soundCheckText, useSoundState } from '@/ui/sounds';
 import { AppearanceChoice, ListControlRow, ListSwitchRow, Segments } from '@/ui/SettingsControls';
 import { TabScreen } from '@/ui/TabScreen';
 import { CreditsSheet } from '@/ui/Credits';
@@ -197,12 +197,12 @@ export default function SettingsTab() {
           testID="settings-sounds"
           icon="speaker.wave.2.fill"
           label="Sound effects"
-          detail="A fart, then a moan, when your request is answered"
+          detail="Soft chimes when a request goes out, when it's answered, and when it's time to leave"
           value={settings.sounds}
           onChange={(sounds) => {
             update({ sounds });
             // Turning it on plays it once, so you know what you'll hear (round 182).
-            if (sounds) playAnswerSound();
+            if (sounds) void playSound('answered');
           }}
         />
       </ListGroup>

@@ -4,7 +4,7 @@ import type { Flight } from '@/engine';
 import { useMembershipOptional } from '@/membership/MembershipProvider';
 import { SCHEDULE_SOURCE } from '@/search/useRouteSearch';
 import { useSettingsOptional } from '@/settings/SettingsProvider';
-import { playAnswerSound, preloadSounds } from '@/ui/sounds';
+import { playSound, preloadSounds } from '@/ui/sounds';
 
 import {
   addAnsweredAsk,
@@ -64,7 +64,7 @@ export function RequestsProvider({ children }: { children: ReactNode }) {
 
   const ask = useCallback((flight: Flight) => setMine((list) => addAsk(list, flight, Date.now())), []);
   const cancel = useCallback((flight: Flight) => setMine((list) => cancelAsk(list, flight)), []);
-  // Round 181, John: a yaoom when a request is answered. Asks already answered when the app opens stay
+  // Round 181, John: a sound when a request is answered (a soft two-note chime since round 197). Asks already answered when the app opens stay
   // quiet; one sound for each batch that comes in (a requested route's legs land together).
   const sounds = useSettingsOptional()?.settings.sounds ?? false;
   const seen = useRef<Set<string> | null>(null);
@@ -79,7 +79,7 @@ export function RequestsProvider({ children }: { children: ReactNode }) {
     const fresh = newlyAnswered(seen.current, mine);
     if (!fresh.length) return;
     fresh.forEach((id) => seen.current!.add(id));
-    if (sounds) playAnswerSound();
+    if (sounds) void playSound('answered');
   }, [mine]); // eslint-disable-line react-hooks/exhaustive-deps
   const membership = useMembershipOptional();
   const earn = membership?.earnForAnswer;

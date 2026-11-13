@@ -19,6 +19,7 @@ import { useSavedRoutes } from '@/trips/SavedRoutesProvider';
 import { AirportPicker } from '@/ui/AirportPicker';
 import { Appear } from '@/ui/Appear';
 import { useSettings } from '@/settings/SettingsProvider';
+import { playSound } from '@/ui/sounds';
 import { changedFilters, DEFAULT_FILTERS, homeAirports, type SearchFilters } from '@/settings/settings';
 import { FiltersModal } from '@/ui/FiltersModal';
 import { airportYouAreAt, sampleDepartures } from '@/requests/atAirport';
@@ -151,6 +152,8 @@ export default function HomeScreen() {
     const allowed = new Set(lockedBefore);
     if (legs.some((i) => !allowed.has(i))) return;
     if (membership.requestLegs(full, legs, `Requested ${title}`) !== 'requested') return;
+    // Round 197: one light tap as the request goes out; the answered chime follows it.
+    if (settings.sounds) void playSound('sent');
     const at = Date.now();
     // A connecting route's legs keep its name, so My Trips shows them together (round 194, John).
     const route =

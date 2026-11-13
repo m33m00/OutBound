@@ -236,3 +236,4 @@ Each item names its owner. One item per work session. spec-keeper runs a pre-fli
 | 229 | Fart sound for answered requests; requested routes grouped in My Trips; no Departing line, route count beside Leaving from (round 194) | Done |
 | 230 | Real fart then a separate moan; delete your requests (swipe, Select, Undo); route count and full count as pills (round 195) | Done |
 | 231 | Report banner without "Pick yours from the board"; Departed and Arrived pill beside the ticket times (round 196) | Done |
+| 232 | Fart and moan removed; three soft chimes: request answered, request sent, Leave now (round 197) | Done |

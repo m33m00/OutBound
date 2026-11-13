@@ -852,3 +852,14 @@ John: "Remove 'Pick yours from the board'. Move the Departed and Arrived pill to
 - The "At DAL? Report a load" banner now reads just "7 departures in the next 5 hours."
 - Results tickets: the Departed or Arrived pill sits on the big time line, right of the times (the new times when they moved, under the struck schedule). It no longer sits alone at the bottom of the ticket. The bookmark stays top right.
 - The opened route keeps each leg's own pill over that leg's route line (round 191), since a connection's legs can be in different states. CLAUDE.md updated.
+
+## Round 197 (Nov 13): subtle chimes on three key moments, no more fart or moan
+
+John: "Can you remove the current sound effects loaded on the app? Lets redo some sound effects that would make sense on this app and keep it subtle to very key specific actions."
+
+- Removed: the fart, the moan, their synth scripts, recordings and data files.
+- New set (design/chimes-synth.py, original soft bell tones, mixed quiet at -14 to -17 dBFS peak):
+  - answered: two notes rising (E5 then B5), about 1.1 s. When a load request you made gets its answer. Comes with a success tap.
+  - sent: one light high tap (A5), 0.35 s. When you press Request on the pinned bar and credits are spent. The answered chime waits for it to finish (the demo answers at once).
+  - leave: three notes falling (G5, E5, C5), like a gentle terminal chime, 1.5 s. When the Leave By card turns from "Leave by" to "Leave now" while it's on screen. Never when a card opens already saying Leave now.
+- Nothing else makes a sound. The same chime twice within 2 s plays once. Settings > Display > Sound effects still turns all of them off and plays the answered chime once when switched on. Detail: "Soft chimes when a request goes out, when it's answered, and when it's time to leave". CLAUDE.md has the rule.
