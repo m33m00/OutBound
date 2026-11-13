@@ -240,3 +240,4 @@ Each item names its owner. One item per work session. spec-keeper runs a pre-fli
 | 233 | Animations that mean something; one corner radius (14) everywhere; font pick waiting on OK to add a package (round 198) | Done |
 | 234 | Manrope for all text (times stay Geist Mono); canceled leg on the map: red line, X at its middle, red Canceled pill (round 199) | Done |
 | 235 | Sora for all text and titles, replacing Manrope (times stay Geist Mono) (round 200) | Done |
+| 236 | Routes never connect through the origin's or destination's area (DAL and DFW count as Dallas), even with the area pill off; sample MIA to DAL return added | Done |
