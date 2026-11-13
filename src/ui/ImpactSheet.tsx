@@ -144,12 +144,19 @@ const LEVEL_ORDER = { likelyDelays: 0, caution: 1, none: 2 } as const;
 const styles = StyleSheet.create({
   screen: { flex: 1, paddingHorizontal: spacing.page },
   body: { gap: spacing.section, paddingBottom: spacing.page },
-  station: { borderRadius: radius.md, borderWidth: StyleSheet.hairlineWidth, padding: spacing.rowX, gap: 4 },
+  station: { borderRadius: radius.all, borderWidth: StyleSheet.hairlineWidth, padding: spacing.rowX, gap: 4 },
   // Wraps at big text sizes; the badge stays right-aligned on whichever line it lands.
   stationTop: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: spacing.group },
   trailing: { marginLeft: 'auto', flexShrink: 1 },
   ageLine: { flexDirection: 'row', alignItems: 'flex-start', gap: 6 },
   ageIcon: { marginTop: 3 },
   ageText: { flexShrink: 1 },
-  pill: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 2, borderRadius: radius.sm },
+  pill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: radius.all,
+  },
 });

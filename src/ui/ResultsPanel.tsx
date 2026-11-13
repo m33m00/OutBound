@@ -34,7 +34,7 @@ import { withTick } from './haptics';
 import { useReducedMotion } from './useReducedMotion';
 import { pressStyle } from './press';
 import { Icon } from './Icon';
-import { ResultRow } from './ResultRow';
+import { ResultRow, type LegPicks } from './ResultRow';
 import { SavedToast } from './SavedToast';
 import { SaveRouteButton } from './SaveRouteButton';
 import { StaggerIn } from './StaggerIn';
@@ -78,6 +78,10 @@ export interface ResultsPanelProps {
   onRouteBarHeight?: (height: number) => void;
   /** A hard pull down on the route or list while it's at its top: the panel steps down a size (round 58). */
   onPullDown?: () => void;
+  /** The open route's credit checkboxes, one per leg whose seats are hidden (round 190, John). */
+  legPicks?: (it: Itinerary) => LegPicks | undefined;
+  /** Room kept under the open route for a bar pinned over the panel's bottom (round 190: Request Loads). */
+  bottomInset?: number;
 }
 
 export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(function ResultsPanel(p, ref) {
@@ -236,40 +240,70 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
       />
       {stepsDays && p.days && p.onDay ? (
         // Full width: arrows at the panel edges, the day and route count centered (John, 2026-10-30).
-        <DayStepper
-          days={p.days}
-          date={request.date}
-          label={shortDate(request.date)}
-          onDay={p.onDay}
-          detail={summary || undefined}
-        />
+        <DayStepper days={p.days} date={request.date} onDay={p.onDay} detail={summary || undefined} />
       ) : null}
     </View>
   );
 
-  // Scrolls with the list: notes that matter once.
+  // Scrolls with the list: notes that matter once. With the day row, the route count sits on the first line
+  // over the tickets, off to the right of "Leaving from ..." (round 194, John: "Move the number of routes and how
+  // many are full next to the text where it says Leaving from").
+  const areas = areaLines(request);
+  const countBeside = stepsDays && !!summary;
   const notes = [
     ...(!stepsDays && summary ? [{ key: 'summary', text: summary, testID: 'results-summary', strong: true }] : []),
-    ...areaLines(request).map((text) => ({ key: text, text, testID: undefined, strong: false })),
+    ...(countBeside ? areas.slice(1) : areas).map((text) => ({ key: text, text, testID: undefined, strong: false })),
     ...(p.note ? [{ key: 'note', text: p.note, testID: 'results-note', strong: false }] : []),
     ...(p.showingHidden
       ? [{ key: 'hidden', text: 'Showing routes your filters hid, for this search only.', testID: undefined, strong: false }]
       : []),
   ];
-  const header = notes.length ? (
-    <View style={styles.header}>
-      {notes.map((n) => (
-        <Text
-          key={n.key}
-          testID={n.testID}
-          style={[n.strong ? textStyles.body : textStyles.small, styles.headerNote, { color: c.muted }]}>
-          {n.text}
+  const countPills = !paging && p.state.status === 'done' && results.length > 0;
+  const countRow = countBeside ? (
+    <View style={styles.countRow} testID="results-count-row">
+      <Text style={[textStyles.small, styles.countLead, { color: c.muted }]} testID="results-leaving">
+        {areas[0] ?? ''}
+      </Text>
+      {/* Pills, not words, so the count reads at a glance (round 195, John: "can we change that from just text to
+          like a pill? Right now it kind of blends in"). Gray for routes, red only when some are full. */}
+      {countPills ? (
+        <View style={styles.countPills} accessible accessibilityLabel={summary} testID="results-count-pills">
+          <View style={[styles.countPill, { backgroundColor: c.unknownBg }]}>
+            <Text style={[styles.countPillText, { color: c.unknownFg }]} maxFontSizeMultiplier={1.4} testID="results-count">
+              {`${results.length} ${results.length === 1 ? 'route' : 'routes'}`}
+            </Text>
+          </View>
+          {full ? (
+            <View style={[styles.countPill, { backgroundColor: c.fullBg }]} testID="results-full-pill">
+              <Text style={[styles.countPillText, { color: c.fullFg }]} maxFontSizeMultiplier={1.4} testID="results-full">
+                {`${full} full`}
+              </Text>
+            </View>
+          ) : null}
+        </View>
+      ) : (
+        <Text style={[textStyles.small, { color: c.muted }]} numberOfLines={1} testID="results-count">
+          {summary}
         </Text>
-      ))}
+      )}
     </View>
-  ) : (
-    <View style={styles.headerGap} />
-  );
+  ) : null;
+  const header =
+    notes.length || countRow ? (
+      <View style={styles.header}>
+        {countRow}
+        {notes.map((n) => (
+          <Text
+            key={n.key}
+            testID={n.testID}
+            style={[n.strong ? textStyles.body : textStyles.small, styles.headerNote, { color: c.muted }]}>
+            {n.text}
+          </Text>
+        ))}
+      </View>
+    ) : (
+      <View style={styles.headerGap} />
+    );
 
   // A picked route gets its own view (John, 2026-10-30); found here, above the loading and
   // error returns, so the hooks below run on every render.
@@ -496,7 +530,9 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
                       onImpactPress={p.onImpactPress}
                       onLegPress={p.onLegPress}
                       status={p.statuses?.[focused.id]}
+                      legPicks={p.legPicks?.(focused)}
                     />
+                    {p.bottomInset ? <View style={{ height: p.bottomInset }} testID="route-bottom-inset" /> : null}
                   </ScrollView>
                 </Animated.View>
               </GestureDetector>
@@ -828,6 +864,12 @@ const styles = StyleSheet.create({
   // Centered over the tickets, not hugging the left (round 160, John).
   headerNote: { textAlign: 'center' },
   headerGap: { height: spacing.group },
+  // "Leaving from ..." on the left, the route count on the right of the same line (round 194, John).
+  countRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
+  countPills: { flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 0 },
+  countPill: { paddingHorizontal: 9, paddingVertical: 3, borderRadius: 999 },
+  countPillText: { fontFamily: fonts.bodySemiBold, fontSize: 13, lineHeight: 17 },
+  countLead: { flexShrink: 1 },
   bar: { gap: 4, paddingBottom: spacing.group, borderBottomWidth: StyleSheet.hairlineWidth },
   title: { textAlign: 'center' },
   // The route view's bar (round 134): back on the left, the market and its dots centered.
@@ -839,7 +881,7 @@ const styles = StyleSheet.create({
   dot: { width: 6, height: 6, borderRadius: 3 },
   dotOn: { width: 16 },
   routeEnds: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  endPill: { borderRadius: 8, paddingHorizontal: 9, paddingVertical: 3, borderWidth: StyleSheet.hairlineWidth },
+  endPill: { borderRadius: radius.pill, paddingHorizontal: 9, paddingVertical: 3, borderWidth: StyleSheet.hairlineWidth },
   endCode: { fontFamily: fonts.mono, fontSize: 16, lineHeight: 21, letterSpacing: 0.5 },
   routeEndsTrack: { flexDirection: 'row', alignItems: 'center', gap: 4, width: 64 },
   routeEndsLine: { flex: 1, height: 1 },
@@ -850,7 +892,7 @@ const styles = StyleSheet.create({
   loading: { flexDirection: 'row', alignItems: 'center', gap: spacing.group },
   loadingBlock: { paddingVertical: spacing.section, gap: spacing.group },
   placeholder: {
-    borderRadius: radius.md,
+    borderRadius: radius.all,
     borderWidth: 1,
     paddingVertical: spacing.rowY,
     paddingHorizontal: spacing.rowX,

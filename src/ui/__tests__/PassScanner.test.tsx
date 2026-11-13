@@ -25,7 +25,9 @@ describe('PassScanner', () => {
   });
 
   const texts = () =>
-    r!.root.findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string').map((n) => n.props.children as string);
+    r!.root
+      .findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string')
+      .map((n) => n.props.children as string);
 
   it('reads a pass once, and says when a code isn’t one', async () => {
     const onScanned = jest.fn();

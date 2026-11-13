@@ -147,7 +147,7 @@ const styles = StyleSheet.create({
   wrap: { gap: spacing.group },
   title: { paddingHorizontal: spacing.rowX, letterSpacing: 0.6 },
   footer: { paddingHorizontal: spacing.rowX },
-  clip: { borderRadius: radius.md - 1, overflow: 'hidden' },
+  clip: { borderRadius: radius.all - 1, overflow: 'hidden' },
   sep: { height: StyleSheet.hairlineWidth, marginLeft: spacing.rowX },
   // rowX + the 30pt tile + its 2pt margin + the row gap.
   sepIcon: { marginLeft: spacing.rowX + 32 + spacing.group },
@@ -160,6 +160,6 @@ const styles = StyleSheet.create({
     gap: spacing.group,
   },
   left: { flex: 1, gap: 2 },
-  iconTile: { width: 30, height: 30, borderRadius: 8, alignItems: 'center', justifyContent: 'center', marginRight: 2 },
+  iconTile: { width: 30, height: 30, borderRadius: radius.all, alignItems: 'center', justifyContent: 'center', marginRight: 2 },
   value: { flexShrink: 1, maxWidth: '45%', textAlign: 'right' },
 });

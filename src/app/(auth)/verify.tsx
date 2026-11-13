@@ -71,7 +71,10 @@ export default function VerifyScreen() {
             return (
               <View
                 key={i}
-                style={[styles.digit, { backgroundColor: c.surface, borderColor: active ? c.accent : c.line2, borderWidth: active ? 2 : 1 }]}>
+                style={[
+                  styles.digit,
+                  { backgroundColor: c.surface, borderColor: active ? c.accent : c.line2, borderWidth: active ? 2 : 1 },
+                ]}>
                 <Text style={[styles.digitText, { color: c.text }]}>{d}</Text>
               </View>
             );
@@ -114,7 +117,7 @@ export default function VerifyScreen() {
 
 const styles = StyleSheet.create({
   boxes: { flexDirection: 'row', justifyContent: 'space-between', gap: 8 },
-  digit: { flex: 1, maxWidth: 52, aspectRatio: 0.82, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center' },
+  digit: { flex: 1, maxWidth: 52, aspectRatio: 0.82, borderRadius: radius.all, alignItems: 'center', justifyContent: 'center' },
   digitText: { fontFamily: fonts.mono, fontSize: 26 },
   hidden: { position: 'absolute', opacity: 0, width: 1, height: 1 },
   resend: { alignItems: 'center', minHeight: 44, justifyContent: 'center', marginTop: spacing.group },

@@ -1,9 +1,12 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { useEffect, useRef } from 'react';
+import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
 
 import { fonts, useColors } from '@/theme';
 
 import { FlightPeek, PEEK_LOGO } from './FlightPeek';
 import { Icon } from './Icon';
+import { Pop } from './Pop';
+import { useReducedMotion } from './useReducedMotion';
 
 /** Room above the line for each leg's seat numbers, and below it for a stop's code. */
 const LABEL_H = 16;
@@ -115,6 +118,15 @@ export function MiniRoute({
   // A canceled leg's X hangs below the line, so its logos drop a little to keep clear of it (round 161,
   // John: the logo "almost touches the canceled X").
   const anyCanceled = !!segs?.some((l) => l.canceled);
+  // Which legs were canceled last time we drew, so a leg that turns canceled while you watch gets its X
+  // drawn in (round 198), and one that was canceled when the card opened doesn't.
+  const seen = useRef(false);
+  const wasCanceled = useRef<boolean[]>([]);
+  const nowCanceled = (segs ?? []).map((l) => !!l.canceled);
+  useEffect(() => {
+    seen.current = true;
+    wasCanceled.current = nowCanceled;
+  });
   const flightY = LABEL_H + DOT + 3 + (anyCanceled ? CANCELED_DROP : 0);
   const legFlagY = withFlights ? flightY + FLIGHT_H - 4 : LABEL_H + DOT + LABEL_H + 2;
   const base = LABEL_H + DOT + LABEL_H;
@@ -160,10 +172,7 @@ export function MiniRoute({
                   key={`x${i}`}
                   style={[styles.xSlot, below(LABEL_H + DOT / 2 - X_SIZE / 2), { left: pct(i + 0.5) }]}
                   testID="mini-route-canceled">
-                  <View style={[styles.xDisc, { backgroundColor: c.surface, borderColor: leg.color }]}>
-                    <View style={[styles.xBar, { backgroundColor: leg.color, transform: [{ rotate: '45deg' }] }]} />
-                    <View style={[styles.xBar, { backgroundColor: leg.color, transform: [{ rotate: '-45deg' }] }]} />
-                  </View>
+                  <CanceledX color={leg.color} disc={c.surface} fresh={seen.current && !wasCanceled.current[i]} />
                 </View>
               ) : null,
             )}
@@ -224,8 +233,10 @@ export function MiniRoute({
             {segs.map((leg, i) =>
               // A leg with nothing to say (canceled, no data) shows no label at all (round 142).
               !leg.label ? null : leg.counts?.length ? (
-                <View
+                // New seat numbers for a leg settle in, so a fresh load reads as just changed (round 198).
+                <Pop
                   key={`lab${i}`}
+                  on={leg.label}
                   style={[styles.countsSlot, below(-ICON_H), { left: pct(i), width: pct(1) }]}
                   testID="mini-route-leg-slot">
                   {leg.counts.map((k, j) => (
@@ -247,7 +258,7 @@ export function MiniRoute({
                       </View>
                     </View>
                   ))}
-                </View>
+                </Pop>
               ) : (
                 <View
                   key={`lab${i}`}
@@ -370,3 +381,36 @@ const styles = StyleSheet.create({
   stopCode: { fontFamily: fonts.monoMedium, fontSize: 12, lineHeight: LABEL_H, letterSpacing: 0.3 },
   dot: { width: DOT, height: DOT, borderRadius: DOT / 2, borderWidth: 2 },
 });
+
+/**
+ * The canceled X (round 143). When a leg turns canceled while it's on screen, the X draws in: the disc settles
+ * in, then the two strokes grow from the middle (round 198). Reduce Motion: it just fades in.
+ */
+function CanceledX({ color, disc, fresh }: { color: string; disc: string; fresh: boolean }) {
+  const reduce = useReducedMotion();
+  const v = useRef(new Animated.Value(fresh ? 0 : 1)).current;
+  useEffect(() => {
+    if (!fresh) return;
+    Animated.timing(v, {
+      toValue: 1,
+      duration: reduce ? 150 : 320,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const grow = reduce ? 1 : v.interpolate({ inputRange: [0, 0.4, 1], outputRange: [0, 0, 1] });
+  const bar = (deg: string) => (
+    <Animated.View style={[styles.xBar, { backgroundColor: color, transform: [{ rotate: deg }, { scaleX: grow }] }]} />
+  );
+  return (
+    <Animated.View
+      style={[
+        styles.xDisc,
+        { backgroundColor: disc, borderColor: color, opacity: v },
+        reduce ? null : { transform: [{ scale: v.interpolate({ inputRange: [0, 1], outputRange: [0.6, 1] }) }] },
+      ]}>
+      {bar('45deg')}
+      {bar('-45deg')}
+    </Animated.View>
+  );
+}

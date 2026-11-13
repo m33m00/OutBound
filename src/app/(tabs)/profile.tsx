@@ -19,7 +19,7 @@ import { ListGroup, ListRow, SectionFooter } from '@/ui/ListGroup';
 import { useSharedLocation } from '@/ui/LocationProvider';
 import { pressStyle } from '@/ui/press';
 import { DESIGN_ROUND } from '@/buildInfo';
-import { playYaoom, soundCheckText, useSoundState } from '@/ui/sounds';
+import { playSound, soundCheckText, useSoundState } from '@/ui/sounds';
 import { AppearanceChoice, ListControlRow, ListSwitchRow, Segments } from '@/ui/SettingsControls';
 import { TabScreen } from '@/ui/TabScreen';
 import { CreditsSheet } from '@/ui/Credits';
@@ -122,7 +122,7 @@ export default function SettingsTab() {
             {membership.tier === 'premium'
               ? 'Every load shows, with no credits to track.'
               : membership.tier
-                ? 'Seats stay hidden until you request a route’s loads. Answering loads earns credits.'
+                ? 'Seats stay hidden until you request loads, 1 credit per leg. Answering loads earns credits.'
                 : 'Pick a plan to choose how you see loads.'}{' '}
             A demo for now, so nothing is charged.
           </SectionFooter>
@@ -197,12 +197,12 @@ export default function SettingsTab() {
           testID="settings-sounds"
           icon="speaker.wave.2.fill"
           label="Sound effects"
-          detail="A yoooom when your request is answered"
+          detail="Soft chimes when a request goes out, when it's answered, and when it's time to leave"
           value={settings.sounds}
           onChange={(sounds) => {
             update({ sounds });
             // Turning it on plays it once, so you know what you'll hear (round 182).
-            if (sounds) playYaoom();
+            if (sounds) void playSound('answered');
           }}
         />
       </ListGroup>

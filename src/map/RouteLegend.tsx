@@ -23,7 +23,7 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { fonts, textStyles, useColors } from '@/theme';
+import { fonts, textStyles, useColors, radius } from '@/theme';
 import { Icon } from '@/ui/Icon';
 import { COUNT_ICON } from '@/ui/MiniRoute';
 
@@ -296,7 +296,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     paddingVertical: 6,
     paddingHorizontal: 10,
-    borderRadius: 10,
+    borderRadius: radius.all,
     borderWidth: StyleSheet.hairlineWidth,
     gap: 3,
   },

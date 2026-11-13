@@ -780,3 +780,124 @@ John (Nov 10): "I want to be able to make changes both him and I. Do what is bes
 - `CLAUDE.md` is now the guide every Claude reads first: how the two of them work together (start from the latest main, own branch, small PR for every change, John merges, nothing left unmerged at the end of a session, check open PRs before touching a screen) and John's design rules in one place. `AGENTS.md` points to it.
 - Expo Go now publishes every branch that's pushed, not just main and the design branch, so each person can try their own work on a phone.
 - Design rounds now go out as small PRs that merge often, so main stays current for whoever works next.
+
+## Round 189: load requests cost 1 credit per leg
+
+John (Nov 12): "it should be 1 credit per leg. Not route. It should be easy to select which legs in a route you want to request loads for. Maybe have a 'quick request' button on each leg so that I have the option to either request the full route or select single/multiple legs at a time. The number of credits per route/leg should be clearly visible."
+
+- A request costs 1 credit per leg. Requesting legs that were already requested costs nothing.
+- The Seats are hidden card says "loads are 1 credit per leg". On a route with more than one leg it lists each leg (codes and departure time) with its own quick request pill, "1 credit". A requested leg shows a gray check and "Requested" instead.
+- The filled main button requests every leg still hidden and names the cost: "Request All Legs, 2 credits" (a nonstop: "Request Loads, 1 credit"). It shows only when you have enough credits for all of them; otherwise the note says how many legs you can afford ("You have 1, enough for 1 leg.") and you pick legs one at a time. Once one leg is left, its quick request is the only button.
+- A requested leg shows its seats right away, even while the route's other legs stay hidden. A request that finishes the route opens My Trips as before; one that leaves legs hidden stays on the route.
+- The credits sheet, Settings line and results note say per leg.
+
+## Round 190 (Nov 12): request loads from the pass itself
+
+John: "Having it split like this is redundant. Rework this. I want to see the whole boarding pass layout with a large 'request all legs for X credits' button that is static at the bottom (above the menu bar). Then each leg has a credit box on it that is already checked off. Deselecting the legs/check boxes adjusts the total request amount and button at the bottom."
+
+- The separate request card under the pass is gone. The open route shows the whole pass.
+- Each leg with hidden seats has a "1 credit" checkbox in its box's top right corner, checked by default. Requested legs show their seats and no box.
+- One large filled button pinned at the bottom of the screen, above the tab bar: "Request All Legs for 2 credits" when every hidden leg is checked, "Request 1 Leg for 1 credit" when some are unchecked, "Check a Leg to Request" (disabled) when none are.
+- A small line over the button says the price per leg and your credits, or how many legs your credits cover when you're short. Out of credits: the button becomes Answer Loads.
+- The route scroll leaves room at the bottom so the pinned button never covers the pass.
+
+## Round 191 (Nov 12): Departed and Arrived back on the route line
+
+John: "Departed and Arrived buttons should actually sit ontop of the route line ... instead of the bottom right below the time. I don't like that it creates this stacked look with the credit toggle to select. Align the subtext above the request all legs button as well."
+
+- On the opened route, Departed and Arrived sit over each leg's route line like every other status pill (replaces round 175's corners). The bottom row is just the airline logo with the credit checkbox on the right.
+- The "Seats are hidden..." line over the pinned request button is centred to line up with the button.
+
+## Round 192 (Nov 12): pills in order, no requests for canceled legs, credit wording
+
+John: "Remove the 'Seats are hidden' ... when you are searching a market. Change the text on remaining credits 'You have 14' to '14 credits remaining'. Why does the Arrived pill show for the 2nd leg but the first leg it doesn't say Arrived either? ... these pills should make logical sense. If a flight is canceled there should be no way to request the loads for that flight. It would be a waste of a token."
+
+- Results list: no "Seats are hidden on Pay as you go..." line under the search header.
+- Pinned bar note: "Seats are hidden. Loads are 1 credit per leg. 14 credits remaining." Short: "1 credit remaining, enough for 1 leg. Uncheck the rest."
+- Pills follow the clock: an actual takeoff that has passed is Departed, an actual landing that has passed is Arrived, and a flight an hour past its expected landing is Arrived even if the feed never moved it on. Never from the schedule before then, so a late flight that hasn't left stays late. Canceled and diverted stay.
+- Pills follow each other: when a later leg has left, an earlier on-time or departed leg that should have landed reads Arrived (or at least Departed). A delayed, canceled or diverted earlier leg keeps its own pill.
+- Sample statuses move on with the clock too (they used to stay on time forever), which is what made leg 1 sit blank next to an Arrived leg 2.
+- No credit box and no part of the request total for a canceled leg, nor one that has departed, arrived or diverted (no seat left to get). A route with nothing left to board shows no request button.
+
+## Round 193 (Nov 12): every Leave By shows the boarding line
+
+John: "Why do some have the Leave By time but no description about the arrival time to boarding and some do?"
+
+- Cause: since round 169 moved the drive time onto the car button, a "Leave by 3:10 PM" card had nothing beside its time, while "Leave now" kept "Arrive at DFW by ... to begin boarding". Which one you saw depended on whether it was already time to go.
+- Now "Leave by" shows the same "Arrive at DFW by 4:05 PM to begin boarding" line beside (or under) its time. With no location the card's title is that line already, and at the airport it says when boarding starts.
+
+## Round 194 (Nov 12): fart sound, routes grouped in My Trips, tidier results header
+
+John: "Remove the yaoom sound effect and do a fart sound effect." / "When I request a route and I go to my trips. Can you group that route and not treat them as single flights." / "You also don't need it to say Departing Thu, Nov 12 text above the date selected. That's redundant. Move the number of routes and how many are full next to the text where it says Leaving from ... Have it off to the right."
+
+- The answered-request sound is now a fart (original, made by design/fart-synth.py; 1.35 s, buzzy and wobbly with a sputter and a squeaky rise at the end). The yoooom files are removed. Same trigger, same Settings > Display > Sound effects toggle (plays once when switched on). Settings detail: "A fart when your request is answered".
+- My Trips > Your requests: legs requested from a connecting route sit together in their own card under the route's name ("DAL TO DEN TO LAX, 2 LEGS"), in flight order. Lone flights share one card. Requesting a route's other leg later joins the same card.
+- Results: no "Departing Thu, Nov 12" line over the day buttons (the picked day button already says it). The route count ("10 routes, 1 full") sits on the line over the tickets, off to the right of "Leaving from any Dallas, TX airport (DAL, DFW)".
+
+## Round 195 (Nov 12): a real fart then a moan, delete your requests, count pills
+
+John: "It just sounds like distorted bass. Can you make it more of a fart and add a separate moan noise." / "I should also be able to remove some requests that I've submitted. I can't delete those." / "the number of routes listed and how many are full, can we change that from just text to like a pill? Right now it kind of blends in."
+
+- The fart is rebuilt (design/fart-synth.py, 1.42 s): irregular puffs that ring in the mids (330 to 2300 Hz) with air and wet pops, instead of a low buzz. Slow opening flaps, a main rip, a catch, a second push, wet flaps and a squeak at the end. Almost no energy under 150 Hz now.
+- A separate moan (design/moan-synth.py, 1.7 s): a comedic relieved "uhhh-ahhh" voice, its own clip and its own player, starting 1.55 s after the fart (just after it ends). If the moan can't load, the fart still plays. Settings detail: "A fart, then a moan, when your request is answered".
+- My Trips > Your requests: swipe left to delete a request, or a whole requested route (all its legs). "Request deleted" / "Route deleted" with Undo, like saved routes. Select on the Your requests header picks requests or routes, Select All, Delete N with a confirm. Saved routes keep their own Select; only one section selects at a time.
+- So each one swipes on its own, a lone flight now has its own card (round 194 had lone flights share one).
+- Requests tab is others' asks to answer, not yours, so nothing to delete there.
+- Results header: the count is now pills on the right of "Leaving from ...": a gray "10 routes" pill and a red "1 full" pill only when some are full. Not blue (blue is for tappable things). VoiceOver reads "10 routes, 1 full".
+
+## Round 196 (Nov 12): shorter report banner, status pill up top
+
+John: "Remove 'Pick yours from the board'. Move the Departed and Arrived pill to the right of the new scheduled time if it's changed or original scheduled time. I think it looks better at the top portion of the ticket."
+
+- The "At DAL? Report a load" banner now reads just "7 departures in the next 5 hours."
+- Results tickets: the Departed or Arrived pill sits on the big time line, right of the times (the new times when they moved, under the struck schedule). It no longer sits alone at the bottom of the ticket. The bookmark stays top right.
+- The opened route keeps each leg's own pill over that leg's route line (round 191), since a connection's legs can be in different states. CLAUDE.md updated.
+
+## Round 197 (Nov 13): subtle chimes on three key moments, no more fart or moan
+
+John: "Can you remove the current sound effects loaded on the app? Lets redo some sound effects that would make sense on this app and keep it subtle to very key specific actions."
+
+- Removed: the fart, the moan, their synth scripts, recordings and data files.
+- New set (design/chimes-synth.py, original soft bell tones, mixed quiet at -14 to -17 dBFS peak):
+  - answered: two notes rising (E5 then B5), about 1.1 s. When a load request you made gets its answer. Comes with a success tap.
+  - sent: one light high tap (A5), 0.35 s. When you press Request on the pinned bar and credits are spent. The answered chime waits for it to finish (the demo answers at once).
+  - leave: three notes falling (G5, E5, C5), like a gentle terminal chime, 1.5 s. When the Leave By card turns from "Leave by" to "Leave now" while it's on screen. Never when a card opens already saying Leave now.
+- Nothing else makes a sound. The same chime twice within 2 s plays once. Settings > Display > Sound effects still turns all of them off and plays the answered chime once when switched on. Detail: "Soft chimes when a request goes out, when it's answered, and when it's time to leave". CLAUDE.md has the rule.
+
+## Round 198 (Nov 13): animations that mean something, one corner radius
+
+John: "Give animations throughout the app that mean something." / "One corner radius everywhere." / "Unique clean font too."
+
+Animations (src/ui/motion.ts, Pop.tsx). Each shows what just changed or where something went. None on first show; Reduce Motion fades only.
+- Status pills (Delayed, Departed, Arrived, Canceled, Diverted) settle in when they change, so a flight moving on is noticed.
+- The credits chip's number rolls: down from above when credits are spent, up from below when earned.
+- A leg's credit tick settles in or out as you check or uncheck it.
+- A leg that turns canceled while on screen draws its X: the disc settles, then the strokes grow from the middle.
+- New seat numbers on a leg settle in when the load changes.
+- My Trips: when a request or saved route is deleted, brought back with Undo, or deleted in Select, the cards around it glide into place instead of jumping.
+- The My Trips tab icon settles in each time a request lands there, so you see where it went.
+
+One corner radius: `radius.all` = 14 for every card, ticket, leg box, button, field, sheet, banner, popup, tile and checkbox (before: 12, 18 and 26, plus 4 to 20 one-offs). Pills (`radius.pill`) and circles (logo badges, dots, round icons) stay round. Inner clips keep 1 less so they sit inside a border. CLAUDE.md has the rule.
+
+Font: picked Manrope (Google Fonts, open license; distinctive, very readable small, tabular numbers), with Plus Jakarta Sans and Figtree as alternates. Adding it needs a new font package, which needs John's OK first, so it isn't in this round. Geist stays for now.
+
+## Round 199 (Nov 13): Manrope everywhere, canceled legs on the map
+
+John: "Add Manrope." / "Route map should indicate in some way this leg is canceled."
+
+Font: added @expo-google-fonts/manrope. All text and titles are Manrope (400 to 800); bold text and the map's IATA labels too. Times, flight numbers and other figures that must line up stay Geist Mono; the OutBound wordmark stays Big Shoulders. Geist's package is no longer used by the app but is left in place for now.
+
+Canceled leg on the map (selected route only):
+- The canceled leg's line is red (the `canceled` token), solid, no seat color and no glow, since nothing can be boarded.
+- A small red X sits at the middle of that line on a little disc, the same mark as on the cards' route line.
+- Its flight-time pill becomes a red "Canceled" pill (the cards' Canceled pill colors) just above the X, or below it when above is blocked. Never on the line itself.
+- On a connection only the canceled leg changes; the other legs keep their seat colors and times.
+- No pulse on a canceled leg. VoiceOver reads "ORD to LGA, canceled".
+- Still no legend, no dotted line, no arrows. CLAUDE.md has the rule.
+
+## Round 200 (Nov 13): Sora replaces Manrope
+
+John couldn't see a difference after round 199 ("i cant tell a difference"). Manrope and Geist really are near twins at app sizes. He was shown four samples in OutBound's own text (Space Grotesk, Sora, Bricolage Grotesque, Manrope) and picked "Sora".
+
+- Added @expo-google-fonts/sora, removed @expo-google-fonts/manrope. Sora 400 to 800 for all text and titles, bold text and the map's IATA labels. Times and flight numbers stay Geist Mono; the wordmark stays Big Shoulders.
+- Sora is about 10% wider than Geist at the same size, so it reads bigger. Sizes are unchanged; any line that now truncates or wraps badly gets fixed when spotted on a phone. CLAUDE.md updated.

@@ -228,3 +228,15 @@ Each item names its owner. One item per work session. spec-keeper runs a pre-fli
 | 221 | Yoooom: no "a", autotuned ooo (round 186) | Done |
 | 222 | More autotune on the yoooom (round 187) | Done |
 | 223 | CLAUDE.md guide for two builders; Expo Go publishes every branch (round 188) | Done |
+| 224 | Load requests: 1 credit per leg, quick request on each leg, Request All Legs with its cost (round 189) | Done |
+| 225 | Request loads from the pass: checked credit box on each leg, request button pinned above the tab bar (round 190) | Done |
+| 226 | Departed and Arrived pills over the route line on the opened route; note centred over the request button (round 191) | Done |
+| 227 | Leg pills follow the clock and each other; no load requests for canceled, departed or arrived legs; "14 credits remaining"; no Seats are hidden line on results (round 192) | Done |
+| 228 | Every Leave By card shows "Arrive at ... to begin boarding", not just Leave now (round 193) | Done |
+| 229 | Fart sound for answered requests; requested routes grouped in My Trips; no Departing line, route count beside Leaving from (round 194) | Done |
+| 230 | Real fart then a separate moan; delete your requests (swipe, Select, Undo); route count and full count as pills (round 195) | Done |
+| 231 | Report banner without "Pick yours from the board"; Departed and Arrived pill beside the ticket times (round 196) | Done |
+| 232 | Fart and moan removed; three soft chimes: request answered, request sent, Leave now (round 197) | Done |
+| 233 | Animations that mean something; one corner radius (14) everywhere; font pick waiting on OK to add a package (round 198) | Done |
+| 234 | Manrope for all text (times stay Geist Mono); canceled leg on the map: red line, X at its middle, red Canceled pill (round 199) | Done |
+| 235 | Sora for all text and titles, replacing Manrope (times stay Geist Mono) (round 200) | Done |

@@ -183,7 +183,7 @@ describe('LeaveByCard location button', () => {
     expect(r!.root.find((n) => n.props.testID === 'leave-by-card' && 'disabled' in n.props).props.disabled).toBe(true);
   });
 
-  it('is one slim row: the time, with the drive time on the directions button (round 169)', () => {
+  it('is one slim row: the time and the boarding line, with the drive time on the directions button (rounds 169, 193)', () => {
     mockFontScale = 1;
     act(() => {
       r = create(
@@ -199,7 +199,10 @@ describe('LeaveByCard location button', () => {
         />,
       );
     });
-    expect(lineText(r!)).toMatch(/^Leave by \d{1,2}:\d{2}\u00a0(AM|PM)$/);
+    // The time, then the boarding line beside it like Leave now's (round 193, John: some had it, some didn't).
+    expect(lineText(r!)).toMatch(/^Leave by \d{1,2}:\d{2}\u00a0(AM|PM)/);
+    expect(lineText(r!)).toContain('Arrive at DFW by');
+    expect(lineText(r!)).toContain('to begin boarding');
     expect(lineText(r!)).not.toContain('·');
     // John: "can the estimated time to drive there be next to the car icon".
     const car = r!.root.find((n) => n.props.testID === 'leave-by-car' && typeof n.type === 'string');
@@ -207,7 +210,8 @@ describe('LeaveByCard location button', () => {
     const texts = r!.root
       .findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string')
       .map((n) => n.props.children as string);
-    expect(texts.some((t) => t.includes('at DFW by'))).toBe(false);
+    // The drive time is only by the car, not in the line.
+    expect(texts.some((t) => t.includes('32m drive'))).toBe(false);
     const label = r!.root.find((n) => n.props.accessible && String(n.props.accessibilityLabel).startsWith('Leave by')).props
       .accessibilityLabel as string;
     expect(label).toContain('at DFW by');
@@ -323,5 +327,55 @@ describe('LeaveByCard location button', () => {
     expect(r!.root.findAll((n) => n.props.testID === 'leave-by-gate')).toHaveLength(0);
     const t2 = r!.root.find((n) => n.props.accessibilityRole === 'button' && typeof n.props.onAccessibilityTap === 'function');
     expect(t2.props.accessibilityHint).toBe('Opens walking directions to your terminal in Apple Maps');
+  });
+});
+
+describe('the leave chime (round 197, John: subtle sounds on key actions only)', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const sounds = require('../sounds') as typeof import('../sounds');
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { SettingsProvider } = require('@/settings/SettingsProvider') as typeof import('@/settings/SettingsProvider');
+  let r: ReactTestRenderer | undefined;
+  afterEach(() => {
+    act(() => r?.unmount());
+    jest.restoreAllMocks();
+  });
+  const card = (now: number) => (
+    <SettingsProvider>
+      <LeaveByCard
+        airport={AIRPORTS.DFW}
+        departUtc={NOW + 4 * 3600_000}
+        bufferMin={60}
+        now={now}
+        location={{ lat: 32.85, lon: -96.85, at: NOW }}
+        locationStatus="idle"
+        onUseLocation={jest.fn()}
+        liveDriveMin={32}
+      />
+    </SettingsProvider>
+  );
+
+  it('chimes once when Leave by turns to Leave now on screen', () => {
+    mockFontScale = 1;
+    const play = jest.spyOn(sounds, 'playSound').mockResolvedValue();
+    act(() => {
+      r = create(card(NOW));
+    });
+    expect(lineText(r!)).toMatch(/^Leave by/);
+    expect(play).not.toHaveBeenCalled();
+    act(() => r!.update(card(NOW + 3 * 3600_000)));
+    expect(lineText(r!)).toMatch(/^Leave now/);
+    expect(play).toHaveBeenCalledWith('leave');
+    act(() => r!.update(card(NOW + 3 * 3600_000 + 60_000)));
+    expect(play).toHaveBeenCalledTimes(1);
+  });
+
+  it('stays quiet when the card opens already saying Leave now', () => {
+    const play = jest.spyOn(sounds, 'playSound').mockResolvedValue();
+    act(() => {
+      r = create(card(NOW + 3 * 3600_000));
+    });
+    expect(lineText(r!)).toMatch(/^Leave now/);
+    expect(play).not.toHaveBeenCalled();
   });
 });

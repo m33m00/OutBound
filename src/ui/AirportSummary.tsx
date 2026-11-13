@@ -6,7 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { airportInfo, checkedText, type AirportInfo } from '@/airports/airportInfo';
 import { AIRPORTS, placeLabel } from '@/engine';
 import { formatTime } from '@/search/format';
-import { spacing, textStyles, useColors } from '@/theme';
+import { spacing, textStyles, useColors, radius } from '@/theme';
 
 import { useCardSurface } from './cardSurface';
 import { selectionTick } from './haptics';
@@ -171,6 +171,6 @@ const styles = StyleSheet.create({
   body: { gap: spacing.section, paddingBottom: spacing.page },
   card: { padding: spacing.rowX, gap: spacing.group },
   cardHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.group },
-  iconTile: { width: 28, height: 28, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+  iconTile: { width: 28, height: 28, borderRadius: radius.all, alignItems: 'center', justifyContent: 'center' },
   line: { gap: 1 },
 });

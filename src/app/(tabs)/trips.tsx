@@ -4,7 +4,14 @@ import { Alert, Pressable, StyleSheet, View } from 'react-native';
 
 import type { Flight } from '@/engine';
 import { flightLookupKey, useFlightStatuses } from '@/live';
-import { MAX_OPEN_REQUESTS, openRequestCount, upcomingRequests } from '@/requests/requests';
+import {
+  groupRequests,
+  MAX_OPEN_REQUESTS,
+  routeHeading,
+  openRequestCount,
+  upcomingRequests,
+  type LoadRequest,
+} from '@/requests/requests';
 import { useRequests } from '@/requests/RequestsProvider';
 import { legLookup, legStatus } from '@/search/statusTags';
 import { SCHEDULE_SOURCE } from '@/search/useRouteSearch';
@@ -17,12 +24,14 @@ import { EmptyState } from '@/ui/EmptyState';
 import { FlightStatusSheet } from '@/ui/FlightStatusSheet';
 import { selectionTick } from '@/ui/haptics';
 import { Icon } from '@/ui/Icon';
-import { ListGroup, SectionFooter } from '@/ui/ListGroup';
+import { ListGroup, SectionFooter, SectionHeader } from '@/ui/ListGroup';
 import { RequestRow } from '@/ui/RequestRow';
 import { SavedRouteCard } from '@/ui/SavedRouteCard';
 import { SavedToast } from '@/ui/SavedToast';
 import { SwipeToDelete } from '@/ui/SwipeToDelete';
+import { glideNextLayout } from '@/ui/motion';
 import { TabScreen } from '@/ui/TabScreen';
+import { useReducedMotion } from '@/ui/useReducedMotion';
 import { TripsSectionHeader } from '@/ui/TripsSectionHeader';
 import { useFlightLoad } from '@/ui/useFlightLoad';
 import { useSheetContent } from '@/ui/useSheetContent';
@@ -48,27 +57,50 @@ export default function TripsScreen() {
     }, [expire]),
   );
   const list = sortSaved(dropExpired(routes, now), now);
-  // Select to delete several at once (round 167, John).
-  const [selecting, setSelecting] = useState(false);
+  // Select to delete several at once (round 167, John); requests have their own Select (round 195).
+  const [selectingWhat, setSelectingWhat] = useState<'saved' | 'requests' | null>(null);
+  const selecting = selectingWhat === 'saved';
+  const selectingRequests = selectingWhat === 'requests';
   const [picked, setPicked] = useState<string[]>([]);
   const stopSelecting = () => {
-    setSelecting(false);
+    setSelectingWhat(null);
     setPicked([]);
+  };
+  const startSelecting = (what: 'saved' | 'requests') => {
+    setPicked([]);
+    setSelectingWhat(what);
   };
   const toggle = (key: string) => {
     selectionTick();
     setPicked((p) => (p.includes(key) ? p.filter((k) => k !== key) : [...p, key]));
   };
-  const allPicked = list.length > 0 && list.every((r) => picked.includes(r.key));
   const deletePicked = () => {
     const n = picked.length;
     if (!n) return;
+    if (selectingRequests) {
+      const gone = requestBlocks.filter((b) => picked.includes(b.key)).flatMap((b) => b.requests);
+      const routes = requestBlocks.filter((b) => picked.includes(b.key) && b.route).length;
+      const word = routes === n ? (n === 1 ? 'route' : 'routes') : n === 1 ? 'request' : 'requests';
+      Alert.alert(`Delete ${n} ${word}?`, 'They come off My Trips on this phone.', [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => {
+            dropRequests(gone, routes === n ? (n === 1 ? 'Route deleted' : `${n} routes deleted`) : `${n} ${word} deleted`);
+            stopSelecting();
+          },
+        },
+      ]);
+      return;
+    }
     Alert.alert(`Delete ${n} saved ${n === 1 ? 'route' : 'routes'}?`, 'They come off My Trips on this phone.', [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Delete',
         style: 'destructive',
         onPress: () => {
+          glideNextLayout(reduce);
           removeMany(picked);
           stopSelecting();
         },
@@ -78,7 +110,26 @@ export default function TripsScreen() {
   // A swiped-away route can come back for a few seconds.
   const [swiped, setSwiped] = useState<SavedRoute | null>(null);
   const clearSwiped = useCallback(() => setSwiped(null), []);
-  const { mine } = useRequests();
+  const { mine, removeRequests: dropFromMine, restoreRequests: putBackInMine } = useRequests();
+  // A request or route that leaves or comes back: the cards around it glide into place (round 198).
+  const reduce = useReducedMotion();
+  const removeRequests = (ids: string[]) => {
+    glideNextLayout(reduce);
+    dropFromMine(ids);
+  };
+  const restoreRequests = (back: LoadRequest[]) => {
+    glideNextLayout(reduce);
+    putBackInMine(back);
+  };
+  // Deleted requests can come back for a few seconds too (round 195, John: "I should also be able to remove
+  // some requests that I've submitted").
+  const [droppedRequests, setDroppedRequests] = useState<{ requests: LoadRequest[]; label: string } | null>(null);
+  const clearDropped = useCallback(() => setDroppedRequests(null), []);
+  const dropRequests = (gone: LoadRequest[], label: string) => {
+    removeRequests(gone.map((r) => r.id));
+    setSwiped(null);
+    setDroppedRequests({ requests: gone, label });
+  };
   const openCount = openRequestCount(mine, now);
   // A request opens its flight: status, seats, and Cancel Request while it waits (round 34).
   const [flightOpen, setFlightOpen] = useState<Flight | null>(null);
@@ -90,7 +141,7 @@ export default function TripsScreen() {
   const statuses = useFlightStatuses(lookups, live ? {} : SAMPLE_STATUS_OPTIONS);
   // Only flights still to leave; one that live data says departed or arrived drops off too.
   const requests = upcomingRequests(mine, now, (r) => {
-    const kind = legStatus(r.flight, statuses.byKey[flightLookupKey(legLookup(r.flight))]).tag?.kind;
+    const kind = legStatus(r.flight, statuses.byKey[flightLookupKey(legLookup(r.flight))], now).tag?.kind;
     return kind === 'departed' || kind === 'arrived';
   });
   // Tick at the next departure so that flight drops off while the tab is open.
@@ -130,11 +181,16 @@ export default function TripsScreen() {
     );
   }
 
-  const selectBar = selecting ? (
+  // Routes in their own card (round 194); since round 195 a lone flight has its own card too, so each one
+  // swipes away on its own.
+  const requestBlocks = groupRequests(requests);
+  const selectable = selectingRequests ? requestBlocks.map((b) => b.key) : list.map((r) => r.key);
+  const allPicked = selectable.length > 0 && selectable.every((k) => picked.includes(k));
+  const selectBar = selectingWhat ? (
     <View style={[styles.bar, { backgroundColor: c.surface, borderTopColor: c.cardEdge }]} testID="select-bar">
       <PillButton
         label={allPicked ? 'Deselect All' : 'Select All'}
-        onPress={() => setPicked(allPicked ? [] : list.map((r) => r.key))}
+        onPress={() => setPicked(allPicked ? [] : selectable)}
         testID="select-all"
       />
       <Button
@@ -146,6 +202,16 @@ export default function TripsScreen() {
         style={styles.barDelete}
       />
     </View>
+  ) : droppedRequests ? (
+    <SavedToast
+      label={droppedRequests.label}
+      icon="trash"
+      undoLabel="Undo delete"
+      undone="Back in My Trips"
+      testID="request-deleted-toast"
+      onUndo={() => restoreRequests(droppedRequests.requests)}
+      onDone={clearDropped}
+    />
   ) : swiped ? (
     <SavedToast
       label="Route deleted"
@@ -153,32 +219,90 @@ export default function TripsScreen() {
       undoLabel="Undo delete"
       undone="Back in My Trips"
       testID="deleted-toast"
-      onUndo={() => save(swiped)}
+      onUndo={() => {
+        glideNextLayout(reduce);
+        save(swiped);
+      }}
       onDone={clearSwiped}
     />
   ) : null;
+
+  const requestRow = (r: LoadRequest) => (
+    <RequestRow
+      key={r.id}
+      request={r}
+      now={now}
+      mine
+      leg={legStatus(r.flight, statuses.byKey[flightLookupKey(legLookup(r.flight))], now)}
+      onOpen={() => setFlightOpen(r.flight)}
+    />
+  );
+
+  const blockTitle = (b: (typeof requestBlocks)[number]) =>
+    b.route
+      ? routeHeading(b.route.title, b.requests.length)
+      : `${b.requests[0].flight.airline} ${b.requests[0].flight.flightNumber}`;
+  const requestBlock = (b: (typeof requestBlocks)[number]) => {
+    const rows = <ListGroup>{b.requests.map(requestRow)}</ListGroup>;
+    if (selectingRequests) {
+      const on = picked.includes(b.key);
+      return (
+        <View key={b.key} testID={b.route ? 'request-route' : 'request-flights'} style={styles.blockGap}>
+          {b.route ? <SectionHeader title={routeHeading(b.route.title, b.requests.length)} /> : null}
+          <Pressable
+            onPress={() => toggle(b.key)}
+            accessibilityRole="checkbox"
+            accessibilityState={{ checked: on }}
+            accessibilityLabel={blockTitle(b)}
+            testID="request-select-row"
+            style={styles.selectRow}>
+            <SelectCheck on={on} />
+            <View style={styles.selectCard} pointerEvents="none">
+              {rows}
+            </View>
+          </Pressable>
+        </View>
+      );
+    }
+    return (
+      <View key={b.key} testID={b.route ? 'request-route' : 'request-flights'} style={styles.blockGap}>
+        {b.route ? <SectionHeader title={routeHeading(b.route.title, b.requests.length)} /> : null}
+        {/* Swipe left to delete a request, or a whole requested route (round 195, John). */}
+        <SwipeToDelete
+          label={`Delete ${blockTitle(b)}`}
+          onDelete={() => dropRequests(b.requests, b.route ? 'Route deleted' : 'Request deleted')}>
+          {rows}
+        </SwipeToDelete>
+      </View>
+    );
+  };
 
   return (
     <TabScreen title="My Trips" overlay={selectBar}>
       {requests.length ? (
         <View style={styles.section}>
-          <TripsSectionHeader icon="text.bubble.fill" title="Your requests" count={requests.length} testID="requests-header" />
-          <ListGroup>
-            {requests.map((r) => (
-              <RequestRow
-                key={r.id}
-                request={r}
-                now={now}
-                mine
-                leg={legStatus(r.flight, statuses.byKey[flightLookupKey(legLookup(r.flight))])}
-                onOpen={() => setFlightOpen(r.flight)}
-              />
-            ))}
-          </ListGroup>
+          <TripsSectionHeader
+            icon="text.bubble.fill"
+            title="Your requests"
+            count={requests.length}
+            testID="requests-header"
+            action={
+              selectingWhat === 'saved' ? null : (
+                <PillButton
+                  label={selectingRequests ? 'Done' : 'Select'}
+                  tone={selectingRequests ? 'filled' : 'soft'}
+                  onPress={selectingRequests ? stopSelecting : () => startSelecting('requests')}
+                  testID="select-requests"
+                />
+              )
+            }
+          />
+          {/* A requested route's legs sit together under its name (round 194, John). */}
+          {requestBlocks.map(requestBlock)}
           <SectionFooter>{`${openCount} of ${MAX_OPEN_REQUESTS} requests open`}</SectionFooter>
         </View>
       ) : null}
-      <View style={[styles.section, selecting && styles.roomForBar]}>
+      <View style={[styles.section, selectingWhat && styles.roomForBar]}>
         <TripsSectionHeader
           icon="bookmark.fill"
           title="Saved routes"
@@ -186,11 +310,11 @@ export default function TripsScreen() {
           rule={requests.length > 0}
           testID="saved-header"
           action={
-            list.length ? (
+            list.length && !selectingRequests ? (
               <PillButton
                 label={selecting ? 'Done' : 'Select'}
                 tone={selecting ? 'filled' : 'soft'}
-                onPress={selecting ? stopSelecting : () => setSelecting(true)}
+                onPress={selecting ? stopSelecting : () => startSelecting('saved')}
                 testID="select-saved"
               />
             ) : null
@@ -226,11 +350,7 @@ export default function TripsScreen() {
                 accessibilityLabel={savedRouteTitle(route)}
                 testID="saved-select-row"
                 style={styles.selectRow}>
-                <View
-                  style={[styles.check, on ? { backgroundColor: c.accent, borderColor: c.accent } : { borderColor: c.line2 }]}
-                  testID={on ? 'saved-checked' : 'saved-unchecked'}>
-                  {on ? <Icon name="checkmark" size={13} weight="bold" tintColor={c.onAccent} fallback={null} /> : null}
-                </View>
+                <SelectCheck on={on} testID={on ? 'saved-checked' : 'saved-unchecked'} />
                 <View style={styles.selectCard} pointerEvents="none">
                   {card}
                 </View>
@@ -242,6 +362,7 @@ export default function TripsScreen() {
               key={route.key}
               label={`Delete ${savedRouteTitle(route)}`}
               onDelete={() => {
+                glideNextLayout(reduce);
                 remove(route.key);
                 setSwiped(route);
               }}>
@@ -257,8 +378,21 @@ export default function TripsScreen() {
 
 const SAMPLE_STATUS_OPTIONS = { config: null } as const;
 
+/** The round tick in Select mode (round 167), shared by saved routes and requests. */
+function SelectCheck({ on, testID }: { on: boolean; testID?: string }) {
+  const c = useColors();
+  return (
+    <View
+      style={[styles.check, on ? { backgroundColor: c.accent, borderColor: c.accent } : { borderColor: c.line2 }]}
+      testID={testID ?? (on ? 'select-checked' : 'select-unchecked')}>
+      {on ? <Icon name="checkmark" size={13} weight="bold" tintColor={c.onAccent} fallback={null} /> : null}
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   section: { gap: spacing.group },
+  blockGap: { gap: spacing.group },
   roomForBar: { paddingBottom: 80 },
   selectRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.group },
   selectCard: { flex: 1 },

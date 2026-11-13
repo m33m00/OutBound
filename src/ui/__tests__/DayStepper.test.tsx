@@ -57,23 +57,24 @@ describe('DayStepper', () => {
       .findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string')
       .map((n) => n.props.children as string);
 
-  it('says what it is and shows every day in the window as a button (round 177, John)', () => {
+  it('shows every day in the window as a button, with no "Departing" line over them (rounds 177, 194, John)', () => {
     act(() => {
-      r = create(<DayStepper days={DAYS} date="2026-10-31" label="Sat, Oct 31" onDay={jest.fn()} detail="4 routes" />);
+      r = create(<DayStepper days={DAYS} date="2026-10-31" onDay={jest.fn()} detail="4 routes" />);
     });
-    expect(words()).toContain('Departing Sat, Oct 31');
+    // Round 194, John: "You also don't need it to say Departing Thu, Nov 12 text above the date selected."
+    expect(words().some((w) => w.startsWith('Departing'))).toBe(false);
     for (const d of DAYS) expect(chip(d.date)).toBeDefined();
     expect(words()).toContain('Today');
     expect(words()).toContain('Tomorrow');
     expect(words()).toContain('Oct 31');
-    const detail = r!.root.findAll((n) => n.props.testID === 'day-detail' && typeof n.type === 'string')[0];
-    expect(detail.props.children).toBe('4 routes');
+    // The count moved over the tickets (round 194).
+    expect(r!.root.findAll((n) => n.props.testID === 'day-detail')).toHaveLength(0);
   });
 
   it('marks the searched day and searches another day on a tap, naming it for VoiceOver', () => {
     const onDay = jest.fn();
     act(() => {
-      r = create(<DayStepper days={DAYS} date="2026-10-31" label="Sat, Oct 31" onDay={onDay} detail="4 routes" />);
+      r = create(<DayStepper days={DAYS} date="2026-10-31" onDay={onDay} detail="4 routes" />);
     });
     const on = chip('2026-10-31');
     expect(on.props.accessibilityState).toEqual({ checked: true });
@@ -89,7 +90,7 @@ describe('DayStepper', () => {
   it('has arrows at both ends that step a day and dim at the ends of the window (round 179, John)', () => {
     const onDay = jest.fn();
     act(() => {
-      r = create(<DayStepper days={DAYS} date="2026-10-31" label="Sat, Oct 31" onDay={onDay} />);
+      r = create(<DayStepper days={DAYS} date="2026-10-31" onDay={onDay} />);
     });
     const arrow = (dir: 'prev' | 'next') =>
       r!.root.findAll((n) => n.props.testID === `day-${dir}` && n.props.accessibilityRole === 'button')[0];
@@ -100,19 +101,19 @@ describe('DayStepper', () => {
     act(() => arrow('prev').props.onPress());
     expect(onDay).toHaveBeenLastCalledWith('2026-10-30');
     act(() => {
-      r!.update(<DayStepper days={DAYS} date="2026-10-30" label="Fri, Oct 30" onDay={onDay} />);
+      r!.update(<DayStepper days={DAYS} date="2026-10-30" onDay={onDay} />);
     });
     expect(arrow('prev').props.accessibilityState).toEqual({ disabled: true });
     expect(arrow('prev').props.accessibilityLabel).toBe('Previous day');
     act(() => {
-      r!.update(<DayStepper days={DAYS} date={DAYS[DAYS.length - 1].date} label="last" onDay={onDay} />);
+      r!.update(<DayStepper days={DAYS} date={DAYS[DAYS.length - 1].date} onDay={onDay} />);
     });
     expect(arrow('next').props.accessibilityState).toEqual({ disabled: true });
   });
 
   it('sizes every day button to fit whole between the arrows once the row is measured (round 180)', () => {
     act(() => {
-      r = create(<DayStepper days={DAYS} date="2026-10-30" label="Fri, Oct 30" onDay={() => {}} />);
+      r = create(<DayStepper days={DAYS} date="2026-10-30" onDay={() => {}} />);
     });
     const list = r!.root.findAll((n) => n.props.accessibilityRole === 'radiogroup' && typeof n.props.onLayout === 'function')[0];
     act(() => list.props.onLayout({ nativeEvent: { layout: { width: 277, height: 60, x: 0, y: 0 } } }));
@@ -134,7 +135,7 @@ describe('DayStepper', () => {
 
   it('fills the searched day blue and the others light blue, so they read as buttons', () => {
     act(() => {
-      r = create(<DayStepper days={DAYS} date="2026-10-31" label="Sat, Oct 31" onDay={jest.fn()} />);
+      r = create(<DayStepper days={DAYS} date="2026-10-31" onDay={jest.fn()} />);
     });
     const bg = (date: string) => {
       const st = chip(date).props.style;

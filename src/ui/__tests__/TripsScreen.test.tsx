@@ -53,6 +53,12 @@ describe('My Trips (round 167)', () => {
     const n = r!.root.findAll((x) => x.props.testID === id && typeof x.props.onPress === 'function')[0];
     act(() => n.props.onPress());
   };
+  const pressAt = (id: string, i: number) => {
+    const n = r!.root.findAll((x) => x.props.testID === id && typeof x.props.onPress === 'function')[i];
+    act(() => n.props.onPress());
+  };
+  const blocks = () => [...host('request-route'), ...host('request-flights')];
+  const requestRows = () => r!.root.findAll((n) => typeof n.type !== 'string' && n.props.request && n.props.mine);
   const stored = async () =>
     (JSON.parse((await AsyncStorage.getItem(SAVED_ROUTES_KEY)) ?? '[]') as SavedRoute[]).map((x) => x.key);
 
@@ -66,9 +72,11 @@ describe('My Trips (round 167)', () => {
 
   it('a swipe-delete takes a route off, with Undo to bring it back', async () => {
     await mount();
-    expect(host('swipe-to-delete')).toHaveLength(2);
+    // Requests swipe too since round 195; the saved routes' swipes come after them.
+    const reqs = blocks().length;
+    expect(host('swipe-to-delete')).toHaveLength(reqs + 2);
     jest.useFakeTimers();
-    press('swipe-delete');
+    pressAt('swipe-delete', reqs);
     await act(async () => {
       jest.runAllTimers();
     });
@@ -95,6 +103,50 @@ describe('My Trips (round 167)', () => {
     await act(async () => del.props.onPress());
     expect(alert).toHaveBeenCalledWith('Delete 2 saved routes?', expect.any(String), expect.any(Array));
     expect(await stored()).toEqual([]);
+  });
+
+  it('swipes a request off My Trips, with Undo to bring it back (round 195, John: "I can\'t delete those")', async () => {
+    await mount();
+    const before = requestRows().length;
+    expect(before).toBeGreaterThan(0);
+    jest.useFakeTimers();
+    pressAt('swipe-delete', 0);
+    await act(async () => {
+      jest.runAllTimers();
+    });
+    jest.useRealTimers();
+    expect(requestRows().length).toBeLessThan(before);
+    expect(host('request-deleted-toast')).toHaveLength(1);
+    press('request-deleted-toast-undo');
+    await act(async () => {});
+    expect(requestRows()).toHaveLength(before);
+  });
+
+  it('Select on Your requests picks requests and deletes them after a confirm (round 195)', async () => {
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation((_t, _m, buttons) => {
+      buttons?.find((b) => b.style === 'destructive')?.onPress?.();
+    });
+    await mount();
+    const n = blocks().length;
+    press('select-requests');
+    expect(host('request-select-row')).toHaveLength(n);
+    // Saved routes' Select steps aside while requests are being picked.
+    expect(host('select-saved')).toHaveLength(0);
+    press('select-all');
+    expect(host('select-checked')).toHaveLength(n);
+    const del = r!.root.find(
+      (x) => typeof x.type !== 'string' && x.props.accessibilityLabel === `Delete ${n}` && x.props.onPress,
+    );
+    await act(async () => del.props.onPress());
+    expect(alert).toHaveBeenCalledWith(
+      expect.stringMatching(/^Delete \d+ (requests?|routes?)\?$/),
+      expect.any(String),
+      expect.any(Array),
+    );
+    expect(requestRows()).toHaveLength(0);
+    expect(host('request-deleted-toast')).toHaveLength(1);
+    // Saved routes are untouched.
+    expect((await stored()).sort()).toEqual([route('1').key, route('2').key]);
   });
 });
 

@@ -36,6 +36,14 @@ export interface LoadRequest {
   flight: Flight;
   askedAt: number;
   answer?: LoadAnswer;
+  /** The connecting route this leg was requested from, so My Trips keeps its legs together (round 194). */
+  route?: RequestRoute;
+}
+
+/** A connecting route a request belongs to: its search id and title, e.g. "DAL to DEN to LAX". */
+export interface RequestRoute {
+  id: string;
+  title: string;
 }
 
 /** The person's airline until accounts exist (prototype default; provisional). */
@@ -291,11 +299,59 @@ export const newlyAnswered = (seen: ReadonlySet<string>, mine: LoadRequest[]): s
   answeredIds(mine).filter((id) => !seen.has(id));
 
 /** Your asks with this flight's answer in (round 176 demo): an ask already there gets the answer. */
-export function addAnsweredAsk(mine: LoadRequest[], flight: Flight, answer: LoadAnswer): LoadRequest[] {
+export function addAnsweredAsk(mine: LoadRequest[], flight: Flight, answer: LoadAnswer, route?: RequestRoute): LoadRequest[] {
   const key = flightKey(flight);
   if (mine.some((r) => flightKey(r.flight) === key))
-    return mine.map((r) => (flightKey(r.flight) === key && !r.answer ? { ...r, answer } : r));
-  return [{ id: `mine-${key}`, flight, askedAt: answer.at, answer }, ...mine];
+    return mine.map((r) =>
+      flightKey(r.flight) === key && !r.answer ? { ...r, answer, ...(route && !r.route ? { route } : {}) } : r,
+    );
+  return [{ id: `mine-${key}`, flight, askedAt: answer.at, answer, ...(route ? { route } : {}) }, ...mine];
+}
+
+/** A requested route's heading in My Trips, e.g. "DAL to DEN to LAX, 2 legs" (round 194). */
+export const routeHeading = (title: string, legs: number) => `${title}, ${legs} ${legs === 1 ? 'leg' : 'legs'}`;
+
+/** A block in My Trips' requests: one connecting route's legs together, or a lone flight. */
+export interface RequestGroup {
+  key: string;
+  route: RequestRoute | null;
+  requests: LoadRequest[];
+}
+
+/**
+ * Requests grouped by the route they were asked from (round 194, John: "When I request a route and I go to my
+ * trips. Can you group that route and not treat them as single flights. If I start to request alot of routes its
+ * easier to keep track"). A route's legs stay together in flight order; blocks go by their first departure. A
+ * flight asked on its own, or a route with only one leg left to show, stays a single row.
+ */
+export function groupRequests(requests: readonly LoadRequest[]): RequestGroup[] {
+  const byRoute = new Map<string, LoadRequest[]>();
+  for (const r of requests) if (r.route) byRoute.set(r.route.id, [...(byRoute.get(r.route.id) ?? []), r]);
+  const groups: RequestGroup[] = [];
+  const seen = new Set<string>();
+  for (const r of requests) {
+    const legs = r.route ? byRoute.get(r.route.id)! : null;
+    if (r.route && legs && legs.length > 1) {
+      if (seen.has(r.route.id)) continue;
+      seen.add(r.route.id);
+      groups.push({
+        key: `route-${r.route.id}`,
+        route: r.route,
+        requests: [...legs].sort((a, b) => a.flight.departUtc - b.flight.departUtc),
+      });
+    } else groups.push({ key: r.id, route: null, requests: [r] });
+  }
+  return groups.sort((a, b) => a.requests[0].flight.departUtc - b.requests[0].flight.departUtc);
+}
+
+/** Take requests off My Trips (round 195, John: "I should also be able to remove some requests that I've submitted"). */
+export const removeRequests = (mine: readonly LoadRequest[], ids: readonly string[]): LoadRequest[] =>
+  mine.filter((r) => !ids.includes(r.id));
+
+/** Put deleted requests back (the Undo after a delete), newest asked first, never twice. */
+export function restoreRequests(mine: readonly LoadRequest[], back: readonly LoadRequest[]): LoadRequest[] {
+  const ids = new Set(back.map((r) => r.id));
+  return [...mine.filter((r) => !ids.has(r.id)), ...back].sort((a, b) => b.askedAt - a.askedAt);
 }
 
 /** Your ask on this flight, if any. */

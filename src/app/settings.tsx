@@ -276,7 +276,7 @@ const styles = StyleSheet.create({
   segment: {
     flex: 1,
     minHeight: minTapTarget,
-    borderRadius: radius.sm,
+    borderRadius: radius.all,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: spacing.group,

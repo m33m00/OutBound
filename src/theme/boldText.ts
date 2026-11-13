@@ -13,11 +13,11 @@ import { textStyles } from './typography';
  * rows, map labels) follow through `useBoldText`.
  */
 const HEAVIER: Record<string, string> = {
-  Geist_400Regular: 'Geist_600SemiBold',
-  Geist_500Medium: 'Geist_700Bold',
-  Geist_600SemiBold: 'Geist_700Bold',
-  Geist_700Bold: 'Geist_800ExtraBold',
-  Geist_800ExtraBold: 'Geist_800ExtraBold',
+  Sora_400Regular: 'Sora_600SemiBold',
+  Sora_500Medium: 'Sora_700Bold',
+  Sora_600SemiBold: 'Sora_700Bold',
+  Sora_700Bold: 'Sora_800ExtraBold',
+  Sora_800ExtraBold: 'Sora_800ExtraBold',
   GeistMono_500Medium: 'GeistMono_600SemiBold',
   GeistMono_600SemiBold: 'GeistMono_600SemiBold',
   BigShouldersDisplay_700Bold: 'BigShouldersDisplay_800ExtraBold',

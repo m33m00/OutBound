@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import React from 'react';
 import { act, create, type ReactTestInstance, type ReactTestRenderer } from 'react-test-renderer';
 
-import { EMPTY_WALLET, requestRoute, welcome } from '@/membership/membership';
+import { EMPTY_WALLET, requestLegs, welcome } from '@/membership/membership';
 import { MembershipProvider, useMembership } from '@/membership/MembershipProvider';
 import { addAnsweredAsk } from '@/requests/requests';
 import { RequestsProvider, useRequests } from '@/requests/RequestsProvider';
@@ -13,7 +13,7 @@ import { CreditsChip, CreditsSheet } from '../Credits';
 import { DEFAULT_FILTERS } from '@/settings/settings';
 import { FiltersForm } from '../FiltersForm';
 import { PlanPicker } from '../PlanPicker';
-import { RequestLoadsCard } from '../RequestLoadsCard';
+import { RequestLoadsBar } from '../RequestLoadsBar';
 
 jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
@@ -55,24 +55,26 @@ describe('plans and credits (round 176)', () => {
     act(() => r.unmount());
   });
 
-  it('request card: spends a credit when there is one, points to answering loads when not', () => {
+  it('request bar: spends credits when there are enough, points to answering loads when not', () => {
     const onRequest = jest.fn();
     const onAnswer = jest.fn();
     let r!: ReactTestRenderer;
     act(() => {
-      r = create(<RequestLoadsCard tier="free" credits={2} onRequest={onRequest} onAnswerLoads={onAnswer} />);
+      r = create(<RequestLoadsBar picked={1} locked={1} credits={2} onRequest={onRequest} onAnswerLoads={onAnswer} />);
     });
-    expect(words(r.root).join(' ')).toContain('request this route’s loads for 1 credit');
-    act(() => r.root.findAll((n) => n.props.accessibilityLabel === 'Request Loads' && n.props.onPress)[0].props.onPress());
+    expect(words(r.root).join(' ')).toContain('Loads are 1 credit per leg');
+    act(() =>
+      r.root.findAll((n) => n.props.accessibilityLabel === 'Request Loads for 1 credit' && n.props.onPress)[0].props.onPress(),
+    );
     expect(onRequest).toHaveBeenCalled();
-    act(() => r.update(<RequestLoadsCard tier="free" credits={0} onRequest={onRequest} onAnswerLoads={onAnswer} />));
+    act(() => r.update(<RequestLoadsBar picked={1} locked={1} credits={0} onRequest={onRequest} onAnswerLoads={onAnswer} />));
     expect(words(r.root).join(' ')).toContain('out of credits');
     act(() => r.root.findAll((n) => n.props.accessibilityLabel === 'Answer Loads' && n.props.onPress)[0].props.onPress());
     expect(onAnswer).toHaveBeenCalled();
   });
 
   it('credits sheet: balance, earned, spent and recent entries', () => {
-    const w = requestRoute(welcome(EMPTY_WALLET, 'free', NOW), ['A'], 'Requested DAL to LAX', NOW).wallet;
+    const w = requestLegs(welcome(EMPTY_WALLET, 'free', NOW), ['A'], 'Requested DAL to LAX', NOW).wallet;
     let r!: ReactTestRenderer;
     act(() => {
       r = create(<CreditsSheet visible tier="free" wallet={w} onClose={jest.fn()} onAnswerLoads={jest.fn()} now={NOW} />);

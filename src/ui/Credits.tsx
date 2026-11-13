@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Animated, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
@@ -21,6 +21,7 @@ import { fonts, spacing, textStyles, useColors } from '@/theme';
 import { Button } from './Buttons';
 import { useCardSurface } from './cardSurface';
 import { withTick } from './haptics';
+import { useCountRoll } from './motion';
 import { Icon } from './Icon';
 import { pressStyle } from './press';
 import { SheetHeader } from './SheetHeader';
@@ -36,6 +37,7 @@ export function CreditsChip({ onAnswerLoads }: { onAnswerLoads: () => void }) {
   const c = useColors();
   const m = useMembership();
   const [open, setOpen] = useState(false);
+  const roll = useCountRoll(m.credits);
   if (!m.tracksCredits || !m.tier) return null;
   return (
     <>
@@ -49,9 +51,10 @@ export function CreditsChip({ onAnswerLoads }: { onAnswerLoads: () => void }) {
         style={pressStyle([styles.chip, { backgroundColor: c.accentSoft }])}>
         <Icon name={CREDITS_ICON} size={15} tintColor={c.accent} fallback={null} />
         {/* Says "credits" in words, so it reads at a glance (round 177, John). */}
-        <Text style={[styles.chipText, { color: c.accent }]} numberOfLines={1} testID="credits-chip-count">
+        {/* Spent credits roll the number down, earned ones roll it up (round 198). */}
+        <Animated.Text style={[styles.chipText, { color: c.accent }, roll]} numberOfLines={1} testID="credits-chip-count">
           {creditsWord(m.credits)}
-        </Text>
+        </Animated.Text>
       </Pressable>
       <CreditsSheet
         visible={open}
@@ -108,7 +111,7 @@ export function CreditsSheet({
               How credits work
             </Text>
             <HowLine delta={`+${EARN_PER_ANSWER}`} text="Answer a load on a flight at your airline" />
-            <HowLine delta={`−${REQUEST_COST}`} text="Request a route’s loads. They go to My Trips." />
+            <HowLine delta={`−${REQUEST_COST}`} text="Request a leg’s loads. They go to My Trips." />
             {tier === 'payg' ? (
               <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>
                 Adding credits comes later. For now you start with 10.

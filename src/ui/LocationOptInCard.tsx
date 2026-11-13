@@ -32,7 +32,7 @@ export function LocationOptInCard({ onAllow, onNotNow }: LocationOptInCardProps)
 }
 
 const styles = StyleSheet.create({
-  card: { gap: spacing.group, padding: spacing.rowX, borderRadius: radius.md, borderWidth: StyleSheet.hairlineWidth },
+  card: { gap: spacing.group, padding: spacing.rowX, borderRadius: radius.all, borderWidth: StyleSheet.hairlineWidth },
   buttons: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.group },
   button: { flexGrow: 1 },
 });

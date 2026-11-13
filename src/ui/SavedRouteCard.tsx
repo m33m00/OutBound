@@ -127,7 +127,7 @@ export function SavedRouteCard({ route, past, now, onOpen, onRemove, selecting }
 const styles = StyleSheet.create({
   // The same solid edge as a result ticket (round 163).
   card: {
-    borderRadius: radius.md,
+    borderRadius: radius.all,
     borderWidth: 1,
   },
   stub: {
@@ -137,8 +137,8 @@ const styles = StyleSheet.create({
     paddingLeft: spacing.page,
     // Room for the trash button in the stub's top-right corner.
     paddingRight: minTapTarget + spacing.group,
-    borderTopLeftRadius: radius.md - 1,
-    borderTopRightRadius: radius.md - 1,
+    borderTopLeftRadius: radius.all - 1,
+    borderTopRightRadius: radius.all - 1,
   },
   whenLine: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: 8, rowGap: 4 },
   shrink: { flexShrink: 1 },

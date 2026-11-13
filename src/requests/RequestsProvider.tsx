@@ -4,7 +4,7 @@ import type { Flight } from '@/engine';
 import { useMembershipOptional } from '@/membership/MembershipProvider';
 import { SCHEDULE_SOURCE } from '@/search/useRouteSearch';
 import { useSettingsOptional } from '@/settings/SettingsProvider';
-import { playYaoom, preloadSounds } from '@/ui/sounds';
+import { playSound, preloadSounds } from '@/ui/sounds';
 
 import {
   addAnsweredAsk,
@@ -15,11 +15,14 @@ import {
   cancelAsk,
   flightKey,
   newlyAnswered,
+  removeRequests,
+  restoreRequests,
   sampleFeed,
   sampleMine,
   type AskState,
   type LoadAnswer,
   type LoadRequest,
+  type RequestRoute,
 } from './requests';
 
 interface RequestsContextValue {
@@ -32,7 +35,10 @@ interface RequestsContextValue {
   /** Take back a waiting ask. */
   cancelAsk: (flight: Flight) => void;
   /** A requested route's loads, already answered (round 176 demo: Free and Pay as you go). */
-  addAnswered: (flight: Flight, answer: LoadAnswer) => void;
+  addAnswered: (flight: Flight, answer: LoadAnswer, route?: RequestRoute) => void;
+  /** Delete requests from My Trips, and bring them back with Undo (round 195). */
+  removeRequests: (ids: string[]) => void;
+  restoreRequests: (back: LoadRequest[]) => void;
   /** Your report on a flight this session, if any. */
   reportFor: (flight: Flight) => LoadAnswer | null;
   report: (flight: Flight, open: number, listed: number) => void;
@@ -58,7 +64,7 @@ export function RequestsProvider({ children }: { children: ReactNode }) {
 
   const ask = useCallback((flight: Flight) => setMine((list) => addAsk(list, flight, Date.now())), []);
   const cancel = useCallback((flight: Flight) => setMine((list) => cancelAsk(list, flight)), []);
-  // Round 181, John: a yaoom when a request is answered. Asks already answered when the app opens stay
+  // Round 181, John: a sound when a request is answered (a soft two-note chime since round 197). Asks already answered when the app opens stay
   // quiet; one sound for each batch that comes in (a requested route's legs land together).
   const sounds = useSettingsOptional()?.settings.sounds ?? false;
   const seen = useRef<Set<string> | null>(null);
@@ -73,7 +79,7 @@ export function RequestsProvider({ children }: { children: ReactNode }) {
     const fresh = newlyAnswered(seen.current, mine);
     if (!fresh.length) return;
     fresh.forEach((id) => seen.current!.add(id));
-    if (sounds) playYaoom();
+    if (sounds) void playSound('answered');
   }, [mine]); // eslint-disable-line react-hooks/exhaustive-deps
   const membership = useMembershipOptional();
   const earn = membership?.earnForAnswer;
@@ -86,9 +92,11 @@ export function RequestsProvider({ children }: { children: ReactNode }) {
     [earn],
   );
   const addAnswered = useCallback(
-    (flight: Flight, answer: LoadAnswer) => setMine((list) => addAnsweredAsk(list, flight, answer)),
+    (flight: Flight, answer: LoadAnswer, route?: RequestRoute) => setMine((list) => addAnsweredAsk(list, flight, answer, route)),
     [],
   );
+  const remove = useCallback((ids: string[]) => setMine((list) => removeRequests(list, ids)), []);
+  const restore = useCallback((back: LoadRequest[]) => setMine((list) => restoreRequests(list, back)), []);
 
   const value = useMemo<RequestsContextValue>(
     () => ({
@@ -98,13 +106,15 @@ export function RequestsProvider({ children }: { children: ReactNode }) {
       askFor: (flight) => askFor(mine, flight),
       cancelAsk: cancel,
       addAnswered,
+      removeRequests: remove,
+      restoreRequests: restore,
       reportFor: (flight) => reports[flightKey(flight)] ?? null,
       report,
       feedAnswers,
       answerFeed,
       openFeedCount: (now) => feedAsks(now).filter((r) => !feedAnswers[r.id]).length,
     }),
-    [mine, reports, ask, cancel, addAnswered, report, feedAnswers, answerFeed],
+    [mine, reports, ask, cancel, addAnswered, remove, restore, report, feedAnswers, answerFeed],
   );
   return <RequestsContext.Provider value={value}>{children}</RequestsContext.Provider>;
 }

@@ -36,7 +36,7 @@ describe('at-airport card and departures (round 33)', () => {
     });
     expect(texts()).toContain('At DAL? Report a load');
     // The count is flights still to leave, not ones that already went.
-    expect(texts()).toContain('3 departures in the next 5 hours. Pick yours from the board.');
+    expect(texts()).toContain('3 departures in the next 5 hours.');
     act(() => r!.root.find((n) => n.props.accessibilityLabel === 'Report a load at DAL' && n.props.onPress).props.onPress());
     expect(onReport).toHaveBeenCalled();
     act(() => r!.update(<AtAirportCard code="DAL" upcoming={0} onBoard={0} onReport={onReport} />));

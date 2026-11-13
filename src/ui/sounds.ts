@@ -3,31 +3,47 @@ import { useSyncExternalStore } from 'react';
 import { Platform } from 'react-native';
 
 import { successTap } from './haptics';
-import { YAOOM_DATA_URI } from './yaoomData';
+import { ANSWERED_DATA_URI, LEAVE_DATA_URI, SENT_DATA_URI } from './soundData';
 
 /**
- * Sound effects (round 181). John: "add a yaoom sound effect when a request is answered". The yaoom is
- * an original sound made for OutBound (design/yaoom-source.wav); no artist's audio is used.
+ * Sound effects (round 181 onward). Round 197, John: "remove the current sound effects loaded on the app. Lets
+ * redo some sound effects that would make sense on this app and keep it subtle to very key specific actions."
+ * The fart and the moan are gone. Three soft, short, original bell tones (design/chimes-synth.py), each on one
+ * key moment only:
+ *   answered  two notes rising: a load request you made got its answer
+ *   sent      one light tap: your load request went out
+ *   leave     three notes falling: the Leave By card turns to Leave now while you're looking at it
+ * Nothing else makes a sound. They're mixed quiet in the files themselves.
  *
- * It plays over whatever else is on (mixWithOthers), so it never stops someone's music. Never throws:
+ * They play over whatever else is on (mixWithOthers), so they never stop someone's music. Never throws:
  * a missed sound is fine.
  *
  * Round 183, John: "my phone is not muted I cant hear it". Rounds 181 and 182 loaded the sound as a
  * bundled file. In Expo Go an update keeps its files under bare content hashes with no file extension,
  * and iPhone's player can't tell what such a file is, so it most likely never loaded. On iPhone the
- * sound now comes from a data URI (AAC, audio/mp4): expo-audio writes it to a temp file that ends in
- * a real audio extension, which the player recognizes. Android still uses the bundled file.
+ * sounds come from data URIs (AAC, audio/mp4): expo-audio writes each to a temp file that ends in
+ * a real audio extension, which the player recognizes. Android uses the bundled files.
  *
- * Whether it loaded is kept (useSoundState), so Settings can say so if it ever fails again.
+ * Whether they loaded is kept (useSoundState), so Settings can say so if it ever fails again.
  */
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const YAOOM_FILE = require('../../assets/sounds/yaoom.m4a');
+export type SoundName = 'answered' | 'sent' | 'leave';
+export const SOUND_NAMES: readonly SoundName[] = ['answered', 'sent', 'leave'];
 
-export const yaoomSource = (os: string = Platform.OS): AudioSource | number =>
-  os === 'ios' ? { uri: YAOOM_DATA_URI } : YAOOM_FILE;
+const FILES: Record<SoundName, number> = {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  answered: require('../../assets/sounds/answered.m4a'),
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  sent: require('../../assets/sounds/sent.m4a'),
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  leave: require('../../assets/sounds/leave.m4a'),
+};
+const URIS: Record<SoundName, string> = { answered: ANSWERED_DATA_URI, sent: SENT_DATA_URI, leave: LEAVE_DATA_URI };
+
+export const soundSource = (name: SoundName, os: string = Platform.OS): AudioSource | number =>
+  os === 'ios' ? { uri: URIS[name] } : FILES[name];
 
 /**
- * What the yaoom last did, shown under Settings > Display (round 184) so we can see on John's phone
+ * What the sound last did, shown under Settings > Display (round 184) so we can see on John's phone
  * whether it loaded and played, since it can't be heard from here.
  */
 export type SoundState =
@@ -60,38 +76,57 @@ export function soundCheckText(s: SoundState, fmt: (at: number) => string): stri
     case 'idle':
       return 'Sound check: not loaded yet.';
     case 'loading':
-      return 'Sound check: loading the yoooom…';
+      return 'Sound check: loading the sound…';
     case 'failed':
-      return `Sound check: the yoooom couldn't load (${s.detail}).`;
+      return `Sound check: the sound couldn't load (${s.detail}).`;
     case 'ready':
       if (s.playing) return 'Sound check: playing now.';
       return s.playedAt ? `Sound check: loaded, last played ${fmt(s.playedAt)}.` : 'Sound check: loaded, not played yet.';
   }
 }
 
-let loading: Promise<AudioPlayer | null> | null = null;
+type Players = Partial<Record<SoundName, AudioPlayer>>;
+let loading: Promise<Players | null> | null = null;
 let playedAt: number | null = null;
+// When each sound last started, so the same one never stacks up (several cards can flip at once) and the
+// answered chime waits for the sent tap to finish rather than landing on top of it.
+let lastAt: Partial<Record<SoundName, number>> = {};
+/** The same sound twice within this long plays once. */
+export const SAME_SOUND_GAP_MS = 2000;
+/** The answered chime starts at least this long after a sent tap (the demo answers a request at once). */
+export const AFTER_SENT_MS = 450;
 
 const fail = (e: unknown) => setState({ kind: 'failed', detail: e instanceof Error ? e.message : String(e) });
 
 /**
- * Round 184 (still silent after round 183): the audio mode is set and waited for before the player
- * is made, so the first play never runs ahead of it. The yaoom now plays even with the phone on
- * silent (the playback category, mixed with other audio, so music keeps going); the Sound effects
- * switch is the way to turn it off.
+ * Round 184 (still silent after round 183): the audio mode is set and waited for before the players
+ * are made, so the first play never runs ahead of it. Sounds play even with the phone on silent (the
+ * playback category, mixed with other audio, so music keeps going); the Sound effects switch is the way
+ * to turn them off. One player per sound; one that can't load leaves the others working.
  */
-function ready(): Promise<AudioPlayer | null> {
+function ready(): Promise<Players | null> {
   if (loading) return loading;
   setState({ kind: 'loading' });
   loading = (async () => {
     try {
       await setAudioModeAsync({ playsInSilentMode: true, interruptionMode: 'mixWithOthers' }).catch(() => {});
-      const p = createAudioPlayer(yaoomSource());
-      p.addListener?.('playbackStatusUpdate', (st) => {
-        if (st.error) fail(st.error);
-        else if (st.isLoaded) setState({ kind: 'ready', playedAt, playing: !!st.playing });
-      });
-      return p;
+      const players: Players = {};
+      for (const name of SOUND_NAMES) {
+        try {
+          const p = createAudioPlayer(soundSource(name));
+          // Settings' sound check follows the answered chime, the one its switch plays.
+          if (name === 'answered') {
+            p.addListener?.('playbackStatusUpdate', (st) => {
+              if (st.error) fail(st.error);
+              else if (st.isLoaded) setState({ kind: 'ready', playedAt, playing: !!st.playing });
+            });
+          }
+          players[name] = p;
+        } catch (e) {
+          if (name === 'answered') throw e;
+        }
+      }
+      return players;
     } catch (e) {
       fail(e);
       loading = null;
@@ -101,30 +136,41 @@ function ready(): Promise<AudioPlayer | null> {
   return loading;
 }
 
-/** Loads the yaoom ahead of time (round 182), so the first answer plays it right away. */
+/** Loads the sounds ahead of time (round 182), so the first one plays right away. */
 export function preloadSounds(): void {
   void ready();
 }
 
-export async function playYaoom(): Promise<void> {
-  // A tap you can feel with every yaoom (round 184), even where sound can't play.
-  successTap();
-  const p = await ready();
+/** Plays one of the chimes. The answered chime comes with a tap you can feel (round 184). */
+export async function playSound(name: SoundName): Promise<void> {
+  const now = Date.now();
+  const last = lastAt[name];
+  if (last != null && now - last < SAME_SOUND_GAP_MS) return;
+  lastAt[name] = now;
+  if (name === 'answered') successTap();
+  const players = await ready();
+  const p = players?.[name];
   if (!p) return;
+  const sentAt = lastAt.sent;
+  const wait = name === 'answered' && sentAt != null ? sentAt + AFTER_SENT_MS - Date.now() : 0;
+  if (wait > 0) await new Promise((done) => setTimeout(done, wait));
   try {
     // Only rewind a player that has already played (round 182).
     if (p.currentTime > 0) await p.seekTo(0).catch(() => {});
     p.play();
-    playedAt = Date.now();
-    if (state.kind === 'ready') setState({ kind: 'ready', playedAt, playing: true });
+    if (name === 'answered') {
+      playedAt = Date.now();
+      if (state.kind === 'ready') setState({ kind: 'ready', playedAt, playing: true });
+    }
   } catch (e) {
-    fail(e);
+    if (name === 'answered') fail(e);
   }
 }
 
-/** For tests: forget the player, audio mode and state. */
+/** For tests: forget the players, audio mode and state. */
 export function resetSounds(): void {
   loading = null;
   playedAt = null;
+  lastAt = {};
   state = { kind: 'idle' };
 }

@@ -393,7 +393,7 @@ const styles = StyleSheet.create({
   fieldStacked: { flex: 0 },
   input: {
     minHeight: minTapTarget,
-    borderRadius: radius.sm,
+    borderRadius: radius.all,
     borderWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: spacing.rowX,
     paddingVertical: 0,

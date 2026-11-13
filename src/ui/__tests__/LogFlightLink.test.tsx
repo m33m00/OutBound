@@ -16,7 +16,15 @@ jest.mock('@react-native-async-storage/async-storage', () =>
 
 // Leaves DFW at 11:30 PM local, so its day is the 30th though it's the 31st in UTC.
 const depart = zonedToUtc('2026-10-30', '23:30', 'America/Chicago');
-const flight: Flight = { id: 'x', airline: 'AA', flightNumber: '88', from: 'DFW', to: 'LAX', departUtc: depart, arriveUtc: depart + 3 * 3600_000 };
+const flight: Flight = {
+  id: 'x',
+  airline: 'AA',
+  flightNumber: '88',
+  from: 'DFW',
+  to: 'LAX',
+  departUtc: depart,
+  arriveUtc: depart + 3 * 3600_000,
+};
 
 describe('LogFlightLink', () => {
   let r: ReactTestRenderer | undefined;

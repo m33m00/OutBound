@@ -112,9 +112,9 @@ const styles = StyleSheet.create({
   screen: { flex: 1, paddingHorizontal: spacing.page },
   body: { gap: spacing.section, paddingBottom: spacing.page },
   choices: { gap: spacing.group },
-  choice: { flexDirection: 'row', alignItems: 'center', gap: spacing.group, padding: spacing.rowX, borderRadius: radius.md },
+  choice: { flexDirection: 'row', alignItems: 'center', gap: spacing.group, padding: spacing.rowX, borderRadius: radius.all },
   choiceText: { flex: 1, gap: 2 },
-  iconTile: { width: 32, height: 32, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
+  iconTile: { width: 32, height: 32, borderRadius: radius.all, alignItems: 'center', justifyContent: 'center' },
   radio: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
   footer: { textAlign: 'center' },
 });

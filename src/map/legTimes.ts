@@ -11,6 +11,8 @@
  *   line, and hidden when every spot overlaps a label, mark, badge, the
  *   legend, another time label or the edge of the visible area.
  * - Not interactive: drawn in the marks picture, never hit tested.
+ * - A canceled leg (round 199) gets a red "Canceled" pill instead of its time, just above the X
+ *   drawn at the middle of its line (routeLayer.ts), never on the line itself.
  */
 import type { Palette } from '@/theme';
 
@@ -39,6 +41,9 @@ export const LEG_TIME_PILL = {
 
 /** Vertical offsets tried in order (pill center relative to the line point). */
 export const LEG_TIME_DY: readonly number[] = [0, -(LEG_TIME_PILL.height + 4), LEG_TIME_PILL.height + 4];
+
+/** A canceled leg's pill never sits on the line: the X is there. Above it first, else below. */
+export const CANCELED_PILL_DY: readonly number[] = [-(LEG_TIME_PILL.height + 4), LEG_TIME_PILL.height + 4];
 
 const MINUTE = 60_000;
 
@@ -78,6 +83,8 @@ export interface LegTimeSpec {
   /** "DFW to ORD, flight time 2 hours 35 minutes" */
   spoken: string;
   legIndex: number;
+  /** Canceled leg (round 199): the pill reads "Canceled" in red and sits just above the line's X. */
+  canceled?: boolean;
 }
 
 /**
@@ -88,6 +95,16 @@ export function legTimeSpecs(selected: RouteLine | null | undefined): LegTimeSpe
   if (!selected) return [];
   const out: LegTimeSpec[] = [];
   selected.legs.forEach((leg, legIndex) => {
+    if (leg.canceled) {
+      out.push({
+        legId: leg.id,
+        text: 'Canceled',
+        spoken: `${leg.fromCode} to ${leg.toCode}, canceled`,
+        legIndex,
+        canceled: true,
+      });
+      return;
+    }
     const min = legMinutes(leg.departUtc, leg.arriveUtc);
     if (min == null) return;
     out.push({
@@ -128,6 +145,8 @@ export interface LegTimeRequest {
   /** Pill size in pt. */
   width: number;
   height: number;
+  /** Offsets to try for this pill; defaults to the list passed to placeLegTimes. */
+  dys?: readonly number[];
 }
 
 export interface PlacedLegTime {
@@ -163,7 +182,7 @@ export function placeLegTimes(
   const pad = LEG_TIME_PILL.pad;
   for (const q of requests) {
     if (!q.anchor) continue;
-    for (const dy of dys) {
+    for (const dy of q.dys ?? dys) {
       const x = q.anchor.x;
       const y = q.anchor.y + dy;
       const box: Box = {
@@ -196,8 +215,16 @@ export interface LegTimeColors {
   text: string;
   /** `surface` at LEG_TIME_PILL.alpha. */
   pill: string;
+  /** Canceled pill (round 199): the same red pair as the cards' Canceled pill. */
+  canceledText: string;
+  canceledPill: string;
 }
 
 export function legTimeColors(palette: Palette): LegTimeColors {
-  return { text: palette.muted, pill: rgba(hexToRgb(palette.surface), LEG_TIME_PILL.alpha) };
+  return {
+    text: palette.muted,
+    pill: rgba(hexToRgb(palette.surface), LEG_TIME_PILL.alpha),
+    canceledText: palette.canceledFg,
+    canceledPill: palette.canceledBg,
+  };
 }

@@ -50,19 +50,33 @@ describe('Appear (design round 29)', () => {
     expect(timing).toHaveBeenCalledTimes(1);
     expect(timing.mock.calls[0][1]).toMatchObject({ toValue: 1, duration: APPEAR_MS, useNativeDriver: true });
     expect(flat(host().props.style).transform).toEqual([]);
-    await act(async () => r!.update(<Appear testID="appear" trigger="b"><Text>Hi</Text></Appear>));
+    await act(async () =>
+      r!.update(
+        <Appear testID="appear" trigger="b">
+          <Text>Hi</Text>
+        </Appear>,
+      ),
+    );
     expect(timing).toHaveBeenCalledTimes(2);
   });
 
   it('slides a pushed view in from the right, but not with Reduce Motion on', async () => {
     await act(async () => {
-      r = create(<Appear testID="appear" kind="push"><Text>Route</Text></Appear>);
+      r = create(
+        <Appear testID="appear" kind="push">
+          <Text>Route</Text>
+        </Appear>,
+      );
     });
     expect((flat(host().props.style).transform as unknown[]).length).toBe(1);
     act(() => r!.unmount());
     reduce = true;
     await act(async () => {
-      r = create(<Appear testID="appear" kind="push"><Text>Route</Text></Appear>);
+      r = create(
+        <Appear testID="appear" kind="push">
+          <Text>Route</Text>
+        </Appear>,
+      );
     });
     expect(flat(host().props.style).transform).toEqual([]);
   });
@@ -112,9 +126,11 @@ describe('Sheet snaps (design round 29)', () => {
   it('tells the screen the new size only once the panel has settled', async () => {
     const onIndexChange = jest.fn();
     let finish: ((r: { finished: boolean }) => void) | undefined;
-    jest.spyOn(Animated, 'spring').mockImplementation(
-      () => ({ start: (cb?: (r: { finished: boolean }) => void) => (finish = cb), stop: () => {}, reset: () => {} }) as never,
-    );
+    jest
+      .spyOn(Animated, 'spring')
+      .mockImplementation(
+        () => ({ start: (cb?: (r: { finished: boolean }) => void) => (finish = cb), stop: () => {}, reset: () => {} }) as never,
+      );
     await act(async () => {
       r = create(
         <Sheet snaps={[100, 300, 600]} index={1} onIndexChange={onIndexChange}>

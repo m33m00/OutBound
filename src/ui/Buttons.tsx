@@ -183,7 +183,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.page,
     // Two-line labels at big text keep clear of the edges.
     paddingVertical: 10,
-    borderRadius: radius.sm,
+    borderRadius: radius.all,
     flexDirection: 'row',
     gap: 6,
     alignItems: 'center',

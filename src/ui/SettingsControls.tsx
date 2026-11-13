@@ -228,7 +228,7 @@ const styles = StyleSheet.create({
   segment: {
     flex: 1,
     minHeight: minTapTarget,
-    borderRadius: radius.sm,
+    borderRadius: radius.all,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: spacing.group,
@@ -244,5 +244,5 @@ const styles = StyleSheet.create({
   },
   controlRow: { paddingHorizontal: spacing.rowX, paddingVertical: spacing.rowY, gap: spacing.group },
   controlHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.group },
-  iconTile: { width: 30, height: 30, borderRadius: 8, alignItems: 'center', justifyContent: 'center', marginRight: 2 },
+  iconTile: { width: 30, height: 30, borderRadius: radius.all, alignItems: 'center', justifyContent: 'center', marginRight: 2 },
 });

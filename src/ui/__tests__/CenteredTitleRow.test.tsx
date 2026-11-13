@@ -7,7 +7,9 @@ describe('CenteredTitleRow', () => {
   it('gives both sides the wider control’s width so the title sits at the center (John, 2026-11-01)', () => {
     let r: ReactTestRenderer;
     act(() => {
-      r = create(<CenteredTitleRow left={<Text>‹ Routes</Text>} title={<Text>DFW → LAX</Text>} right={<Text>‹ 1 of 9 ›</Text>} />);
+      r = create(
+        <CenteredTitleRow left={<Text>‹ Routes</Text>} title={<Text>DFW → LAX</Text>} right={<Text>‹ 1 of 9 ›</Text>} />,
+      );
     });
     const sides = () => r!.root.findAll((n) => n.props.testID === 'title-side' && typeof n.type === 'string');
     const inner = (i: number) => sides()[i].children[0] as unknown as { props: { onLayout: (e: unknown) => void } };

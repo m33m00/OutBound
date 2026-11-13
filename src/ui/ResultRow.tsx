@@ -2,6 +2,7 @@ import { type ComponentRef, memo, type ReactNode, useRef, useState } from 'react
 import { Animated, Pressable, StyleSheet, Text, type TextStyle, useWindowDimensions, View } from 'react-native';
 
 import { AIRPORTS, aircraftLabel, type Flight, type Itinerary, type LegSeats } from '@/engine';
+import { creditsWord, REQUEST_COST } from '@/membership/membership';
 import type { RouteImpact } from '@/live';
 import {
   forSpeech,
@@ -44,6 +45,7 @@ import { pressStyle } from './press';
 import { ScalePressable } from './ScalePressable';
 import { StatusTag, TAG_TONE } from './StatusTag';
 import { withTick } from './haptics';
+import { useChangePop } from './motion';
 import { shiftMinutes, shiftToken } from './timeShift';
 import { TIER_BG, TIER_FG } from './tierColors';
 
@@ -69,6 +71,52 @@ export interface ResultRowProps {
   topAction?: ReactNode;
   /** Swiping left tears the ticket along its perforation and calls this: on a result ticket since round 151. */
   onSwipeSave?: () => void;
+  /**
+   * Round 190 (John): on the open route, each leg whose seats are hidden carries a credit checkbox,
+   * checked to start; the pinned button below requests the checked ones.
+   */
+  legPicks?: LegPicks;
+}
+
+export interface LegPicks {
+  locked: readonly boolean[];
+  checked: readonly boolean[];
+  onToggle: (legIndex: number) => void;
+}
+
+/** The credit checkbox on a leg box whose seats are hidden (round 190, John: "each leg has a credit box"). */
+function LegCreditCheck({
+  checked,
+  name,
+  onToggle,
+  index,
+}: {
+  checked: boolean;
+  name: string;
+  onToggle: () => void;
+  index: number;
+}) {
+  const c = useColors();
+  // The tick settles in or out as you check or uncheck, beside the total it changes (round 198).
+  const pop = useChangePop(checked);
+  return (
+    <Pressable
+      onPress={withTick(onToggle)}
+      hitSlop={8}
+      accessibilityRole="checkbox"
+      accessibilityState={{ checked }}
+      accessibilityLabel={`Request ${name} loads, ${creditsWord(REQUEST_COST)}`}
+      testID={`leg-credit-${index}`}
+      style={({ pressed }) => [styles.creditPill, { backgroundColor: c.accentSoft, opacity: pressed ? 0.7 : 1 }]}>
+      <Animated.View
+        style={[styles.creditBox, { borderColor: c.accent, backgroundColor: checked ? c.accent : 'transparent' }, pop]}>
+        {checked ? <Icon name="checkmark" size={11} weight="bold" tintColor={c.onAccent} fallback={null} /> : null}
+      </Animated.View>
+      <Text style={[styles.creditText, { color: c.accent }]} numberOfLines={1}>
+        {creditsWord(REQUEST_COST)}
+      </Text>
+    </Pressable>
+  );
 }
 
 /** From this text size the seat chip and delay badge sit left-aligned under the times. */
@@ -329,6 +377,7 @@ function LegTimeline({
   large,
   dimmed,
   onLegPress,
+  legPicks,
 }: {
   itinerary: Itinerary;
   status?: RowStatus;
@@ -336,6 +385,7 @@ function LegTimeline({
   large: boolean;
   dimmed: boolean;
   onLegPress?: (flight: Flight) => void;
+  legPicks?: LegPicks;
 }) {
   const c = useColors();
   const openAirport = useOpenAirportSummary();
@@ -364,15 +414,11 @@ function LegTimeline({
         // The flight is its airline's logo alone, centred just under the route line; a tap or hold opens its
         // number and aircraft, as on the tickets (round 158, John: "Can you do the same select or hold on the
         // airline icon ... when you open up a route"). Any status pill sits over the route line (round 136).
-        // Departed and Arrived sit in the box's bottom corners, Departed left under where it left from,
-        // Arrived right under where it landed (round 175, John). Every other pill stays over the line.
-        const corner = view?.tag && (view.tag.kind === 'departed' || view.tag.kind === 'arrived') ? view.tag : null;
-        const cornerPill = corner ? <StatusTag label={corner.label} tone={TAG_TONE[corner.kind]} /> : null;
+        // Every status pill, Departed and Arrived included, sits over the route line (round 191, John: "Departed
+        // and Arrived ... should actually sit on top of the route line", not stacked over the credit box).
         const pills = (
           <View style={styles.legBottom} testID="leg-bottom">
-            <View style={styles.legCorner} testID="leg-corner-left">
-              {corner?.kind === 'departed' ? cornerPill : null}
-            </View>
+            <View style={styles.legCorner} testID="leg-corner-left" />
             <View style={styles.legMeta} testID="leg-flight">
               <FlightPeek
                 airline={leg.flight.airline}
@@ -382,7 +428,14 @@ function LegTimeline({
               />
             </View>
             <View style={[styles.legCorner, styles.legCornerRight]} testID="leg-corner-right">
-              {corner?.kind === 'arrived' ? cornerPill : null}
+              {legPicks?.locked[i] ? (
+                <LegCreditCheck
+                  index={i}
+                  checked={!!legPicks.checked[i]}
+                  name={`${leg.flight.from} to ${leg.flight.to}`}
+                  onToggle={() => legPicks.onToggle(i)}
+                />
+              ) : null}
             </View>
           </View>
         );
@@ -394,7 +447,7 @@ function LegTimeline({
               view={view}
               dimmed={dimmed}
               showTimes={!nonstop}
-              tag={view?.tag && !corner ? <StatusTag label={view.tag.label} tone={TAG_TONE[view.tag.kind]} /> : undefined}
+              tag={view?.tag ? <StatusTag label={view.tag.label} tone={TAG_TONE[view.tag.kind]} /> : undefined}
               onTapCode={onLegPress ? withTick(() => onLegPress(leg.flight)) : undefined}
             />
             {/* No "Continuing to" note on a diverted leg (round 159, John: "I don't care it's continuing to SEA"). */}
@@ -539,6 +592,7 @@ export const ResultRow = memo(function ResultRow({
   saved,
   topAction,
   onSwipeSave,
+  legPicks,
 }: ResultRowProps) {
   const c = useColors();
   const scheme = useColorSchemeName();
@@ -621,6 +675,8 @@ export const ResultRow = memo(function ResultRow({
   // Canceled legs, connections at risk, delays and diversions are all drawn on the route line now (rounds
   // 143 to 146, John), so the row's own tag is left only for a route whose first flight has gone.
   const rowTag = headline?.tone === 'gone' ? headline : null;
+  // On a results ticket it rides the time line (round 196).
+  const topTag = large ? null : rowTag;
   const ageWords = summaryAge ? summaryAge[0].toLowerCase() + summaryAge.slice(1) : null;
   const cardAge = ageWords ? `Seats ${ageWords}` : null;
   // A moved time (John, 2026-11-02): the schedule sits small and struck on its own line above, and the big
@@ -635,51 +691,69 @@ export const ResultRow = memo(function ResultRow({
           {t.depart} – {t.arrive}
         </Text>
       ) : null}
-      <Text
-        style={[textStyles.number, { color: timeColor }]}
-        numberOfLines={stacked ? undefined : 1}
-        adjustsFontSizeToFit={!stacked}
-        minimumFontScale={0.7}
-        testID="row-times">
-        {canceledRoute ? (
-          // A canceled nonstop: the top times go grey, not struck; the leg's pill and struck times say it
-          // (John, 2026-11-02).
-          // A red line through it too (round 161, John).
-          <Text style={[{ color: hc.muted }, styles.struck, { textDecorationColor: c.canceled }]} testID="row-times-canceled">
-            {t.depart} – {t.arrive}
-          </Text>
-        ) : (
-          <>
-            {departMoved ? (
-              <Text style={departTint} testID="row-new-depart">
-                {keep(first!.newText!)}
-              </Text>
-            ) : (
-              t.depart
-            )}
-            {' – '}
-            {pendingArrival ? (
-              // A diversion on the route: the arrival isn't known yet, like the leg's own TBD (John, 2026-11-02).
-              <Text style={{ color: hc.muted }} testID="row-arrive-tbd">
-                {ARRIVAL_TBD}
-              </Text>
-            ) : arriveMoved ? (
-              <Text style={arriveTint} testID="row-new-arrive">
-                {keep(status!.arrival!.newText)}
-              </Text>
-            ) : (
-              t.arrive
-            )}
-          </>
-        )}
-        {t.plusDays ? <Text style={[textStyles.small, { color: hc.muted }]}> {t.plusDays}</Text> : null}
-      </Text>
+      {/* Departed and Arrived sit up here, right of the times now (round 196, John: "Move the Departed and
+          Arrived pill to the right of the new scheduled time ... I think it looks better at the top portion of
+          the ticket"). The opened route keeps each leg's own pill on its line. */}
+      <View style={styles.timesRow} testID="row-times-line">
+        <Text
+          style={[textStyles.number, styles.timesText, { color: timeColor }]}
+          numberOfLines={stacked ? undefined : 1}
+          adjustsFontSizeToFit={!stacked}
+          minimumFontScale={0.7}
+          testID="row-times">
+          {canceledRoute ? (
+            // A canceled nonstop: the top times go grey, not struck; the leg's pill and struck times say it
+            // (John, 2026-11-02).
+            // A red line through it too (round 161, John).
+            <Text style={[{ color: hc.muted }, styles.struck, { textDecorationColor: c.canceled }]} testID="row-times-canceled">
+              {t.depart} – {t.arrive}
+            </Text>
+          ) : (
+            <>
+              {departMoved ? (
+                <Text style={departTint} testID="row-new-depart">
+                  {keep(first!.newText!)}
+                </Text>
+              ) : (
+                t.depart
+              )}
+              {' – '}
+              {pendingArrival ? (
+                // A diversion on the route: the arrival isn't known yet, like the leg's own TBD (John, 2026-11-02).
+                <Text style={{ color: hc.muted }} testID="row-arrive-tbd">
+                  {ARRIVAL_TBD}
+                </Text>
+              ) : arriveMoved ? (
+                <Text style={arriveTint} testID="row-new-arrive">
+                  {keep(status!.arrival!.newText)}
+                </Text>
+              ) : (
+                t.arrive
+              )}
+            </>
+          )}
+          {t.plusDays ? <Text style={[textStyles.small, { color: hc.muted }]}> {t.plusDays}</Text> : null}
+        </Text>
+        {topTag ? (
+          <View style={styles.timesTag} testID="row-tag">
+            <StatusTag label={topTag.label} tone={topTag.tone} />
+          </View>
+        ) : null}
+      </View>
     </View>
   );
   // The flights under the perforation; the save tear draws a copy of it too (round 129).
   const ticketBodyView = (
     <View style={large ? styles.ticketBody : styles.stubSlim}>
-      <LegTimeline itinerary={it} status={status} now={now} large={!!large} dimmed={dimmed} onLegPress={onLegPress} />
+      <LegTimeline
+        itinerary={it}
+        status={status}
+        now={now}
+        large={!!large}
+        dimmed={dimmed}
+        onLegPress={onLegPress}
+        legPicks={large ? legPicks : undefined}
+      />
       {cardAge && SHOW_SEAT_AGE ? (
         <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]} testID="seat-age">
           {cardAge}
@@ -788,16 +862,11 @@ export const ResultRow = memo(function ResultRow({
             row never stacks (John, 2026-10-31). */}
       {/* The flights live under their legs on the route line now (round 145, John); this line keeps only
             a live tag (delays, a diversion) and the seat age when ages are on. */}
-      {rowTag || shownAge ? (
+      {shownAge ? (
         <View style={styles.legLine} testID="flights-line">
           {/* A connection at risk is flagged on its stop and a canceled leg is drawn red with an X on the
               route line now (round 143, John), so the row's tag skips both ("Drop the tag", round 144).
               VoiceOver still says it. */}
-          {rowTag ? (
-            <View style={styles.flight} testID="row-tag">
-              <StatusTag label={rowTag.label} tone={rowTag.tone} />
-            </View>
-          ) : null}
           {shownAge ? (
             <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]} testID="seat-age">
               {shownAge}
@@ -1018,11 +1087,14 @@ export const ResultRow = memo(function ResultRow({
 const EDGE_W = 5;
 
 const styles = StyleSheet.create({
+  timesRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  timesText: { flexShrink: 1 },
+  timesTag: { flexShrink: 0 },
   tearLine: { zIndex: 2 },
   // No overflow clip, so the soft shadow shows; the edge rounds its own corners instead.
   row: {
     flexDirection: 'row',
-    borderRadius: radius.md,
+    borderRadius: radius.all,
     borderWidth: CARD_EDGE_W,
     minHeight: 44,
   },
@@ -1034,8 +1106,8 @@ const styles = StyleSheet.create({
   flatDark: { shadowOpacity: 0 },
   edge: {
     width: EDGE_W,
-    borderTopLeftRadius: radius.md - 1,
-    borderBottomLeftRadius: radius.md - 1,
+    borderTopLeftRadius: radius.all - 1,
+    borderBottomLeftRadius: radius.all - 1,
   },
   content: {
     flex: 1,
@@ -1050,8 +1122,8 @@ const styles = StyleSheet.create({
     paddingBottom: 4,
     paddingHorizontal: spacing.rowX,
     gap: 4,
-    borderTopLeftRadius: radius.md - 1,
-    borderTopRightRadius: radius.md - 1,
+    borderTopLeftRadius: radius.all - 1,
+    borderTopRightRadius: radius.all - 1,
   },
   // In the list, the picked row keeps its old stack: the same parts, no stub.
   stubSlim: { gap: spacing.group },
@@ -1152,16 +1224,35 @@ const styles = StyleSheet.create({
     gap: 4,
     paddingVertical: 8,
     paddingHorizontal: 12,
-    borderRadius: radius.sm + 2,
+    borderRadius: radius.all,
   },
   // A leg's flight chip with its aircraft stacked under it, centred under the route line (round 155, John:
   // "It's not aligned center underneath the route line").
   // Pulled up toward the route line (round 158, John: "Can the airline logo be scooted up closer").
   legMeta: { alignItems: 'center', marginTop: -2 },
-  // Logo centred, with an even corner on each side for Departed (left) and Arrived (right).
+  // Logo centred, with an even corner on each side; the right one holds the credit checkbox (round 190).
   legBottom: { flexDirection: 'row', alignItems: 'center', alignSelf: 'stretch', columnGap: 6 },
   legCorner: { flex: 1, flexBasis: 0, alignItems: 'flex-start' },
-  legCornerRight: { alignItems: 'flex-end' },
+  legCornerRight: { alignItems: 'flex-end', gap: 4 },
+  // The credit checkbox (round 190): a soft blue pill, a square that fills when checked, then "1 credit".
+  creditPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    borderRadius: 999,
+    paddingLeft: 7,
+    paddingRight: 9,
+    minHeight: 28,
+  },
+  creditBox: {
+    width: 16,
+    height: 16,
+    borderRadius: radius.all,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  creditText: { fontFamily: fonts.bodySemiBold, fontSize: 13, lineHeight: 17 },
   connection: { flex: 1, alignItems: 'center', gap: 4 },
   connectionText: { textAlign: 'center', alignSelf: 'stretch' },
   struck: { textDecorationLine: 'line-through' },
@@ -1173,7 +1264,7 @@ const styles = StyleSheet.create({
   endRight: { textAlign: 'right' },
   codePill: {
     borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 6,
+    borderRadius: radius.pill,
     paddingHorizontal: 7,
     paddingVertical: 2,
   },

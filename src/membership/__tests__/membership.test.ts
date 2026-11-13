@@ -10,7 +10,7 @@ import {
   isUnlocked,
   parseTier,
   parseWallet,
-  requestRoute,
+  requestLegs,
   seatsLocked,
   spentTotal,
   tracksCredits,
@@ -52,18 +52,18 @@ describe('membership tiers (round 176)', () => {
     expect(w.entries[0].label).toBe('Answered WN 2');
   });
 
-  it('spends a credit to unlock a route, once, and refuses when short', () => {
-    const short = requestRoute(EMPTY_WALLET, ['A', 'B'], 'Requested', NOW);
+  it('spends a credit per leg to unlock a route, once, and refuses when short (round 189: per leg)', () => {
+    const short = requestLegs(EMPTY_WALLET, ['A', 'B'], 'Requested', NOW);
     expect(short.outcome).toBe('short');
     let w = welcome(EMPTY_WALLET, 'free', NOW);
-    const first = requestRoute(w, ['A', 'B'], 'Requested DAL to LAX', NOW);
+    const first = requestLegs(w, ['A', 'B'], 'Requested DAL to LAX', NOW);
     expect(first.outcome).toBe('requested');
     w = first.wallet;
-    expect(balance(w)).toBe(WELCOME_CREDITS.free - 1);
-    expect(spentTotal(w)).toBe(1);
+    expect(balance(w)).toBe(WELCOME_CREDITS.free - 2);
+    expect(spentTotal(w)).toBe(2);
     expect(isUnlocked(w, ['A', 'B'])).toBe(true);
     expect(isUnlocked(w, ['A', 'C'])).toBe(false);
-    expect(requestRoute(w, ['B', 'A'], 'Again', NOW).outcome).toBe('already');
+    expect(requestLegs(w, ['B', 'A'], 'Again', NOW).outcome).toBe('already');
   });
 
   it('hides every leg’s seats and makes steady sample loads', () => {
@@ -84,7 +84,7 @@ describe('membership tiers (round 176)', () => {
   });
 
   it('reads back a saved wallet and drops anything odd', () => {
-    const w = requestRoute(welcome(EMPTY_WALLET, 'payg', NOW), ['A'], 'Requested', NOW).wallet;
+    const w = requestLegs(welcome(EMPTY_WALLET, 'payg', NOW), ['A'], 'Requested', NOW).wallet;
     expect(parseWallet(JSON.parse(JSON.stringify(w)))).toEqual(w);
     expect(
       parseWallet({ entries: [{ id: 'x', at: NOW, delta: 9999, kind: 'welcome', label: 'x' }], welcomed: ['gold'] }),

@@ -182,7 +182,7 @@ const styles = StyleSheet.create({
   screen: { flex: 1, paddingHorizontal: spacing.page },
   input: {
     minHeight: minTapTarget,
-    borderRadius: radius.sm,
+    borderRadius: radius.all,
     paddingHorizontal: spacing.rowX,
     marginBottom: spacing.group,
     flexDirection: 'row',
@@ -201,11 +201,11 @@ const styles = StyleSheet.create({
     borderLeftWidth: 1,
     borderRightWidth: 1,
   },
-  itemFirst: { borderTopWidth: 1, borderTopLeftRadius: radius.md, borderTopRightRadius: radius.md },
-  itemLast: { borderBottomWidth: 1, borderBottomLeftRadius: radius.md, borderBottomRightRadius: radius.md },
+  itemFirst: { borderTopWidth: 1, borderTopLeftRadius: radius.all, borderTopRightRadius: radius.all },
+  itemLast: { borderBottomWidth: 1, borderBottomLeftRadius: radius.all, borderBottomRightRadius: radius.all },
   // Inset to the text, like every grouped list.
   sep: { position: 'absolute', top: 0, left: spacing.rowX, right: 0, height: StyleSheet.hairlineWidth },
-  codePill: { minWidth: 56, paddingHorizontal: 8, paddingVertical: 4, borderRadius: radius.sm - 4, alignItems: 'center' },
+  codePill: { minWidth: 56, paddingHorizontal: 8, paddingVertical: 4, borderRadius: radius.all, alignItems: 'center' },
   code: { fontFamily: fonts.mono, fontSize: 15, lineHeight: 20, letterSpacing: 0.4 },
   name: { flex: 1, gap: 1 },
   tag: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 999 },

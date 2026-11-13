@@ -18,7 +18,8 @@ import { legSamples, makeLiftedProjector, projectSamples, runsToSvg, type Runs }
 import type { GlobeCamera, Viewport } from './camera';
 import { hexToRgb, rgba, type Rgb } from './globeColors';
 import type { HitLine } from './hitTest';
-import { drawLegs, isDrawableLeg, legStyle, LINE } from './routeModel';
+import { legTimeAnchor } from './legTimes';
+import { CANCELED_X, canceledXSegments, drawLegs, isDrawableLeg, legStyle, LINE } from './routeModel';
 import type { RouteLine } from './types';
 
 export interface RouteLayerInput {
@@ -111,6 +112,19 @@ export function recordRouteLayer(input: RouteLayerInput): RouteLayer {
     }
     canvas.drawPath(path, line);
     const route = routes.find((r) => r.id === d.routeId);
+    // Canceled: an X at the middle of the line, and no pulse (nothing is flying there).
+    if (d.leg.canceled && d.role === 'selected') {
+      const mid = legTimeAnchor(legSamples(d.leg), project, CANCELED_X.t);
+      if (mid) {
+        const disc = Skia.Paint();
+        disc.setAntiAlias(true);
+        disc.setColor(Skia.Color(palette.surface));
+        canvas.drawCircle(mid.x, mid.y, CANCELED_X.disc, disc);
+        const x = stroke(style.color, CANCELED_X.width);
+        for (const [x0, y0, x1, y1] of canceledXSegments(mid.x, mid.y)) canvas.drawLine(x0, y0, x1, y1, x);
+      }
+      continue;
+    }
     const legIndex = route ? route.legs.indexOf(d.leg) : 0;
     pulses.push({
       key: `${d.routeId}:${legIndex}:${d.role}`,

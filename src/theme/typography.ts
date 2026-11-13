@@ -4,8 +4,8 @@ import { fonts } from './fonts';
 
 /**
  * Type scale for the Clean look (round 120, John switched to look B on 2026-11-03), closest to
- * Flighty: Geist throughout, bold and tightly tracked for titles, Geist Mono for times so digits
- * line up row to row. Reading sizes stay where round 112 had them (body 14, heading 16).
+ * Flighty: Sora throughout since round 200 (Geist before), bold and tightly tracked for titles, Geist
+ * Mono for times so digits line up row to row. Reading sizes stay where round 112 had them (body 14, heading 16).
  */
 export const textStyles = {
   /** Screen and sheet titles. */

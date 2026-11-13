@@ -11,7 +11,7 @@ import { otherEndExcludes, searchRequest, showGetHome } from '@/search/areas';
 import { dateChips } from '@/search/dates';
 import { boardingLeadMin, driveQuery } from '@/search/leaveBy';
 import { chooseOrigin, restSpot, showLocationCard, type RestSpot } from '@/search/origin';
-import { legLookup, resultsBanner, rowStatus, statusLookups } from '@/search/statusTags';
+import { legLookup, markCanceledLegs, requestableLegs, resultsBanner, rowStatus, statusLookups } from '@/search/statusTags';
 import { SAMPLE_TZ, SCHEDULE_SOURCE, useRouteSearch } from '@/search/useRouteSearch';
 import { minTapTarget, spacing, textStyles, useColors } from '@/theme';
 import { openRequest, reopenOutcome, savedKey, savedRouteFrom, type SavedRoute } from '@/trips/savedRoutes';
@@ -19,6 +19,7 @@ import { useSavedRoutes } from '@/trips/SavedRoutesProvider';
 import { AirportPicker } from '@/ui/AirportPicker';
 import { Appear } from '@/ui/Appear';
 import { useSettings } from '@/settings/SettingsProvider';
+import { playSound } from '@/ui/sounds';
 import { changedFilters, DEFAULT_FILTERS, homeAirports, type SearchFilters } from '@/settings/settings';
 import { FiltersModal } from '@/ui/FiltersModal';
 import { airportYouAreAt, sampleDepartures } from '@/requests/atAirport';
@@ -38,8 +39,9 @@ import { ResultsPanel } from '@/ui/ResultsPanel';
 import { SearchPanel } from '@/ui/SearchPanel';
 import { CreditsChip } from '@/ui/Credits';
 import { PlanPicker } from '@/ui/PlanPicker';
-import { RequestLoadsCard } from '@/ui/RequestLoadsCard';
-import { demoLoad, hideSeats, seatsLocked, TIER_LABEL } from '@/membership/membership';
+import { RequestLoadsBar } from '@/ui/RequestLoadsBar';
+import type { LegPicks } from '@/ui/ResultRow';
+import { demoLoad, hideSeats, seatsLocked } from '@/membership/membership';
 import { useMembership } from '@/membership/MembershipProvider';
 import { useIntroDone } from '@/launch/introState';
 import { flightKey } from '@/requests/requests';
@@ -121,27 +123,72 @@ export default function HomeScreen() {
   const membership = useMembership();
   const state = useMemo(() => {
     if (rawState.status !== 'done' || !seatsLocked(membership.tier)) return rawState;
-    const view = (it: Itinerary) => (membership.isLocked(it) ? hideSeats(it) : it);
+    // Round 189: a leg whose loads were requested shows its seats even while its route's other legs hide.
+    const view = (it: Itinerary) => {
+      const locked = membership.lockedLegs(it);
+      return locked.length ? hideSeats(it, (i) => !locked.includes(i)) : it;
+    };
     return { ...rawState, results: rawState.results.map(view), hiddenResults: rawState.hiddenResults.map(view) };
   }, [rawState, membership]);
   const [planLater, setPlanLater] = useState(false);
   const introDone = useIntroDone();
   const planPrompt = introDone && settingsLoaded && membership.tier == null && !planLater;
   const answerLoads = () => router.navigate('/feed');
-  // A request in this demo answers at once with sample loads, saves the route and opens My Trips.
-  const requestLoads = (it: Itinerary) => {
+  // A request in this demo answers at once with sample loads and saves the route. Round 189 (John):
+  // a credit per leg, for the legs picked. Once every leg is requested it opens My Trips as before;
+  // a request that leaves legs hidden stays on the route so you can see the seats you got.
+  const requestLoads = (it: Itinerary, legs: readonly number[]) => {
     if (state.status !== 'done') return;
     const raw =
       rawState.status === 'done' ? [...rawState.results, ...rawState.hiddenResults].find((r) => r.id === it.id) : undefined;
     const full = raw ?? it;
-    const title = [full.origin, ...full.legs.map((l) => l.flight.to)].join(' to ');
-    if (membership.requestRoute(full, `Requested ${title}`) !== 'requested') return;
+    const picked = legs.map((i) => full.legs[i]).filter((l) => l != null);
+    if (!picked.length) return;
+    const title =
+      picked.length === full.legs.length
+        ? [full.origin, ...full.legs.map((l) => l.flight.to)].join(' to ')
+        : picked.map((l) => `${l.flight.from} to ${l.flight.to}`).join(', ');
+    const lockedBefore = requestable(it);
+    const allowed = new Set(lockedBefore);
+    if (legs.some((i) => !allowed.has(i))) return;
+    if (membership.requestLegs(full, legs, `Requested ${title}`) !== 'requested') return;
+    // Round 197: one light tap as the request goes out; the answered chime follows it.
+    if (settings.sounds) void playSound('sent');
     const at = Date.now();
-    for (const l of full.legs) requests.addAnswered(l.flight, { ...demoLoad(l.seats, flightKey(l.flight)), at });
+    // A connecting route's legs keep its name, so My Trips shows them together (round 194, John).
+    const route =
+      full.legs.length > 1
+        ? { id: `${full.id}-${state.request.date}`, title: [full.origin, ...full.legs.map((l) => l.flight.to)].join(' to ') }
+        : undefined;
+    for (const l of picked) requests.addAnswered(l.flight, { ...demoLoad(l.seats, flightKey(l.flight)), at }, route);
     saved.save(savedRouteFrom(full, state.request, at));
-    router.navigate('/trips');
+    if (lockedBefore.every((i) => legs.includes(i))) router.navigate('/trips');
   };
   const saved = useSavedRoutes();
+  // Round 190 (John): each hidden leg on the open route has a credit checkbox, checked to start; the
+  // pinned bar requests the checked ones. Unchecked legs are kept by flight, so paging back keeps them.
+  const [unchecked, setUnchecked] = useState<Record<string, true>>({});
+  const [requestBarH, setRequestBarH] = useState(0);
+  // Only legs you could still board can be requested (round 192, John: "If a flight is canceled there should be
+  // no way to request the loads for that flight. It would be a waste"). Same for one that has left or diverted.
+  const requestable = (it: Itinerary) => requestableLegs(membership.lockedLegs(it), rowStatuses?.[it.id]);
+  const legPicks = (it: Itinerary): LegPicks | undefined => {
+    const locked = requestable(it);
+    if (!locked.length) return undefined;
+    return {
+      locked: it.legs.map((_, i) => locked.includes(i)),
+      checked: it.legs.map((l) => !unchecked[flightKey(l.flight)]),
+      onToggle: (i) => {
+        const key = flightKey(it.legs[i].flight);
+        setUnchecked((was) => {
+          const next = { ...was };
+          if (next[key]) delete next[key];
+          else next[key] = true;
+          return next;
+        });
+      },
+    };
+  };
 
   // 0-7 days out, counted in the origin's local calendar (sample-data zone while From is empty).
   const today = localDate(Date.now(), origin ? AIRPORTS[origin].tz : SAMPLE_TZ);
@@ -242,9 +289,6 @@ export default function HomeScreen() {
     [state, showHidden],
   );
   const routes = useMemo(() => results.map((it) => toRouteLine(it, airport)), [results]);
-  // The globe draws only the picked route: no overview of every result's grey lines, so it can't
-  // flash on screen while the panel moves after a search (John, 2026-11-02).
-  const globeRoutes = useMemo(() => (selectedId ? routes.filter((r) => r.id === selectedId) : []), [routes, selectedId]);
 
   // Delay/weather badges (item 7). Until the live functions are deployed the
   // hook reports 'off'; dev builds then show sample impacts so the screens look finished (round 30: no labels).
@@ -256,8 +300,20 @@ export default function HomeScreen() {
   // Sample flights get sample statuses; real flights from the schedule DB get live ones.
   const flightStatuses = useFlightStatuses(lookups, LIVE_FLIGHTS ? LIVE_STATUS_OPTIONS : SAMPLE_STATUS_OPTIONS);
   const rowStatuses = useMemo(
-    () => Object.fromEntries(results.map((it) => [it.id, rowStatus(it, flightStatuses.byKey, filters)])),
-    [results, flightStatuses.byKey, filters],
+    () => Object.fromEntries(results.map((it) => [it.id, rowStatus(it, flightStatuses.byKey, filters, now)])),
+    [results, flightStatuses.byKey, filters, now],
+  );
+  // The globe draws only the picked route: no overview of every result's grey lines, so it can't
+  // flash on screen while the panel moves after a search (John, 2026-11-02). A canceled leg is marked
+  // so the map draws it red with an X (round 199, John: "Route map should indicate in some way this leg is canceled").
+  // Keyed on which legs are canceled, not on every status tick, so the map only redraws when that changes.
+  const canceledKey = selectedId
+    ? (rowStatuses[selectedId]?.legs ?? []).map((l) => (l.tag?.kind === 'canceled' ? 'x' : '-')).join('')
+    : '';
+  const globeRoutes = useMemo(
+    () => (selectedId ? routes.filter((r) => r.id === selectedId).map((r) => markCanceledLegs(r, rowStatuses[r.id])) : []),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- rowStatuses is read through canceledKey
+    [routes, selectedId, canceledKey],
   );
   const [impactFor, setImpactFor] = useState<string | null>(null);
   const [statusFlight, setStatusFlight] = useState<Flight | null>(null);
@@ -468,6 +524,10 @@ export default function HomeScreen() {
   const filtersChanged = changedFilters(filters, settings.search);
   const selected = results.find((r) => r.id === selectedId);
   const firstLeg = selected?.legs[0].flight;
+  const selectedPicks = selected && routeOpen ? legPicks(selected) : undefined;
+  const selectedPicked = selectedPicks
+    ? selectedPicks.locked.flatMap((locked, i) => (locked && selectedPicks.checked[i] ? [i] : []))
+    : [];
   // Where to walk once you're at the airport (round 159): the first flight's posted gate, from live status.
   const firstGate = firstLeg ? (flightStatuses.byKey[flightLookupKey(legLookup(firstLeg))]?.departure ?? null) : null;
   // Real drive time with traffic for the Leave By card (John, 2026-11-01); the rough guess until it answers.
@@ -624,15 +684,13 @@ export default function HomeScreen() {
                       rerun(d);
                     }}
                     onRouteHeight={onRouteHeight}
+                    legPicks={legPicks}
+                    bottomInset={selectedPicks ? requestBarH : 0}
                     onRouteBarHeight={setRouteBar}
                     onFilters={openFilters}
                     filtersChanged={filtersChanged}
-                    note={
-                      missingNote ??
-                      (membership.tier && seatsLocked(membership.tier) && results.some((it) => membership.isLocked(it))
-                        ? `Seats are hidden on ${TIER_LABEL[membership.tier]}. Open a route to request its loads.`
-                        : undefined)
-                    }
+                    // No "Seats are hidden" line on the results (round 192, John): the open route says it by its button.
+                    note={missingNote ?? undefined}
                     isSaved={(it) => saved.isSaved(savedKey(it, state.request.date))}
                     onToggleSave={(it) => {
                       const key = savedKey(it, state.request.date);
@@ -642,14 +700,6 @@ export default function HomeScreen() {
                     selectedCard={
                       firstLeg ? (
                         <>
-                          {selected && membership.tier && membership.isLocked(selected) ? (
-                            <RequestLoadsCard
-                              tier={membership.tier}
-                              credits={membership.credits}
-                              onRequest={() => requestLoads(selected)}
-                              onAnswerLoads={answerLoads}
-                            />
-                          ) : null}
                           <LeaveByCard
                             airport={AIRPORTS[firstLeg.from]}
                             departUtc={firstLeg.departUtc}
@@ -675,6 +725,17 @@ export default function HomeScreen() {
                 )}
               </Appear>
             </Sheet>
+          ) : null}
+          {/* Pinned over the bottom of the open route, just above the tab bar (round 190, John). */}
+          {selected && selectedPicks && membership.tier ? (
+            <RequestLoadsBar
+              picked={selectedPicked.length}
+              locked={selectedPicks.locked.filter(Boolean).length}
+              credits={membership.credits}
+              onRequest={() => requestLoads(selected, selectedPicked)}
+              onAnswerLoads={answerLoads}
+              onHeight={setRequestBarH}
+            />
           ) : null}
         </View>
 

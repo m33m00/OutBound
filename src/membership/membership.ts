@@ -34,7 +34,7 @@ export const tracksCredits = (tier: Tier | null): tier is 'free' | 'payg' => tie
 /** Seats hide until requested on Free and Pay as you go. Before a plan is picked nothing hides. */
 export const seatsLocked = (tier: Tier | null) => tracksCredits(tier);
 
-/** What requesting one route's loads costs. */
+/** What requesting one leg's loads costs (round 189, John: "1 credit per leg. Not route."). */
 export const REQUEST_COST = 1;
 /** What answering one flight's load earns. */
 export const EARN_PER_ANSWER = 1;
@@ -44,7 +44,7 @@ export const WELCOME_CREDITS: Record<Tier, number> = { free: 3, payg: 10, premiu
 export type CreditKind = 'welcome' | 'answered' | 'requested';
 
 export interface CreditEntry {
-  /** One entry per thing: a welcome per plan, an answer per flight, a request per route. */
+  /** One entry per thing: a welcome per plan, an answer per flight, a request per tap (one or more legs). */
   id: string;
   at: number;
   delta: number;
@@ -97,23 +97,40 @@ export const isUnlocked = (w: Wallet, keys: readonly string[]) => keys.length > 
 
 export type RequestOutcome = 'requested' | 'already' | 'short';
 
-/** Spends a route's credit and unlocks its flights; 'short' when there aren't enough credits. */
-export function requestRoute(
+/** The legs (flight keys) whose loads haven't been requested yet. */
+export const lockedKeys = (w: Wallet, keys: readonly string[]) => keys.filter((k) => !w.unlocked.includes(k));
+
+/** What requesting these legs costs: a credit for each one not already requested (round 189). */
+export const requestCost = (w: Wallet, keys: readonly string[]) => new Set(lockedKeys(w, keys)).size * REQUEST_COST;
+
+/**
+ * Spends a credit per leg and unlocks those flights (round 189: per leg, not per route); 'short'
+ * when there aren't enough credits for all of them, 'already' when they were all requested.
+ */
+export function requestLegs(
   w: Wallet,
   keys: readonly string[],
   label: string,
   now: number,
 ): { wallet: Wallet; outcome: RequestOutcome } {
-  if (isUnlocked(w, keys)) return { wallet: w, outcome: 'already' };
-  if (balance(w) < REQUEST_COST) return { wallet: w, outcome: 'short' };
-  const spent = add(w, { id: `requested-${keys.join('+')}-${now}`, at: now, delta: -REQUEST_COST, kind: 'requested', label });
-  return { wallet: { ...spent, unlocked: [...new Set([...w.unlocked, ...keys])] }, outcome: 'requested' };
+  const fresh = [...new Set(lockedKeys(w, keys))];
+  if (fresh.length === 0) return { wallet: w, outcome: 'already' };
+  const cost = fresh.length * REQUEST_COST;
+  if (balance(w) < cost) return { wallet: w, outcome: 'short' };
+  const spent = add(w, { id: `requested-${fresh.join('+')}-${now}`, at: now, delta: -cost, kind: 'requested', label });
+  return { wallet: { ...spent, unlocked: [...new Set([...w.unlocked, ...fresh])] }, outcome: 'requested' };
 }
 
 const HIDDEN: LegSeats = { source: 'unknown', tier: 'unknown', netSeats: null, asOf: null };
 
-/** The route with its seats taken off, as Free and Pay as you go show it before a request. */
-export const hideSeats = (it: Itinerary): Itinerary => ({ ...it, legs: it.legs.map((l) => ({ ...l, seats: HIDDEN })) });
+/**
+ * The route with its seats taken off, as Free and Pay as you go show it before a request. Since
+ * round 189 a leg whose loads were requested (`shown`) keeps its seats.
+ */
+export const hideSeats = (it: Itinerary, shown: (legIndex: number) => boolean = () => false): Itinerary => ({
+  ...it,
+  legs: it.legs.map((l, i) => (shown(i) ? l : { ...l, seats: HIDDEN })),
+});
 
 function hash(s: string): number {
   let h = 2166136261;

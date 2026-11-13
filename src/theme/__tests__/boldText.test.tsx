@@ -10,9 +10,9 @@ describe('Bold Text', () => {
   afterEach(() => applyBoldText(false));
 
   it('steps each face up a weight and stops at the heaviest', () => {
-    expect(heavierFont('Geist_400Regular')).toBe('Geist_600SemiBold');
-    expect(heavierFont('Geist_500Medium')).toBe('Geist_700Bold');
-    expect(heavierFont('Geist_800ExtraBold')).toBe('Geist_800ExtraBold');
+    expect(heavierFont('Sora_400Regular')).toBe('Sora_600SemiBold');
+    expect(heavierFont('Sora_500Medium')).toBe('Sora_700Bold');
+    expect(heavierFont('Sora_800ExtraBold')).toBe('Sora_800ExtraBold');
     expect(heavierFont('GeistMono_500Medium')).toBe('GeistMono_600SemiBold');
     expect(heavierFont('BigShouldersDisplay_700Bold')).toBe('BigShouldersDisplay_800ExtraBold');
     expect(heavierFont('BigShouldersDisplay_800ExtraBold')).toBe('BigShouldersDisplay_800ExtraBold');
@@ -21,20 +21,20 @@ describe('Bold Text', () => {
   it('turns every style heavier and back again', () => {
     applyBoldText(true);
     expect(boldTextOn()).toBe(true);
-    expect(textStyles.body.fontFamily).toBe('Geist_600SemiBold');
-    expect(textStyles.small.fontFamily).toBe('Geist_700Bold');
-    expect(textStyles.code.fontFamily).toBe('Geist_800ExtraBold');
+    expect(textStyles.body.fontFamily).toBe('Sora_600SemiBold');
+    expect(textStyles.small.fontFamily).toBe('Sora_700Bold');
+    expect(textStyles.code.fontFamily).toBe('Sora_800ExtraBold');
     expect(textStyles.number.fontFamily).toBe('GeistMono_600SemiBold');
-    expect(fonts.bodyMedium).toBe('Geist_700Bold');
+    expect(fonts.bodyMedium).toBe('Sora_700Bold');
     applyBoldText(false);
-    expect(textStyles.body.fontFamily).toBe('Geist_400Regular');
-    expect(fonts.bodyMedium).toBe('Geist_500Medium');
+    expect(textStyles.body.fontFamily).toBe('Sora_400Regular');
+    expect(fonts.bodyMedium).toBe('Sora_500Medium');
   });
 
   it('turning it on twice does not step up twice', () => {
     applyBoldText(true);
     applyBoldText(true);
-    expect(textStyles.body.fontFamily).toBe('Geist_600SemiBold');
+    expect(textStyles.body.fontFamily).toBe('Sora_600SemiBold');
   });
 
   it('redraws parts that watch it when the setting changes', () => {

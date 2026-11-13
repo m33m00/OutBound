@@ -138,7 +138,7 @@ export const NEUTRAL_LINE = {
 } as const satisfies Record<ColorScheme, { token: keyof Palette; overview: number; ghost: number }>;
 
 export function legStyle(
-  leg: Pick<RouteLeg, 'tier' | 'source'>,
+  leg: Pick<RouteLeg, 'tier' | 'source' | 'canceled'>,
   role: LineRole,
   palette: Palette,
   scheme: ColorScheme,
@@ -155,6 +155,17 @@ export function legStyle(
     };
   }
   const reported = !isDashedSource(leg.source);
+  // A canceled leg is red whatever its seats said: there's nothing to board (round 199).
+  if (leg.canceled) {
+    return {
+      color: palette.canceled,
+      width: LINE.selected.width,
+      dash: null,
+      halo: { color: rgba(hexToRgb(palette.surface), LINE.haloAlpha), width: LINE.selected.width + LINE.haloExtra },
+      glow: null,
+      shadowAlpha: LINE.shadowAlphaOther,
+    };
+  }
   const tierHex = palette[legTier(leg)];
   return {
     color: tierHex,
@@ -167,6 +178,20 @@ export function legStyle(
     glow: reported ? { color: rgba(hexToRgb(tierHex), LINE.glowAlpha), sigma: LINE.glowSigma } : null,
     shadowAlpha: reported ? LINE.shadowAlphaReported : LINE.shadowAlphaOther,
   };
+}
+
+/**
+ * The X on a canceled selected leg (round 199): at the middle of the drawn arc, on a small `surface`
+ * disc so it reads over the line and the land, like the X on the cards' route line.
+ */
+export const CANCELED_X = { t: 0.5, half: 4.5, width: 2.2, disc: 8 } as const;
+
+/** Two strokes of the X, centered on (x, y). */
+export function canceledXSegments(x: number, y: number, half: number = CANCELED_X.half): [number, number, number, number][] {
+  return [
+    [x - half, y - half, x + half, y + half],
+    [x - half, y + half, x + half, y - half],
+  ];
 }
 
 /** One leg as the map draws it. */

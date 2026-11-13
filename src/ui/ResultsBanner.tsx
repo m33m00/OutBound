@@ -55,7 +55,11 @@ export function ResultsBanner({
           />
         ) : null}
       </View>
-      <Pressable onPress={onDismiss} accessibilityRole="button" accessibilityLabel="Dismiss notice" style={pressStyle(styles.close, 'link')}>
+      <Pressable
+        onPress={onDismiss}
+        accessibilityRole="button"
+        accessibilityLabel="Dismiss notice"
+        style={pressStyle(styles.close, 'link')}>
         <Icon
           name="xmark"
           size={14}
@@ -72,7 +76,7 @@ const styles = StyleSheet.create({
   banner: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: radius.md,
+    borderRadius: radius.all,
     borderWidth: 1,
     paddingLeft: spacing.rowX,
     paddingVertical: 4,

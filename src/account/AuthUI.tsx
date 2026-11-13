@@ -119,7 +119,11 @@ export function ErrorLine({ text }: { text: string | null }) {
   const c = useColors();
   if (!text) return null;
   return (
-    <View style={[styles.error, { backgroundColor: c.canceledBg }]} accessibilityLiveRegion="polite" accessible accessibilityRole="alert">
+    <View
+      style={[styles.error, { backgroundColor: c.canceledBg }]}
+      accessibilityLiveRegion="polite"
+      accessible
+      accessibilityRole="alert">
       <Icon name="exclamationmark.circle.fill" size={16} tintColor={c.canceledFg} fallback={null} />
       <Text lineBreakStrategyIOS="push-out" style={[textStyles.bodyStrong, styles.errorText, { color: c.canceledFg }]}>
         {text}
@@ -129,7 +133,17 @@ export function ErrorLine({ text }: { text: string | null }) {
 }
 
 /** A tick box with its sentence, for agreeing to the terms. */
-export function CheckRow({ checked, onToggle, children, label }: { checked: boolean; onToggle: () => void; children: ReactNode; label: string }) {
+export function CheckRow({
+  checked,
+  onToggle,
+  children,
+  label,
+}: {
+  checked: boolean;
+  onToggle: () => void;
+  children: ReactNode;
+  label: string;
+}) {
   const c = useColors();
   return (
     <View style={styles.check}>
@@ -140,7 +154,15 @@ export function CheckRow({ checked, onToggle, children, label }: { checked: bool
         accessibilityLabel={label}
         hitSlop={10}
         style={[styles.box, { borderColor: checked ? c.accent : c.line2, backgroundColor: checked ? c.accent : c.surface }]}>
-        {checked ? <Icon name="checkmark" size={13} weight="bold" tintColor={c.onAccent} fallback={<Text style={{ color: c.onAccent }}>✓</Text>} /> : null}
+        {checked ? (
+          <Icon
+            name="checkmark"
+            size={13}
+            weight="bold"
+            tintColor={c.onAccent}
+            fallback={<Text style={{ color: c.onAccent }}>✓</Text>}
+          />
+        ) : null}
       </Pressable>
       <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, styles.checkText, { color: c.text }]}>
         {children}
@@ -153,7 +175,11 @@ export function CheckRow({ checked, onToggle, children, label }: { checked: bool
 export function InlineLink({ label, onPress }: { label: string; onPress: () => void }) {
   const c = useColors();
   return (
-    <Text onPress={onPress} accessibilityRole="link" suppressHighlighting={false} style={{ fontFamily: fonts.bodySemiBold, color: c.accent }}>
+    <Text
+      onPress={onPress}
+      accessibilityRole="link"
+      suppressHighlighting={false}
+      style={{ fontFamily: fonts.bodySemiBold, color: c.accent }}>
       {label}
     </Text>
   );
@@ -169,12 +195,20 @@ const styles = StyleSheet.create({
   lead: { marginBottom: spacing.group },
   form: { gap: spacing.section + 4, marginTop: spacing.group },
   field: { gap: 6 },
-  inputWrap: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderRadius: radius.sm, minHeight: 48 },
+  inputWrap: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderRadius: radius.all, minHeight: 48 },
   input: { flex: 1, paddingHorizontal: 14, paddingVertical: 12, fontSize: 16 },
   eye: { paddingHorizontal: 14, minHeight: minTapTarget, justifyContent: 'center' },
-  error: { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 12, borderRadius: radius.sm },
+  error: { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 12, borderRadius: radius.all },
   errorText: { flex: 1 },
   check: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
-  box: { width: 24, height: 24, borderRadius: 7, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center', marginTop: -2 },
+  box: {
+    width: 24,
+    height: 24,
+    borderRadius: radius.all,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: -2,
+  },
   checkText: { flex: 1 },
 });

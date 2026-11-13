@@ -27,6 +27,10 @@ export function neighborDays(days: DateChip[], date: string): { prev: DateChip |
  * arrow button sits at each end of the row and steps to the day before or after (searching it, like a
  * tap on that day), so paging reads at a glance; each dims at the end of the window.
  *
+ * Round 194, John: "You also don't need it to say Departing Thu, Nov 12 text above the date selected. That's
+ * redundant." The "Departing" line is gone; the picked day button says the day, and the route count moved down
+ * beside "Leaving from" over the tickets.
+ *
  * Round 180, John: "Why do the arrows overlap with a date? That doesn't look good." The row cut a day
  * button in half at its edge, next to the arrow. Now the row only ever shows whole buttons: it measures
  * the space between the arrows, fits as many buttons as there's room for (at least DAY_MIN wide each),
@@ -52,16 +56,13 @@ export function windowStart(start: number, i: number, n: number, count: number):
 export function DayStepper({
   days,
   date,
-  label,
   onDay,
   detail,
 }: {
   days: DateChip[];
   date: string;
-  /** The searched day, e.g. "Tue, Oct 20". */
-  label: string;
   onDay: (date: string) => void;
-  /** The route count, e.g. "8 routes, 1 full". */
+  /** The route count, e.g. "8 routes, 1 full": said with the picked day; shown beside "Leaving from" (round 194). */
   detail?: string;
 }) {
   const c = useColors();
@@ -100,21 +101,6 @@ export function DayStepper({
   );
   return (
     <View style={styles.box} testID="day-picker">
-      <View style={styles.head}>
-        <Text
-          style={[textStyles.bodyStrong, styles.title, { color: c.text }]}
-          numberOfLines={1}
-          adjustsFontSizeToFit
-          minimumFontScale={0.8}
-          testID="day-title">
-          {`Departing ${label}`}
-        </Text>
-        {detail ? (
-          <Text style={[textStyles.small, { color: c.muted }]} numberOfLines={1} testID="day-detail">
-            {detail}
-          </Text>
-        ) : null}
-      </View>
       <View style={styles.strip}>
         {arrow(prev, 'prev')}
         <ScrollView
@@ -171,15 +157,13 @@ export function DayStepper({
 
 const styles = StyleSheet.create({
   box: { alignSelf: 'stretch', gap: 6 },
-  head: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 },
-  title: { flexShrink: 1 },
   strip: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   scroll: { flex: 1 },
   row: { gap: DAY_GAP },
   arrow: {
     width: 36,
     height: minTapTarget + 8,
-    borderRadius: radius.sm,
+    borderRadius: radius.all,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -187,7 +171,7 @@ const styles = StyleSheet.create({
     minWidth: DAY_MIN,
     minHeight: minTapTarget + 8,
     paddingHorizontal: 6,
-    borderRadius: radius.sm,
+    borderRadius: radius.all,
     alignItems: 'center',
     justifyContent: 'center',
   },

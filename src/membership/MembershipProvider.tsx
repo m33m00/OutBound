@@ -12,7 +12,7 @@ import {
   isUnlocked,
   legKeys,
   parseWallet,
-  requestRoute as requestIn,
+  requestLegs as requestIn,
   seatsLocked,
   tracksCredits,
   WALLET_KEY,
@@ -32,12 +32,14 @@ interface MembershipContextValue {
   credits: number;
   /** Free and Pay as you go. */
   tracksCredits: boolean;
-  /** Seats hidden on this route until its loads are requested. */
+  /** Seats hidden on some leg of this route until its loads are requested. */
   isLocked: (it: Itinerary) => boolean;
+  /** Which legs of the route still hide their seats (round 189: requested per leg). */
+  lockedLegs: (it: Itinerary) => number[];
   /** A credit for answering a flight's load (once per flight, Free and Pay as you go only). */
   earnForAnswer: (key: string, label: string) => void;
-  /** Spends a credit on a route's loads. */
-  requestRoute: (it: Itinerary, label: string) => RequestOutcome;
+  /** Spends a credit per leg on the picked legs' loads (round 189). */
+  requestLegs: (it: Itinerary, legs: readonly number[], label: string) => RequestOutcome;
 }
 
 const MembershipContext = createContext<MembershipContextValue | null>(null);
@@ -96,9 +98,10 @@ export function MembershipProvider({ children }: { children: ReactNode }) {
     },
     [tier, change],
   );
-  const requestRoute = useCallback(
-    (it: Itinerary, label: string): RequestOutcome => {
-      const keys = legKeys(it, flightKey);
+  const requestLegs = useCallback(
+    (it: Itinerary, legs: readonly number[], label: string): RequestOutcome => {
+      const all = legKeys(it, flightKey);
+      const keys = legs.map((i) => all[i]).filter((k): k is string => k != null);
       const now = Date.now();
       const { outcome } = requestIn(wallet, keys, label, now);
       if (outcome === 'requested') change((w) => requestIn(w, keys, label, now).wallet);
@@ -116,10 +119,12 @@ export function MembershipProvider({ children }: { children: ReactNode }) {
       credits: balance(wallet),
       tracksCredits: tracksCredits(tier),
       isLocked: (it) => seatsLocked(tier) && !isUnlocked(wallet, legKeys(it, flightKey)),
+      lockedLegs: (it) =>
+        seatsLocked(tier) ? legKeys(it, flightKey).flatMap((k, i) => (wallet.unlocked.includes(k) ? [] : [i])) : [],
       earnForAnswer,
-      requestRoute,
+      requestLegs,
     }),
-    [tier, setTier, wallet, loaded, earnForAnswer, requestRoute],
+    [tier, setTier, wallet, loaded, earnForAnswer, requestLegs],
   );
   return <MembershipContext.Provider value={value}>{children}</MembershipContext.Provider>;
 }

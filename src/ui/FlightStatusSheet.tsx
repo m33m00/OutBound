@@ -290,7 +290,14 @@ export function FlightStatusSheet({ flight, visible, now, onClose, liveOptions, 
                 </Text>
               ) : null}
               {load && flight ? (
-                <LoadCard load={load} flight={flight} seats={seats} now={now} focus={backFromReport} onReport={() => setReporting(true)} />
+                <LoadCard
+                  load={load}
+                  flight={flight}
+                  seats={seats}
+                  now={now}
+                  focus={backFromReport}
+                  onReport={() => setReporting(true)}
+                />
               ) : null}
               {flight ? <LogFlightLink flight={flight} now={now} /> : null}
               {/* The source line names a real feed, so it shows only for live status (round 30: no sample labels). */}
@@ -439,16 +446,18 @@ function LoadCard({
       {askAnswer && answerTierWord ? (
         // Answered: the numbers take the place of the ask button.
         <View style={styles.flagRow}>
-        <Text
-          style={[textStyles.body, { color: c.text }]}
-          accessibilityLabel={forSpeech(`Your request was answered: ${answerText(askAnswer)} · ${formatAge(askAnswer.at, now)}`)}>
-          {'Answered: '}
-          <Text lineBreakStrategyIOS="push-out" style={[textStyles.bodyStrong, { color: c[TIER_FG[answerTierWord]] }]}>
-            <Divided text={seatPair(askAnswer.open, askAnswer.listed)} color={c[TIER_FG[answerTierWord]]} />
+          <Text
+            style={[textStyles.body, { color: c.text }]}
+            accessibilityLabel={forSpeech(
+              `Your request was answered: ${answerText(askAnswer)} · ${formatAge(askAnswer.at, now)}`,
+            )}>
+            {'Answered: '}
+            <Text lineBreakStrategyIOS="push-out" style={[textStyles.bodyStrong, { color: c[TIER_FG[answerTierWord]] }]}>
+              <Divided text={seatPair(askAnswer.open, askAnswer.listed)} color={c[TIER_FG[answerTierWord]]} />
+            </Text>
+            {SHOW_SEAT_AGE ? <Divided text={` · ${formatAge(askAnswer.at, now)}`} /> : null}
           </Text>
-          {SHOW_SEAT_AGE ? <Divided text={` · ${formatAge(askAnswer.at, now)}`} /> : null}
-        </Text>
-        {answerKey ? <FlagButton onPress={() => flagThis(answerKey)} /> : null}
+          {answerKey ? <FlagButton onPress={() => flagThis(answerKey)} /> : null}
         </View>
       ) : null}
       {/* Report and Ask side by side (design audit, round 67); stacked at big text. */}
@@ -515,11 +524,11 @@ const styles = StyleSheet.create({
     gap: spacing.group,
     paddingHorizontal: spacing.rowX,
     paddingVertical: 6,
-    borderRadius: radius.sm,
+    borderRadius: radius.all,
     borderWidth: 1,
   },
   body: { gap: spacing.section, paddingBottom: spacing.page },
-  card: { borderRadius: radius.md, borderWidth: StyleSheet.hairlineWidth, padding: spacing.rowX, gap: 4 },
+  card: { borderRadius: radius.all, borderWidth: StyleSheet.hairlineWidth, padding: spacing.rowX, gap: 4 },
   // Wraps at big text sizes; the delay stays right-aligned on whichever line it lands.
   top: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: spacing.group },
   trailing: { marginLeft: 'auto', flexShrink: 1 },
@@ -540,7 +549,7 @@ const styles = StyleSheet.create({
   ageLine: { flexDirection: 'row', alignItems: 'flex-start', gap: 6, flexShrink: 1 },
   ageIcon: { marginTop: 3 },
   ageText: { flexShrink: 1 },
-  load: { borderRadius: radius.md, borderWidth: StyleSheet.hairlineWidth, padding: spacing.rowX, gap: spacing.group },
+  load: { borderRadius: radius.all, borderWidth: StyleSheet.hairlineWidth, padding: spacing.rowX, gap: spacing.group },
   loadButtons: { flexDirection: 'row', gap: spacing.group },
   loadButtonsStacked: { flexDirection: 'column' },
   loadButton: { flex: 1 },

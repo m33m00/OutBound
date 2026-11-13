@@ -302,7 +302,7 @@ const styles = StyleSheet.create({
     minHeight: minTapTarget,
     paddingHorizontal: 14,
     paddingVertical: 6,
-    borderRadius: radius.sm,
+    borderRadius: radius.all,
   },
   // Two to a row beside the gap.
   pillWide: { flexBasis: '47%', flexGrow: 1 },
@@ -313,16 +313,16 @@ const styles = StyleSheet.create({
     minHeight: minTapTarget,
     paddingHorizontal: spacing.rowX,
     paddingVertical: spacing.rowY,
-    borderRadius: radius.sm,
+    borderRadius: radius.all,
   },
-  segments: { flexDirection: 'row', gap: 4, padding: 4, borderRadius: radius.sm + 4 },
+  segments: { flexDirection: 'row', gap: 4, padding: 4, borderRadius: radius.all + 4 },
   grid: { flexWrap: 'wrap' },
   // Under half so two fit beside the gap.
   segmentGrid: { flexBasis: '45%' },
   segment: {
     flex: 1,
     minHeight: minTapTarget,
-    borderRadius: radius.sm,
+    borderRadius: radius.all,
     alignItems: 'center',
     justifyContent: 'center',
   },

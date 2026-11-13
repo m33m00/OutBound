@@ -554,14 +554,14 @@ const styles = StyleSheet.create({
   // The From and To codes are the hero of the search card, a little bigger than codes elsewhere (round 114).
   bigCode: { fontSize: 30, lineHeight: 34, letterSpacing: -0.5 },
   chipDate: { alignItems: 'center' },
-  chipBack: { position: 'absolute', borderRadius: radius.sm },
+  chipBack: { position: 'absolute', borderRadius: radius.all },
   body: { paddingHorizontal: spacing.page, paddingBottom: spacing.page, gap: spacing.section },
   chips: { flexDirection: 'row', gap: spacing.group },
   chip: {
     minHeight: minTapTarget,
     paddingHorizontal: spacing.rowX,
     paddingVertical: 6,
-    borderRadius: radius.sm,
+    borderRadius: radius.all,
     justifyContent: 'center',
   },
   // Narrow side padding so "Tomorrow" fits five across on a 375pt phone without shrinking.
@@ -571,7 +571,7 @@ const styles = StyleSheet.create({
   dateChipWrap: { flexGrow: 1, flexBasis: '40%' },
   calendar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, minWidth: minTapTarget },
   cards: { flexDirection: 'row', alignItems: 'center', gap: spacing.group },
-  card: { flex: 1, alignSelf: 'stretch', borderRadius: radius.md },
+  card: { flex: 1, alignSelf: 'stretch', borderRadius: radius.all },
   cardButton: { flex: 1, padding: spacing.rowX, paddingTop: LABEL_TOP, minHeight: minTapTarget },
   cardLabel: { marginBottom: LABEL_GAP },
   pillSlot: {
@@ -610,7 +610,7 @@ const styles = StyleSheet.create({
     gap: spacing.group,
     paddingHorizontal: spacing.rowX,
     paddingVertical: 10,
-    borderRadius: radius.md,
+    borderRadius: radius.all,
   },
   homeHintText: { flexShrink: 1 },
 });

@@ -45,6 +45,11 @@ export interface RouteLeg {
    */
   departUtc?: number;
   arriveUtc?: number;
+  /**
+   * Live status says this flight is canceled (round 199): the selected route draws it red with an X at
+   * its middle, and its time pill reads "Canceled". Only that leg changes.
+   */
+  canceled?: boolean;
 }
 
 /**
