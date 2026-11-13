@@ -12,6 +12,7 @@
  */
 import { AIRPORTS, localDate, type Flight, type Itinerary } from '@/engine';
 import { flightLookupKey, type FlightLookup, type FlightStatus, type Movement } from '@/live';
+import type { RouteLine } from '@/map';
 
 import { formatDuration, formatTime, spokenDuration } from './format';
 
@@ -397,4 +398,17 @@ export function liveTotalMin(it: Itinerary, status: RowStatus | undefined): numb
   const depart = status.legs[0]?.newUtc ?? first.departUtc;
   const arrive = status.arrival?.newUtc ?? last.arriveUtc;
   return Math.round((arrive - depart) / MIN);
+}
+
+/**
+ * The map's copy of a route with each canceled leg flagged (round 199, John: "Route map should indicate in
+ * some way this leg is canceled"). Only a leg whose own live tag is Canceled changes; the rest stay as they
+ * are. Returns the same object when nothing is canceled, so the map doesn't redraw for nothing.
+ */
+export function markCanceledLegs(route: RouteLine, status: RowStatus | undefined): RouteLine {
+  if (!status?.legs.some((l) => l.tag?.kind === 'canceled')) return route;
+  return {
+    ...route,
+    legs: route.legs.map((leg, i) => (status.legs[i]?.tag?.kind === 'canceled' ? { ...leg, canceled: true } : leg)),
+  };
 }

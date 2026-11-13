@@ -22,6 +22,7 @@ import {
 import { legSamples, type LiftedProjector } from './arcs';
 import type { Viewport } from './camera';
 import {
+  CANCELED_PILL_DY,
   LEG_TIME_PILL,
   legTimeAnchor,
   legTimeArea,
@@ -176,20 +177,24 @@ function drawLegTimes(
       anchor: leg ? legTimeAnchor(legSamples(leg), project) : null,
       width: text.width + LEG_TIME_PILL.padX * 2,
       height: LEG_TIME_PILL.height,
+      ...(s.canceled ? { dys: CANCELED_PILL_DY } : {}),
     };
   });
   const placed = placeLegTimes(requests, obstacles, legTimeArea(viewport.width, viewport.height, viewport.insets));
   const pill = paint(colors.pill, PaintStyle.Fill);
   const fill = paint(colors.text, PaintStyle.Fill);
+  const redPill = paint(colors.canceledPill, PaintStyle.Fill);
+  const redFill = paint(colors.canceledText, PaintStyle.Fill);
   for (const p of placed) {
     const m = measured.find((x) => x.s.legId === p.id)!;
+    const red = !!m.s.canceled;
     const w = m.text.width + LEG_TIME_PILL.padX * 2;
     const h = LEG_TIME_PILL.height;
     const rect = Skia.XYWHRect(p.x - w / 2, p.y - h / 2, w, h);
-    canvas.drawRRect(Skia.RRectXY(rect, LEG_TIME_PILL.radius, LEG_TIME_PILL.radius), pill);
+    canvas.drawRRect(Skia.RRectXY(rect, LEG_TIME_PILL.radius, LEG_TIME_PILL.radius), red ? redPill : pill);
     const x = p.x - w / 2 + LEG_TIME_PILL.padX - m.text.x;
     const baseline = p.y - (cap.y + cap.height / 2);
-    canvas.drawText(m.s.text, x, baseline, fill, font);
+    canvas.drawText(m.s.text, x, baseline, red ? redFill : fill, font);
   }
 }
 

@@ -880,3 +880,17 @@ Animations (src/ui/motion.ts, Pop.tsx). Each shows what just changed or where so
 One corner radius: `radius.all` = 14 for every card, ticket, leg box, button, field, sheet, banner, popup, tile and checkbox (before: 12, 18 and 26, plus 4 to 20 one-offs). Pills (`radius.pill`) and circles (logo badges, dots, round icons) stay round. Inner clips keep 1 less so they sit inside a border. CLAUDE.md has the rule.
 
 Font: picked Manrope (Google Fonts, open license; distinctive, very readable small, tabular numbers), with Plus Jakarta Sans and Figtree as alternates. Adding it needs a new font package, which needs John's OK first, so it isn't in this round. Geist stays for now.
+
+## Round 199 (Nov 13): Manrope everywhere, canceled legs on the map
+
+John: "Add Manrope." / "Route map should indicate in some way this leg is canceled."
+
+Font: added @expo-google-fonts/manrope. All text and titles are Manrope (400 to 800); bold text and the map's IATA labels too. Times, flight numbers and other figures that must line up stay Geist Mono; the OutBound wordmark stays Big Shoulders. Geist's package is no longer used by the app but is left in place for now.
+
+Canceled leg on the map (selected route only):
+- The canceled leg's line is red (the `canceled` token), solid, no seat color and no glow, since nothing can be boarded.
+- A small red X sits at the middle of that line on a little disc, the same mark as on the cards' route line.
+- Its flight-time pill becomes a red "Canceled" pill (the cards' Canceled pill colors) just above the X, or below it when above is blocked. Never on the line itself.
+- On a connection only the canceled leg changes; the other legs keep their seat colors and times.
+- No pulse on a canceled leg. VoiceOver reads "ORD to LGA, canceled".
+- Still no legend, no dotted line, no arrows. CLAUDE.md has the rule.

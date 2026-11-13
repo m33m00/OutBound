@@ -11,7 +11,7 @@ import { otherEndExcludes, searchRequest, showGetHome } from '@/search/areas';
 import { dateChips } from '@/search/dates';
 import { boardingLeadMin, driveQuery } from '@/search/leaveBy';
 import { chooseOrigin, restSpot, showLocationCard, type RestSpot } from '@/search/origin';
-import { legLookup, requestableLegs, resultsBanner, rowStatus, statusLookups } from '@/search/statusTags';
+import { legLookup, markCanceledLegs, requestableLegs, resultsBanner, rowStatus, statusLookups } from '@/search/statusTags';
 import { SAMPLE_TZ, SCHEDULE_SOURCE, useRouteSearch } from '@/search/useRouteSearch';
 import { minTapTarget, spacing, textStyles, useColors } from '@/theme';
 import { openRequest, reopenOutcome, savedKey, savedRouteFrom, type SavedRoute } from '@/trips/savedRoutes';
@@ -289,9 +289,6 @@ export default function HomeScreen() {
     [state, showHidden],
   );
   const routes = useMemo(() => results.map((it) => toRouteLine(it, airport)), [results]);
-  // The globe draws only the picked route: no overview of every result's grey lines, so it can't
-  // flash on screen while the panel moves after a search (John, 2026-11-02).
-  const globeRoutes = useMemo(() => (selectedId ? routes.filter((r) => r.id === selectedId) : []), [routes, selectedId]);
 
   // Delay/weather badges (item 7). Until the live functions are deployed the
   // hook reports 'off'; dev builds then show sample impacts so the screens look finished (round 30: no labels).
@@ -305,6 +302,18 @@ export default function HomeScreen() {
   const rowStatuses = useMemo(
     () => Object.fromEntries(results.map((it) => [it.id, rowStatus(it, flightStatuses.byKey, filters, now)])),
     [results, flightStatuses.byKey, filters, now],
+  );
+  // The globe draws only the picked route: no overview of every result's grey lines, so it can't
+  // flash on screen while the panel moves after a search (John, 2026-11-02). A canceled leg is marked
+  // so the map draws it red with an X (round 199, John: "Route map should indicate in some way this leg is canceled").
+  // Keyed on which legs are canceled, not on every status tick, so the map only redraws when that changes.
+  const canceledKey = selectedId
+    ? (rowStatuses[selectedId]?.legs ?? []).map((l) => (l.tag?.kind === 'canceled' ? 'x' : '-')).join('')
+    : '';
+  const globeRoutes = useMemo(
+    () => (selectedId ? routes.filter((r) => r.id === selectedId).map((r) => markCanceledLegs(r, rowStatuses[r.id])) : []),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- rowStatuses is read through canceledKey
+    [routes, selectedId, canceledKey],
   );
   const [impactFor, setImpactFor] = useState<string | null>(null);
   const [statusFlight, setStatusFlight] = useState<Flight | null>(null);
