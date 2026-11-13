@@ -20,7 +20,7 @@ import { AirportPicker } from '@/ui/AirportPicker';
 import { Appear } from '@/ui/Appear';
 import { useSettings } from '@/settings/SettingsProvider';
 import { playSound } from '@/ui/sounds';
-import { changedFilters, DEFAULT_FILTERS, homeAirports, type SearchFilters } from '@/settings/settings';
+import { changedFilters, changedSearchFilters, DEFAULT_FILTERS, homeAirports, type SearchFilters } from '@/settings/settings';
 import { FiltersModal } from '@/ui/FiltersModal';
 import { airportYouAreAt, sampleDepartures } from '@/requests/atAirport';
 import { useRequests } from '@/requests/RequestsProvider';
@@ -505,7 +505,8 @@ export default function HomeScreen() {
   };
   const closeFilters = () => {
     setFiltersOpen(false);
-    if (state.status === 'idle' || !changedFilters(filters, filtersAtOpen.current)) return;
+    // Sort by and Canceled flights only reorder or hide the routes found, so they don't search again.
+    if (state.status === 'idle' || !changedSearchFilters(filters, filtersAtOpen.current)) return;
     if (!selectedId) return rerun(state.request.date);
     keepRoute.current = selectedId;
     search(state.request, filters);
@@ -689,6 +690,7 @@ export default function HomeScreen() {
                     onRouteBarHeight={setRouteBar}
                     onFilters={openFilters}
                     filtersChanged={filtersChanged}
+                    prefs={filters}
                     // No "Seats are hidden" line on the results (round 192, John): the open route says it by its button.
                     note={missingNote ?? undefined}
                     isSaved={(it) => saved.isSaved(savedKey(it, state.request.date))}

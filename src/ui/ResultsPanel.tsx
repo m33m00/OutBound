@@ -20,7 +20,8 @@ import { AIRPORTS, areaFor, localDate, type Flight, type Itinerary, type SearchR
 import type { RouteImpact } from '@/live';
 import { shortDate, type DateChip } from '@/search/dates';
 import { formatTime } from '@/search/format';
-import { departedFirst, type RowStatus } from '@/search/statusTags';
+import { arrangeResults, canceledHidden, DEFAULT_RESULT_PREFS, sortNote, type ResultPrefs } from '@/search/arrange';
+import type { RowStatus } from '@/search/statusTags';
 import type { SearchState } from '@/search/useRouteSearch';
 import { fonts, radius, spacing, textStyles, useColors } from '@/theme';
 
@@ -82,6 +83,8 @@ export interface ResultsPanelProps {
   legPicks?: (it: Itinerary) => LegPicks | undefined;
   /** Room kept under the open route for a bar pinned over the panel's bottom (round 190: Request Loads). */
   bottomInset?: number;
+  /** Itinerary preferences (Jayden, 2026-11-13): the list's order and whether canceled routes show. */
+  prefs?: ResultPrefs;
 }
 
 export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(function ResultsPanel(p, ref) {
@@ -118,12 +121,17 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
   const listDate = shown.request.date;
   const routeTitle = `${request.origin} → ${request.destination}`;
   const routeSpoken = `${request.origin} to ${request.destination}`;
-  const results = departedFirst(shown.status !== 'done' ? [] : p.showingHidden ? shown.hiddenResults : shown.results, p.statuses);
+  const prefs = p.prefs ?? DEFAULT_RESULT_PREFS;
+  const found = shown.status !== 'done' ? [] : p.showingHidden ? shown.hiddenResults : shown.results;
+  const results = arrangeResults(found, p.statuses, prefs, p.now, p.selectedId);
+  const hiddenCanceled = canceledHidden(found, p.statuses, prefs, p.selectedId);
   const full = results.filter((r) => r.isFull).length;
   // The Now line is for today's flights only (John, 2026-11-02), by the origin's own date.
   const originTz = AIRPORTS[results[0]?.legs[0]?.flight.from ?? '']?.tz ?? AIRPORTS[request.origin]?.tz;
   const onToday = !originTz || localDate(p.now, originTz) === listDate;
-  const nowAt = onToday ? nowLineIndex(results, p.now, p.statuses) : -1;
+  // The Now line splits routes that left from routes to come, which only holds in departure order.
+  const nowAt = onToday && prefs.sortBy === 'departure' ? nowLineIndex(results, p.now, p.statuses) : -1;
+  const orderNote = sortNote(prefs.sortBy);
 
   // Today's list opens at the "Now" line (Q-066, John 2026-10-30): routes that already
   // left stay above it, a short scroll up. Once you scroll yourself it leaves you be.
@@ -254,6 +262,17 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
     ...(!stepsDays && summary ? [{ key: 'summary', text: summary, testID: 'results-summary', strong: true }] : []),
     ...(countBeside ? areas.slice(1) : areas).map((text) => ({ key: text, text, testID: undefined, strong: false })),
     ...(p.note ? [{ key: 'note', text: p.note, testID: 'results-note', strong: false }] : []),
+    ...(orderNote ? [{ key: 'order', text: orderNote, testID: 'results-order', strong: false }] : []),
+    ...(hiddenCanceled
+      ? [
+          {
+            key: 'canceled',
+            text: `${hiddenCanceled} ${hiddenCanceled === 1 ? 'route' : 'routes'} with a canceled flight hidden. Filters can show ${hiddenCanceled === 1 ? 'it' : 'them'}.`,
+            testID: 'results-canceled-hidden',
+            strong: false,
+          },
+        ]
+      : []),
     ...(p.showingHidden
       ? [{ key: 'hidden', text: 'Showing routes your filters hid, for this search only.', testID: undefined, strong: false }]
       : []),
