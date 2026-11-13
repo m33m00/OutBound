@@ -1,5 +1,5 @@
 /**
- * Manrope for map labels (round 199; Geist before) and Geist Mono for leg time pills (round 120, the Clean look), loaded into Skia from the same
+ * Sora for map labels (round 200; Manrope in 199, Geist before) and Geist Mono for leg time pills (round 120, the Clean look), loaded into Skia from the same
  * bundled font files the app uses (src/theme fontAssets). Skia draws text
  * with its own typefaces, so the expo-font copies cannot be reused directly;
  * `useTypeface` reads the bundled asset (works in Expo Go, no network).
@@ -18,9 +18,9 @@ import { LABEL_FONT, type MarkKind } from './marks';
 export type MarkFonts = Record<MarkKind, SkFont>;
 
 export function useMarkFonts(): MarkFonts | null {
-  const semi = useTypeface(fontAssets.Manrope_600SemiBold);
-  const bold = useTypeface(fontAssets.Manrope_700Bold);
-  const heavy = useTypeface(fontAssets.Manrope_800ExtraBold);
+  const semi = useTypeface(fontAssets.Sora_600SemiBold);
+  const bold = useTypeface(fontAssets.Sora_700Bold);
+  const heavy = useTypeface(fontAssets.Sora_800ExtraBold);
   // Bold Text (round 38): each label a weight heavier.
   const boldText = useBoldText();
   return useMemo(() => {

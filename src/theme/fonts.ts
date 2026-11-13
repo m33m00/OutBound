@@ -1,18 +1,12 @@
 import { BigShouldersDisplay_700Bold, BigShouldersDisplay_800ExtraBold } from '@expo-google-fonts/big-shoulders-display';
-import {
-  Manrope_400Regular,
-  Manrope_500Medium,
-  Manrope_600SemiBold,
-  Manrope_700Bold,
-  Manrope_800ExtraBold,
-} from '@expo-google-fonts/manrope';
+import { Sora_400Regular, Sora_500Medium, Sora_600SemiBold, Sora_700Bold, Sora_800ExtraBold } from '@expo-google-fonts/sora';
 import { GeistMono_500Medium, GeistMono_600SemiBold } from '@expo-google-fonts/geist-mono';
 
 /**
- * Manrope for everything you read and every title (round 199, John: "Unique clean font too", then "Add
- * Manrope"): open-licensed, distinctive but very readable small, with tabular numbers for counts. It replaced
- * Geist (round 120). Geist Mono stays for times and flight numbers so digits line up row to row. Big
- * Shoulders stays only for the OUTBOUND wordmark. Alternates if John wants to swap: Plus Jakarta Sans, Figtree.
+ * Sora for everything you read and every title (round 200, John picked it: "Unique clean font too", then
+ * "Sora" after Manrope in round 199 looked almost the same as Geist). Open-licensed, wide and round, so the app
+ * reads as its own. Geist Mono stays for times and flight numbers so digits line up row to row. Big Shoulders
+ * stays only for the OUTBOUND wordmark.
  *
  * In React Native each weight is its own family name, so pick a family
  * instead of setting `fontWeight` (a bare fontWeight falls back to the system font on iOS).
@@ -20,11 +14,11 @@ import { GeistMono_500Medium, GeistMono_600SemiBold } from '@expo-google-fonts/g
 export const fontAssets = {
   BigShouldersDisplay_700Bold,
   BigShouldersDisplay_800ExtraBold,
-  Manrope_400Regular,
-  Manrope_500Medium,
-  Manrope_600SemiBold,
-  Manrope_700Bold,
-  Manrope_800ExtraBold,
+  Sora_400Regular,
+  Sora_500Medium,
+  Sora_600SemiBold,
+  Sora_700Bold,
+  Sora_800ExtraBold,
   GeistMono_500Medium,
   GeistMono_600SemiBold,
 };
@@ -33,14 +27,14 @@ export const fonts = {
   /** The wordmark only. */
   brand: 'BigShouldersDisplay_700Bold',
   /** Titles, route names and big airport codes. */
-  title: 'Manrope_700Bold',
-  display: 'Manrope_700Bold',
-  displaySemiBold: 'Manrope_600SemiBold',
-  displayHeavy: 'Manrope_800ExtraBold',
-  body: 'Manrope_400Regular',
-  bodyMedium: 'Manrope_500Medium',
-  bodySemiBold: 'Manrope_600SemiBold',
-  bodyBold: 'Manrope_700Bold',
+  title: 'Sora_700Bold',
+  display: 'Sora_700Bold',
+  displaySemiBold: 'Sora_600SemiBold',
+  displayHeavy: 'Sora_800ExtraBold',
+  body: 'Sora_400Regular',
+  bodyMedium: 'Sora_500Medium',
+  bodySemiBold: 'Sora_600SemiBold',
+  bodyBold: 'Sora_700Bold',
   /** Big times. */
   mono: 'GeistMono_600SemiBold',
   /** Flight numbers and smaller times. */

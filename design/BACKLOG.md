@@ -239,3 +239,4 @@ Each item names its owner. One item per work session. spec-keeper runs a pre-fli
 | 232 | Fart and moan removed; three soft chimes: request answered, request sent, Leave now (round 197) | Done |
 | 233 | Animations that mean something; one corner radius (14) everywhere; font pick waiting on OK to add a package (round 198) | Done |
 | 234 | Manrope for all text (times stay Geist Mono); canceled leg on the map: red line, X at its middle, red Canceled pill (round 199) | Done |
+| 235 | Sora for all text and titles, replacing Manrope (times stay Geist Mono) (round 200) | Done |

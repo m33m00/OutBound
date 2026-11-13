@@ -894,3 +894,10 @@ Canceled leg on the map (selected route only):
 - On a connection only the canceled leg changes; the other legs keep their seat colors and times.
 - No pulse on a canceled leg. VoiceOver reads "ORD to LGA, canceled".
 - Still no legend, no dotted line, no arrows. CLAUDE.md has the rule.
+
+## Round 200 (Nov 13): Sora replaces Manrope
+
+John couldn't see a difference after round 199 ("i cant tell a difference"). Manrope and Geist really are near twins at app sizes. He was shown four samples in OutBound's own text (Space Grotesk, Sora, Bricolage Grotesque, Manrope) and picked "Sora".
+
+- Added @expo-google-fonts/sora, removed @expo-google-fonts/manrope. Sora 400 to 800 for all text and titles, bold text and the map's IATA labels. Times and flight numbers stay Geist Mono; the wordmark stays Big Shoulders.
+- Sora is about 10% wider than Geist at the same size, so it reads bigger. Sizes are unchanged; any line that now truncates or wraps badly gets fixed when spotted on a phone. CLAUDE.md updated.
