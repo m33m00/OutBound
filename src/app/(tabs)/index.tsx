@@ -490,10 +490,8 @@ export default function HomeScreen() {
       {/* Saving a route tears a little ticket off into My Trips (round 125); the layer sits over it all. */}
       <TearAwayHost>
         <View style={styles.topBar}>
-          <Text style={[textStyles.wordmark, { color: c.text }]} accessibilityRole="header" accessibilityLabel="OutBound">
+          <Text style={[textStyles.wordmark, { color: c.text }]} accessibilityRole="header">
             OutBound
-            {/* A small gray asterisk after the wordmark: Jayden's first change, a test of the branch-to-Expo-Go workflow. */}
-            <Text style={[styles.asterisk, { color: c.muted }]}>*</Text>
           </Text>
           {/* Free and Pay as you go keep count of credits here; Premium doesn't (round 176). */}
           <CreditsChip onAnswerLoads={answerLoads} />
@@ -751,10 +749,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: spacing.page,
     minHeight: minTapTarget,
-  },
-  asterisk: {
-    fontSize: 12,
-    letterSpacing: 0,
   },
   body: {
     flex: 1,
