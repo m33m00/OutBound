@@ -45,6 +45,7 @@ import { pressStyle } from './press';
 import { ScalePressable } from './ScalePressable';
 import { StatusTag, TAG_TONE } from './StatusTag';
 import { withTick } from './haptics';
+import { useChangePop } from './motion';
 import { shiftMinutes, shiftToken } from './timeShift';
 import { TIER_BG, TIER_FG } from './tierColors';
 
@@ -96,6 +97,8 @@ function LegCreditCheck({
   index: number;
 }) {
   const c = useColors();
+  // The tick settles in or out as you check or uncheck, beside the total it changes (round 198).
+  const pop = useChangePop(checked);
   return (
     <Pressable
       onPress={withTick(onToggle)}
@@ -105,9 +108,10 @@ function LegCreditCheck({
       accessibilityLabel={`Request ${name} loads, ${creditsWord(REQUEST_COST)}`}
       testID={`leg-credit-${index}`}
       style={({ pressed }) => [styles.creditPill, { backgroundColor: c.accentSoft, opacity: pressed ? 0.7 : 1 }]}>
-      <View style={[styles.creditBox, { borderColor: c.accent, backgroundColor: checked ? c.accent : 'transparent' }]}>
+      <Animated.View
+        style={[styles.creditBox, { borderColor: c.accent, backgroundColor: checked ? c.accent : 'transparent' }, pop]}>
         {checked ? <Icon name="checkmark" size={11} weight="bold" tintColor={c.onAccent} fallback={null} /> : null}
-      </View>
+      </Animated.View>
       <Text style={[styles.creditText, { color: c.accent }]} numberOfLines={1}>
         {creditsWord(REQUEST_COST)}
       </Text>
@@ -1090,7 +1094,7 @@ const styles = StyleSheet.create({
   // No overflow clip, so the soft shadow shows; the edge rounds its own corners instead.
   row: {
     flexDirection: 'row',
-    borderRadius: radius.md,
+    borderRadius: radius.all,
     borderWidth: CARD_EDGE_W,
     minHeight: 44,
   },
@@ -1102,8 +1106,8 @@ const styles = StyleSheet.create({
   flatDark: { shadowOpacity: 0 },
   edge: {
     width: EDGE_W,
-    borderTopLeftRadius: radius.md - 1,
-    borderBottomLeftRadius: radius.md - 1,
+    borderTopLeftRadius: radius.all - 1,
+    borderBottomLeftRadius: radius.all - 1,
   },
   content: {
     flex: 1,
@@ -1118,8 +1122,8 @@ const styles = StyleSheet.create({
     paddingBottom: 4,
     paddingHorizontal: spacing.rowX,
     gap: 4,
-    borderTopLeftRadius: radius.md - 1,
-    borderTopRightRadius: radius.md - 1,
+    borderTopLeftRadius: radius.all - 1,
+    borderTopRightRadius: radius.all - 1,
   },
   // In the list, the picked row keeps its old stack: the same parts, no stub.
   stubSlim: { gap: spacing.group },
@@ -1220,7 +1224,7 @@ const styles = StyleSheet.create({
     gap: 4,
     paddingVertical: 8,
     paddingHorizontal: 12,
-    borderRadius: radius.sm + 2,
+    borderRadius: radius.all,
   },
   // A leg's flight chip with its aircraft stacked under it, centred under the route line (round 155, John:
   // "It's not aligned center underneath the route line").
@@ -1240,7 +1244,14 @@ const styles = StyleSheet.create({
     paddingRight: 9,
     minHeight: 28,
   },
-  creditBox: { width: 16, height: 16, borderRadius: 4, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
+  creditBox: {
+    width: 16,
+    height: 16,
+    borderRadius: radius.all,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   creditText: { fontFamily: fonts.bodySemiBold, fontSize: 13, lineHeight: 17 },
   connection: { flex: 1, alignItems: 'center', gap: 4 },
   connectionText: { textAlign: 'center', alignSelf: 'stretch' },
@@ -1253,7 +1264,7 @@ const styles = StyleSheet.create({
   endRight: { textAlign: 'right' },
   codePill: {
     borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 6,
+    borderRadius: radius.pill,
     paddingHorizontal: 7,
     paddingVertical: 2,
   },

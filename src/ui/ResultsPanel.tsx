@@ -881,7 +881,7 @@ const styles = StyleSheet.create({
   dot: { width: 6, height: 6, borderRadius: 3 },
   dotOn: { width: 16 },
   routeEnds: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  endPill: { borderRadius: 8, paddingHorizontal: 9, paddingVertical: 3, borderWidth: StyleSheet.hairlineWidth },
+  endPill: { borderRadius: radius.pill, paddingHorizontal: 9, paddingVertical: 3, borderWidth: StyleSheet.hairlineWidth },
   endCode: { fontFamily: fonts.mono, fontSize: 16, lineHeight: 21, letterSpacing: 0.5 },
   routeEndsTrack: { flexDirection: 'row', alignItems: 'center', gap: 4, width: 64 },
   routeEndsLine: { flex: 1, height: 1 },
@@ -892,7 +892,7 @@ const styles = StyleSheet.create({
   loading: { flexDirection: 'row', alignItems: 'center', gap: spacing.group },
   loadingBlock: { paddingVertical: spacing.section, gap: spacing.group },
   placeholder: {
-    borderRadius: radius.md,
+    borderRadius: radius.all,
     borderWidth: 1,
     paddingVertical: spacing.rowY,
     paddingHorizontal: spacing.rowX,

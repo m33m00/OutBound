@@ -15,7 +15,7 @@ export function useCardSurface(opts: { lift?: boolean } = {}): ViewStyle {
     backgroundColor: c.surface,
     borderColor: c.cardEdge,
     borderWidth: 1,
-    borderRadius: radius.md,
+    borderRadius: radius.all,
     shadowColor: c.text,
     ...(lift
       ? { shadowOpacity: 0.07, shadowRadius: 12, shadowOffset: { width: 0, height: 3 }, elevation: 2 }

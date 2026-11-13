@@ -29,7 +29,9 @@ import { RequestRow } from '@/ui/RequestRow';
 import { SavedRouteCard } from '@/ui/SavedRouteCard';
 import { SavedToast } from '@/ui/SavedToast';
 import { SwipeToDelete } from '@/ui/SwipeToDelete';
+import { glideNextLayout } from '@/ui/motion';
 import { TabScreen } from '@/ui/TabScreen';
+import { useReducedMotion } from '@/ui/useReducedMotion';
 import { TripsSectionHeader } from '@/ui/TripsSectionHeader';
 import { useFlightLoad } from '@/ui/useFlightLoad';
 import { useSheetContent } from '@/ui/useSheetContent';
@@ -98,6 +100,7 @@ export default function TripsScreen() {
         text: 'Delete',
         style: 'destructive',
         onPress: () => {
+          glideNextLayout(reduce);
           removeMany(picked);
           stopSelecting();
         },
@@ -107,7 +110,17 @@ export default function TripsScreen() {
   // A swiped-away route can come back for a few seconds.
   const [swiped, setSwiped] = useState<SavedRoute | null>(null);
   const clearSwiped = useCallback(() => setSwiped(null), []);
-  const { mine, removeRequests, restoreRequests } = useRequests();
+  const { mine, removeRequests: dropFromMine, restoreRequests: putBackInMine } = useRequests();
+  // A request or route that leaves or comes back: the cards around it glide into place (round 198).
+  const reduce = useReducedMotion();
+  const removeRequests = (ids: string[]) => {
+    glideNextLayout(reduce);
+    dropFromMine(ids);
+  };
+  const restoreRequests = (back: LoadRequest[]) => {
+    glideNextLayout(reduce);
+    putBackInMine(back);
+  };
   // Deleted requests can come back for a few seconds too (round 195, John: "I should also be able to remove
   // some requests that I've submitted").
   const [droppedRequests, setDroppedRequests] = useState<{ requests: LoadRequest[]; label: string } | null>(null);
@@ -206,7 +219,10 @@ export default function TripsScreen() {
       undoLabel="Undo delete"
       undone="Back in My Trips"
       testID="deleted-toast"
-      onUndo={() => save(swiped)}
+      onUndo={() => {
+        glideNextLayout(reduce);
+        save(swiped);
+      }}
       onDone={clearSwiped}
     />
   ) : null;
@@ -346,6 +362,7 @@ export default function TripsScreen() {
               key={route.key}
               label={`Delete ${savedRouteTitle(route)}`}
               onDelete={() => {
+                glideNextLayout(reduce);
                 remove(route.key);
                 setSwiped(route);
               }}>

@@ -97,7 +97,7 @@ const styles = StyleSheet.create({
   stepBtn: {
     width: minTapTarget,
     height: minTapTarget,
-    borderRadius: radius.sm,
+    borderRadius: radius.all,
     alignItems: 'center',
     justifyContent: 'center',
   },

@@ -8,11 +8,16 @@ export const spacing = {
   rowX: 12,
 } as const;
 
-/** Soft, rounder corners for the Clean look (round 120): leg boxes and chips 12, cards 18, sheets 26. */
+/**
+ * One corner radius everywhere (round 198, John: "One corner radius everywhere"). Every card, ticket, leg box,
+ * button, field, sheet, banner, popup, tile and checkbox uses `radius.all`, nested ones too. Only pills
+ * (`radius.pill`) and circles (logo badges, dots, round icons) stay fully round, since that's what makes them
+ * pills and circles. Before this: leg boxes and chips 12, cards 18, sheets 26.
+ */
+export const RADIUS = 14;
 export const radius = {
-  sm: 12,
-  md: 18,
-  lg: 26,
+  all: RADIUS,
+  pill: 999,
 } as const;
 
 /** Minimum tap target, in points. */

@@ -91,7 +91,7 @@ const styles = StyleSheet.create({
     rowGap: spacing.group,
     paddingVertical: spacing.group,
     paddingHorizontal: spacing.rowX,
-    borderRadius: radius.md,
+    borderRadius: radius.all,
     borderWidth: StyleSheet.hairlineWidth,
   },
   icon: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },

@@ -863,3 +863,20 @@ John: "Can you remove the current sound effects loaded on the app? Lets redo som
   - sent: one light high tap (A5), 0.35 s. When you press Request on the pinned bar and credits are spent. The answered chime waits for it to finish (the demo answers at once).
   - leave: three notes falling (G5, E5, C5), like a gentle terminal chime, 1.5 s. When the Leave By card turns from "Leave by" to "Leave now" while it's on screen. Never when a card opens already saying Leave now.
 - Nothing else makes a sound. The same chime twice within 2 s plays once. Settings > Display > Sound effects still turns all of them off and plays the answered chime once when switched on. Detail: "Soft chimes when a request goes out, when it's answered, and when it's time to leave". CLAUDE.md has the rule.
+
+## Round 198 (Nov 13): animations that mean something, one corner radius
+
+John: "Give animations throughout the app that mean something." / "One corner radius everywhere." / "Unique clean font too."
+
+Animations (src/ui/motion.ts, Pop.tsx). Each shows what just changed or where something went. None on first show; Reduce Motion fades only.
+- Status pills (Delayed, Departed, Arrived, Canceled, Diverted) settle in when they change, so a flight moving on is noticed.
+- The credits chip's number rolls: down from above when credits are spent, up from below when earned.
+- A leg's credit tick settles in or out as you check or uncheck it.
+- A leg that turns canceled while on screen draws its X: the disc settles, then the strokes grow from the middle.
+- New seat numbers on a leg settle in when the load changes.
+- My Trips: when a request or saved route is deleted, brought back with Undo, or deleted in Select, the cards around it glide into place instead of jumping.
+- The My Trips tab icon settles in each time a request lands there, so you see where it went.
+
+One corner radius: `radius.all` = 14 for every card, ticket, leg box, button, field, sheet, banner, popup, tile and checkbox (before: 12, 18 and 26, plus 4 to 20 one-offs). Pills (`radius.pill`) and circles (logo badges, dots, round icons) stay round. Inner clips keep 1 less so they sit inside a border. CLAUDE.md has the rule.
+
+Font: picked Manrope (Google Fonts, open license; distinctive, very readable small, tabular numbers), with Plus Jakarta Sans and Figtree as alternates. Adding it needs a new font package, which needs John's OK first, so it isn't in this round. Geist stays for now.

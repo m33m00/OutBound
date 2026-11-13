@@ -259,7 +259,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 8,
     paddingHorizontal: spacing.rowX,
-    borderRadius: radius.sm,
+    borderRadius: radius.all,
   },
   top: { flexDirection: 'row', alignItems: 'center', gap: spacing.group },
   action: { alignSelf: 'flex-start', paddingHorizontal: spacing.section },

@@ -160,7 +160,7 @@ const styles = StyleSheet.create({
     paddingLeft: 3,
     paddingRight: 8,
     paddingVertical: 2,
-    borderRadius: radius.sm - 2,
+    borderRadius: radius.all - 2,
     borderWidth: StyleSheet.hairlineWidth,
   },
   mark: { overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },

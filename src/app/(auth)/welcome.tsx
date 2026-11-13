@@ -5,7 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAccount } from '@/account/AccountProvider';
 import { InlineLink, openLegal } from '@/account/AuthUI';
-import { spacing, textStyles, useColors } from '@/theme';
+import { spacing, textStyles, useColors, radius } from '@/theme';
 import { Button, PillButton } from '@/ui/Buttons';
 
 /**
@@ -19,7 +19,10 @@ export default function WelcomeScreen() {
     <SafeAreaView style={[styles.screen, { backgroundColor: c.bg }]} edges={['top', 'bottom']}>
       <View style={styles.hero}>
         <Image source={require('../../../assets/images/icon.png')} style={styles.icon} accessibilityIgnoresInvertColors />
-        <Text style={[textStyles.wordmark, styles.word, { color: c.text }]} accessibilityRole="header" accessibilityLabel="OutBound">
+        <Text
+          style={[textStyles.wordmark, styles.word, { color: c.text }]}
+          accessibilityRole="header"
+          accessibilityLabel="OutBound">
           OUTBOUND
         </Text>
         <Text lineBreakStrategyIOS="push-out" style={[textStyles.heading, styles.tag, { color: c.muted }]}>
@@ -52,7 +55,7 @@ export default function WelcomeScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1, paddingHorizontal: spacing.page * 1.5 },
   hero: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 14 },
-  icon: { width: 88, height: 88, borderRadius: 20 },
+  icon: { width: 88, height: 88, borderRadius: radius.all },
   word: { fontSize: 30, lineHeight: 34, letterSpacing: 6, marginTop: 6 },
   tag: { textAlign: 'center' },
   actions: { gap: spacing.section, paddingBottom: spacing.page },

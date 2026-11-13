@@ -196,7 +196,7 @@ const styles = StyleSheet.create({
   answer: {
     minHeight: minTapTarget,
     paddingHorizontal: spacing.page,
-    borderRadius: radius.sm,
+    borderRadius: radius.all,
     alignItems: 'center',
     justifyContent: 'center',
   },

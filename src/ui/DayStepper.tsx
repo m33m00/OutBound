@@ -163,7 +163,7 @@ const styles = StyleSheet.create({
   arrow: {
     width: 36,
     height: minTapTarget + 8,
-    borderRadius: radius.sm,
+    borderRadius: radius.all,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -171,7 +171,7 @@ const styles = StyleSheet.create({
     minWidth: DAY_MIN,
     minHeight: minTapTarget + 8,
     paddingHorizontal: 6,
-    borderRadius: radius.sm,
+    borderRadius: radius.all,
     alignItems: 'center',
     justifyContent: 'center',
   },

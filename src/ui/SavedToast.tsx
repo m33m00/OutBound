@@ -76,7 +76,7 @@ const styles = StyleSheet.create({
     paddingLeft: spacing.section,
     paddingRight: 6,
     minHeight: minTapTarget,
-    borderRadius: radius.sm,
+    borderRadius: radius.all,
     borderWidth: StyleSheet.hairlineWidth,
   },
   words: { flexShrink: 1 },

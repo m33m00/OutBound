@@ -329,7 +329,7 @@ const styles = StyleSheet.create({
   stepBtn: {
     width: minTapTarget + 12,
     height: minTapTarget + 12,
-    borderRadius: radius.sm,
+    borderRadius: radius.all,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -342,7 +342,7 @@ const styles = StyleSheet.create({
     lineHeight: 46,
     letterSpacing: -1,
     fontVariant: ['tabular-nums'],
-    borderRadius: radius.sm,
+    borderRadius: radius.all,
     borderWidth: StyleSheet.hairlineWidth,
     paddingVertical: 0,
   },

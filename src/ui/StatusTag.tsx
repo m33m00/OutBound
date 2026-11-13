@@ -1,9 +1,10 @@
-import { type LayoutChangeEvent, StyleSheet, Text, View } from 'react-native';
+import { Animated, type LayoutChangeEvent, StyleSheet, Text } from 'react-native';
 
 import type { LegTagKind } from '@/search/statusTags';
 import { fonts, radius, textStyles, useColors } from '@/theme';
 
 import { Icon } from './Icon';
+import { useChangePop } from './motion';
 import { TONE_BG, TONE_FG, type Tone } from './statusTone';
 
 /** Row tag kind to tone (Q-050). */
@@ -29,10 +30,14 @@ export function StatusTag({
   onLayout?: (e: LayoutChangeEvent) => void;
 }) {
   const c = useColors();
+  // A pill that changes (Delayed to Departed, Departed to Arrived) settles in, so you notice it moved on
+  // (round 198). Not on first show.
+  const pop = useChangePop(label);
   return (
-    <View
+    <Animated.View
       onLayout={onLayout}
       style={[
+        pop,
         styles.statusTag,
         { backgroundColor: c[TONE_BG[tone]], borderColor: c[TONE_BG[tone]] },
         minWidth ? { minWidth } : null,
@@ -44,7 +49,7 @@ export function StatusTag({
         style={[textStyles.small, styles.shrink, { fontFamily: fonts.bodySemiBold, color: c[TONE_FG[tone]] }]}>
         {label}
       </Text>
-    </View>
+    </Animated.View>
   );
 }
 
@@ -58,7 +63,7 @@ const styles = StyleSheet.create({
     gap: 4,
     paddingHorizontal: 8,
     paddingVertical: 2,
-    borderRadius: radius.sm,
+    borderRadius: radius.all,
     borderWidth: 1,
   },
 });

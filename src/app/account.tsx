@@ -39,7 +39,11 @@ export default function AccountScreen() {
         <BackButton label="Back" onPress={() => router.back()} />
       </View>
       <ScrollView contentContainerStyle={styles.body}>
-        <Text lineBreakStrategyIOS="push-out" style={[textStyles.title, { color: c.text }]} accessibilityRole="header" maxFontSizeMultiplier={TITLE_MAX_SCALE}>
+        <Text
+          lineBreakStrategyIOS="push-out"
+          style={[textStyles.title, { color: c.text }]}
+          accessibilityRole="header"
+          maxFontSizeMultiplier={TITLE_MAX_SCALE}>
           Account
         </Text>
 
@@ -96,7 +100,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: 48,
-    borderRadius: radius.md,
+    borderRadius: radius.all,
     borderWidth: 1,
   },
 });

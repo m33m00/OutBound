@@ -117,7 +117,7 @@ const styles = StyleSheet.create({
     gap: 2,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    borderRadius: radius.sm + 2,
+    borderRadius: radius.all,
     borderWidth: 1,
     shadowOpacity: 0.18,
     shadowRadius: 10,
