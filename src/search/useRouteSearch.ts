@@ -43,6 +43,9 @@ export const LOOSE_FILTERS: SearchFilters = {
   answeredOnly: false,
   airlines: [],
   airlineRegion: 'all',
+  // Not search options: they only order and hide routes once found.
+  sortBy: 'departure',
+  showCanceled: false,
 };
 
 let sample: FlightDataProvider | undefined;

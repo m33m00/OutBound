@@ -4,6 +4,7 @@
  * bad or old saved value can't break search.
  */
 import { AIRPORTS, areaFor, DEFAULT_SEARCH_OPTIONS, TIMES_OF_DAY, type SearchOptions } from '@/engine';
+import type { ResultPrefs, SortBy } from '@/search/arrange';
 import type { MapsApp } from '@/search/directions';
 import { parseTier, type Tier } from '@/membership/membership';
 import { DEFAULT_APPEARANCE, parseAppearance, type AppearancePref } from '@/theme/appearancePref';
@@ -13,18 +14,19 @@ import { DEFAULT_APPEARANCE, parseAppearance, type AppearancePref } from '@/them
  * The old "Nearby airports" switch and "Longest ground transfer" stepper are
  * gone (Q-048, Q-052): areas replace them. Old saved values are ignored.
  */
-export type SearchFilters = Pick<
-  SearchOptions,
-  | 'maxStops'
-  | 'minConnectSameAirlineMin'
-  | 'minConnectSwitchMin'
-  | 'maxLayoverMin'
-  | 'departTimes'
-  | 'avoidAirports'
-  | 'answeredOnly'
-  | 'airlines'
-  | 'airlineRegion'
->;
+export type SearchFilters = ResultPrefs &
+  Pick<
+    SearchOptions,
+    | 'maxStops'
+    | 'minConnectSameAirlineMin'
+    | 'minConnectSwitchMin'
+    | 'maxLayoverMin'
+    | 'departTimes'
+    | 'avoidAirports'
+    | 'answeredOnly'
+    | 'airlines'
+    | 'airlineRegion'
+  >;
 
 export const DEFAULT_FILTERS: SearchFilters = {
   maxStops: DEFAULT_SEARCH_OPTIONS.maxStops,
@@ -36,7 +38,13 @@ export const DEFAULT_FILTERS: SearchFilters = {
   answeredOnly: false,
   airlines: [],
   airlineRegion: 'all',
+  // Itinerary preferences (Jayden, 2026-11-13): departure order, canceled routes hidden.
+  sortBy: 'departure',
+  showCanceled: false,
 };
+
+/** Result orders people can pick, departure first (the default). */
+const SORT_BYS: readonly SortBy[] = ['departure', 'seats', 'arrival'];
 
 /** Stepper limits, shared by settings and the Filters panel (provisional ranges). */
 export const LIMITS = {
@@ -157,6 +165,9 @@ export function parseSettings(raw: unknown): Settings {
         ? [...new Set(s.airlines.filter((a): a is string => typeof a === 'string' && /^[A-Z0-9]{2}$/.test(a)))]
         : [],
       airlineRegion: s.airlineRegion === 'us' ? 'us' : 'all',
+      // Itinerary preferences (2026-11-13); old saves lack them and get the defaults.
+      sortBy: SORT_BYS.find((v) => v === s.sortBy) ?? d.sortBy,
+      showCanceled: bool(s.showCanceled, d.showCanceled),
     },
     areaOn,
     notify: {
@@ -175,6 +186,14 @@ const sameValue = (a: unknown, b: unknown) =>
 /** How many search filters differ from `base`. Lists count as one each, whatever their order. */
 export function changedFilters(f: SearchFilters, base: SearchFilters = DEFAULT_FILTERS): number {
   return (Object.keys(base) as (keyof SearchFilters)[]).filter((k) => !sameValue(f[k], base[k])).length;
+}
+
+/**
+ * How many filters that change the search itself differ from `base`. The result order and the canceled
+ * switch only reorder or hide routes already found, so they never need the search to run again.
+ */
+export function changedSearchFilters(f: SearchFilters, base: SearchFilters): number {
+  return changedFilters({ ...f, sortBy: base.sortBy, showCanceled: base.showCanceled }, base);
 }
 
 export interface HomeAirport {

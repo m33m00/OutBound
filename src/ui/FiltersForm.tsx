@@ -2,6 +2,7 @@ import { useState, type ReactNode } from 'react';
 import { Pressable, StyleSheet, Switch, Text, useWindowDimensions, View } from 'react-native';
 
 import { AIRPORTS, isUsAirline, TIME_OF_DAY_WINDOW, TIMES_OF_DAY, type AirlineRegion, type TimeOfDay } from '@/engine';
+import { SORT_BY, type SortBy } from '@/search/arrange';
 import { LIMITS, type SearchFilters } from '@/settings/settings';
 import { minTapTarget, radius, spacing, textStyles, useColors } from '@/theme';
 
@@ -39,6 +40,21 @@ export function airlineChoices(region: AirlineRegion): string[] {
     .sort((a, b) => AIRLINE_MARKS[a].name.localeCompare(AIRLINE_MARKS[b].name));
 }
 
+const SORT_LABEL: Record<SortBy, string> = { departure: 'Departure', seats: 'Most seats', arrival: 'Arrival' };
+
+const SORT_SPOKEN: Record<SortBy, string> = {
+  departure: 'Sort by departure',
+  seats: 'Sort by most seats',
+  arrival: 'Sort by arrival',
+};
+
+/** What the picked order does, under the Sort by control. */
+export const SORT_CAPTION: Record<SortBy, string> = {
+  departure: 'Earliest departure first. Routes that already left sit at the top.',
+  seats: 'The route whose fullest flight has the most seats comes first. Routes with no loads yet go after.',
+  arrival: 'Earliest arrival first, with the new time when a flight runs late.',
+};
+
 const toggle = <T,>(list: readonly T[], v: T): T[] => (list.includes(v) ? list.filter((x) => x !== v) : [...list, v]);
 
 /** Search filter controls, shared by the Filters panel and Settings. */
@@ -49,6 +65,66 @@ export function FiltersForm({ filters: f, onChange }: { filters: SearchFilters; 
   const grid = useWindowDimensions().fontScale >= 1.3;
   return (
     <View style={styles.form}>
+      {/* Itinerary preferences (Jayden, 2026-11-13): these order and hide the routes found, so changing
+          them never runs the search again. */}
+      <View style={styles.block}>
+        <Text lineBreakStrategyIOS="push-out" style={[textStyles.heading, { color: c.text }]}>
+          Sort by
+        </Text>
+        <View style={[styles.segments, { backgroundColor: c.surface2 }]} accessibilityRole="radiogroup" testID="filters-sort">
+          {SORT_BY.map((sortBy) => {
+            const on = f.sortBy === sortBy;
+            return (
+              <Pressable
+                key={sortBy}
+                testID={`filters-sort-${sortBy}`}
+                onPress={withTick(() => set({ sortBy }))}
+                accessibilityRole="radio"
+                accessibilityState={{ checked: on }}
+                accessibilityLabel={SORT_SPOKEN[sortBy]}
+                style={pressStyle([styles.segment, { backgroundColor: on ? c.accent : 'transparent' }])}>
+                <Text
+                  style={[textStyles.bodyStrong, { color: on ? c.onAccent : c.accent }]}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.8}>
+                  {SORT_LABEL[sortBy]}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+        <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]} testID="filters-sort-caption">
+          {SORT_CAPTION[f.sortBy]}
+        </Text>
+      </View>
+
+      <View style={styles.block}>
+        <Text lineBreakStrategyIOS="push-out" style={[textStyles.heading, { color: c.text }]}>
+          Canceled flights
+        </Text>
+        <Pressable
+          testID="filters-canceled"
+          onPress={() => set({ showCanceled: !f.showCanceled })}
+          accessibilityRole="switch"
+          accessibilityState={{ checked: f.showCanceled }}
+          accessibilityLabel="Show canceled routes"
+          accessibilityHint="Show routes where a flight is canceled"
+          style={pressStyle([styles.switchRow, { backgroundColor: c.surface2 }])}>
+          <View style={styles.flex}>
+            <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, { color: c.text }]}>
+              Show canceled routes
+            </Text>
+            <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>
+              Routes where a flight is canceled
+            </Text>
+          </View>
+          <View pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+            <Switch value={f.showCanceled} trackColor={{ true: c.accent, false: c.faint }} />
+          </View>
+        </Pressable>
+      </View>
+
       <Text lineBreakStrategyIOS="push-out" style={[textStyles.heading, { color: c.text }]}>
         Max stops
       </Text>
