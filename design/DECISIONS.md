@@ -901,3 +901,12 @@ John couldn't see a difference after round 199 ("i cant tell a difference"). Man
 
 - Added @expo-google-fonts/sora, removed @expo-google-fonts/manrope. Sora 400 to 800 for all text and titles, bold text and the map's IATA labels. Times and flight numbers stay Geist Mono; the wordmark stays Big Shoulders.
 - Sora is about 10% wider than Geist at the same size, so it reads bigger. Sizes are unchanged; any line that now truncates or wraps badly gets fixed when spotted on a phone. CLAUDE.md updated.
+
+## Round 201 (Nov 14): Departed and Arrived pills by Save, two colors, arrived tickets grayed
+
+John: "Moved the departed and arrived pill next to the save button so it all aligns going top down and not dependent on the length of the departure and arrival times which seems like what it's doing. Different colors for departed and arrived. If it arrived the card should be greyed out as well."
+
+- Results tickets: the pill moved off the times line to just left of Save, top right, so the pills form one column down the list. The times get the whole line.
+- Colors: Departed keeps sky cyan; Arrived is graphite (light: #384250 on #dfe4eb; dark: #cbd3de on #29323e). Not violet (that's Delayed and Diverted), not green (early times and seats), not blue (tappable). Every Arrived pill uses it: tickets, the opened route's legs, Requests and the flight status sheet.
+- Arrived tickets: the times, stops line and route line fade to 45%; the Arrived pill and Save stay full strength. Departed tickets keep the light gray they had. Before, arrived and departed both only got the very light gray card, which barely showed.
+- CLAUDE.md rule updated.

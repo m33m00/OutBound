@@ -7,7 +7,7 @@ import type { Itinerary } from '@/engine';
 
 import type { RowStatus } from './statusTags';
 
-export type HeadlineTone = 'canceled' | 'delayed' | 'gone';
+export type HeadlineTone = 'canceled' | 'delayed' | 'gone' | 'landed';
 
 export interface StatusHeadline {
   label: string;
@@ -38,7 +38,11 @@ export function statusHeadline(it: Itinerary, status: RowStatus | undefined): St
   }
   const risk = status.risks[0];
   if (risk) return { label: `Connection at risk at ${risk.airport}`, tone: 'delayed' };
-  if (status.dimmed) return { label: status.legs[0]?.tag?.label ?? 'Departed', tone: 'gone' };
+  // Departed and Arrived each keep their own color (round 201, John).
+  if (status.dimmed) {
+    const tag = status.legs[0]?.tag;
+    return { label: tag?.label ?? 'Departed', tone: tag?.kind === 'arrived' ? 'landed' : 'gone' };
+  }
   const delayed = status.legs.flatMap((l, i) => (l.tag?.kind === 'delayed' ? [i] : []));
   if (delayed.length > 1) return { label: `${delayed.length} flights delayed`, tone: 'delayed' };
   if (delayed.length === 1) {

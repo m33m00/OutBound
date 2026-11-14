@@ -83,6 +83,10 @@ export const colors = {
     // a sky cyan no other meaning uses (blue is for things you tap, green to red for seats and lateness).
     done: '#0b6782',
     doneBg: '#dcf1f7',
+    // Arrived gets its own graphite pill (round 201, John: "Different colors for departed and arrived"):
+    // a finished flight reads quiet, next to the gray of a card that has landed. Cyan stays for Departed.
+    landed: '#384250',
+    landedBg: '#dfe4eb',
 
     // A time that moved, tinted by how far (John, 2026-11-02): early green; late yellow, orange, red.
     // Text colors, kept soft so they tint the number rather than shout.
@@ -146,6 +150,8 @@ export const colors = {
 
     done: '#8adcf0',
     doneBg: '#0e2a33',
+    landed: '#cbd3de',
+    landedBg: '#29323e',
 
     timeEarly: '#7fdca6',
     timeSlight: '#e8d27a',
