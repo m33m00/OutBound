@@ -196,13 +196,11 @@ export function leaveByShort(r: LeaveBy, tz: string): string {
     case 'atAirport':
       return boardingAt(t(r.boardUtc));
     case 'leaveBy':
-      // The drive time sits by the car on the directions button (round 169, John); the boarding line stays, the
-      // same as under Leave now (round 193, John: "Why do some have the Leave By time but no description about
-      // the arrival time to boarding and some do?").
-      return arriveBy(r.airport, t(r.beAtUtc));
     case 'leaveNow':
-      // Spelled out (John, 2026-11-03), ending "to begin boarding" (round 159, John).
-      return arriveBy(r.airport, t(r.beAtUtc));
+      // No line under the time (round 205, John: "We don't need the commentary ... below the Leave Now at the
+      // top"): the drive time sits by the car on the button (round 169), and VoiceOver still hears the arrive-by
+      // line with the title. Leave by and Leave now stay alike (round 193).
+      return '';
     case 'beAt':
       // The title already says it all (round 159), so no second detail beside it.
       return '';

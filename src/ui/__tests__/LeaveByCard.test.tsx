@@ -183,7 +183,7 @@ describe('LeaveByCard location button', () => {
     expect(r!.root.find((n) => n.props.testID === 'leave-by-card' && 'disabled' in n.props).props.disabled).toBe(true);
   });
 
-  it('is one slim row: the time and the boarding line, with the drive time on the directions button (rounds 169, 193)', () => {
+  it('is one slim row: just the time, with the drive time on the directions button (rounds 169, 193, 205)', () => {
     mockFontScale = 1;
     act(() => {
       r = create(
@@ -201,8 +201,8 @@ describe('LeaveByCard location button', () => {
     });
     // The time, then the boarding line beside it like Leave now's (round 193, John: some had it, some didn't).
     expect(lineText(r!)).toMatch(/^Leave by \d{1,2}:\d{2}\u00a0(AM|PM)/);
-    expect(lineText(r!)).toContain('Arrive at DFW by');
-    expect(lineText(r!)).toContain('to begin boarding');
+    // Nothing under or beside the time (round 205, John: "We don't need the commentary ... below the Leave Now").
+    expect(lineText(r!)).not.toContain('Arrive at DFW by');
     expect(lineText(r!)).not.toContain('·');
     // John: "can the estimated time to drive there be next to the car icon".
     const car = r!.root.find((n) => n.props.testID === 'leave-by-car' && typeof n.type === 'string');

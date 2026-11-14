@@ -62,7 +62,8 @@ describe('plans and credits (round 176)', () => {
     act(() => {
       r = create(<RequestLoadsBar picked={1} locked={1} credits={2} onRequest={onRequest} onAnswerLoads={onAnswer} />);
     });
-    expect(words(r.root).join(' ')).toContain('Loads are 1 credit per leg');
+    // The button says the cost; no line over it (round 205, John: "We don't need the commentary").
+    expect(words(r.root).join(' ')).not.toContain('Seats are hidden');
     act(() =>
       r.root.findAll((n) => n.props.accessibilityLabel === 'Request Loads for 1 credit' && n.props.onPress)[0].props.onPress(),
     );

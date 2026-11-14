@@ -181,7 +181,7 @@ export function MiniRoute({
                   key={`x${i}`}
                   style={[styles.xSlot, below(LABEL_H + DOT / 2 - X_SIZE / 2), { left: pct(i + 0.5) }]}
                   testID="mini-route-canceled">
-                  <CanceledX color={leg.color} disc={c.surface} fresh={seen.current && !wasCanceled.current[i]} />
+                  <CanceledX color={leg.color} disc={c.canceledBg} fresh={seen.current && !wasCanceled.current[i]} />
                 </View>
               ) : null,
             )}

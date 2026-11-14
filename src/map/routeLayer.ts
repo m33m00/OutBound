@@ -116,12 +116,14 @@ export function recordRouteLayer(input: RouteLayerInput): RouteLayer {
     if (d.leg.canceled && d.role === 'selected') {
       const mid = legTimeAnchor(legSamples(d.leg), project, CANCELED_X.t);
       if (mid) {
-        // No white disc (round 204, John): a light edge around the X's own strokes, then the red X.
-        const segs = canceledXSegments(mid.x, mid.y);
-        const edge = stroke(style.halo?.color ?? palette.surface, CANCELED_X.width + CANCELED_X.edge);
-        for (const [x0, y0, x1, y1] of segs) canvas.drawLine(x0, y0, x1, y1, edge);
+        // A small light red circle with a red ring, then the red X: the cards' X (round 205, John).
+        const fill = Skia.Paint();
+        fill.setAntiAlias(true);
+        fill.setColor(Skia.Color(palette.canceledBg));
+        canvas.drawCircle(mid.x, mid.y, CANCELED_X.disc, fill);
+        canvas.drawCircle(mid.x, mid.y, CANCELED_X.disc, stroke(style.color, CANCELED_X.ring));
         const x = stroke(style.color, CANCELED_X.width);
-        for (const [x0, y0, x1, y1] of segs) canvas.drawLine(x0, y0, x1, y1, x);
+        for (const [x0, y0, x1, y1] of canceledXSegments(mid.x, mid.y)) canvas.drawLine(x0, y0, x1, y1, x);
       }
       continue;
     }

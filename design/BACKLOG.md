@@ -244,3 +244,4 @@ Each item names its owner. One item per work session. spec-keeper runs a pre-fli
 | 239 | Pills and Save line up with the new (late) times; At risk gold and lower on 1-stop routes; area callout shows codes only; Filters matches Search (round 202) | Done |
 | 240 | Bold red bar through canceled times; Now line is a solid capsule on a thick rule (round 203) | Done |
 | 241 | Now line in the picked-day blue, rule a smidge thinner; no white circle behind the map's canceled X (round 204) | Done |
+| 242 | Map canceled X in a small light red circle like the cards; no line over Request Loads or under Leave by and Leave now (round 205) | Done |

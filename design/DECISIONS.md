@@ -934,3 +934,11 @@ John: "Can the now line instead of black be the same blue for the dates etc" and
 - The Now capsule and its rule are now the boarding blue of the picked day button, with white words. Blue normally means "you can tap this"; John asked for it here, so the Now line is the one exception.
 - The rule went from 2pt to 1.5pt.
 - Map: the white circle behind a canceled leg's X is gone (John: "The white circle background for a canceled leg on the route map I don't like"). The X is a little bigger (12pt across) with a thin light edge on its own strokes, the same as the line's halo, so it still reads over the red line.
+
+## Round 205 (Nov 14): map X back in a circle, less commentary
+
+John: "Can it be a circle and match how it looks in the card with a light red background? It can be a little smaller too." "We don't need the commentary at the bottom above the request loads button and below the Leave Now at the top."
+
+- Map: the canceled X sits in a small circle again (12pt across, smaller than round 199's 16pt), filled light red with a red ring, like the X on the cards. The cards' X circle is light red now too, so both match.
+- Request Loads: no "Seats are hidden. Loads are 1 credit per leg. X credits remaining." line. Round 192 had only taken it off the results list, so it still showed over the button. A line shows only when the request can't go: out of credits, or not enough for the legs checked.
+- Leave by and Leave now show just the time; the "Arrive at DFW by ... to begin boarding" line is gone from both (they stay alike, round 193). VoiceOver still hears it. At the airport the boarding time stays, since that's the card's main fact there.
