@@ -45,6 +45,7 @@ import { pressStyle } from './press';
 import { ScalePressable } from './ScalePressable';
 import { StatusTag, TAG_TONE } from './StatusTag';
 import { withTick } from './haptics';
+import { StrikeOver } from './StrikeOver';
 import { useChangePop } from './motion';
 import { shiftMinutes, shiftToken } from './timeShift';
 import { TIER_BG, TIER_FG } from './tierColors';
@@ -213,16 +214,27 @@ function LegEnds({
   const arriveColor = t.pending ? c.muted : tint(view?.arrival ? shiftMinutes(view.arrival.newUtc, leg.arriveUtc) : null);
   const strong = { fontFamily: fonts.mono, fontVariant: ['tabular-nums' as const] };
   const minutes = Math.round((leg.arriveUtc - leg.departUtc) / 60_000);
-  const time = (text: string, color: string, testID: string, right?: boolean) => (
-    <Text
-      style={[styles.endTime, strong, { color }, right && styles.endRight, canceled && styles.struck]}
-      numberOfLines={1}
-      adjustsFontSizeToFit
-      minimumFontScale={0.8}
-      testID={testID}>
-      {keep(text)}
-    </Text>
-  );
+  const time = (text: string, color: string, testID: string, right?: boolean) => {
+    const clock = (
+      <Text
+        style={[styles.endTime, strong, { color }, right && styles.endRight]}
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.8}
+        testID={testID}>
+        {keep(text)}
+      </Text>
+    );
+    // A canceled flight's time gets a bold red line through it (round 203, John: "Canceled line crossing out the
+    // time should be thicker").
+    return canceled ? (
+      <StrikeOver color={c.canceled} testID="leg-time-strike">
+        {clock}
+      </StrikeOver>
+    ) : (
+      clock
+    );
+  };
   const code = (text: string, hold: ReturnType<typeof useAirportHold>) => {
     const pill = (
       <View style={[styles.codePill, { backgroundColor: c.surface, borderColor: c.line }]} testID="leg-code">
@@ -704,20 +716,28 @@ export const ResultRow = memo(function ResultRow({
       {withWas ? wasLine : null}
       {/* The times line. Departed and Arrived sat at its end in round 196; since round 201 they sit by Save. */}
       <View style={styles.timesRow} testID="row-times-line">
-        <Text
-          style={[textStyles.number, styles.timesText, { color: timeColor }]}
-          numberOfLines={stacked ? undefined : 1}
-          adjustsFontSizeToFit={!stacked}
-          minimumFontScale={0.7}
-          testID="row-times">
-          {canceledRoute ? (
-            // A canceled nonstop: the top times go grey, not struck; the leg's pill and struck times say it
-            // (John, 2026-11-02).
-            // A red line through it too (round 161, John).
-            <Text style={[{ color: hc.muted }, styles.struck, { textDecorationColor: c.canceled }]} testID="row-times-canceled">
-              {t.depart} – {t.arrive}
+        {canceledRoute ? (
+          // A canceled nonstop's times, gray with a bold red line through them (rounds 161 and 203, John).
+          <StrikeOver color={c.canceled} testID="row-times-strike">
+            <Text
+              style={[textStyles.number, styles.timesText, { color: hc.muted }]}
+              numberOfLines={stacked ? undefined : 1}
+              adjustsFontSizeToFit={!stacked}
+              minimumFontScale={0.7}
+              testID="row-times">
+              <Text testID="row-times-canceled">
+                {t.depart} – {t.arrive}
+              </Text>
+              {t.plusDays ? <Text style={[textStyles.small, { color: hc.muted }]}> {t.plusDays}</Text> : null}
             </Text>
-          ) : (
+          </StrikeOver>
+        ) : (
+          <Text
+            style={[textStyles.number, styles.timesText, { color: timeColor }]}
+            numberOfLines={stacked ? undefined : 1}
+            adjustsFontSizeToFit={!stacked}
+            minimumFontScale={0.7}
+            testID="row-times">
             <>
               {departMoved ? (
                 <Text style={departTint} testID="row-new-depart">
@@ -740,9 +760,9 @@ export const ResultRow = memo(function ResultRow({
                 t.arrive
               )}
             </>
-          )}
-          {t.plusDays ? <Text style={[textStyles.small, { color: hc.muted }]}> {t.plusDays}</Text> : null}
-        </Text>
+            {t.plusDays ? <Text style={[textStyles.small, { color: hc.muted }]}> {t.plusDays}</Text> : null}
+          </Text>
+        )}
       </View>
     </View>
   );

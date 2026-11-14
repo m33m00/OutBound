@@ -63,6 +63,8 @@ Full history in `design/DECISIONS.md`; these are the ones that come up most.
 - **Route lines stay straight.** Curved and flowing lines were tried and rejected.
 - Map: no key or legend, no dotted lines, no direction arrows. Plain straight lines in seat colors. A canceled leg (round 199) is a red line with a small X at its middle and a red Canceled pill just above the X in place of its flight time; on a connection only that leg changes.
 - Results header (round 202): a searched area shows as a plane icon and its airport codes only, no city words, so it stays on one line beside the route count pills. Filters is the same pill capsule as Search.
+- A canceled flight's time is crossed out by a bold red bar (StrikeOver, 2.5pt, round 203), not text's hairline strike-through. A moved (late) time's struck schedule keeps the normal thin strike.
+- The Now line in today's results is a solid capsule in the text color (words flipped) on a 2pt rule, so it stands out while scrolling (round 203).
 - Route line spans the full card width, an even share per leg for 0 to 3 stops. Canceled leg: red line with an X and a small red Canceled pill. At risk pill is gold (its own color, not the violet of delays or the amber of "you", round 202) and sits on the connecting stop, just over its dot on a 1-stop route. Late pills only on opened route or flight details, not on result tickets; Diverted stays on tickets.
 - Stops line under the times: `2 stops | 11h 30m | 35m connection at MIA`.
 - Each flight leg is its own tappable box.

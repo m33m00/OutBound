@@ -863,24 +863,29 @@ export function nowLineIndex(results: Itinerary[], now: number, statuses?: Recor
   return i > 0 ? i : -1;
 }
 
-/** Thin rule with "Now · 9:40 PM" (origin time) between routes that left and routes to come. */
+/**
+ * "Now · 9:40 PM" (origin time) between routes that left and routes to come. Since round 203 it's a solid
+ * capsule on a thick rule, the text color flipped, so it stands out while the list scrolls (John: "Now Line
+ * divider ... should be more obvious to see when scrolling. It's kind of hidden in the mix").
+ */
 function NowLine({ time }: { time: string | null }) {
   const c = useColors();
+  const ink = { color: c.surface };
   return (
     <View
       style={styles.nowLine}
       testID="now-line"
       accessible
       accessibilityLabel={`Now${time ? `, ${time}` : ''}. Flights below haven’t left yet.`}>
-      <View style={[styles.rule, { backgroundColor: c.text }]} />
+      <View style={[styles.rule, { backgroundColor: c.text }]} testID="now-rule" />
       {/* "Now" and the time set apart by a thin divider, not a dot (rounds 123 and 124, John). */}
-      <View style={styles.nowWords}>
-        <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { fontFamily: fonts.bodySemiBold, color: c.text }]}>
+      <View style={[styles.nowWords, { backgroundColor: c.text }]} testID="now-pill">
+        <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, styles.nowText, { fontFamily: fonts.bodyBold }, ink]}>
           Now
         </Text>
-        {time ? <View style={[styles.nowDivider, { backgroundColor: c.line2 }]} /> : null}
+        {time ? <View style={[styles.nowDivider, { backgroundColor: c.surface }]} /> : null}
         {time ? (
-          <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { fontFamily: fonts.bodyMedium, color: c.text }]}>
+          <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, styles.nowText, { fontFamily: fonts.bodyMedium }, ink]}>
             {time}
           </Text>
         ) : null}
@@ -890,11 +895,23 @@ function NowLine({ time }: { time: string | null }) {
   );
 }
 
+/** How thick the Now line's rule is (round 203; a hairline before). */
+export const NOW_RULE = 2;
+
 const styles = StyleSheet.create({
   fill: { flex: 1 },
-  nowWords: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  // The Now capsule (round 203): filled with the text color, the words in the card color.
+  nowWords: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    borderRadius: radius.pill,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+  },
+  nowText: { fontSize: 14, lineHeight: 18 },
   // A thin divider between Now and the time (round 124, John: "Needs dividers").
-  nowDivider: { width: 1, height: 11, opacity: 0.45 },
+  nowDivider: { width: 1, height: 12, opacity: 0.5 },
   selectedBlock: { gap: spacing.group },
   hidden: { display: 'none' },
   // Tighter above and between the Leave By card and the route card so the whole route fits (round 122).
@@ -947,8 +964,9 @@ const styles = StyleSheet.create({
   placeholderBar: { borderRadius: 4 },
   errorTop: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.section },
   errorText: { flex: 1, gap: 2 },
-  nowLine: { flexDirection: 'row', alignItems: 'center', gap: spacing.group, paddingTop: 2 },
-  rule: { flex: 1, height: StyleSheet.hairlineWidth * 2 },
+  nowLine: { flexDirection: 'row', alignItems: 'center', paddingVertical: 4 },
+  // A thick rule into the capsule, so the line reads across the whole list (round 203).
+  rule: { flex: 1, height: NOW_RULE },
 });
 
 /** A slim result row's shape (times, seat chip; route; airline pills) in gray, while routes load. */

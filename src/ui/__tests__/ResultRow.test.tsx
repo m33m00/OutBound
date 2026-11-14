@@ -9,6 +9,7 @@ import { colors, inkColors } from '@/theme';
 
 import { ARRIVED_FADE, CARD_EDGE_W, connectionText, dotSeats, measurePerfOn, ResultRow, seatCounts } from '../ResultRow';
 import { StatusTag } from '../StatusTag';
+import { STRIKE_W } from '../StrikeOver';
 import { TicketTear } from '../TicketTear';
 import { TIER_FG } from '../tierColors';
 
@@ -733,10 +734,25 @@ describe('ResultRow', () => {
         <ResultRow itinerary={it} selected large now={NOW} onPress={jest.fn()} status={statusFor(it, live(it, 'canceled'))} />,
       );
     });
-    // The leg keeps its scheduled times, both ends struck. A connection's top times are left as they
-    // are (round 160, John: "leave it alone"); only a canceled nonstop grays them.
-    const struck = struckTexts();
-    expect(struck.map((n) => n.props.testID)).toEqual(['leg-clock', 'leg-arrive']);
+    // The leg keeps its scheduled times, both ends crossed out by a bold red bar (round 203, John: "Canceled
+    // line crossing out the time should be thicker"). A connection's top times are left as they are (round 160,
+    // John: "leave it alone"); only a canceled nonstop grays them.
+    expect(struckTexts()).toHaveLength(0);
+    const bars = r!.root.findAll((n) => n.props.testID === 'leg-time-strike' && typeof n.type === 'string');
+    expect(bars).toHaveLength(2);
+    const barStyle = Object.assign({}, ...([bars[0].props.style] as unknown[]).flat(5).filter(Boolean));
+    expect(barStyle).toMatchObject({ height: STRIKE_W, backgroundColor: colors.light.canceled });
+    expect(STRIKE_W).toBeGreaterThanOrEqual(2);
+    // Each bar sits with its own time.
+    const timeIn = (bar: ReactTestInstance) => {
+      // The nearest box around the bar that holds a time.
+      for (let up: ReactTestInstance | null = bar.parent; up; up = up.parent) {
+        const found = up.findAll((n) => typeof n.type === 'string' && ['leg-clock', 'leg-arrive'].includes(n.props.testID));
+        if (found.length) return found.map((n) => n.props.testID as string).join();
+      }
+      return null;
+    };
+    expect(bars.map(timeIn).sort()).toEqual(['leg-arrive', 'leg-clock']);
     expect(r!.root.findAll((n) => n.props.testID === 'row-times-canceled')).toHaveLength(0);
     const after = r!.root.findAll((n) => n.props.testID === 'leg-timeline' && typeof n.type === 'string')[0];
     const words = after
@@ -1214,10 +1230,11 @@ describe('canceled ticket (round 152)', () => {
     expect(style.backgroundColor).toBe(colors.light.canceledTint);
     const top = r!.root.findAll((n) => n.props.testID === 'row-times-canceled' && typeof n.type === 'string');
     expect(top).toHaveLength(1);
-    // A red line through the time (round 161, John).
-    expect(Object.assign({}, ...[top[0].props.style].flat(5).filter(Boolean))).toMatchObject({
-      textDecorationLine: 'line-through',
-      textDecorationColor: colors.light.canceled,
+    // A red line through the time (round 161, John), bold since round 203 ("should be thicker").
+    const bar = r!.root.find((n) => n.props.testID === 'row-times-strike' && typeof n.type === 'string');
+    expect(Object.assign({}, ...([bar.props.style] as unknown[]).flat(5).filter(Boolean))).toMatchObject({
+      height: STRIKE_W,
+      backgroundColor: colors.light.canceled,
     });
     const host = (id: string) => r!.root.findAll((n) => n.props.testID === id && typeof n.type === 'string');
     expect(host('mini-route-canceled')).toHaveLength(1);

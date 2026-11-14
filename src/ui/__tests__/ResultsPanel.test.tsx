@@ -4,8 +4,18 @@ import { act, create, type ReactTestInstance, type ReactTestRenderer } from 'rea
 
 import { createMemoryProvider, searchItineraries, zonedToUtc } from '@/engine';
 import { dateChips } from '@/search/dates';
+import { colors } from '@/theme';
 
-import { areaCallouts, areaLines, isHardPullDown, nowLineIndex, ResultsPanel, routeEnds, routeFlip } from '../ResultsPanel';
+import {
+  areaCallouts,
+  areaLines,
+  isHardPullDown,
+  NOW_RULE,
+  nowLineIndex,
+  ResultsPanel,
+  routeEnds,
+  routeFlip,
+} from '../ResultsPanel';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -422,6 +432,18 @@ describe('Now line', () => {
     const lines = r!.root.findAll((n) => n.props.testID === 'now-line' && typeof n.type === 'string');
     expect(lines.length).toBe(1);
     expect(lines[0].props.accessibilityLabel).toBe('Now, 12:00 PM. Flights below haven’t left yet.');
+    // Easy to spot while scrolling (round 203, John): a solid capsule in the text color, words flipped, on a
+    // thick rule rather than a hairline.
+    const flatOf = (id: string) =>
+      Object.assign(
+        {},
+        ...([r!.root.find((n) => n.props.testID === id && typeof n.type === 'string').props.style] as unknown[])
+          .flat(5)
+          .filter(Boolean),
+      );
+    expect(flatOf('now-pill').backgroundColor).toBe(colors.light.text);
+    expect(flatOf('now-rule').height).toBe(NOW_RULE);
+    expect(NOW_RULE).toBeGreaterThanOrEqual(2);
     // Another day's flights get no Now line, even with some routes above (John, 2026-11-02).
     await act(async () => {
       r!.update(

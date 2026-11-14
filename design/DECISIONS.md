@@ -919,3 +919,10 @@ John, on round 201: "The pills should always align with the new departure and ar
 - At risk and Missed get a gold of their own (`risk`, `riskBg`, `riskFg`), yellower than the amber that means "you" and the amber seat tier. The stop's ring turns gold too. On a 1-stop route the pill sits just over its stop's dot, beside the seat numbers; with 2 or more stops the stretches are short, so it keeps its room above the numbers.
 - The area line over the tickets is now a plane (takeoff when leaving, landing when arriving) and each airport code in a small outlined chip, no city words, so it stays on one line beside the count pills. VoiceOver still reads the full sentence.
 - Filters is now the same pill button as Search: same height, fully round, same tint and padding.
+
+## Round 203 (Nov 14): bolder canceled strike, Now line that stands out
+
+John: "Canceled line crossing out the time should be thicker." "Now Line divider when you search a market should be more obvious to see when scrolling. It's kind of hidden in the mix."
+
+- iOS can't thicken text's own strike-through, so a canceled time now gets a red bar drawn over it (`StrikeOver`, 2.5pt, a hair past each end). It's used on a canceled nonstop's top times and on each canceled leg's two times. A late flight's small struck schedule keeps the thin strike, since it isn't canceled.
+- The Now line is now a solid capsule in the text color with the words flipped ("Now | 9:40 AM"), on a 2pt rule in the text color across the list. Black and white only, so it doesn't borrow a color that means something else (blue tappable, amber "you", red canceled or full).
