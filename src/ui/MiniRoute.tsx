@@ -15,6 +15,10 @@ const DOT = 8;
 const STOP_W = 40;
 /** Room above the seat numbers for a connection's flag ("At risk"), only when a route has one. */
 const FLAG_H = 21;
+/** A flag pill's own height (its text's line height), and the air between a lowered At risk pill and its stop's
+ * dot (round 202). */
+const PILL_H = 17;
+const FLAG_GAP = 3;
 /** Room over the seat numbers for the tiny seat and person icons (round 147). */
 const ICON_H = 12;
 const ICON = 11;
@@ -108,9 +112,14 @@ export function MiniRoute({
   // A stop's flag (At risk) sits above the line over its stop. A flight's flag (a delay) sits under the
   // line: the stop codes, then the airline logo, then the delay under the logo (round 157, John: "Can the
   // logos sit on top of the delayed pill and delay pill sits underneath the logo?").
-  const stopFlagTop = 0;
+  // On one stop it sits just over the stop's dot, beside the seat numbers rather than over them (round 202,
+  // John: "At Risk pill sits too high and can come down closer to the route line"). With more stops the
+  // stretches are short and the numbers sit close to the stop, so it keeps its room above them.
+  const flagLow = stops.length === 1;
   // Everything in the track sits this far lower when there are flags or count icons above it.
-  const top = (stopFlagged ? FLAG_H : 0) + (withIcons ? ICON_H : 0);
+  const iconRoom = withIcons ? ICON_H : 0;
+  const top = stopFlagged ? (flagLow ? Math.max(iconRoom, PILL_H + FLAG_GAP - LABEL_H) : FLAG_H + iconRoom) : iconRoom;
+  const stopFlagTop = flagLow ? top + LABEL_H - PILL_H - FLAG_GAP : 0;
   const below = (y: number) => ({ top: top + y });
   // Each leg's logo sits just under the line, level with the stop codes beside it (round 158, John: "Can the
   // airline logo be scooted up closer to the route line"); a logo centred on its leg clears the codes centred
@@ -288,7 +297,7 @@ export function MiniRoute({
                 style={[styles.flagSlot, { top: stopFlagTop, left: `${((i + 1) * 100) / (stops.length + 1)}%` }]}
                 testID="mini-route-stop-flag">
                 <Text
-                  style={[styles.flagText, { color: c.caution, backgroundColor: c.cautionBg }]}
+                  style={[styles.flagText, { color: c.riskFg, backgroundColor: c.riskBg }]}
                   numberOfLines={1}
                   maxFontSizeMultiplier={1.2}>
                   {stopFlags[i]}
@@ -301,7 +310,7 @@ export function MiniRoute({
               key={`${code}${i}`}
               style={[styles.stop, below(LABEL_H), { left: `${((i + 1) * 100) / (stops.length + 1)}%` }]}
               testID="mini-route-stop-slot">
-              <View style={[dot(false), stopFlags?.[i] ? { borderColor: c.caution } : null]} />
+              <View style={[dot(false), stopFlags?.[i] ? { borderColor: c.risk } : null]} />
               <Text
                 style={[styles.stopCode, { color: c.muted }]}
                 numberOfLines={1}
@@ -356,7 +365,7 @@ const styles = StyleSheet.create({
   flagText: {
     fontFamily: fonts.bodySemiBold,
     fontSize: 12,
-    lineHeight: 17,
+    lineHeight: PILL_H,
     paddingHorizontal: 6,
     borderRadius: 8.5,
     overflow: 'hidden',

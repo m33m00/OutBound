@@ -88,6 +88,12 @@ export const colors = {
     landed: '#384250',
     landedBg: '#dfe4eb',
 
+    // A tight connection, At risk or Missed (round 202, John: "Can we also make it a different color? Like
+    // yellow/gold?"): a gold of its own, yellower than the amber that means "you" and the amber seat tier.
+    risk: '#a88300',
+    riskBg: '#fbf1c7',
+    riskFg: '#6b5300',
+
     // A time that moved, tinted by how far (John, 2026-11-02): early green; late yellow, orange, red.
     // Text colors, kept soft so they tint the number rather than shout.
     timeEarly: '#14744a',
@@ -152,6 +158,9 @@ export const colors = {
     doneBg: '#0e2a33',
     landed: '#cbd3de',
     landedBg: '#29323e',
+    risk: '#e5c03a',
+    riskBg: '#2f2608',
+    riskFg: '#f3d76b',
 
     timeEarly: '#7fdca6',
     timeSlight: '#e8d27a',

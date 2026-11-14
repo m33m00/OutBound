@@ -534,7 +534,7 @@ function LegTimeline({
                   ]}>
                   {/* The tag marks a connection the live times squeeze or break; it sits on top,
                       both centered with the flight boxes (round 136, John). */}
-                  {risk ? <StatusTag label={layover < 0 ? 'Missed' : 'At risk'} tone="delayed" /> : null}
+                  {risk ? <StatusTag label={layover < 0 ? 'Missed' : 'At risk'} tone="risk" /> : null}
                   {connection ? (
                     <Text
                       lineBreakStrategyIOS="push-out"
@@ -689,13 +689,19 @@ export const ResultRow = memo(function ResultRow({
   const departMoved = !status?.canceled && !!(first?.struck && first.newText);
   const pendingArrival = !status?.canceled && !!status?.arrivalPending;
   const arriveMoved = !status?.canceled && !pendingArrival && !!status?.arrival;
-  const times = (
+  // The schedule, small and struck, over the new times when they moved.
+  const wasLine =
+    departMoved || arriveMoved ? (
+      <Text style={[textStyles.small, styles.struck, { color: hc.muted }]} numberOfLines={1} testID="row-was">
+        {t.depart} – {t.arrive}
+      </Text>
+    ) : null;
+  // On a results ticket the struck schedule sits over the whole top row, so the Departed or Arrived pill and
+  // Save line up with the new times, not the old ones (round 202, John: "The pills should always align with the
+  // new departure and arrival time listed if it's delayed for example. Not the original time").
+  const timesBlock = (withWas: boolean) => (
     <View style={styles.shrink} testID="row-times-block">
-      {departMoved || arriveMoved ? (
-        <Text style={[textStyles.small, styles.struck, { color: hc.muted }]} numberOfLines={1} testID="row-was">
-          {t.depart} – {t.arrive}
-        </Text>
-      ) : null}
+      {withWas ? wasLine : null}
       {/* The times line. Departed and Arrived sat at its end in round 196; since round 201 they sit by Save. */}
       <View style={styles.timesRow} testID="row-times-line">
         <Text
@@ -740,6 +746,7 @@ export const ResultRow = memo(function ResultRow({
       </View>
     </View>
   );
+  const times = timesBlock(true);
   // The flights under the perforation; the save tear draws a copy of it too (round 129).
   const ticketBodyView = (
     <View style={large ? styles.ticketBody : styles.stubSlim}>
@@ -765,11 +772,12 @@ export const ResultRow = memo(function ResultRow({
     <>
       {/* The seat chip stays beside the times on every row, struck or moved (John, 2026-11-02); at big
             text the times take the line and the seats go under them. */}
-      <View style={styles.slimTopRow}>
+      {wasLine ? <View style={arrived ? styles.arrivedFade : null}>{wasLine}</View> : null}
+      <View style={[styles.slimTopRow, wasLine ? styles.slimTopRowMoved : null]}>
         <View
           style={[styles.line, styles.slimTopMain, !stacked && styles.lineKeep, arrived && styles.arrivedFade]}
           testID="top-line">
-          {times}
+          {timesBlock(false)}
         </View>
         {topTag ? (
           <View style={styles.sideTag} testID="row-tag">
@@ -1146,6 +1154,8 @@ const styles = StyleSheet.create({
   slimStub: { gap: spacing.group },
   slimBody: { gap: spacing.group },
   slimTopRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.group },
+  // Under the struck schedule (round 202): snug, so the old and new times still read as one.
+  slimTopRowMoved: { marginTop: -spacing.group },
   slimTopMain: { flex: 1, minWidth: 0 },
   ticketBody: {
     paddingTop: 4,

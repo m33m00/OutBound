@@ -241,3 +241,4 @@ Each item names its owner. One item per work session. spec-keeper runs a pre-fli
 | 234 | Manrope for all text (times stay Geist Mono); canceled leg on the map: red line, X at its middle, red Canceled pill (round 199) | Done |
 | 235 | Sora for all text and titles, replacing Manrope (times stay Geist Mono) (round 200) | Done |
 | 238 | Departed/Arrived pill next to Save; Arrived graphite, Departed cyan; arrived tickets grayed out (round 201) | Done |
+| 239 | Pills and Save line up with the new (late) times; At risk gold and lower on 1-stop routes; area callout shows codes only; Filters matches Search (round 202) | Done |

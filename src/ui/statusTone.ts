@@ -8,9 +8,17 @@ import type { ColorToken } from '@/theme';
  * for departed and arrived"); Canceled = canceled red (Q-053). Amber is never used ("you" only).
  * Words always carry the state; color only backs them up.
  */
-export type Tone = 'delayed' | 'gone' | 'landed' | 'canceled';
-export const TONE_FG: Record<Tone, ColorToken> = { delayed: 'caution', gone: 'done', landed: 'landed', canceled: 'canceledFg' };
+export type Tone = 'delayed' | 'gone' | 'landed' | 'canceled' | 'risk';
+export const TONE_FG: Record<Tone, ColorToken> = {
+  delayed: 'caution',
+  gone: 'done',
+  landed: 'landed',
+  canceled: 'canceledFg',
+  // A connection At risk or Missed: gold (round 202, John).
+  risk: 'riskFg',
+};
 export const TONE_BG: Record<Tone, ColorToken> = {
+  risk: 'riskBg',
   delayed: 'cautionBg',
   gone: 'doneBg',
   landed: 'landedBg',

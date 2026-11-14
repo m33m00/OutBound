@@ -910,3 +910,12 @@ John: "Moved the departed and arrived pill next to the save button so it all ali
 - Colors: Departed keeps sky cyan; Arrived is graphite (light: #384250 on #dfe4eb; dark: #cbd3de on #29323e). Not violet (that's Delayed and Diverted), not green (early times and seats), not blue (tappable). Every Arrived pill uses it: tickets, the opened route's legs, Requests and the flight status sheet.
 - Arrived tickets: the times, stops line and route line fade to 45%; the Arrived pill and Save stay full strength. Departed tickets keep the light gray they had. Before, arrived and departed both only got the very light gray card, which barely showed.
 - CLAUDE.md rule updated.
+
+## Round 202 (Nov 14): pills by the new times, gold At risk, codes-only area callout, Filters like Search
+
+John, on round 201: "The pills should always align with the new departure and arrival time listed if it's delayed for example. Not the original time." "At Risk pill sits too high and can come down closer to the route line. Can we also make it a different color? Like yellow/gold?" "List only the airports at the top of the search... only put airport codes to shorten the callout because it's wrapping onto a second row." "The filters button should match the search pill container shape and size if possible on the flight summary page."
+
+- On a results ticket whose times moved, the small struck schedule now sits above the whole top row. The new times, the Departed or Arrived pill and Save share one line under it, so the pill lines up with the new times. The opened route card keeps its layout.
+- At risk and Missed get a gold of their own (`risk`, `riskBg`, `riskFg`), yellower than the amber that means "you" and the amber seat tier. The stop's ring turns gold too. On a 1-stop route the pill sits just over its stop's dot, beside the seat numbers; with 2 or more stops the stretches are short, so it keeps its room above the numbers.
+- The area line over the tickets is now a plane (takeoff when leaving, landing when arriving) and each airport code in a small outlined chip, no city words, so it stays on one line beside the count pills. VoiceOver still reads the full sentence.
+- Filters is now the same pill button as Search: same height, fully round, same tint and padding.

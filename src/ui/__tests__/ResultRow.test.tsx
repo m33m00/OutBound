@@ -680,6 +680,31 @@ describe('ResultRow', () => {
     expect(flat(host('row-action').props.style).opacity).toBeUndefined();
   });
 
+  it('round 202 (John): on a late flight the pill and Save line up with the new times, the struck schedule sits above', async () => {
+    const it = await fullItinerary();
+    const save = <Text testID="save-button">Save</Text>;
+    // Left 25 minutes late, so it lands 25 minutes late: the arrival moved.
+    const base = live(it, 'departed', 25);
+    const lands = new Date(it.legs[0].flight.arriveUtc + 25 * 60_000).toISOString();
+    const late = { ...base, arrival: { ...base.arrival, estimatedUtc: lands } };
+    await act(async () => {
+      r = create(
+        <ResultRow itinerary={it} selected={false} now={NOW} onPress={jest.fn()} topAction={save} status={statusFor(it, late)} />,
+      );
+    });
+    const host = (id: string) => r!.root.find((n) => n.props.testID === id && typeof n.type === 'string');
+    const has = (n: ReactTestInstance, id: string) =>
+      n.findAll((k) => k.props.testID === id && typeof k.type === 'string').length > 0;
+    // The pill, Save and the new times share one row; the struck schedule sits above it, not in it.
+    const rows = r!.root.findAll(
+      (n) => typeof n.type === 'string' && has(n, 'top-line') && has(n, 'row-tag') && has(n, 'row-action') && !has(n, 'row-was'),
+    );
+    expect(rows.length).toBeGreaterThan(0);
+    expect(has(host('top-line'), 'row-was')).toBe(false);
+    expect(r!.root.findAll((n) => n.props.testID === 'row-was' && typeof n.type === 'string')).toHaveLength(1);
+    expect(allText(host('row-tag'))).toBe('Departed');
+  });
+
   it('route card legs show both times: new ones when moved, a canceled leg keeps its schedule, struck (John, 2026-11-02)', async () => {
     const it = await twoLegItinerary();
     const struckTexts = () =>
