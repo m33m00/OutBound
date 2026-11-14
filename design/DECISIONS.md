@@ -926,3 +926,11 @@ John: "Canceled line crossing out the time should be thicker." "Now Line divider
 
 - iOS can't thicken text's own strike-through, so a canceled time now gets a red bar drawn over it (`StrikeOver`, 2.5pt, a hair past each end). It's used on a canceled nonstop's top times and on each canceled leg's two times. A late flight's small struck schedule keeps the thin strike, since it isn't canceled.
 - The Now line is now a solid capsule in the text color with the words flipped ("Now | 9:40 AM"), on a 2pt rule in the text color across the list. Black and white only, so it doesn't borrow a color that means something else (blue tappable, amber "you", red canceled or full).
+
+## Round 204 (Nov 14): Now line in the date blue, a smidge thinner
+
+John: "Can the now line instead of black be the same blue for the dates etc" and "It's also just a smidge too thick."
+
+- The Now capsule and its rule are now the boarding blue of the picked day button, with white words. Blue normally means "you can tap this"; John asked for it here, so the Now line is the one exception.
+- The rule went from 2pt to 1.5pt.
+- Map: the white circle behind a canceled leg's X is gone (John: "The white circle background for a canceled leg on the route map I don't like"). The X is a little bigger (12pt across) with a thin light edge on its own strokes, the same as the line's halo, so it still reads over the red line.

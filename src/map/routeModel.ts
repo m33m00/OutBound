@@ -181,10 +181,11 @@ export function legStyle(
 }
 
 /**
- * The X on a canceled selected leg (round 199): at the middle of the drawn arc, on a small `surface`
- * disc so it reads over the line and the land, like the X on the cards' route line.
+ * The X on a canceled selected leg (round 199): at the middle of the drawn arc. No disc behind it since round
+ * 204 (John: "The white circle background for a canceled leg on the route map I don't like"); the X is a little
+ * bigger and its strokes get the same thin light edge as the line's own halo, so it still reads over the red.
  */
-export const CANCELED_X = { t: 0.5, half: 4.5, width: 2.2, disc: 8 } as const;
+export const CANCELED_X = { t: 0.5, half: 6, width: 2.4, edge: 2.4 } as const;
 
 /** Two strokes of the X, centered on (x, y). */
 export function canceledXSegments(x: number, y: number, half: number = CANCELED_X.half): [number, number, number, number][] {

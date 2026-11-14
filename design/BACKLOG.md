@@ -243,3 +243,4 @@ Each item names its owner. One item per work session. spec-keeper runs a pre-fli
 | 238 | Departed/Arrived pill next to Save; Arrived graphite, Departed cyan; arrived tickets grayed out (round 201) | Done |
 | 239 | Pills and Save line up with the new (late) times; At risk gold and lower on 1-stop routes; area callout shows codes only; Filters matches Search (round 202) | Done |
 | 240 | Bold red bar through canceled times; Now line is a solid capsule on a thick rule (round 203) | Done |
+| 241 | Now line in the picked-day blue, rule a smidge thinner; no white circle behind the map's canceled X (round 204) | Done |

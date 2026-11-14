@@ -84,6 +84,15 @@ describe('canceled leg line', () => {
   });
 });
 
+describe('canceled X, round 204', () => {
+  it('has no white disc behind it (John: "The white circle background ... I don\'t like"), just a thin edge on its strokes', () => {
+    expect('disc' in CANCELED_X).toBe(false);
+    expect(CANCELED_X.edge).toBeGreaterThan(0);
+    // A thin edge, not a blob: no wider than the X's own strokes.
+    expect(CANCELED_X.edge).toBeLessThanOrEqual(CANCELED_X.width);
+  });
+});
+
 describe('canceled pill', () => {
   const canceled = markCanceledLegs(route, status(null, 'canceled'));
 

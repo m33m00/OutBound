@@ -432,8 +432,8 @@ describe('Now line', () => {
     const lines = r!.root.findAll((n) => n.props.testID === 'now-line' && typeof n.type === 'string');
     expect(lines.length).toBe(1);
     expect(lines[0].props.accessibilityLabel).toBe('Now, 12:00 PM. Flights below haven’t left yet.');
-    // Easy to spot while scrolling (round 203, John): a solid capsule in the text color, words flipped, on a
-    // thick rule rather than a hairline.
+    // Easy to spot while scrolling (round 203, John): a solid capsule on a thicker rule than a hairline, in the
+    // picked day's blue (round 204, John), a smidge thinner than round 203's 2pt.
     const flatOf = (id: string) =>
       Object.assign(
         {},
@@ -441,9 +441,11 @@ describe('Now line', () => {
           .flat(5)
           .filter(Boolean),
       );
-    expect(flatOf('now-pill').backgroundColor).toBe(colors.light.text);
+    expect(flatOf('now-pill').backgroundColor).toBe(colors.light.accent);
+    expect(flatOf('now-rule').backgroundColor).toBe(colors.light.accent);
     expect(flatOf('now-rule').height).toBe(NOW_RULE);
-    expect(NOW_RULE).toBeGreaterThanOrEqual(2);
+    expect(NOW_RULE).toBeGreaterThan(1);
+    expect(NOW_RULE).toBeLessThan(2);
     // Another day's flights get no Now line, even with some routes above (John, 2026-11-02).
     await act(async () => {
       r!.update(

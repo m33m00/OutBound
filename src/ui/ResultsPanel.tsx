@@ -865,42 +865,45 @@ export function nowLineIndex(results: Itinerary[], now: number, statuses?: Recor
 
 /**
  * "Now · 9:40 PM" (origin time) between routes that left and routes to come. Since round 203 it's a solid
- * capsule on a thick rule, the text color flipped, so it stands out while the list scrolls (John: "Now Line
+ * capsule on a thick rule (boarding blue since round 204), so it stands out while the list scrolls (John: "Now Line
  * divider ... should be more obvious to see when scrolling. It's kind of hidden in the mix").
  */
 function NowLine({ time }: { time: string | null }) {
   const c = useColors();
-  const ink = { color: c.surface };
+  // The same boarding blue as the picked day (round 204, John: "Can the now line instead of black be the same
+  // blue for the dates").
+  const ink = { color: c.onAccent };
   return (
     <View
       style={styles.nowLine}
       testID="now-line"
       accessible
       accessibilityLabel={`Now${time ? `, ${time}` : ''}. Flights below haven’t left yet.`}>
-      <View style={[styles.rule, { backgroundColor: c.text }]} testID="now-rule" />
+      <View style={[styles.rule, { backgroundColor: c.accent }]} testID="now-rule" />
       {/* "Now" and the time set apart by a thin divider, not a dot (rounds 123 and 124, John). */}
-      <View style={[styles.nowWords, { backgroundColor: c.text }]} testID="now-pill">
+      <View style={[styles.nowWords, { backgroundColor: c.accent }]} testID="now-pill">
         <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, styles.nowText, { fontFamily: fonts.bodyBold }, ink]}>
           Now
         </Text>
-        {time ? <View style={[styles.nowDivider, { backgroundColor: c.surface }]} /> : null}
+        {time ? <View style={[styles.nowDivider, { backgroundColor: c.onAccent }]} /> : null}
         {time ? (
           <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, styles.nowText, { fontFamily: fonts.bodyMedium }, ink]}>
             {time}
           </Text>
         ) : null}
       </View>
-      <View style={[styles.rule, { backgroundColor: c.text }]} />
+      <View style={[styles.rule, { backgroundColor: c.accent }]} />
     </View>
   );
 }
 
-/** How thick the Now line's rule is (round 203; a hairline before). */
-export const NOW_RULE = 2;
+/** How thick the Now line's rule is (round 203; a hairline before; a smidge thinner since round 204, John: "It's
+ * also just a smidge too thick"). */
+export const NOW_RULE = 1.5;
 
 const styles = StyleSheet.create({
   fill: { flex: 1 },
-  // The Now capsule (round 203): filled with the text color, the words in the card color.
+  // The Now capsule (round 203): filled with the picked day's blue since round 204, the words in white.
   nowWords: {
     flexDirection: 'row',
     alignItems: 'center',
