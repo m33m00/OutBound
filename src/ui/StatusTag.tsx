@@ -11,7 +11,7 @@ import { TONE_BG, TONE_FG, type Tone } from './statusTone';
 export const TAG_TONE: Record<LegTagKind, Tone> = {
   delayed: 'delayed',
   departed: 'gone',
-  arrived: 'gone',
+  arrived: 'landed',
   canceled: 'canceled',
   diverted: 'delayed',
 };

@@ -29,6 +29,7 @@ export const MATERIAL: Partial<Record<SFSymbol, keyof typeof MaterialIcons.glyph
   'person.crop.circle': 'account-circle',
   airplane: 'flight',
   'airplane.departure': 'flight-takeoff',
+  'airplane.arrival': 'flight-land',
   'car.fill': 'directions-car',
   'figure.walk': 'directions-walk',
   'arrow.triangle.turn.up.right.diamond.fill': 'directions',

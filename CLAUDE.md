@@ -50,7 +50,7 @@ Full history in `design/DECISIONS.md`; these are the ones that come up most.
 - New time big; old time small and struck through, only in the header.
 - Time colors by lateness: green early, neutral on time, then yellow, orange, red as it gets later.
 - Durations always `5h 0m` style.
-- Departed and Arrived pills are sky cyan. On a results ticket they sit at the top, right of the times (the new time when it moved). In the opened route, each leg keeps its own pill over its route line.
+- Departed pills are sky cyan, Arrived pills are graphite (round 201). On a results ticket the pill sits just left of Save at the top right, on the same line as the new times (a moved ticket's struck schedule sits above that line, round 202), so pills line up down the list whatever the times' length. A ticket whose flight has arrived is grayed out: its times, stops and route line fade, the pill and Save stay full strength. In the opened route, each leg keeps its own pill over its route line.
 - Boarding time = departure minus 40 min domestic, minus 50 min international or widebody.
 
 **Availability**
@@ -62,7 +62,8 @@ Full history in `design/DECISIONS.md`; these are the ones that come up most.
 
 - **Route lines stay straight.** Curved and flowing lines were tried and rejected.
 - Map: no key or legend, no dotted lines, no direction arrows. Plain straight lines in seat colors. A canceled leg (round 199) is a red line with a small X at its middle and a red Canceled pill just above the X in place of its flight time; on a connection only that leg changes.
-- Route line spans the full card width, an even share per leg for 0 to 3 stops. Canceled leg: red line with an X and a small red Canceled pill. At risk pill sits on the connecting stop. Late pills only on opened route or flight details, not on result tickets; Diverted stays on tickets.
+- Results header (round 202): a searched area shows as a plane icon and its airport codes only, no city words, so it stays on one line beside the route count pills. Filters is the same pill capsule as Search.
+- Route line spans the full card width, an even share per leg for 0 to 3 stops. Canceled leg: red line with an X and a small red Canceled pill. At risk pill is gold (its own color, not the violet of delays or the amber of "you", round 202) and sits on the connecting stop, just over its dot on a 1-stop route. Late pills only on opened route or flight details, not on result tickets; Diverted stays on tickets.
 - Stops line under the times: `2 stops | 11h 30m | 35m connection at MIA`.
 - Each flight leg is its own tappable box.
 

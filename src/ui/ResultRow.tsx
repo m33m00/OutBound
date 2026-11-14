@@ -534,7 +534,7 @@ function LegTimeline({
                   ]}>
                   {/* The tag marks a connection the live times squeeze or break; it sits on top,
                       both centered with the flight boxes (round 136, John). */}
-                  {risk ? <StatusTag label={layover < 0 ? 'Missed' : 'At risk'} tone="delayed" /> : null}
+                  {risk ? <StatusTag label={layover < 0 ? 'Missed' : 'At risk'} tone="risk" /> : null}
                   {connection ? (
                     <Text
                       lineBreakStrategyIOS="push-out"
@@ -674,9 +674,14 @@ export const ResultRow = memo(function ResultRow({
   const headline = statusHeadline(it, status);
   // Canceled legs, connections at risk, delays and diversions are all drawn on the route line now (rounds
   // 143 to 146, John), so the row's own tag is left only for a route whose first flight has gone.
-  const rowTag = headline?.tone === 'gone' ? headline : null;
-  // On a results ticket it rides the time line (round 196).
+  const rowTag = headline?.tone === 'gone' || headline?.tone === 'landed' ? headline : null;
+  // On a results ticket it sits just left of Save, so the pills line up down the list whatever the times'
+  // length (round 201, John: "Moved the departed and arrived pill next to the save button so it all aligns
+  // going top down").
   const topTag = large ? null : rowTag;
+  // A ticket whose flight has arrived is grayed out (round 201, John: "If it arrived the card should be greyed
+  // out as well"): everything on it fades except its Arrived pill and Save.
+  const arrived = !large && rowTag?.tone === 'landed';
   const ageWords = summaryAge ? summaryAge[0].toLowerCase() + summaryAge.slice(1) : null;
   const cardAge = ageWords ? `Seats ${ageWords}` : null;
   // A moved time (John, 2026-11-02): the schedule sits small and struck on its own line above, and the big
@@ -684,16 +689,20 @@ export const ResultRow = memo(function ResultRow({
   const departMoved = !status?.canceled && !!(first?.struck && first.newText);
   const pendingArrival = !status?.canceled && !!status?.arrivalPending;
   const arriveMoved = !status?.canceled && !pendingArrival && !!status?.arrival;
-  const times = (
+  // The schedule, small and struck, over the new times when they moved.
+  const wasLine =
+    departMoved || arriveMoved ? (
+      <Text style={[textStyles.small, styles.struck, { color: hc.muted }]} numberOfLines={1} testID="row-was">
+        {t.depart} – {t.arrive}
+      </Text>
+    ) : null;
+  // On a results ticket the struck schedule sits over the whole top row, so the Departed or Arrived pill and
+  // Save line up with the new times, not the old ones (round 202, John: "The pills should always align with the
+  // new departure and arrival time listed if it's delayed for example. Not the original time").
+  const timesBlock = (withWas: boolean) => (
     <View style={styles.shrink} testID="row-times-block">
-      {departMoved || arriveMoved ? (
-        <Text style={[textStyles.small, styles.struck, { color: hc.muted }]} numberOfLines={1} testID="row-was">
-          {t.depart} – {t.arrive}
-        </Text>
-      ) : null}
-      {/* Departed and Arrived sit up here, right of the times now (round 196, John: "Move the Departed and
-          Arrived pill to the right of the new scheduled time ... I think it looks better at the top portion of
-          the ticket"). The opened route keeps each leg's own pill on its line. */}
+      {withWas ? wasLine : null}
+      {/* The times line. Departed and Arrived sat at its end in round 196; since round 201 they sit by Save. */}
       <View style={styles.timesRow} testID="row-times-line">
         <Text
           style={[textStyles.number, styles.timesText, { color: timeColor }]}
@@ -734,14 +743,10 @@ export const ResultRow = memo(function ResultRow({
           )}
           {t.plusDays ? <Text style={[textStyles.small, { color: hc.muted }]}> {t.plusDays}</Text> : null}
         </Text>
-        {topTag ? (
-          <View style={styles.timesTag} testID="row-tag">
-            <StatusTag label={topTag.label} tone={topTag.tone} />
-          </View>
-        ) : null}
       </View>
     </View>
   );
+  const times = timesBlock(true);
   // The flights under the perforation; the save tear draws a copy of it too (round 129).
   const ticketBodyView = (
     <View style={large ? styles.ticketBody : styles.stubSlim}>
@@ -767,10 +772,18 @@ export const ResultRow = memo(function ResultRow({
     <>
       {/* The seat chip stays beside the times on every row, struck or moved (John, 2026-11-02); at big
             text the times take the line and the seats go under them. */}
-      <View style={styles.slimTopRow}>
-        <View style={[styles.line, styles.slimTopMain, !stacked && styles.lineKeep]} testID="top-line">
-          {times}
+      {wasLine ? <View style={arrived ? styles.arrivedFade : null}>{wasLine}</View> : null}
+      <View style={[styles.slimTopRow, wasLine ? styles.slimTopRowMoved : null]}>
+        <View
+          style={[styles.line, styles.slimTopMain, !stacked && styles.lineKeep, arrived && styles.arrivedFade]}
+          testID="top-line">
+          {timesBlock(false)}
         </View>
+        {topTag ? (
+          <View style={styles.sideTag} testID="row-tag">
+            <StatusTag label={topTag.label} tone={topTag.tone} />
+          </View>
+        ) : null}
         {/* Save sits on the ticket itself now (round 151, John: "We already have the space to put a save
               icon on the top right"). */}
         {topAction ? (
@@ -788,7 +801,7 @@ export const ResultRow = memo(function ResultRow({
         numberOfLines={1}
         adjustsFontSizeToFit
         minimumFontScale={0.85}
-        style={[textStyles.small, styles.stopsLine, { color: c.muted }]}
+        style={[textStyles.small, styles.stopsLine, { color: c.muted }, arrived && styles.arrivedFade]}
         testID="row-stops">
         {/* Always stops, then trip time, then a short connection last (round 149, John). */}
         <Text style={{ color: dimmed ? c.muted : c.text, fontFamily: fonts.bodyMedium }} testID="row-stop-count">
@@ -1061,7 +1074,9 @@ export const ResultRow = memo(function ResultRow({
                   edgeWidth={edgeW}
                 />
               </View>
-              {slimBody}
+              <View style={arrived ? styles.arrivedFade : null} testID={arrived ? 'row-arrived-fade' : undefined}>
+                {slimBody}
+              </View>
             </TearSourceProvider>
           </>
         )}
@@ -1083,13 +1098,19 @@ export const ResultRow = memo(function ResultRow({
   );
 });
 
+/** How far an arrived ticket's times, stops and route line fade (round 201). */
+export const ARRIVED_FADE = 0.45;
+
 /** The route color strip down a row's left edge. */
 const EDGE_W = 5;
 
 const styles = StyleSheet.create({
   timesRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   timesText: { flexShrink: 1 },
-  timesTag: { flexShrink: 0 },
+  // The Departed / Arrived pill, just left of Save (round 201).
+  sideTag: { flexShrink: 0, marginTop: 2 },
+  // An arrived ticket's faded content (round 201): the pill and Save stay full strength.
+  arrivedFade: { opacity: ARRIVED_FADE },
   tearLine: { zIndex: 2 },
   // No overflow clip, so the soft shadow shows; the edge rounds its own corners instead.
   row: {
@@ -1133,6 +1154,8 @@ const styles = StyleSheet.create({
   slimStub: { gap: spacing.group },
   slimBody: { gap: spacing.group },
   slimTopRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.group },
+  // Under the struck schedule (round 202): snug, so the old and new times still read as one.
+  slimTopRowMoved: { marginTop: -spacing.group },
   slimTopMain: { flex: 1, minWidth: 0 },
   ticketBody: {
     paddingTop: 4,

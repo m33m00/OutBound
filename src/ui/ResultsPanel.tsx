@@ -27,7 +27,7 @@ import { fonts, radius, spacing, textStyles, useColors } from '@/theme';
 import { Appear } from './Appear';
 import { BackButton } from './BackButton';
 import { CenteredTitleRow } from './CenteredTitleRow';
-import { Button } from './Buttons';
+import { Button, PillButton } from './Buttons';
 import { DayStepper } from './DayStepper';
 import { FLIP_NUDGE, takeFlipHint } from './flipHint';
 import { withTick } from './haptics';
@@ -219,7 +219,9 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
         }
         right={
           p.onFilters ? (
-            <Button
+            // The same capsule as Search on the other side, same height and shape (round 202, John: "The filters
+            // button should match the search pill container shape and size").
+            <PillButton
               label={
                 tight
                   ? p.filtersChanged
@@ -230,10 +232,11 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
                     : 'Filters'
               }
               accessibilityLabel={p.filtersChanged ? `Filters, ${p.filtersChanged} changed` : 'Filters'}
-              icon="line.3.horizontal.decrease.circle"
-              kind="secondary"
+              leading="line.3.horizontal.decrease.circle"
               onPress={p.onFilters}
+              hitSlop={{ right: 8 }}
               style={styles.filters}
+              testID="results-filters"
             />
           ) : null
         }
@@ -250,6 +253,7 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
   // many are full next to the text where it says Leaving from").
   const areas = areaLines(request);
   const countBeside = stepsDays && !!summary;
+  const callout = areaCallouts(request)[0] ?? null;
   const notes = [
     ...(!stepsDays && summary ? [{ key: 'summary', text: summary, testID: 'results-summary', strong: true }] : []),
     ...(countBeside ? areas.slice(1) : areas).map((text) => ({ key: text, text, testID: undefined, strong: false })),
@@ -261,9 +265,28 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
   const countPills = !paging && p.state.status === 'done' && results.length > 0;
   const countRow = countBeside ? (
     <View style={styles.countRow} testID="results-count-row">
-      <Text style={[textStyles.small, styles.countLead, { color: c.muted }]} testID="results-leaving">
-        {areas[0] ?? ''}
-      </Text>
+      {/* The searched area as its airport codes only, so it stays on one line (round 202, John: "only put airport
+          codes to shorten the callout because it's wrapping onto a second row"). VoiceOver still says it whole. */}
+      {callout ? (
+        <View style={styles.areaCallout} accessible accessibilityLabel={areas[0]} testID="results-leaving">
+          <Icon
+            name={callout.from ? 'airplane.departure' : 'airplane.arrival'}
+            size={14}
+            weight="semibold"
+            tintColor={c.muted}
+            fallback={null}
+          />
+          {callout.codes.map((code) => (
+            <View key={code} style={[styles.areaCode, { borderColor: c.line2 }]} testID="results-area-code">
+              <Text style={[styles.areaCodeText, { color: c.text }]} maxFontSizeMultiplier={1.4}>
+                {code}
+              </Text>
+            </View>
+          ))}
+        </View>
+      ) : (
+        <View testID="results-leaving" />
+      )}
       {/* Pills, not words, so the count reads at a glance (round 195, John: "can we change that from just text to
           like a pill? Right now it kind of blends in"). Gray for routes, red only when some are full. */}
       {countPills ? (
@@ -809,6 +832,25 @@ export function areaLines(request: SearchRequest): string[] {
 }
 
 /**
+ * The searched areas as their airport codes, for the callout over the tickets (round 202, John): which side
+ * (leaving or landing) and its codes, in the same order as areaLines.
+ */
+export interface AreaCallout {
+  from: boolean;
+  codes: readonly string[];
+}
+
+export function areaCallouts(request: SearchRequest): AreaCallout[] {
+  const side = (code: string, on: boolean | undefined, from: boolean): AreaCallout | null => {
+    const area = on ? areaFor(code) : null;
+    return area ? { from, codes: area.airports } : null;
+  };
+  return [side(request.origin, request.originArea, true), side(request.destination, request.destinationArea, false)].filter(
+    (x): x is AreaCallout => x != null,
+  );
+}
+
+/**
  * Where the "Now" line goes in departure order: above the first route still
  * to leave, only when routes that already left sit above it (so today only).
  * -1 when there's no line.
@@ -869,7 +911,10 @@ const styles = StyleSheet.create({
   countPills: { flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 0 },
   countPill: { paddingHorizontal: 9, paddingVertical: 3, borderRadius: 999 },
   countPillText: { fontFamily: fonts.bodySemiBold, fontSize: 13, lineHeight: 17 },
-  countLead: { flexShrink: 1 },
+  // The searched area's callout (round 202): a plane, then each airport code in a small outlined chip.
+  areaCallout: { flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1 },
+  areaCode: { borderWidth: 1, borderRadius: radius.pill, paddingHorizontal: 8, paddingVertical: 2 },
+  areaCodeText: { fontFamily: fonts.mono, fontSize: 13, lineHeight: 17, letterSpacing: 0.5 },
   bar: { gap: 4, paddingBottom: spacing.group, borderBottomWidth: StyleSheet.hairlineWidth },
   title: { textAlign: 'center' },
   // The route view's bar (round 134): back on the left, the market and its dots centered.
@@ -885,7 +930,7 @@ const styles = StyleSheet.create({
   endCode: { fontFamily: fonts.mono, fontSize: 16, lineHeight: 21, letterSpacing: 0.5 },
   routeEndsTrack: { flexDirection: 'row', alignItems: 'center', gap: 4, width: 64 },
   routeEndsLine: { flex: 1, height: 1 },
-  filters: { paddingHorizontal: spacing.section },
+  filters: { alignSelf: 'flex-end' },
   // A little more air between tickets so each one reads as its own (round 150, John).
   sep: { height: spacing.group + 4 },
   state: { paddingVertical: spacing.page, gap: spacing.section, alignItems: 'flex-start' },

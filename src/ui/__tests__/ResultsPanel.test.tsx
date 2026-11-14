@@ -5,7 +5,7 @@ import { act, create, type ReactTestInstance, type ReactTestRenderer } from 'rea
 import { createMemoryProvider, searchItineraries, zonedToUtc } from '@/engine';
 import { dateChips } from '@/search/dates';
 
-import { areaLines, isHardPullDown, nowLineIndex, ResultsPanel, routeEnds, routeFlip } from '../ResultsPanel';
+import { areaCallouts, areaLines, isHardPullDown, nowLineIndex, ResultsPanel, routeEnds, routeFlip } from '../ResultsPanel';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -314,6 +314,45 @@ describe('ResultsPanel day and filters (Q-057)', () => {
     expect(texts()).toContain('Filters (2)');
     act(() => filters.props.onPress());
     expect(onFilters).toHaveBeenCalled();
+  });
+
+  it('round 202 (John): the area is a plane and its codes on one line, and Filters is the same capsule as Search', async () => {
+    const { list } = await results();
+    const request = { origin: 'DAL', destination: 'LAX', date: '2026-10-20', originArea: true };
+    const state = { status: 'done' as const, request, results: list, hiddenCount: 0, hiddenResults: [], searchedAt: NOW };
+    await act(async () => {
+      r = create(
+        <ResultsPanel
+          state={state}
+          selectedId={null}
+          now={NOW}
+          onSelect={jest.fn()}
+          onBack={jest.fn()}
+          onRetry={jest.fn()}
+          days={dateChips('2026-10-19')}
+          onDay={jest.fn()}
+          onFilters={jest.fn()}
+        />,
+      );
+    });
+    const leaving = r!.root.find((n) => n.props.testID === 'results-leaving' && typeof n.type === 'string');
+    // Just the codes on screen; VoiceOver still hears the whole line.
+    expect(texts().some((t) => t.includes('Leaving from'))).toBe(false);
+    expect(leaving.props.accessibilityLabel).toBe('Leaving from any Dallas, TX airport (DAL, DFW)');
+    const codes = r!.root
+      .findAll((n) => n.props.testID === 'results-area-code' && typeof n.type === 'string')
+      .map((n) => n.find((k) => typeof k.type === 'string' && typeof k.props.children === 'string').props.children);
+    expect(codes).toEqual(['DAL', 'DFW']);
+    // Filters and Search are both pill buttons, so they share a height and a fully round shape.
+    const flat = (st: unknown) => Object.assign({}, ...([st] as unknown[]).flat(5).filter(Boolean));
+    const back = flat(
+      r!.root.find((n) => n.props.accessibilityLabel === 'Back to search' && typeof n.type === 'string').props.style,
+    );
+    const filters = flat(r!.root.find((n) => n.props.testID === 'results-filters' && typeof n.type === 'string').props.style);
+    expect(filters.minHeight).toBe(back.minHeight);
+    expect(filters.borderRadius).toBe(back.borderRadius);
+    expect(filters.backgroundColor).toBe(back.backgroundColor);
+    expect(filters.paddingHorizontal).toBe(back.paddingHorizontal);
   });
 
   it('shows a red full pill beside the routes pill when some are full (round 195, John)', async () => {
@@ -679,5 +718,14 @@ describe('the route card shows once that it slides sideways (round 136, John)', 
     // A fresh start reads it back and stays quiet.
     resetFlipHintForTests();
     expect(await takeFlipHint()).toBe(false);
+  });
+});
+
+describe('areaCallouts (round 202, John: only the airport codes, so it stays on one line)', () => {
+  it('gives each searched area its codes and side', () => {
+    expect(areaCallouts({ origin: 'DFW', destination: 'BNA', date: '2026-10-20', originArea: true })).toEqual([
+      { from: true, codes: ['DAL', 'DFW'] },
+    ]);
+    expect(areaCallouts({ origin: 'DAL', destination: 'LAX', date: '2026-10-20' })).toEqual([]);
   });
 });
