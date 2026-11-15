@@ -21,16 +21,48 @@ export interface SheetHeaderProps {
   onAction: () => void;
   /** VoiceOver starts on the title (a page swapped in inside a sheet). */
   focusTitle?: boolean;
+  /**
+   * iOS's own sheet header: a grabber on top, then a smaller title centered on the same line as the action
+   * (round 214, John on the airport picker: the big "To" "feels plain and almost touching the corner").
+   */
+  centered?: boolean;
 }
 
 /**
  * Header for every page sheet (design round 24): title on the left, Done or Cancel as a small
  * capsule on the right (round 79), so it never competes with the sheet's own buttons.
  */
-export function SheetHeader({ title, subtitle, action, onAction, focusTitle = false }: SheetHeaderProps) {
+export function SheetHeader({ title, subtitle, action, onAction, focusTitle = false, centered = false }: SheetHeaderProps) {
   const c = useColors();
   const titleRef = useFocusOnMount(focusTitle);
   const stacked = useWindowDimensions().fontScale >= STACK_AT_FONT_SCALE;
+  if (centered && !subtitle) {
+    return (
+      <View style={styles.navWrap} testID="sheet-nav">
+        <View style={[styles.grabber, { backgroundColor: c.line2 }]} testID="sheet-grabber" />
+        <View style={[styles.nav, stacked && styles.navStacked]}>
+          {/* Centered on the sheet, kept clear of the action on the right (and the same room on the left). */}
+          <Text
+            ref={titleRef}
+            style={[textStyles.heading, styles.navTitle, stacked && styles.navTitleStacked, { color: c.text }]}
+            accessibilityRole="header"
+            numberOfLines={stacked ? 2 : 1}
+            maxFontSizeMultiplier={TITLE_MAX_SCALE}>
+            {title}
+          </Text>
+          <PillButton
+            label={action}
+            tone={action === 'Done' ? 'filled' : 'soft'}
+            quiet={action === 'Cancel'}
+            onPress={onAction}
+            hitSlop={{ right: spacing.page }}
+            style={stacked ? styles.actionStacked : undefined}
+            testID="sheet-action"
+          />
+        </View>
+      </View>
+    );
+  }
   return (
     <View style={[styles.header, stacked && styles.stacked]}>
       <View style={[styles.title, stacked && styles.titleStacked]}>
@@ -75,4 +107,11 @@ const styles = StyleSheet.create({
   title: { flex: 1, gap: 2 },
   titleStacked: { flex: 0 },
   actionStacked: { alignSelf: 'flex-end' },
+  navWrap: { paddingTop: 6, paddingBottom: spacing.group },
+  grabber: { alignSelf: 'center', width: 36, height: 5, borderRadius: 3, marginBottom: spacing.group },
+  nav: { minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end' },
+  navTitle: { position: 'absolute', left: 96, right: 96, textAlign: 'center' },
+  // Big text: the title takes its own line under the action instead of squeezing between.
+  navStacked: { flexDirection: 'column-reverse', alignItems: 'stretch', gap: spacing.group },
+  navTitleStacked: { position: 'relative', left: 0, right: 0 },
 });

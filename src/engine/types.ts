@@ -23,6 +23,8 @@ export interface Airport {
   city?: string;
   region?: string;
   country?: string;
+  /** The airport's own name, the way people say it ("Hartsfield-Jackson", "LaGuardia"), for the airport picker (round 214). */
+  airportName?: string;
 }
 
 /** One scheduled flight leg. */

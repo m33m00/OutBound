@@ -85,8 +85,8 @@ describe('pickerSections (design round 3)', () => {
     expect(s[1].data.length).toBeGreaterThan(10);
   });
 
-  it('shows one plain list with nothing to suggest or while typing', () => {
-    expect(pickerSections('').map((x) => x.title)).toEqual([null]);
+  it('labels the full list even with nothing to suggest, and shows a plain list while typing (round 214)', () => {
+    expect(pickerSections('').map((x) => x.title)).toEqual(['All airports']);
     const typed = pickerSections('la', { nearest: 'DFW' });
     expect(typed).toHaveLength(1);
     expect(typed[0].title).toBeNull();
@@ -94,7 +94,14 @@ describe('pickerSections (design round 3)', () => {
   });
 
   it('skips codes the app has no data for', () => {
-    expect(pickerSections('', { nearest: 'ZZZ' })[0].title).toBeNull();
+    expect(pickerSections('', { nearest: 'ZZZ' }).map((x) => x.title)).toEqual(['All airports']);
+  });
+
+  // Round 214 (John, on the picker's unlabeled list): "Fix all of them".
+  it('puts your recent picks under their own heading, after your airports and without repeats', () => {
+    const s = pickerSections('', { nearest: 'DFW', recent: ['LAX', 'DFW', 'SEA'], exclude: ['SEA'] });
+    expect(s.map((x) => x.title)).toEqual(['Your airports', 'Recent', 'All airports']);
+    expect(s[1].data.map((d) => [d.airport.code, d.tag])).toEqual([['LAX', undefined]]);
   });
 });
 

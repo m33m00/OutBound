@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { placeLabel } from '@/engine';
 import { pickerSections, type PickerItem } from '@/search/airports';
+import { rememberAirport, useRecentAirports } from '@/search/recentAirports';
 import { fonts, minTapTarget, radius, spacing, textStyles, useColors } from '@/theme';
 
 import { AirportSummarySheet } from './AirportSummary';
@@ -32,12 +33,14 @@ export function AirportPicker({ visible, title, onPick, onClose, current, neares
   const [query, setQuery] = useState('');
   // Hold a row for its airport summary (round 174); the sheet lives inside this modal so it can open over it.
   const [info, setInfo] = useState<string | null>(null);
-  const sections = pickerSections(query, { nearest, homes, exclude });
+  const recent = useRecentAirports();
+  const sections = pickerSections(query, { nearest, homes, recent, exclude });
   const empty = sections.every((s) => s.data.length === 0);
   // Same tick as every other pick (design round 10).
   const pick = (code: string) => {
     selectionTick();
     setQuery('');
+    rememberAirport(code);
     onPick(code);
   };
   // Return picks the top match once something is typed (design round 29).
@@ -48,22 +51,15 @@ export function AirportPicker({ visible, title, onPick, onClose, current, neares
     onClose();
   };
 
-  // Each section is one card of rows, like Settings and Trips (round 163): the first row rounds the top,
-  // the last the bottom, hairlines between.
-  const renderItem = ({
-    item,
-    index,
-    section,
-  }: {
-    item: PickerItem;
-    index: number;
-    section: { data: readonly PickerItem[] };
-  }) => {
+  // Plain rows on the sheet, no card or outline around them (round 214, John: "Fix all of them"), with
+  // hairlines between that start at the airport's name.
+  const renderItem = ({ item, index }: { item: PickerItem; index: number }) => {
     const { airport, tag } = item;
     const on = airport.code === current;
     const first = index === 0;
-    const last = index === section.data.length - 1;
     const place = placeLabel(airport.code);
+    // The airport's own name on top and the city under it, so "Atlanta" isn't said twice (round 214).
+    const name = airport.airportName ?? airport.name;
     return (
       <Pressable
         onPress={() => pick(airport.code)}
@@ -78,24 +74,17 @@ export function AirportPicker({ visible, title, onPick, onClose, current, neares
         }}
         accessibilityRole="button"
         accessibilityState={{ selected: on }}
-        accessibilityLabel={[airport.code, airport.name, place !== airport.code ? place : null, tag].filter(Boolean).join(', ')}
+        accessibilityLabel={[airport.code, name, place !== airport.code ? place : null, tag].filter(Boolean).join(', ')}
         testID="airport-row"
-        style={({ pressed }) => [
-          styles.item,
-          { backgroundColor: pressed ? c.surface2 : c.surface, borderColor: c.cardEdge },
-          first && styles.itemFirst,
-          last && styles.itemLast,
-        ]}>
+        style={({ pressed }) => [styles.item, pressed && { backgroundColor: c.surface2 }]}>
         {first ? null : <View style={[styles.sep, { backgroundColor: c.line }]} />}
-        {/* The code in its own pill, the same as the airport pills on a route (round 163). */}
-        <View style={[styles.codePill, { backgroundColor: c.surface2 }]} testID="airport-code-pill">
-          <Text style={[styles.code, { color: c.text }]} maxFontSizeMultiplier={1.4}>
-            {airport.code}
-          </Text>
-        </View>
+        {/* The code on its own in boarding blue, no bubble (round 214). */}
+        <Text style={[styles.code, { color: c.accent }]} maxFontSizeMultiplier={1.4} testID="airport-code">
+          {airport.code}
+        </Text>
         <View style={styles.name}>
           <Text lineBreakStrategyIOS="push-out" style={[textStyles.bodyStrong, { color: c.text }]} numberOfLines={2}>
-            {airport.name}
+            {name}
           </Text>
           {place !== airport.code ? (
             <Text
@@ -131,7 +120,7 @@ export function AirportPicker({ visible, title, onPick, onClose, current, neares
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={close}>
       <SafeAreaView style={[styles.screen, { backgroundColor: c.bg }]} edges={['top', 'bottom']}>
-        <SheetHeader title={title} action="Cancel" onAction={close} />
+        <SheetHeader title={title} action="Cancel" onAction={close} centered />
         <View style={[searchCard, styles.input]}>
           <Icon name="magnifyingglass" size={16} tintColor={c.faint} fallback={null} />
           <TextInput
@@ -178,6 +167,9 @@ export function AirportPicker({ visible, title, onPick, onClose, current, neares
   );
 }
 
+/** Room for a three-letter code in the mono face. */
+const CODE_WIDTH = 44;
+
 const styles = StyleSheet.create({
   screen: { flex: 1, paddingHorizontal: spacing.page },
   input: {
@@ -198,15 +190,17 @@ const styles = StyleSheet.create({
     gap: spacing.section,
     paddingVertical: spacing.rowY,
     paddingHorizontal: spacing.rowX,
-    borderLeftWidth: 1,
-    borderRightWidth: 1,
+    borderRadius: radius.all,
   },
-  itemFirst: { borderTopWidth: 1, borderTopLeftRadius: radius.all, borderTopRightRadius: radius.all },
-  itemLast: { borderBottomWidth: 1, borderBottomLeftRadius: radius.all, borderBottomRightRadius: radius.all },
-  // Inset to the text, like every grouped list.
-  sep: { position: 'absolute', top: 0, left: spacing.rowX, right: 0, height: StyleSheet.hairlineWidth },
-  codePill: { minWidth: 56, paddingHorizontal: 8, paddingVertical: 4, borderRadius: radius.all, alignItems: 'center' },
-  code: { fontFamily: fonts.mono, fontSize: 15, lineHeight: 20, letterSpacing: 0.4 },
+  // Starts at the airport's name, past the code.
+  sep: {
+    position: 'absolute',
+    top: 0,
+    left: spacing.rowX + CODE_WIDTH + spacing.section,
+    right: 0,
+    height: StyleSheet.hairlineWidth,
+  },
+  code: { width: CODE_WIDTH, fontFamily: fonts.mono, fontSize: 15, lineHeight: 20, letterSpacing: 0.4 },
   name: { flex: 1, gap: 1 },
   tag: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 999 },
   tagText: { fontFamily: fonts.bodySemiBold },
