@@ -60,7 +60,10 @@ describe('ListGroup and ListRow', () => {
     const words = row
       .findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string')
       .map((n) => n.props.children);
-    expect(words).toEqual(['Longest', 'DFW → LAX', '1,235 mi']);
+    expect(words).toEqual(['Longest', '1,235 mi']);
+    // The route shows the plane and contrail between the codes and still reads as words (round 209, John).
+    const route = row.find((n) => typeof n.type === 'string' && n.props.accessibilityLabel === 'DFW to LAX');
+    expect(route.findAll((n) => n.props.testID === 'route-trail-mark' && typeof n.type === 'string')).toHaveLength(1);
   });
 
   it('a row can lead with an icon tile, and the hairline under it starts at the text (round 166)', () => {

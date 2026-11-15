@@ -2,10 +2,12 @@ import type { SFSymbol } from 'expo-symbols';
 import { Children, Fragment, isValidElement, type ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
+import { forSpeech } from '@/search/format';
 import { minTapTarget, radius, spacing, textStyles, useColors } from '@/theme';
 
 import { useCardSurface } from './cardSurface';
 import { Icon } from './Icon';
+import { ROUTE_ARROW, trails } from './TrailMark';
 
 /** From this text size a row's value goes under its label. */
 const STACK_VALUE_SCALE = 1.3;
@@ -14,8 +16,13 @@ const STACK_VALUE_SCALE = 1.3;
 export function SectionHeader({ title }: { title: string }) {
   const c = useColors();
   return (
-    <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, styles.title, { color: c.muted }]} accessibilityRole="header">
-      {title.toUpperCase()}
+    <Text
+      lineBreakStrategyIOS="push-out"
+      style={[textStyles.small, styles.title, { color: c.muted }]}
+      accessibilityRole="header"
+      accessibilityLabel={title.includes(ROUTE_ARROW) ? forSpeech(title) : undefined}>
+      {/* A route in the heading shows the plane and contrail (round 209, John). */}
+      {trails(title.toUpperCase(), textStyles.small.fontSize)}
     </Text>
   );
 }

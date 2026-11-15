@@ -22,6 +22,7 @@ import { pressStyle } from './press';
 import { ScalePressable } from './ScalePressable';
 import { StatusTag } from './StatusTag';
 import { TicketTear } from './TicketTear';
+import { RouteText } from './TrailMark';
 
 export interface SavedRouteCardProps {
   route: SavedRoute;
@@ -66,9 +67,13 @@ export function SavedRouteCard({ route, past, now, onOpen, onRemove, selecting }
         accessibilityHint={past ? 'Searches today' : 'Searches this day again'}>
         <InkContext.Provider value>
           <View style={[styles.stub, { backgroundColor: c.ink }]} testID="saved-route-stub">
-            <Text lineBreakStrategyIOS="push-out" style={[textStyles.routeTitle, { color: past ? ink.muted : ink.text }]}>
-              {title}
-            </Text>
+            {/* The plane and contrail between the codes, like the search title (round 209, John). */}
+            <RouteText
+              lineBreakStrategyIOS="push-out"
+              style={[textStyles.routeTitle, { color: past ? ink.muted : ink.text }]}
+              markColor={past ? ink.muted : ink.accent}
+              text={title}
+            />
             <View style={styles.whenLine}>
               {/* The day and the times set apart by space, not a dot (round 123, John). */}
               <MetaLine text={when} textStyle={[textStyles.body, { color: ink.muted }]} testID="saved-route-when" />

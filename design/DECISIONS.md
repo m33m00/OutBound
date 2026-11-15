@@ -984,3 +984,13 @@ John: "Can you change the departed pill to be the same blue color." "When I sear
 - Departed is a solid boarding-blue pill with white words, the same blue as the picked day and the Now line. Arrived stays graphite. (A second exception to "blue means tap", like the Now line, because John asked for it.)
 - The results title ("DFW → LGA") has the Jaunt plane and contrail between the two codes instead of the arrow, in the blue it has in the wordmark. It's an image drawn from the wordmark's own shapes (design/assets/make-trail-mark.py writes assets/images/trail-mark.png at 1x to 3x, white on clear) and tinted in the app, 44 by 14pt, inline in the title so it still wraps and VoiceOver still reads "DFW to LGA".
 - Built on top of the Jaunt rename, so this test copy carries the rename too.
+
+## Round 209 (Nov 15): a level plane and contrail on every route
+
+John: "Instead of a slanted trail for the market can it be horizontal." Then: "Apply it everywhere for s market."
+
+- The route mark turns level: the plane points straight right with its contrail straight behind it. The logo and wordmark keep the slanted contrail t; only the route mark changed.
+- It shows wherever two airport codes make a route: the results title, the open route's bar (in place of the thin lines and small gray plane between the code pills), saved route tickets, request rows, My Trips route headings, the logbook (rows and Longest), and sheet subtitles (flight status, report, delays and weather), plus the boarding pass line in Add Flight.
+- Boarding blue everywhere; on a saved route that has passed it takes the faded text color with the rest of the ticket.
+- One shared piece, src/ui/TrailMark.tsx: `RouteText` and `trails()` swap " → " for the mark sized to the text beside it (about a capital letter tall, centred on the codes), and VoiceOver still hears "DAL to LAX". The picture is 46 by 16 with the mark in the middle (design/assets/make-trail-mark.py).
+- Left as an arrow: the Remove logbook flight alert, since system alerts only take plain text.

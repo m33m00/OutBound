@@ -8,6 +8,7 @@ import { spacing, textStyles, useColors } from '@/theme';
 
 import { useCardSurface } from './cardSurface';
 import { Icon } from './Icon';
+import { RouteText } from './TrailMark';
 
 /**
  * Flights, miles and airports across the whole logbook, big numbers up top.
@@ -85,9 +86,12 @@ export function LogbookTotalsCard({ totals, highlights }: { totals: LogbookTotal
                 numberOfLines={1}>
                 {x.label}
               </Text>
-              <Text lineBreakStrategyIOS="push-out" style={[textStyles.bodyStrong, { color: c.text }]} numberOfLines={1}>
-                {x.value}
-              </Text>
+              <RouteText
+                lineBreakStrategyIOS="push-out"
+                style={[textStyles.bodyStrong, { color: c.text }]}
+                numberOfLines={1}
+                text={x.value}
+              />
               <Text
                 lineBreakStrategyIOS="push-out"
                 style={[textStyles.small, styles.rowSub, { color: c.muted }]}

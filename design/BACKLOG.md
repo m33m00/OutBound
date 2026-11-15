@@ -249,3 +249,4 @@ Each item names its owner. One item per work session. spec-keeper runs a pre-fli
 | 244 | First-party calm: neutral grays, no outline on grouped cards, lighter ticket edge, no grouping boxes (banner, empty states, icon tiles), Search tab is Home (round 207) | Done |
 | 245 | Rename to Jaunt: lowercase jaunt wordmark with the contrail t (header, welcome), tall t app icon, new launch intro, in-app text and permission prompts say Jaunt | Done |
 | 246 | Departed pill in boarding blue; Jaunt plane and contrail in place of the arrow in the results title (round 208) | Done |
+| 247 | Route mark level (horizontal contrail) and used on every route between airport codes (round 209) | Done |

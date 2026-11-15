@@ -47,7 +47,10 @@ describe('SavedRouteCard', () => {
     const texts = r!.root
       .findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string')
       .map((n) => n.props.children as string);
-    expect(texts).toEqual(expect.arrayContaining(['DFW → ORD → LAX', 'Tue, Oct 20', '7:05 AM – 1:20 PM']));
+    expect(texts).toEqual(expect.arrayContaining(['Tue, Oct 20', '7:05 AM – 1:20 PM']));
+    // The path shows the plane and contrail between each pair of codes (round 209, John: "Apply it everywhere").
+    const path = r!.root.find((n) => typeof n.type === 'string' && n.props.accessibilityLabel === 'DFW to ORD to LAX');
+    expect(path.findAll((n) => n.props.testID === 'route-trail-mark' && typeof n.type === 'string')).toHaveLength(2);
     // The flights sit under their legs on a route line as airline logos, like the results (rounds 146, 156);
     // the numbers are in the card's spoken label below and in each logo's window.
     expect(r!.root.findAll((n) => n.props.testID === 'saved-route-line' && typeof n.type === 'string')).toHaveLength(1);
@@ -60,7 +63,10 @@ describe('SavedRouteCard', () => {
     const stubTexts = host('saved-route-stub')[0]
       .findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string')
       .map((n) => n.props.children as string);
-    expect(stubTexts).toEqual(['DFW → ORD → LAX', 'Tue, Oct 20', '7:05 AM – 1:20 PM']);
+    expect(stubTexts).toEqual(['Tue, Oct 20', '7:05 AM – 1:20 PM']);
+    expect(
+      host('saved-route-stub')[0].findAll((n) => n.props.testID === 'route-trail-mark' && typeof n.type === 'string'),
+    ).toHaveLength(2);
     const [open, remove] = buttons();
     expect(open.props.accessibilityLabel).toBe('DFW to ORD to LAX. Tue, Oct 20, 7:05 AM – 1:20 PM. Flights AA 1234, AA 88');
     expect(open.props.accessibilityHint).toBe('Searches this day again');

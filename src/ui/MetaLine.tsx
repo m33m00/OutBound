@@ -4,6 +4,8 @@ import { StyleSheet, Text, View, type StyleProp, type TextStyle, type ViewStyle 
 
 import { fonts, useColors } from '@/theme';
 
+import { trails } from './TrailMark';
+
 /** What the app's text uses between items; never shown (round 123, John: no dots between text). */
 export const META_SEP = ' · ';
 
@@ -15,7 +17,8 @@ export const INLINE_DIVIDER = '\u2002|\u2002';
  * "Departed · Los Angeles" shows as "Departed | Los Angeles" with the bar in the line color.
  * Use inside a Text.
  */
-export function Divided({ text, color }: { text: string; color?: string }) {
+/** A route in the text ("DAL → LAX") shows the plane and contrail, sized for `fontSize` (round 209). */
+export function Divided({ text, color, fontSize = 15 }: { text: string; color?: string; fontSize?: number }) {
   const c = useColors();
   const parts = text.split(META_SEP);
   return (
@@ -27,7 +30,7 @@ export function Divided({ text, color }: { text: string; color?: string }) {
               {INLINE_DIVIDER}
             </Text>
           ) : null}
-          {part}
+          {trails(part, fontSize)}
         </Fragment>
       ))}
     </>
@@ -71,6 +74,7 @@ export function MetaLine({
   dividerColor?: string;
 }) {
   const c = useColors();
+  const fontSize = StyleSheet.flatten(textStyle)?.fontSize ?? 15;
   const items = (parts ? parts.filter((p): p is string => !!p) : []).flatMap(metaParts);
   if (!parts && text) items.push(...metaParts(text));
   if (!items.length && !lead) return null;
@@ -83,7 +87,7 @@ export function MetaLine({
             <View style={[styles.divider, { backgroundColor: dividerColor ?? c.line2 }]} testID="meta-divider" />
           ) : null}
           <Text lineBreakStrategyIOS="push-out" style={[styles.item, textStyle]} numberOfLines={numberOfLines}>
-            {item}
+            {trails(item, fontSize)}
           </Text>
         </Fragment>
       ))}

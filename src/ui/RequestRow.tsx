@@ -75,7 +75,7 @@ export function RequestRow({ request, now, mine, onAnswer, onOpen, leg }: Reques
         accessible={!onOpen}
         accessibilityLabel={onOpen ? undefined : label}>
         <Text lineBreakStrategyIOS="push-out" style={[textStyles.heading, { color: c.text }]}>
-          <Divided text={title} />
+          <Divided text={title} fontSize={textStyles.heading.fontSize} />
         </Text>
         <View style={styles.detailLine}>
           {tier && request.answer ? (

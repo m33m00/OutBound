@@ -32,6 +32,7 @@ import { SwipeToDelete } from '@/ui/SwipeToDelete';
 import { glideNextLayout } from '@/ui/motion';
 import { TabScreen } from '@/ui/TabScreen';
 import { useReducedMotion } from '@/ui/useReducedMotion';
+import { marketArrows } from '@/ui/TrailMark';
 import { TripsSectionHeader } from '@/ui/TripsSectionHeader';
 import { useFlightLoad } from '@/ui/useFlightLoad';
 import { useSheetContent } from '@/ui/useSheetContent';
@@ -244,7 +245,7 @@ export default function TripsScreen() {
       const on = picked.includes(b.key);
       return (
         <View key={b.key} testID={b.route ? 'request-route' : 'request-flights'} style={styles.blockGap}>
-          {b.route ? <SectionHeader title={routeHeading(b.route.title, b.requests.length)} /> : null}
+          {b.route ? <SectionHeader title={routeHeading(marketArrows(b.route.title), b.requests.length)} /> : null}
           <Pressable
             onPress={() => toggle(b.key)}
             accessibilityRole="checkbox"
@@ -262,7 +263,7 @@ export default function TripsScreen() {
     }
     return (
       <View key={b.key} testID={b.route ? 'request-route' : 'request-flights'} style={styles.blockGap}>
-        {b.route ? <SectionHeader title={routeHeading(b.route.title, b.requests.length)} /> : null}
+        {b.route ? <SectionHeader title={routeHeading(marketArrows(b.route.title), b.requests.length)} /> : null}
         {/* Swipe left to delete a request, or a whole requested route (round 195, John). */}
         <SwipeToDelete
           label={`Delete ${blockTitle(b)}`}

@@ -5,7 +5,6 @@ import {
   Easing,
   ActivityIndicator,
   FlatList,
-  Image,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
   Pressable,
@@ -39,6 +38,7 @@ import { ResultRow, type LegPicks } from './ResultRow';
 import { SavedToast } from './SavedToast';
 import { SaveRouteButton } from './SaveRouteButton';
 import { StaggerIn } from './StaggerIn';
+import { TrailMark, trails } from './TrailMark';
 
 export interface ResultsPanelProps {
   state: Exclude<SearchState, { status: 'idle' }>;
@@ -215,7 +215,7 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
             accessibilityRole="header"
             accessibilityLabel={routeSpoken}
             numberOfLines={2}>
-            {trailTitle(routeTitle, c.accent)}
+            {trails(routeTitle, textStyles.routeTitle.fontSize)}
           </Text>
         }
         right={
@@ -691,45 +691,13 @@ function RouteEnds({ from, to }: { from: string; to: string }) {
   return (
     <View style={styles.routeEnds}>
       {pill(from)}
+      {/* The plane and its level contrail between the codes, like every route title (round 209, John). */}
       <View style={styles.routeEndsTrack}>
-        <View style={[styles.routeEndsLine, { backgroundColor: c.line2 }]} />
-        <Icon name="airplane" size={12} tintColor={c.faint} fallback={<Text style={{ color: c.faint }}>✈</Text>} />
-        <View style={[styles.routeEndsLine, { backgroundColor: c.line2 }]} />
+        <TrailMark fontSize={styles.endCode.fontSize ?? 15} />
       </View>
       {pill(to)}
     </View>
   );
-}
-
-/** The Jaunt plane and its contrail, white on clear so it takes a tint (round 208; design/assets/make-trail-mark.py). */
-const TRAIL_MARK = require('../../assets/images/trail-mark.png');
-/** The mark's size in points, about the height of the route title's capitals. */
-export const TRAIL_MARK_SIZE = { width: 44, height: 14 } as const;
-
-/**
- * "DFW", the plane and its contrail, "LGA" (round 208, John: "instead of having an arrow can it be like the
- * airplane and trail like our app design"). The mark is the one from the Jaunt wordmark's t, in the boarding
- * blue it has there, set inline so the title still wraps and reads as one header.
- */
-function trailTitle(title: string, accent: string) {
-  return title
-    .split(' → ')
-    .flatMap((part, i) =>
-      i === 0
-        ? [part]
-        : [
-            ' ',
-            <Image
-              key={`t${i}`}
-              source={TRAIL_MARK}
-              style={[TRAIL_MARK_SIZE, { tintColor: accent }]}
-              accessibilityElementsHidden
-              importantForAccessibility="no"
-              testID="route-trail-mark"
-            />,
-            ` ${part}`,
-          ],
-    );
 }
 
 export function isHardPullDown(e: Pick<NativeScrollEvent, 'contentOffset'> & { velocity?: { x: number; y: number } }): boolean {
@@ -966,8 +934,7 @@ const styles = StyleSheet.create({
   routeEnds: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   endPill: { borderRadius: radius.pill, paddingHorizontal: 9, paddingVertical: 3, borderWidth: StyleSheet.hairlineWidth },
   endCode: { fontFamily: fonts.mono, fontSize: 16, lineHeight: 21, letterSpacing: 0.5 },
-  routeEndsTrack: { flexDirection: 'row', alignItems: 'center', gap: 4, width: 64 },
-  routeEndsLine: { flex: 1, height: 1 },
+  routeEndsTrack: { alignItems: 'center', justifyContent: 'center', width: 52 },
   filters: { alignSelf: 'flex-end' },
   // A little more air between tickets so each one reads as its own (round 150, John).
   // A little more again in round 207, so the list breathes like a first-party app.

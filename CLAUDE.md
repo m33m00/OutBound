@@ -51,7 +51,7 @@ Full history in `design/DECISIONS.md`; these are the ones that come up most.
 - Time colors by lateness: green early, neutral on time, then yellow, orange, red as it gets later.
 - Durations always `5h 0m` style.
 - Departed pills are solid boarding blue with white words (round 208, John asked), Arrived pills are graphite (round 201). On a results ticket the pill sits just left of Save at the top right, on the same line as the new times (a moved ticket's struck schedule sits above that line, round 202), so pills line up down the list whatever the times' length. A ticket whose flight has arrived is grayed out: its times, stops and route line fade, the pill and Save stay full strength. In the opened route, each leg keeps its own pill over its route line.
-- The results title shows the Jaunt plane and contrail between the two codes, not an arrow (round 208), from assets/images/trail-mark.png tinted boarding blue.
+- Anywhere a route shows between airport codes, the Jaunt plane and a level contrail sit between them, not an arrow (round 208; level and everywhere since round 209): the results title, the open route's bar, saved routes, requests, My Trips route headings, the logbook and sheet subtitles. Use `RouteText` or `trails()` from src/ui/TrailMark.tsx, which tint assets/images/trail-mark.png boarding blue, size it to the text and keep VoiceOver reading "DAL to LAX". The logo and wordmark keep their slanted contrail t. System alerts can't show pictures, so they keep the arrow.
 - Boarding time = departure minus 40 min domestic, minus 50 min international or widebody.
 
 **Availability**

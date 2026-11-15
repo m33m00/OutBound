@@ -30,6 +30,7 @@ import { Icon } from './Icon';
 import { PASS_BARCODES, PassScanner } from './PassScanner';
 import { pressStyle } from './press';
 import { SheetHeader } from './SheetHeader';
+import { RouteText } from './TrailMark';
 
 export interface AddFlightSheetProps {
   visible: boolean;
@@ -253,9 +254,12 @@ export function AddFlightSheet({ visible, now, has, onAdd, onClose, editing }: A
           </View>
 
           {extra.length ? (
-            <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]} testID="add-flight-extra">
-              {`Also on this pass: ${extra.map((l) => `${l.from} → ${l.to}, ${l.airline} ${l.flightNumber}`).join('; ')}`}
-            </Text>
+            <RouteText
+              lineBreakStrategyIOS="push-out"
+              style={[textStyles.small, { color: c.muted }]}
+              testID="add-flight-extra"
+              text={`Also on this pass: ${extra.map((l) => `${l.from} → ${l.to}, ${l.airline} ${l.flightNumber}`).join('; ')}`}
+            />
           ) : null}
 
           <Button
