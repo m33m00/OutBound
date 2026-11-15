@@ -92,6 +92,22 @@ export function Glass({ style, children, bar = false, ...rest }: GlassProps) {
   );
 }
 
+/** The neutral layer over a glass bar, per scheme (round 213, John: "Fix all of them"). */
+export const BACKDROP_VEIL = { light: 'rgba(246,246,248,0.62)', dark: 'rgba(30,30,33,0.55)' } as const;
+
+/**
+ * The fill for a box that sits on a glass sheet (the date chips, From and To on Home): a lighter pane of the
+ * same glass rather than a flat gray or white card (round 213). Without Liquid Glass the sheet is solid, so
+ * the box takes the usual quiet gray.
+ */
+export function useGlassWell(): string {
+  const c = useColors();
+  const dark = useColorSchemeName() === 'dark';
+  const liquid = useLiquidGlass();
+  if (!liquid) return c.surface2;
+  return dark ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.6)';
+}
+
 /**
  * Glass laid behind something that has its own shape and motion (a sheet, the tab bar, a pinned bar): fills its
  * parent. Without Liquid Glass it's the plain solid surface, since a see-through bar over the map without the
@@ -103,13 +119,22 @@ export function GlassBackdrop({ style }: { style?: StyleProp<ViewStyle> }) {
   const liquid = useLiquidGlass();
   if (liquid) {
     return (
-      <GlassView
-        glassEffectStyle="regular"
-        colorScheme={scheme}
-        style={[StyleSheet.absoluteFill, style]}
-        pointerEvents="none"
-        testID="glass-backdrop"
-      />
+      <>
+        <GlassView
+          glassEffectStyle="regular"
+          colorScheme={scheme}
+          style={[StyleSheet.absoluteFill, style]}
+          pointerEvents="none"
+          testID="glass-backdrop"
+        />
+        {/* A soft neutral veil (round 213): the map and radar showed through as a blotchy blue, and every bar
+            got a different tint. With it the sheet, the tab bar and the pinned bars all read the same even gray. */}
+        <View
+          style={[StyleSheet.absoluteFill, { backgroundColor: BACKDROP_VEIL[scheme] }, style]}
+          pointerEvents="none"
+          testID="glass-veil"
+        />
+      </>
     );
   }
   return <View style={[StyleSheet.absoluteFill, { backgroundColor: c.surface }, style]} pointerEvents="none" />;

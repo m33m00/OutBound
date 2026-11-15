@@ -18,7 +18,9 @@ export function JauntWordmark({ height, ink, accent, testID }: { height: number;
   const width = BOX_W * scale;
   return (
     <View testID={testID} accessible accessibilityRole="header" accessibilityLabel="Jaunt" style={{ width, height }}>
-      <Canvas style={{ width, height }} pointerEvents="none">
+      {/* Keyed on its colors (round 213): a Skia canvas kept the colors it first drew with, so a switch to light
+          mode left the letters in dark mode's near-white, nearly invisible on the light page. */}
+      <Canvas key={`${ink}${accent}`} style={{ width, height }} pointerEvents="none">
         <Group transform={[{ translateX: -BOX.minX * scale }, { translateY: -BOX.minY * scale }, { scale }]}>
           {LETTERS.map((d, i) => (
             <Path key={i} path={d} color={ink} />

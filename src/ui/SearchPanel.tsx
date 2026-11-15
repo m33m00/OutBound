@@ -18,6 +18,7 @@ import { minTapTarget, radius, spacing, textStyles, useColors } from '@/theme';
 
 import { Button } from './Buttons';
 import { DatePickerModal } from './DatePickerModal';
+import { useGlassWell } from './Glass';
 import { Icon } from './Icon';
 import { pressStyle } from './press';
 import { withTick } from './haptics';
@@ -123,6 +124,7 @@ export function AirportCard({
   const ask = /(Choose airport)$/.exec(emptyText);
   const action = !code && ask ? { status: emptyText.slice(0, ask.index).trim(), ask: ask[1] } : null;
   const c = useColors();
+  const well = useGlassWell();
   const name = code ? AIRPORTS[code]?.name : undefined;
   const area = code ? areaFor(code) : null;
   // Hold the card for the airport's summary (round 174).
@@ -130,7 +132,7 @@ export function AirportCard({
   const whole = area != null && areaOn;
   const ink = areaOn ? c.onAccent : c.muted;
   return (
-    <View style={[styles.card, { backgroundColor: c.surface2 }]}>
+    <View style={[styles.card, { backgroundColor: well }]}>
       {area ? (
         // Keeps the pill (and its slop) clear of the From/To label on the left.
         <View style={styles.pillSlot} pointerEvents="box-none">
@@ -238,6 +240,7 @@ export const WRAP_CHIPS_SCALE = 1.2;
 
 export function SearchPanel(p: SearchPanelProps) {
   const c = useColors();
+  const well = useGlassWell();
   const { fontScale } = useWindowDimensions();
   const wrapChips = fontScale >= WRAP_CHIPS_SCALE;
   // Why Find Routes is off, for VoiceOver and (same airport) on screen.
@@ -308,7 +311,7 @@ export function SearchPanel(p: SearchPanelProps) {
               <View
                 key={`back-${key}`}
                 pointerEvents="none"
-                style={[styles.chipBack, { left: b.x, top: b.y, width: b.width, height: b.height, backgroundColor: c.surface2 }]}
+                style={[styles.chipBack, { left: b.x, top: b.y, width: b.width, height: b.height, backgroundColor: well }]}
               />
             ))
           : null}
@@ -342,7 +345,7 @@ export function SearchPanel(p: SearchPanelProps) {
                 styles.chip,
                 styles.dateChip,
                 wrapChips && styles.dateChipWrap,
-                { backgroundColor: slider ? 'transparent' : on ? c.accent : c.surface2 },
+                { backgroundColor: slider ? 'transparent' : on ? c.accent : well },
               ])}>
               <ChipDate chip={chip} on={on} lit={slider ? litAt(chip.date) : undefined} />
             </Pressable>
@@ -359,7 +362,7 @@ export function SearchPanel(p: SearchPanelProps) {
             styles.calendar,
             later ? styles.dateChip : null,
             wrapChips && styles.dateChipWrap,
-            { backgroundColor: slider ? 'transparent' : later ? c.accent : c.surface2 },
+            { backgroundColor: slider ? 'transparent' : later ? c.accent : well },
           ])}>
           {/* A later day reads like any other chip; the calendar icon alone means "pick a day". */}
           {later ? (

@@ -253,3 +253,4 @@ Each item names its owner. One item per work session. spec-keeper runs a pre-fli
 | 248 | Route mark never wraps apart from its codes, shorter trail, centred on the capitals (round 210) | Done |
 | 249 | Liquid Glass on the boxes that stay (tab bar, panel, bars, cards); fewer boxes in the status, delays and credits sheets (round 211) | Done |
 | 250 | No flight time pills on the route map; Canceled pill stays (round 212) | Done |
+| 251 | Light mode Home: wordmark redraws dark, light map at night, soft map labels, even glass sheet with no seam above the tab bar (round 213) | Done |

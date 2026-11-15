@@ -37,7 +37,8 @@ export default function TabsLayout() {
         tabBarActiveTintColor: c.accent,
         tabBarInactiveTintColor: c.muted,
         // A quiet bar (round 207) in glass (round 211, John: "More glassy look where containers exist").
-        tabBarStyle: { backgroundColor: 'transparent', borderTopColor: c.line },
+        // No line along its top (round 213): it runs into the Home sheet above without a seam.
+        tabBarStyle: { backgroundColor: 'transparent', borderTopWidth: 0 },
         tabBarBackground: () => <GlassBackdrop />,
         tabBarLabelStyle: { fontFamily: fonts.bodyMedium, fontSize: 10.5 },
         tabBarItemStyle: { minHeight: minTapTarget },

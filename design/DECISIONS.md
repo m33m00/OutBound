@@ -1018,3 +1018,12 @@ John: "Remove the block time on the route map."
 
 - The selected route on the map no longer shows each leg's flight time pill ("2h 35m"). A canceled leg still gets its red Canceled pill over the X (round 199). VoiceOver's map summary drops the flight times too.
 - Durations elsewhere stay: the tickets' stops line and the opened route.
+
+## Round 213 (Nov 15): light mode fixes on Home
+
+John sent a light mode Home screenshot ("In light mode, what do you think looks wrong here..") and, on the four things named back to him, said "Fix all of them".
+
+- The jaunt wordmark was nearly invisible: its drawing kept the colors it first drew with, so after the app came up in dark and turned light, the letters stayed dark mode's near-white and the plane its lighter blue. It now redraws whenever its colors change: near-black letters, boarding blue plane and contrail in light mode.
+- The map was slate gray because after dark the night shade laid a deep navy over the whole light map. In light mode the night shade is now a thin cool tint, so the map stays light at night; dark mode keeps its own. Route lines stay straight; radar keeps its strength.
+- Airport labels on the map had a hard white outline that read as stickers. The halo behind the dark letters is now a soft blurred glow, the way map apps label places.
+- The Home sheet's glass picked up a blotchy blue from the map and radar behind it. Glass bars (the sheets, the tab bar, the pinned bars) now carry a soft neutral veil, so they read as one even gray and match each other. The tab bar lost its top line, so the sheet runs into it without a seam. The date chips and the From and To boxes are a lighter pane of the same glass instead of flat gray cards (the usual quiet gray where there's no Liquid Glass).

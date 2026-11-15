@@ -3,7 +3,7 @@ import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 
 import { colors } from '@/theme';
 
-import { Glass, GlassBackdrop } from '../Glass';
+import { BACKDROP_VEIL, Glass, GlassBackdrop, useGlassWell } from '../Glass';
 
 // Round 211 (John): "Less containers where you think it's necessary. More glassy look where containers exist".
 const glass = require('expo-glass-effect') as { isLiquidGlassAvailable: jest.Mock };
@@ -63,5 +63,35 @@ describe('glass boxes (round 211)', () => {
       r = create(<GlassBackdrop />);
     });
     expect(r.root.findAll((n) => n.props.testID === 'glass-backdrop')).toHaveLength(0);
+  });
+
+  // Round 213 (John, on a light mode screenshot): "Fix all of them". The Home sheet's glass was a blotchy blue
+  // from the map behind it, with white boxes that clashed and a hard line above the tab bar.
+  it('lays an even neutral veil over glass bars, so the sheet and the tab bar match', async () => {
+    jest.spyOn(AccessibilityInfo, 'isReduceTransparencyEnabled').mockResolvedValue(false);
+    glass.isLiquidGlassAvailable.mockReturnValue(true);
+    await act(async () => {
+      r = create(<GlassBackdrop />);
+    });
+    expect(flat('glass-veil').backgroundColor).toBe(BACKDROP_VEIL.light);
+  });
+
+  it('boxes on a glass sheet are a lighter pane of glass, and the usual quiet gray without it', async () => {
+    jest.spyOn(AccessibilityInfo, 'isReduceTransparencyEnabled').mockResolvedValue(false);
+    let well = '';
+    function Probe() {
+      well = useGlassWell();
+      return null;
+    }
+    glass.isLiquidGlassAvailable.mockReturnValue(true);
+    await act(async () => {
+      r = create(<Probe />);
+    });
+    expect(well).toBe('rgba(255,255,255,0.6)');
+    glass.isLiquidGlassAvailable.mockReturnValue(false);
+    await act(async () => {
+      r = create(<Probe />);
+    });
+    expect(well).toBe(colors.light.surface2);
   });
 });

@@ -75,7 +75,9 @@ export interface NightTheme {
  * band at low alpha, never the amber "you" color at strength.
  */
 export const NIGHT_THEME: Record<ColorScheme, NightTheme> = {
-  light: { night: [12, 20, 44], nightAlpha: 0.42, dusk: [255, 160, 80] },
+  // Light mode stays a light map at night too (round 213, John: "Fix all of them"): a thin cool shade, not the
+  // prototype's deep navy, which turned the whole map slate gray after dark.
+  light: { night: [70, 90, 130], nightAlpha: 0.16, dusk: [255, 160, 80] },
   dark: { night: [1, 3, 9], nightAlpha: 0.62, dusk: [255, 150, 70] },
 };
 
