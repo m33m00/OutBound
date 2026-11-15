@@ -84,6 +84,16 @@ describe('canceled leg line', () => {
   });
 });
 
+describe('canceled X, round 205', () => {
+  it('sits in a small circle like the cards\' X (John: "Can it be a circle ... a little smaller too")', () => {
+    // Smaller than round 199's 8pt disc, and the X fits inside its ring.
+    expect(CANCELED_X.disc).toBeLessThan(8);
+    expect(Math.hypot(CANCELED_X.half, CANCELED_X.half) + CANCELED_X.width / 2).toBeLessThan(
+      CANCELED_X.disc - CANCELED_X.ring / 2,
+    );
+  });
+});
+
 describe('canceled pill', () => {
   const canceled = markCanceledLegs(route, status(null, 'canceled'));
 

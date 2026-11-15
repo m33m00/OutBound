@@ -122,6 +122,32 @@ describe('MiniRoute (round 119)', () => {
     expect(flag.top + flag.height).toBeLessThanOrEqual(label.top);
   });
 
+  it('round 202 (John): on one stop At risk sits just over its dot, in gold, not up over the seat numbers', () => {
+    const legs = [
+      { color: '#0a0', text: '#060', label: '40/2', counts: [{ kind: 'seats' as const, value: '40' }] },
+      { color: '#0a0', text: '#060', label: '20/4', counts: [{ kind: 'seats' as const, value: '20' }] },
+    ];
+    act(() => {
+      r = create(<MiniRoute airports={['DFW', 'BNA', 'CLT']} legs={legs} stopFlags={['At risk']} />);
+    });
+    const flat = (style: unknown) => Object.assign({}, ...[style].flat(3).filter(Boolean));
+    const flag = r!.root.find((n) => n.props.testID === 'mini-route-stop-flag' && typeof n.type === 'string');
+    const stop = flat(r!.root.find((n) => n.props.testID === 'mini-route-stop-slot' && typeof n.type === 'string').props.style);
+    const pill = flag.find((n) => typeof n.type === 'string' && n.props.children === 'At risk');
+    const pillStyle = flat(pill.props.style);
+    // The pill's bottom is a few points over the stop's dot.
+    const bottom = flat(flag.props.style).top + pillStyle.lineHeight;
+    expect(stop.top - bottom).toBeGreaterThan(0);
+    expect(stop.top - bottom).toBeLessThanOrEqual(4);
+    // Gold, its own color: not the violet of a delay, not the amber that means "you".
+    const { colors } = jest.requireActual<typeof import('@/theme')>('@/theme');
+    expect(pillStyle.backgroundColor).toBe(colors.light.riskBg);
+    expect(pillStyle.color).toBe(colors.light.riskFg);
+    expect(colors.light.riskBg).not.toBe(colors.light.cautionBg);
+    expect(colors.light.risk).not.toBe(colors.light.you);
+    expect(colors.dark.risk).not.toBe(colors.dark.you);
+  });
+
   it('shows each flight as its airline logo only; a tap opens its number and aircraft, a tap elsewhere closes it (round 156)', () => {
     const leg = (airline: string, number: string, aircraft?: string) => ({
       color: '#0a0',

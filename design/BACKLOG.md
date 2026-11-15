@@ -240,3 +240,11 @@ Each item names its owner. One item per work session. spec-keeper runs a pre-fli
 | 233 | Animations that mean something; one corner radius (14) everywhere; font pick waiting on OK to add a package (round 198) | Done |
 | 234 | Manrope for all text (times stay Geist Mono); canceled leg on the map: red line, X at its middle, red Canceled pill (round 199) | Done |
 | 235 | Sora for all text and titles, replacing Manrope (times stay Geist Mono) (round 200) | Done |
+| 238 | Departed/Arrived pill next to Save; Arrived graphite, Departed cyan; arrived tickets grayed out (round 201) | Done |
+| 239 | Pills and Save line up with the new (late) times; At risk gold and lower on 1-stop routes; area callout shows codes only; Filters matches Search (round 202) | Done |
+| 240 | Bold red bar through canceled times; Now line is a solid capsule on a thick rule (round 203) | Done |
+| 241 | Now line in the picked-day blue, rule a smidge thinner; no white circle behind the map's canceled X (round 204) | Done |
+| 242 | Map canceled X in a small light red circle like the cards; no line over Request Loads or under Leave by and Leave now (round 205) | Done |
+| 243 | Clean pass: cut helper and footer lines across Settings, Profile, Filters and empty states; quieter caption weight, tighter headings (round 206) | Done |
+| 244 | First-party calm: neutral grays, no outline on grouped cards, lighter ticket edge, no grouping boxes (banner, empty states, icon tiles), Search tab is Home (round 207) | Done |
+| 245 | Rename to Jaunt: lowercase jaunt wordmark with the contrail t (header, welcome), tall t app icon, new launch intro, in-app text and permission prompts say Jaunt | Done |

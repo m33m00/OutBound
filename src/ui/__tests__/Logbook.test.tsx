@@ -102,8 +102,8 @@ describe('Logbook tab', () => {
     expect(r!.root.findByProps({ testID: 'logbook-totals' }).props.accessibilityLabel).toMatch(
       /^1 flight, 1,2\d\d miles, 2 airports$/,
     );
-    // One short footer: where the logbook lives (round 65 cut the miles explainer).
-    expect(texts()).toContain('Your logbook stays on this phone.');
+    // No footer: round 206 cut the where-it-lives line (John: "not too descriptive").
+    expect(texts()).not.toContain('Your logbook stays on this phone.');
     expect(texts().some((t: string) => t.includes('straight-line'))).toBe(false);
     expect(texts()).toEqual(expect.arrayContaining(['DFW → LAX', 'OCTOBER 2026']));
     expect(lineTexts(r!.root)).toContain('Today | Seat 12A');

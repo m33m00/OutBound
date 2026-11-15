@@ -88,7 +88,7 @@ export function ListRow({ label, value, detail, onPress, accessibilityHint, valu
   const stacked = useWindowDimensions().fontScale >= STACK_VALUE_SCALE;
   const valueText = value ? (
     <Text
-      style={[textStyles.bodyStrong, !stacked && styles.value, { color: valueAccent ? c.accent : c.muted }]}
+      style={[textStyles.body, !stacked && styles.value, { color: valueAccent ? c.accent : c.muted }]}
       numberOfLines={stacked ? undefined : 2}>
       {value}
     </Text>
@@ -96,8 +96,8 @@ export function ListRow({ label, value, detail, onPress, accessibilityHint, valu
   const content = (
     <>
       {icon ? (
-        <View style={[styles.iconTile, { backgroundColor: c.surface2 }]} testID="list-row-icon">
-          <Icon name={icon} size={15} tintColor={c.text} fallback={null} />
+        <View style={styles.iconTile} testID="list-row-icon">
+          <Icon name={icon} size={17} tintColor={c.muted} fallback={null} />
         </View>
       ) : null}
       <View style={styles.left}>
@@ -160,6 +160,7 @@ const styles = StyleSheet.create({
     gap: spacing.group,
   },
   left: { flex: 1, gap: 2 },
-  iconTile: { width: 30, height: 30, borderRadius: radius.all, alignItems: 'center', justifyContent: 'center', marginRight: 2 },
+  // A plain icon, no tinted tile (round 207).
+  iconTile: { width: 24, height: 30, alignItems: 'center', justifyContent: 'center', marginRight: 2 },
   value: { flexShrink: 1, maxWidth: '45%', textAlign: 'right' },
 });

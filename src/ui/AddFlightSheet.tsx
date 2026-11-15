@@ -271,7 +271,7 @@ export function AddFlightSheet({ visible, now, has, onAdd, onClose, editing }: A
           ) : null}
           {editing ? null : (
             <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>
-              Your logbook stays on this phone. Only the flight is kept from a pass, never your name or booking code.
+              Only the flight is kept from a pass, never your name or booking code.
             </Text>
           )}
         </ScrollView>

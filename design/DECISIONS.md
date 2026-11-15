@@ -901,3 +901,78 @@ John couldn't see a difference after round 199 ("i cant tell a difference"). Man
 
 - Added @expo-google-fonts/sora, removed @expo-google-fonts/manrope. Sora 400 to 800 for all text and titles, bold text and the map's IATA labels. Times and flight numbers stay Geist Mono; the wordmark stays Big Shoulders.
 - Sora is about 10% wider than Geist at the same size, so it reads bigger. Sizes are unchanged; any line that now truncates or wraps badly gets fixed when spotted on a phone. CLAUDE.md updated.
+
+## Round 201 (Nov 14): Departed and Arrived pills by Save, two colors, arrived tickets grayed
+
+John: "Moved the departed and arrived pill next to the save button so it all aligns going top down and not dependent on the length of the departure and arrival times which seems like what it's doing. Different colors for departed and arrived. If it arrived the card should be greyed out as well."
+
+- Results tickets: the pill moved off the times line to just left of Save, top right, so the pills form one column down the list. The times get the whole line.
+- Colors: Departed keeps sky cyan; Arrived is graphite (light: #384250 on #dfe4eb; dark: #cbd3de on #29323e). Not violet (that's Delayed and Diverted), not green (early times and seats), not blue (tappable). Every Arrived pill uses it: tickets, the opened route's legs, Requests and the flight status sheet.
+- Arrived tickets: the times, stops line and route line fade to 45%; the Arrived pill and Save stay full strength. Departed tickets keep the light gray they had. Before, arrived and departed both only got the very light gray card, which barely showed.
+- CLAUDE.md rule updated.
+
+## Round 202 (Nov 14): pills by the new times, gold At risk, codes-only area callout, Filters like Search
+
+John, on round 201: "The pills should always align with the new departure and arrival time listed if it's delayed for example. Not the original time." "At Risk pill sits too high and can come down closer to the route line. Can we also make it a different color? Like yellow/gold?" "List only the airports at the top of the search... only put airport codes to shorten the callout because it's wrapping onto a second row." "The filters button should match the search pill container shape and size if possible on the flight summary page."
+
+- On a results ticket whose times moved, the small struck schedule now sits above the whole top row. The new times, the Departed or Arrived pill and Save share one line under it, so the pill lines up with the new times. The opened route card keeps its layout.
+- At risk and Missed get a gold of their own (`risk`, `riskBg`, `riskFg`), yellower than the amber that means "you" and the amber seat tier. The stop's ring turns gold too. On a 1-stop route the pill sits just over its stop's dot, beside the seat numbers; with 2 or more stops the stretches are short, so it keeps its room above the numbers.
+- The area line over the tickets is now a plane (takeoff when leaving, landing when arriving) and each airport code in a small outlined chip, no city words, so it stays on one line beside the count pills. VoiceOver still reads the full sentence.
+- Filters is now the same pill button as Search: same height, fully round, same tint and padding.
+
+## Round 203 (Nov 14): bolder canceled strike, Now line that stands out
+
+John: "Canceled line crossing out the time should be thicker." "Now Line divider when you search a market should be more obvious to see when scrolling. It's kind of hidden in the mix."
+
+- iOS can't thicken text's own strike-through, so a canceled time now gets a red bar drawn over it (`StrikeOver`, 2.5pt, a hair past each end). It's used on a canceled nonstop's top times and on each canceled leg's two times. A late flight's small struck schedule keeps the thin strike, since it isn't canceled.
+- The Now line is now a solid capsule in the text color with the words flipped ("Now | 9:40 AM"), on a 2pt rule in the text color across the list. Black and white only, so it doesn't borrow a color that means something else (blue tappable, amber "you", red canceled or full).
+
+## Round 204 (Nov 14): Now line in the date blue, a smidge thinner
+
+John: "Can the now line instead of black be the same blue for the dates etc" and "It's also just a smidge too thick."
+
+- The Now capsule and its rule are now the boarding blue of the picked day button, with white words. Blue normally means "you can tap this"; John asked for it here, so the Now line is the one exception.
+- The rule went from 2pt to 1.5pt.
+- Map: the white circle behind a canceled leg's X is gone (John: "The white circle background for a canceled leg on the route map I don't like"). The X is a little bigger (12pt across) with a thin light edge on its own strokes, the same as the line's halo, so it still reads over the red line.
+
+## Round 205 (Nov 14): map X back in a circle, less commentary
+
+John: "Can it be a circle and match how it looks in the card with a light red background? It can be a little smaller too." "We don't need the commentary at the bottom above the request loads button and below the Leave Now at the top."
+
+- Map: the canceled X sits in a small circle again (12pt across, smaller than round 199's 16pt), filled light red with a red ring, like the X on the cards. The cards' X circle is light red now too, so both match.
+- Request Loads: no "Seats are hidden. Loads are 1 credit per leg. X credits remaining." line. Round 192 had only taken it off the results list, so it still showed over the button. A line shows only when the request can't go: out of credits, or not enough for the legs checked.
+- Leave by and Leave now show just the time; the "Arrive at DFW by ... to begin boarding" line is gone from both (they stay alike, round 193). VoiceOver still hears it. At the airport the boarding time stays, since that's the card's main fact there.
+
+## Round 206 (Nov 15): clean pass, fewer words
+
+John: "The design of the app I really want it to look like something Anthropic or Apple made. A full pass through. Something super clean not too descriptive. I like the layout right now."
+
+Same layout. What changed is the words and the weight of the quiet parts.
+
+- Settings: the footers under Homes, Appearance, Notifications, Leave-by and Search defaults are gone, and so is "Saved on this phone." The empty Homes line is just "No main home yet." Rain radar's caption is "From NOAA". The "Google Maps opens in Safari" line under Directions is gone. Location keeps its one privacy line.
+- Profile: no "Settings are saved on this phone." The independence line and Logo.dev credit stay.
+- Filters: no helper lines under Departure Time and Airlines, no subtitle under "Only answered loads", and the avoid-airports note is "Only for connections."
+- Shorter: Requests footer "Answers are anonymous.", empty My Trips "Saved routes and answered requests show up here.", empty saved routes "Tap the bookmark on a route to keep it here.", empty Requests "Asks about your airline's flights show up here.", credits "Demo credits. Nothing is charged.", plan picker "Demo only. Nothing is charged.", location card "Only used to pick the closest airport." Logbook drops its footer; the add-flight privacy line keeps only what's kept from a pass.
+- Type: secondary lines (the small style) are regular weight instead of medium, so they sit back under what they describe. Headings are tracked in a touch (-0.3), since Sora runs wide.
+- Kept on purpose: attributions (Logo.dev, NOAA, AeroDataBox), the airline independence line, report anonymity, error and denied-permission lines. "Departure Time" stays as John named it.
+
+## Round 207 (Nov 15): first-party calm, fewer containers, Home tab
+
+John: "I cant tell any difference" (about 206). "Less containers where you think it makes sense. It needs to look like an app Apple, Anthropic or OpenAI made." "Search button should be a Home button instead."
+
+Same layout. What changed is what you see on every screen:
+
+- Grays are true neutral now (page #f5f5f7, text #1c1c1f, secondary #6b6b72; dark mode near-black with gray cards), so boarding blue is the only color with a hue and the app stops reading blue-gray.
+- Cards: grouped lists (Settings, Logbook totals) have no outline in light mode, just a white card on the page gray with a very soft shadow; dark mode keeps a hairline. Result tickets keep a hairline edge (round 150) but it's much lighter, with a softer, wider shadow, and a little more room between them.
+- Containers that only grouped are gone: the box around the results banner ("7 departures in the next 5 hours"), the card around empty states, the tinted circles behind section icons in My Trips and the tinted tiles behind Settings row icons, the count chip beside a section title. Kept where they do a job: tickets, each leg's tappable box, the Leave By card, the filled main button, the canceled nonstop's red card, the count pills John asked for (round 195), the area code chips (round 202).
+- Type: page titles 32pt (from 30); Settings row values regular weight instead of semibold; tab labels medium instead of semibold.
+- Tab bar: hairline top in the line gray. The Search tab is Home (house icon), and the back pill on results says Home. Same screen.
+- Before and after drawings (from the app's own sizes and colors, not phone screenshots): outbound-design/r207_*_before_after.png in project files.
+
+## Name and brand: Jaunt (2026-11-14, John)
+- The app is renamed from OutBound to **Jaunt** (John: "Can we rename the app to Jaunt with the line ontop of the T slanted and with an airplace logo almost looking like a jetstream behind it"). Display name, wordmark, launch intro, app icon and in-app text say Jaunt. The Expo project (slug `outbound`, account `outboundapp`), bundle IDs, URL scheme, the GitHub repo and the legal site address stay as they are for now.
+- Wordmark (logo round 2, option 3, John: "I like 3"): lowercase "jaunt" in Sora SemiBold; the t's crossbar is a contrail that tilts up to the right and widens toward a small plane flying just ahead of it. Letters in the text color, contrail and plane in boarding blue. Drawn with Skia from `src/brand/jauntMark.ts` (made by `design/assets/make-jaunt.py`), so it's the same shape everywhere.
+- App icon (round 1's tall t, John: "with the app icon of the T with the trail and plane like option 1"): white tall t with the contrail on top and the plane, on boarding blue.
+- Launch intro (John: "Roll with that"): the plane flies in drawing its contrail, which lands as the t's crossbar while "jaunt" rises in letter by letter, then the plane takes off and the blue panel lifts away into the app. Reduce Motion: the finished wordmark, then a fade. Panel is boarding blue to match the icon.
+- Big Shoulders is no longer used for the wordmark.
+- Not yet checked: whether the name Jaunt is clear to use (trademark, App Store).

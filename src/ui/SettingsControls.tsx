@@ -81,10 +81,6 @@ export function MapsChoice({ value, onChange }: { value: MapsApp; onChange: (app
         name={(app) => MAPS_APP_NAME[app]}
         onChange={onChange}
       />
-      {/* Always shown, so picking doesn't make the layout jump. */}
-      <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>
-        Google Maps opens in Safari if the app isn’t on this iPhone.
-      </Text>
     </View>
   );
 }

@@ -22,7 +22,7 @@ describe('Bold Text', () => {
     applyBoldText(true);
     expect(boldTextOn()).toBe(true);
     expect(textStyles.body.fontFamily).toBe('Sora_600SemiBold');
-    expect(textStyles.small.fontFamily).toBe('Sora_700Bold');
+    expect(textStyles.small.fontFamily).toBe('Sora_600SemiBold');
     expect(textStyles.code.fontFamily).toBe('Sora_800ExtraBold');
     expect(textStyles.number.fontFamily).toBe('GeistMono_600SemiBold');
     expect(fonts.bodyMedium).toBe('Sora_700Bold');

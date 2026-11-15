@@ -67,7 +67,8 @@ describe('computeLeaveBy', () => {
     });
     // The drive time moved next to the car (round 169); the boarding line sits beside the title, like
     // Leave now's (round 193, John).
-    expect(leaveByShort(r, BNA.tz)).toBe('Arrive at BNA by 7:45 AM to begin boarding');
+    // No line under Leave by any more (round 205, John: "We don't need the commentary").
+    expect(leaveByShort(r, BNA.tz)).toBe('');
     expect(driveTimeText(r)).toBe('32m');
     // No live answer: the rough guess, marked with ~.
     expect(run({ location: { ...downtown, at: EARLY - 5 * MIN }, liveDriveMin: null })).toMatchObject({
@@ -123,7 +124,8 @@ describe('computeLeaveBy', () => {
       sub: 'Arrive at BNA by 7:45 AM to begin boarding',
     });
     // Beside Leave now on the slim row, spelled out (John, 2026-11-03), ending "to begin boarding" (round 159).
-    expect(leaveByShort(run({ now: DEP - 30 * MIN }), BNA.tz)).toBe('Arrive at BNA by 7:45 AM to begin boarding');
+    // Leave now has no line under it either (round 205, John).
+    expect(leaveByShort(run({ now: DEP - 30 * MIN }), BNA.tz)).toBe('');
     // The arrive-by title already says everything, so no detail beside it (round 159).
     expect(leaveByShort(run(), BNA.tz)).toBe('');
   });

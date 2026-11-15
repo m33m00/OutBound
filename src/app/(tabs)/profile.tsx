@@ -160,7 +160,7 @@ export default function SettingsTab() {
       </ListGroup>
       <SectionFooter>
         {status === 'denied'
-          ? 'Location is off for OutBound. Turn it on in iPhone Settings, then try again.'
+          ? 'Location is off for Jaunt. Turn it on in iPhone Settings, then try again.'
           : 'Location is only used while the app is open.'}
       </SectionFooter>
 
@@ -243,13 +243,12 @@ export default function SettingsTab() {
       ) : null}
       {/* Apple 5.2: airline names and logos only identify flights; say plainly whose they are. */}
       <SectionFooter>
-        OutBound is independent and isn’t affiliated with or endorsed by any airline. Airline names and logos belong to their
+        Jaunt is independent and isn’t affiliated with or endorsed by any airline. Airline names and logos belong to their
         owners.
       </SectionFooter>
 
       {/* Clears homes too, so it asks first (what it should clear is Q-064). */}
       <Button label="Reset All Settings" kind="secondary" onPress={() => confirmReset(reset)} />
-      <SectionFooter>Settings are saved on this phone.</SectionFooter>
     </TabScreen>
   );
 }

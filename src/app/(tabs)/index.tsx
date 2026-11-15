@@ -50,6 +50,7 @@ import { useRadarLayers } from '@/ui/useRadarLayers';
 import { useSheetContent } from '@/ui/useSheetContent';
 import { selectionTick } from '@/ui/haptics';
 import { TearAwayHost } from '@/ui/TearAway';
+import { JauntWordmark } from '@/brand/JauntWordmark';
 
 /** Peek height above the home indicator. */
 const PEEK = 132;
@@ -550,9 +551,7 @@ export default function HomeScreen() {
       {/* Saving a route tears a little ticket off into My Trips (round 125); the layer sits over it all. */}
       <TearAwayHost>
         <View style={styles.topBar}>
-          <Text style={[textStyles.wordmark, { color: c.text }]} accessibilityRole="header">
-            OutBound
-          </Text>
+          <JauntWordmark height={28} ink={c.text} accent={c.accent} />
           {/* Free and Pay as you go keep count of credits here; Premium doesn't (round 176). */}
           <CreditsChip onAnswerLoads={answerLoads} />
         </View>

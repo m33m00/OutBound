@@ -170,11 +170,7 @@ export default function TripsScreen() {
     return (
       <TabScreen title="My Trips">
         {loaded ? (
-          <EmptyState
-            icon="suitcase"
-            title="No trips yet"
-            body="Routes you bookmark in Search and answers to your load requests show up here."
-          />
+          <EmptyState icon="suitcase" title="No trips yet" body="Saved routes and answered requests show up here." />
         ) : null}
         {sheet}
       </TabScreen>
@@ -322,9 +318,7 @@ export default function TripsScreen() {
         />
         {/* No saved routes yet: say where the bookmark is and give a way there (round 52). */}
         {/* No Find Routes button: the Search tab is one tap away (John, 2026-11-02). */}
-        {list.length ? null : (
-          <SectionFooter>Open a route in Search, then tap the bookmark beside its name to keep it here.</SectionFooter>
-        )}
+        {list.length ? null : <SectionFooter>Tap the bookmark on a route to keep it here.</SectionFooter>}
         {list.map((route) => {
           const card = (
             <SavedRouteCard

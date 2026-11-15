@@ -4,6 +4,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAccount } from '@/account/AccountProvider';
+import { JauntWordmark } from '@/brand/JauntWordmark';
 import { InlineLink, openLegal } from '@/account/AuthUI';
 import { spacing, textStyles, useColors, radius } from '@/theme';
 import { Button, PillButton } from '@/ui/Buttons';
@@ -19,12 +20,9 @@ export default function WelcomeScreen() {
     <SafeAreaView style={[styles.screen, { backgroundColor: c.bg }]} edges={['top', 'bottom']}>
       <View style={styles.hero}>
         <Image source={require('../../../assets/images/icon.png')} style={styles.icon} accessibilityIgnoresInvertColors />
-        <Text
-          style={[textStyles.wordmark, styles.word, { color: c.text }]}
-          accessibilityRole="header"
-          accessibilityLabel="OutBound">
-          OUTBOUND
-        </Text>
+        <View style={styles.word}>
+          <JauntWordmark height={46} ink={c.text} accent={c.accent} />
+        </View>
         <Text lineBreakStrategyIOS="push-out" style={[textStyles.heading, styles.tag, { color: c.muted }]}>
           Standby travel for airline employees
         </Text>
@@ -56,7 +54,7 @@ const styles = StyleSheet.create({
   screen: { flex: 1, paddingHorizontal: spacing.page * 1.5 },
   hero: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 14 },
   icon: { width: 88, height: 88, borderRadius: radius.all },
-  word: { fontSize: 30, lineHeight: 34, letterSpacing: 6, marginTop: 6 },
+  word: { marginTop: 6 },
   tag: { textAlign: 'center' },
   actions: { gap: spacing.section, paddingBottom: spacing.page },
   preview: { alignSelf: 'center' },

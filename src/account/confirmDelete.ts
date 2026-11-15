@@ -8,7 +8,7 @@ export function confirmDeleteAccount(): Promise<boolean> {
   return new Promise((resolve) => {
     Alert.alert(
       'Delete your account?',
-      'Your OutBound account, your email and everything you’ve shared are deleted for good, and this phone’s saved routes, logbook and settings are cleared. This can’t be undone.',
+      'Your Jaunt account, your email and everything you’ve shared are deleted for good, and this phone’s saved routes, logbook and settings are cleared. This can’t be undone.',
       [
         { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
         { text: 'Delete Account', style: 'destructive', onPress: () => resolve(true) },

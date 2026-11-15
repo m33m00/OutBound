@@ -17,16 +17,19 @@ export function requestLabel(picked: number, locked: number): string {
   return `Request ${picked} ${picked === 1 ? 'Leg' : 'Legs'} for ${cost}`;
 }
 
-/** The line over the button: what loads cost, what you have, and what to do when it's not enough. */
-export function requestNote(picked: number, credits: number): string {
+/**
+ * The line over the button, only when something stops the request: out of credits, or not enough for the legs
+ * checked. Otherwise none (round 205, John: "We don't need the commentary at the bottom above the request loads
+ * button"); the button already says the cost.
+ */
+export function requestNote(picked: number, credits: number): string | null {
   if (credits < REQUEST_COST) return 'You’re out of credits. Answer a load at your airline to earn one.';
   const cost = picked * REQUEST_COST;
   if (cost > credits) {
     const fits = Math.floor(credits / REQUEST_COST);
     return `${creditsWord(credits)} remaining, enough for ${fits} ${fits === 1 ? 'leg' : 'legs'}. Uncheck the rest.`;
   }
-  // "14 credits remaining" (round 192, John: was "You have 14").
-  return `Seats are hidden. Loads are ${creditsWord(REQUEST_COST)} per leg. ${creditsWord(credits)} remaining.`;
+  return null;
 }
 
 /**
@@ -55,17 +58,20 @@ export function RequestLoadsBar({
   const c = useColors();
   const out = credits < REQUEST_COST;
   const affordable = picked > 0 && picked * REQUEST_COST <= credits;
+  const note = requestNote(picked, credits);
   return (
     <View
       style={[styles.bar, { backgroundColor: c.surface, borderTopColor: c.line }]}
       onLayout={(e: LayoutChangeEvent) => onHeight?.(e.nativeEvent.layout.height)}
       testID="request-loads">
-      <Text
-        lineBreakStrategyIOS="push-out"
-        style={[textStyles.small, styles.note, { color: c.muted }]}
-        testID="request-loads-note">
-        {requestNote(picked, credits)}
-      </Text>
+      {note ? (
+        <Text
+          lineBreakStrategyIOS="push-out"
+          style={[textStyles.small, styles.note, { color: c.muted }]}
+          testID="request-loads-note">
+          {note}
+        </Text>
+      ) : null}
       {out ? (
         <Button label="Answer Loads" kind="secondary" icon="text.bubble" onPress={onAnswerLoads} />
       ) : (
