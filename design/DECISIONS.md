@@ -1037,3 +1037,14 @@ John sent the To picker in light mode ("What about this page now") and, on the f
 - The list is labeled: "All airports" always has its heading, and your last three picks sit above it under "Recent" (kept on the phone, shared by every picker), after "Your airports" when there are any. "All airports" rather than "Popular", since it is the whole list.
 - The code is plain boarding blue in the mono face, no gray bubble.
 - The header is iOS's own sheet header: a grabber on top, a smaller title centered on the same line as Cancel. Same for From, and for the home airport and filter pickers that use the same sheet.
+
+## Round 215 (Nov 15): the results page, calmer
+
+John sent the DAL to LAX results page in light mode ("what about this page") and, on the six things named back to him, said "Fix all of them".
+
+- Less blue: only the picked day is filled. The other days are plain words (dark day, gray date), the day arrows, Filters and the credit count are blue with no tint behind, and Back is just the arrow.
+- No hard lines: with results or an open route the sheet is the page color all the way up, so there's no line under the logo row and no glass band behind the bars ending in a line. The search panel keeps its glass.
+- Back is a plain arrow; "< Home" read oddly with the Home tab right there.
+- Every route with a stop says its connection now: the tightest one, "2h 10m connection at DEN", where before only those under an hour showed.
+- Routes that double back are gone: Jayden's change (#20) is brought into this test copy, so no route connects through the origin's or destination's area (DAL and DFW are both Dallas). DAL to DEN to DFW to LAX no longer shows.
+- Ticket outlines are a hairline. The white paper and torn notches still make each one a ticket.

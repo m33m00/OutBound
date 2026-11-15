@@ -361,8 +361,10 @@ describe('ResultsPanel day and filters (Q-057)', () => {
     const filters = flat(r!.root.find((n) => n.props.testID === 'results-filters' && typeof n.type === 'string').props.style);
     expect(filters.minHeight).toBe(back.minHeight);
     expect(filters.borderRadius).toBe(back.borderRadius);
-    expect(filters.backgroundColor).toBe(back.backgroundColor);
-    expect(filters.paddingHorizontal).toBe(back.paddingHorizontal);
+    // Round 215 (John: "Fix all of them"): both plain, no blue tint behind; Back is just the arrow.
+    expect(filters.backgroundColor).toBe('transparent');
+    expect(back.backgroundColor).toBe('transparent');
+    expect(back.width).toBe(back.minHeight);
   });
 
   it('round 208 (John): the searched route shows the plane and contrail instead of an arrow', async () => {

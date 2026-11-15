@@ -162,8 +162,12 @@ export function seatCounts(seats: LegSeats): { kind: 'seats' | 'listed'; value: 
 /** The airline logo's size in an opened route's flight box (round 158). */
 const ROUTE_LOGO = 28;
 
-/** A result card's edge (round 150, John: "a more obvious ticket border"). */
-export const CARD_EDGE_W = 1;
+/**
+ * A result card's edge (round 150, John: "a more obvious ticket border"), down to a hairline in round 215 (John:
+ * "Fix all of them", the ticket outlines were heavier than the rest of the app). The white paper on the page
+ * color and the torn notches still make it a ticket.
+ */
+export const CARD_EDGE_W = StyleSheet.hairlineWidth;
 
 /** Space above and below a connection label, before any extra that centers it on the line. */
 const CONNECTION_PAD = 6;

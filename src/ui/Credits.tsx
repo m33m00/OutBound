@@ -48,7 +48,8 @@ export function CreditsChip({ onAnswerLoads }: { onAnswerLoads: () => void }) {
         accessibilityRole="button"
         accessibilityLabel={creditsWord(m.credits)}
         accessibilityHint="Opens your credits"
-        style={pressStyle([styles.chip, { backgroundColor: c.accentSoft }])}>
+        // Blue words, no tinted box (round 215, John: "Fix all of them"), so the top bar isn't another blue pill.
+        style={pressStyle([styles.chip])}>
         <Icon name={CREDITS_ICON} size={15} tintColor={c.accent} fallback={null} />
         {/* Says "credits" in words, so it reads at a glance (round 177, John). */}
         {/* Spent credits roll the number down, earned ones roll it up (round 198). */}
@@ -172,7 +173,7 @@ function HowLine({ delta, text }: { delta: string; text: string }) {
 }
 
 const styles = StyleSheet.create({
-  chip: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, height: 32, borderRadius: 16 },
+  chip: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 4, height: 32 },
   chipText: { fontFamily: fonts.bodySemiBold, fontSize: 15, fontVariant: ['tabular-nums'] },
   screen: { flex: 1, paddingHorizontal: spacing.page },
   body: { gap: spacing.section, paddingBottom: spacing.page },

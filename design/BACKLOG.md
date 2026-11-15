@@ -256,3 +256,4 @@ Each item names its owner. One item per work session. spec-keeper runs a pre-fli
 | 250 | No flight time pills on the route map; Canceled pill stays (round 212) | Done |
 | 251 | Light mode Home: wordmark redraws dark, light map at night, soft map labels, even glass sheet with no seam above the tab bar (round 213) | Done |
 | 252 | Airport picker: plain rows, airport name over city, Recent and All airports headings, blue codes, centered header with grabber (round 214) | Done |
+| 253 | Results page: only the picked day filled, plain back arrow and Filters, no lines or glass band over the results, connection time on every route with a stop, hairline ticket edges, Jayden's no-backtracking rule brought in (round 215) | Done |

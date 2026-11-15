@@ -205,9 +205,10 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
   // Fixed above the list (results take over, Q-062): back, route and Filters on one line,
   // the day and count under it.
   const topRow = (
-    <View style={[styles.bar, styles.pad, { borderBottomColor: c.line }]} testID="results-bar">
+    <View style={[styles.bar, styles.pad]} testID="results-bar">
       <CenteredTitleRow
-        left={<BackButton label={tight ? '' : 'Home'} onPress={p.onBack} accessibilityLabel="Back to home" />}
+        // A plain back arrow (round 215, John: "Fix all of them"): "< Home" read oddly with the Home tab right there.
+        left={<BackButton label="" plain onPress={p.onBack} accessibilityLabel="Back to home" />}
         title={
           <Text
             ref={listTitleRef}
@@ -234,6 +235,8 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
               }
               accessibilityLabel={p.filtersChanged ? `Filters, ${p.filtersChanged} changed` : 'Filters'}
               leading="line.3.horizontal.decrease.circle"
+              // Blue words with no tint behind (round 215): only the picked day is filled on this bar.
+              tone="plain"
               onPress={p.onFilters}
               hitSlop={{ right: 8 }}
               style={styles.filters}
@@ -502,10 +505,12 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
             <GestureDetector gesture={flipPan}>
               <View collapsable={false}>
                 <CenteredTitleRow
-                  style={[styles.bar, styles.pad, styles.routeBar, { borderBottomColor: c.line }]}
+                  style={[styles.bar, styles.pad, styles.routeBar]}
                   onLayout={(e) => setBarH(e.nativeEvent.layout.height)}
                   testID="route-bar"
-                  left={<BackButton label="" onPress={() => p.onSelect(focused.id)} accessibilityLabel="Back to all routes" />}
+                  left={
+                    <BackButton label="" plain onPress={() => p.onSelect(focused.id)} accessibilityLabel="Back to all routes" />
+                  }
                   title={
                     <View style={styles.routeMiddle}>
                       <View
@@ -921,7 +926,8 @@ const styles = StyleSheet.create({
   areaCallout: { flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1 },
   areaCode: { borderWidth: 1, borderRadius: radius.pill, paddingHorizontal: 8, paddingVertical: 2 },
   areaCodeText: { fontFamily: fonts.mono, fontSize: 13, lineHeight: 17, letterSpacing: 0.5 },
-  bar: { gap: 4, paddingBottom: spacing.group, borderBottomWidth: StyleSheet.hairlineWidth },
+  // No line under the bar (round 215): the tickets start below on the same page color.
+  bar: { gap: 4, paddingBottom: spacing.group },
   title: { textAlign: 'center' },
   // The route view's bar (round 134): back on the left, the market and its dots centered.
   routeBar: { paddingTop: 2 },
@@ -935,7 +941,7 @@ const styles = StyleSheet.create({
   endPill: { borderRadius: radius.pill, paddingHorizontal: 9, paddingVertical: 3, borderWidth: StyleSheet.hairlineWidth },
   endCode: { fontFamily: fonts.mono, fontSize: 16, lineHeight: 21, letterSpacing: 0.5 },
   routeEndsTrack: { alignItems: 'center', justifyContent: 'center', width: 52 },
-  filters: { alignSelf: 'flex-end' },
+  filters: { alignSelf: 'flex-end', marginRight: -10 },
   // A little more air between tickets so each one reads as its own (round 150, John).
   // A little more again in round 207, so the list breathes like a first-party app.
   sep: { height: spacing.section + 2 },

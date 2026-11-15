@@ -89,7 +89,8 @@ export function DayStepper({
       accessibilityRole="button"
       accessibilityLabel={`${dir === 'prev' ? 'Previous day' : 'Next day'}${to ? `, ${to.long}` : ''}`}
       accessibilityState={{ disabled: !to }}
-      style={pressStyle([styles.arrow, { backgroundColor: c.accentSoft, opacity: to ? 1 : 0.35 }])}>
+      // Just the arrow, no tint (round 215, John: "Fix all of them"): only the picked day is filled.
+      style={pressStyle([styles.arrow, { opacity: to ? 1 : 0.35 }])}>
       <Icon
         name={dir === 'prev' ? 'chevron.left' : 'chevron.right'}
         size={16}
@@ -133,16 +134,17 @@ export function DayStepper({
                 style={pressStyle([
                   styles.chip,
                   fit ? { width: fit.w, minWidth: 0 } : null,
-                  { backgroundColor: on ? c.accent : c.accentSoft },
+                  // Only the picked day is filled; the others are plain words (round 215).
+                  on && { backgroundColor: c.accent },
                 ])}>
                 <Text
-                  style={[styles.chipTop, { color: on ? c.onAccent : c.accent }]}
+                  style={[styles.chipTop, { color: on ? c.onAccent : c.text }]}
                   numberOfLines={1}
                   adjustsFontSizeToFit
                   minimumFontScale={0.8}>
                   {d.label}
                 </Text>
-                <Text style={[textStyles.small, { color: on ? c.onAccent : c.accent }]} numberOfLines={1}>
+                <Text style={[textStyles.small, { color: on ? c.onAccent : c.muted }]} numberOfLines={1}>
                   {d.day}
                 </Text>
               </Pressable>
