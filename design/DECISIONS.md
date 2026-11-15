@@ -1068,3 +1068,15 @@ John, on the Requests and My Trips rows: "If a flight is canceled you don't need
 - An answered ask shows its day and time like the waiting ones ("Today 8:05 AM"), with no "answered 36m ago" anywhere, spoken or shown.
 - The seat count pill sits on the right, over the Answered pill (and on its own at the right in the Requests tab's "You answered" rows).
 - The flight number and market ("AA 2400 | LAX ✈ DFW") never wrap: one line, shrinking up to 30% to fit.
+
+## Round 218 (Nov 15): the opened route, calmer
+
+John sent the opened DAL to MIA nonstop ("What's wrong with this page") and, on the seven things named back to him, said "Fix all of them".
+
+- Leave by no longer guesses long drives. The rough straight-line guess only shows within about 100 km (about a 2h 30m drive); farther out the card says when to be at the airport until a maps service gives a real drive time (that still counts out to 400 km). The 8h drive it showed came from that guess.
+- A nonstop has no "1 credit" checkbox: the Request Loads button already says the credit. Routes with more than one leg keep a box per leg.
+- A nonstop's flight length shows once, in the header ("Nonstop 2h 50m"), not again under the line.
+- No gray box inside the white ticket, and the airport codes in it are plain text, no bubbles.
+- No seats reported: the small seat icon over a dash, not an empty ring.
+- The codes at the top of the opened route (DAL ✈ MIA) are plain text, as on every other page.
+- No line above the pinned Request Loads button.

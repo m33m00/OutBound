@@ -61,10 +61,7 @@ export function RequestLoadsBar({
   const affordable = picked > 0 && picked * REQUEST_COST <= credits;
   const note = requestNote(picked, credits);
   return (
-    <View
-      style={[styles.bar, { borderTopColor: c.line }]}
-      onLayout={(e: LayoutChangeEvent) => onHeight?.(e.nativeEvent.layout.height)}
-      testID="request-loads">
+    <View style={styles.bar} onLayout={(e: LayoutChangeEvent) => onHeight?.(e.nativeEvent.layout.height)} testID="request-loads">
       {/* The pinned bar is glass, so the list shows softly through it (round 211, John). */}
       <GlassBackdrop />
       {note ? (
@@ -100,7 +97,6 @@ const styles = StyleSheet.create({
     paddingTop: 10,
     paddingBottom: 12,
     gap: 8,
-    borderTopWidth: StyleSheet.hairlineWidth,
   },
   // Centred over the button, like its label (round 191, John: "Align the subtext above the request all legs button").
   note: { textAlign: 'center', alignSelf: 'stretch' },

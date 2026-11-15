@@ -483,8 +483,10 @@ describe('ResultRow', () => {
         const ids = track
           .findAll((n) => typeof n.type === 'string' && ['leg-tag', 'leg-length'].includes(n.props.testID))
           .map((n) => n.props.testID);
-        // The length is always the last thing, under the line, tagged or not.
-        expect(ids[ids.length - 1]).toBe('leg-length');
+        // The length is always the last thing, under the line, tagged or not; a nonstop's length is the header's
+        // alone (round 218, John: "Fix all of them").
+        if (it.legs.length > 1) expect(ids[ids.length - 1]).toBe('leg-length');
+        else expect(ids).not.toContain('leg-length');
         // Both end columns are the same fixed width and raised the same amount in every box.
         const ends = (line.children as ReactTestInstance[]).filter(
           (n) => typeof n !== 'string' && n.props.testID !== 'leg-track',
@@ -521,7 +523,7 @@ describe('ResultRow', () => {
     const order = track
       .findAll((n) => typeof n.type === 'string' && ['leg-tag', 'leg-length'].includes(n.props.testID))
       .map((n) => n.props.testID);
-    expect(order).toEqual(['leg-tag', 'leg-length']);
+    expect(order).toEqual(it.legs.length > 1 ? ['leg-tag', 'leg-length'] : ['leg-tag']);
     expect(words(track.findAll((n) => n.props.testID === 'leg-tag' && typeof n.type === 'string')[0])).toContain('25m late');
     // Not on the flight chip's row any more.
     const group = box.findAll((n) => n.props.testID === 'leg-flight' && typeof n.type === 'string')[0];

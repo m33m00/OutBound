@@ -685,9 +685,8 @@ export const PULL_DOWN_VELOCITY = 1;
 function RouteEnds({ from, to }: { from: string; to: string }) {
   const c = useColors();
   const pill = (code: string) => (
-    // Content, not a control, so the same black text and plain pill as the airports in the boxes
-    // (round 136, John: "What's with the navy colors").
-    <View style={[styles.endPill, { backgroundColor: c.surface2, borderColor: c.line }]} testID="route-end">
+    // Content, not a control: plain black codes, no bubble, as on every other page (round 218, John: "Fix all of them").
+    <View style={styles.endPill} testID="route-end">
       <Text style={[styles.endCode, { color: c.text }]} maxFontSizeMultiplier={1.3}>
         {code}
       </Text>
@@ -938,7 +937,7 @@ const styles = StyleSheet.create({
   dot: { width: 6, height: 6, borderRadius: 3 },
   dotOn: { width: 16 },
   routeEnds: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  endPill: { borderRadius: radius.pill, paddingHorizontal: 9, paddingVertical: 3, borderWidth: StyleSheet.hairlineWidth },
+  endPill: { paddingVertical: 3 },
   endCode: { fontFamily: fonts.mono, fontSize: 16, lineHeight: 21, letterSpacing: 0.5 },
   routeEndsTrack: { alignItems: 'center', justifyContent: 'center', width: 52 },
   filters: { alignSelf: 'flex-end', marginRight: -10 },

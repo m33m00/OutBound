@@ -37,7 +37,7 @@ import { useAirportHold, useOpenAirportSummary } from './AirportSummary';
 import { FlightPeek } from './FlightPeek';
 import { Icon } from './Icon';
 import { Divided, MetaLine } from './MetaLine';
-import { MiniRoute } from './MiniRoute';
+import { COUNT_ICON, MiniRoute } from './MiniRoute';
 import { snapshotCard, TearSourceProvider, type TearSource } from './TearAway';
 import { TearSwipe, TearSwipeCard } from './TearSwipe';
 import { TicketTear } from './TicketTear';
@@ -197,6 +197,7 @@ function LegEnds({
   leg: Flight;
   view?: LegStatusView;
   dimmed: boolean;
+  /** A nonstop's times and length are the header's, so its line shows neither (round 218, John: "Fix all of them"). */
   showTimes: boolean;
   /** The flight's status pill, centered just above its route line (round 136, John). */
   tag?: ReactNode;
@@ -241,7 +242,8 @@ function LegEnds({
   };
   const code = (text: string, hold: ReturnType<typeof useAirportHold>) => {
     const pill = (
-      <View style={[styles.codePill, { backgroundColor: c.surface, borderColor: c.line }]} testID="leg-code">
+      // Plain codes, no bubble: the flight sits right on the ticket now (round 218, John: "Fix all of them").
+      <View style={styles.codePill} testID="leg-code">
         <Text style={[styles.codeText, { color: dimmed ? c.muted : c.text }]}>{text}</Text>
       </View>
     );
@@ -260,7 +262,7 @@ function LegEnds({
     );
   };
   const length =
-    minutes > 0 ? (
+    minutes > 0 && showTimes ? (
       <Text style={[styles.endsLength, { color: c.muted }]} numberOfLines={1} testID="leg-length">
         {formatDuration(minutes)}
       </Text>
@@ -426,6 +428,7 @@ function LegTimeline({
         const typical = leg.seats.source === 'typical' || leg.seats.source === 'unknown';
         // The dot carries the leg's tier color; the route's chance word is in the headline.
         const dotTier = dimmed || typical || view?.tag?.kind === 'canceled' ? 'unknown' : leg.seats.tier;
+        const unreported = dotSeats(leg.seats) === '–';
         // Every box has one layout (John, 2026-11-02): times and airports first, then the flight.
         // The flight is its airline's logo alone, centred just under the route line; a tap or hold opens its
         // number and aircraft, as on the tickets (round 158, John: "Can you do the same select or hold on the
@@ -444,7 +447,8 @@ function LegTimeline({
               />
             </View>
             <View style={[styles.legCorner, styles.legCornerRight]} testID="leg-corner-right">
-              {legPicks?.locked[i] ? (
+              {/* A nonstop's one flight is the whole request, so the button alone says the credit (round 218). */}
+              {legPicks?.locked[i] && !nonstop ? (
                 <LegCreditCheck
                   index={i}
                   checked={!!legPicks.checked[i]}
@@ -470,7 +474,8 @@ function LegTimeline({
             {pills}
           </>
         );
-        const boxStyle = [styles.legBox, { backgroundColor: c.surface2 }];
+        // No gray box inside the white ticket: the flight sits on the ticket itself (round 218, John: "Fix all of them").
+        const boxStyle = styles.legBox;
         // Half the line runs through this box, half through the next; the label goes where they meet.
         const half = (h?: number) => Math.max(0, ((h ?? 0) - DOT) / 2);
         const tail = half(legHeights[i]);
@@ -480,17 +485,28 @@ function LegTimeline({
             <View style={styles.leg} onLayout={measure(i)}>
               <View style={styles.railCol}>
                 <View style={[styles.railHalf, i > 0 && rail]} />
-                <View style={[styles.dot, { backgroundColor: c[TIER_BG[dotTier]], borderColor: c[dotTier] }]} testID="leg-dot">
-                  <Text
-                    numberOfLines={1}
-                    adjustsFontSizeToFit
-                    minimumFontScale={0.7}
-                    maxFontSizeMultiplier={1.2}
-                    style={[styles.dotText, { color: c[TIER_FG[dotTier]] }]}
-                    testID="leg-dot-seats">
-                    {dotSeats(leg.seats)}
-                  </Text>
-                </View>
+                {unreported ? (
+                  // No reading: the small seat icon over a dash, as the tickets show it, not an empty ring
+                  // (round 218, John: "Fix all of them").
+                  <View style={styles.dotPlain} testID="leg-dot">
+                    <Icon name={COUNT_ICON.seats} size={12} tintColor={c.muted} fallback={null} />
+                    <Text style={[styles.dotText, { color: c.muted }]} maxFontSizeMultiplier={1.2} testID="leg-dot-seats">
+                      {dotSeats(leg.seats)}
+                    </Text>
+                  </View>
+                ) : (
+                  <View style={[styles.dot, { backgroundColor: c[TIER_BG[dotTier]], borderColor: c[dotTier] }]} testID="leg-dot">
+                    <Text
+                      numberOfLines={1}
+                      adjustsFontSizeToFit
+                      minimumFontScale={0.7}
+                      maxFontSizeMultiplier={1.2}
+                      style={[styles.dotText, { color: c[TIER_FG[dotTier]] }]}
+                      testID="leg-dot-seats">
+                      {dotSeats(leg.seats)}
+                    </Text>
+                  </View>
+                )}
                 <View style={[styles.railHalf, !last && rail]} />
               </View>
               {onLegPress ? (
@@ -1261,6 +1277,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 3,
   },
+  dotPlain: { width: DOT, height: DOT, alignItems: 'center', justifyContent: 'center', gap: 1 },
   dotText: { fontFamily: fonts.bodySemiBold, fontSize: 11, fontVariant: ['tabular-nums'], letterSpacing: -0.2 },
   railLine: { flex: 1, width: 2, minHeight: 4 },
   railHalf: { flex: 1, width: 2 },
@@ -1271,7 +1288,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 4,
     paddingVertical: 8,
-    paddingHorizontal: 12,
+    paddingHorizontal: 4,
     borderRadius: radius.all,
   },
   // A leg's flight chip with its aircraft stacked under it, centred under the route line (round 155, John:
@@ -1310,12 +1327,7 @@ const styles = StyleSheet.create({
   endColRight: { alignItems: 'flex-end' },
   endTime: { fontSize: 15, lineHeight: 20 },
   endRight: { textAlign: 'right' },
-  codePill: {
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: radius.pill,
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-  },
+  codePill: { paddingVertical: 2 },
   codeText: { fontFamily: fonts.mono, fontSize: 13, lineHeight: 17, letterSpacing: 0.4 },
   // Pill (if any), line, then length: the line stays level with the airport pills' middles.
   endsMid: { flex: 1, minWidth: 40, alignItems: 'center', gap: 2 },

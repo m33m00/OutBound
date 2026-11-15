@@ -16,8 +16,14 @@ export interface PhoneLocation {
 
 /** A location older than this isn't used (prototype: 20 min). */
 export const LOCATION_FRESH_MS = 20 * 60_000;
-/** Drive estimates only within this distance. */
+/** Drive times from a maps service only within this distance. */
 export const MAX_DRIVE_KM = 400;
+/**
+ * The rough straight-line guess only this close (about a 2h 30m drive). Farther out it guessed things like an 8 hour
+ * drive, so the card says when to be at the airport instead until a maps service answers (round 218, John: "Fix all
+ * of them").
+ */
+export const MAX_ESTIMATE_KM = 100;
 /** Closer than this counts as being at the airport. */
 export const AT_AIRPORT_KM = 3;
 
@@ -92,8 +98,8 @@ export function computeLeaveBy(input: {
       const boardUtc = departUtc - (input.boardingMin ?? BOARDING_DOMESTIC_MIN) * 60_000;
       return { kind: 'atAirport', airport: airport.code, departUtc, boardUtc };
     }
-    if (km <= MAX_DRIVE_KM) {
-      const live = input.liveDriveMin != null && input.liveDriveMin > 0;
+    const live = input.liveDriveMin != null && input.liveDriveMin > 0;
+    if (km <= (live ? MAX_DRIVE_KM : MAX_ESTIMATE_KM)) {
       const driveMin = live ? Math.round(input.liveDriveMin!) : driveMinutes(km);
       const leaveUtc = beAtUtc - driveMin * 60_000;
       if (leaveUtc <= now) return { kind: 'leaveNow', airport: airport.code, beAtUtc, driveMin };

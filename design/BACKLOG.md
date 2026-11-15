@@ -259,3 +259,4 @@ Each item names its owner. One item per work session. spec-keeper runs a pre-fli
 | 253 | Results page: only the picked day filled, plain back arrow and Filters, no lines or glass band over the results, connection time on every route with a stop, hairline ticket edges, Jayden's no-backtracking rule brought in (round 215) | Done |
 | 254 | Requests tab: light Answer pill, plain rows (no card or heading), flight day and time with when it was asked on one line, no anonymous footer (round 216) | Done |
 | 255 | Request rows: canceled asks keep their day and time with the Canceled pill, answered asks show the seat count over the Answered pill with no answered time, flight and market on one line (round 217) | Done |
+| 256 | Opened route: no long-drive guesses on Leave by, no credit box or second length on nonstops, no box in the ticket, plain codes, small seat dash, no line over Request Loads (round 218) | Done |
