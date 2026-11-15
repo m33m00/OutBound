@@ -1,10 +1,12 @@
 import { AccessibilityInfo, Pressable, StyleSheet } from 'react-native';
 
+import { useSettingsOptional } from '@/settings/SettingsProvider';
 import { minTapTarget, useColors } from '@/theme';
 
 import { selectionTick, successTap } from './haptics';
 import { Icon } from './Icon';
 import { pressStyle } from './press';
+import { playSound } from './sounds';
 import { useIsTearCopy, useTearAway, useTearSource } from './TearAway';
 
 /**
@@ -18,6 +20,7 @@ export function SaveRouteButton({ saved, onPress }: { saved: boolean; onPress: (
   // On the torn-off copy flying into My Trips, the bookmark is already filled.
   const isCopy = useIsTearCopy();
   const filled = saved || isCopy;
+  const sounds = useSettingsOptional()?.settings.sounds ?? false;
   return (
     <Pressable
       onPress={() => {
@@ -25,7 +28,11 @@ export function SaveRouteButton({ saved, onPress }: { saved: boolean; onPress: (
         if (saved) selectionTick();
         else successTap();
         // Saving tears the card's header off along its perforation into My Trips (round 126, John).
-        if (!saved && source && tearAway) tearAway(source);
+        if (!saved && source && tearAway) {
+          tearAway(source);
+          // A soft paper rip as it tears (round 220, John), when sound effects are on.
+          if (sounds) void playSound('tear');
+        }
         onPress();
         // The icon is the only change on screen, so VoiceOver says what happened.
         AccessibilityInfo.announceForAccessibility(saved ? 'Removed from My Trips' : 'Saved to My Trips');

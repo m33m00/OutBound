@@ -2,10 +2,12 @@ import { type ReactNode, useRef } from 'react';
 import { AccessibilityInfo, StyleSheet, Text, View } from 'react-native';
 import { GestureDetector, usePanGesture } from 'react-native-gesture-handler';
 
+import { useSettingsOptional } from '@/settings/SettingsProvider';
 import { useColors } from '@/theme';
 
 import { impactTick, successTap } from './haptics';
 import { Icon } from './Icon';
+import { playSound } from './sounds';
 import { useTearDrag, type TearDrag, type TearSource } from './TearAway';
 import { dragProgress, shouldCommit } from './tearMesh';
 
@@ -38,8 +40,9 @@ function useTearPan(source: TearSource | null, onSave?: () => void) {
   const startDrag = useTearDrag();
   const width = useRef(0);
   const drag = useRef<TearDrag | null>(null);
-  const live = useRef({ source, onSave, startDrag });
-  live.current = { source, onSave, startDrag };
+  const sounds = useSettingsOptional()?.settings.sounds ?? false;
+  const live = useRef({ source, onSave, startDrag, sounds });
+  live.current = { source, onSave, startDrag, sounds };
 
   const pan = usePanGesture({
     enabled: !!onSave,
@@ -63,6 +66,8 @@ function useTearPan(source: TearSource | null, onSave?: () => void) {
       drag.current = null;
       if (!commit) return;
       successTap();
+      // A soft paper rip as it tears free (round 220, John), when sound effects are on.
+      if (live.current.sounds) void playSound('tear');
       live.current.onSave?.();
       AccessibilityInfo.announceForAccessibility('Saved to My Trips');
     },

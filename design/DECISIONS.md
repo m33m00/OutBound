@@ -1089,3 +1089,10 @@ John, on the Leave by card's "Arrive at DAL by 1:55 PM to begin boarding" runnin
 - Beside the buttons the line never wraps; if a button crowds it, it shrinks a touch (to 85% at most). Only at large text sizes can it split, and then the detail gets its own line.
 - Results tickets carry where they go: a thin (3pt) stripe of a muted destination color down the left edge and a faint tint of it under the perforation (9% in light mode, 14% in dark). Colors by region: coral for Florida, the islands and Hawaii, pine for the Rockies, amber for California and the Southwest, misty teal for the Northwest, slate for the Northeast, dusk plum for the Midwest, clay for Texas and the South, sand anywhere else. None is blue or red, and the seat-colored route line is unchanged.
 - Canceled, full, departed and arrived tickets keep their own look, with no stripe. The opened route card has none either.
+
+## Round 220 (Nov 15): plain tickets again, and a tear sound
+
+John, with a round 219 screenshot: "I don't like the color border stub. I was just thinking designing the ticket so it doesn't look just blank. Can you give me mockups. Also when I save a ticket and it tears it can you have a sound effect for that".
+
+- The destination stripe and tint are gone; tickets are plain white again while he picks a surface treatment from new mockups (outbound-design/ticket-surface-*.png). Nothing built until he picks.
+- Saving a ticket now plays a soft paper rip as it tears, from the bookmark or the swipe. It's original, made from filtered noise (design/tear-synth.py), about a third of a second and mixed quieter than the chimes. The Sound effects switch in Settings turns it off with the rest.

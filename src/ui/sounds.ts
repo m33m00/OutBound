@@ -3,7 +3,7 @@ import { useSyncExternalStore } from 'react';
 import { Platform } from 'react-native';
 
 import { successTap } from './haptics';
-import { ANSWERED_DATA_URI, LEAVE_DATA_URI, SENT_DATA_URI } from './soundData';
+import { ANSWERED_DATA_URI, LEAVE_DATA_URI, SENT_DATA_URI, TEAR_DATA_URI } from './soundData';
 
 /**
  * Sound effects (round 181 onward). Round 197, John: "remove the current sound effects loaded on the app. Lets
@@ -13,6 +13,8 @@ import { ANSWERED_DATA_URI, LEAVE_DATA_URI, SENT_DATA_URI } from './soundData';
  *   answered  two notes rising: a load request you made got its answer
  *   sent      one light tap: your load request went out
  *   leave     three notes falling: the Leave By card turns to Leave now while you're looking at it
+ *   tear      a soft paper rip (round 220, John: "when I save a ticket and it tears can you have a sound effect
+ *             for that"; design/tear-synth.py): a ticket you save tears off into My Trips
  * Nothing else makes a sound. They're mixed quiet in the files themselves.
  *
  * They play over whatever else is on (mixWithOthers), so they never stop someone's music. Never throws:
@@ -26,8 +28,8 @@ import { ANSWERED_DATA_URI, LEAVE_DATA_URI, SENT_DATA_URI } from './soundData';
  *
  * Whether they loaded is kept (useSoundState), so Settings can say so if it ever fails again.
  */
-export type SoundName = 'answered' | 'sent' | 'leave';
-export const SOUND_NAMES: readonly SoundName[] = ['answered', 'sent', 'leave'];
+export type SoundName = 'answered' | 'sent' | 'leave' | 'tear';
+export const SOUND_NAMES: readonly SoundName[] = ['answered', 'sent', 'leave', 'tear'];
 
 const FILES: Record<SoundName, number> = {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -36,8 +38,15 @@ const FILES: Record<SoundName, number> = {
   sent: require('../../assets/sounds/sent.m4a'),
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   leave: require('../../assets/sounds/leave.m4a'),
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  tear: require('../../assets/sounds/tear.m4a'),
 };
-const URIS: Record<SoundName, string> = { answered: ANSWERED_DATA_URI, sent: SENT_DATA_URI, leave: LEAVE_DATA_URI };
+const URIS: Record<SoundName, string> = {
+  answered: ANSWERED_DATA_URI,
+  sent: SENT_DATA_URI,
+  leave: LEAVE_DATA_URI,
+  tear: TEAR_DATA_URI,
+};
 
 export const soundSource = (name: SoundName, os: string = Platform.OS): AudioSource | number =>
   os === 'ios' ? { uri: URIS[name] } : FILES[name];

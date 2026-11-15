@@ -197,7 +197,7 @@ export default function SettingsTab() {
           testID="settings-sounds"
           icon="speaker.wave.2.fill"
           label="Sound effects"
-          detail="Soft chimes when a request goes out, when it's answered, and when it's time to leave"
+          detail="Soft chimes for requests and leaving, a paper tear on save"
           value={settings.sounds}
           onChange={(sounds) => {
             update({ sounds });
