@@ -11,9 +11,9 @@ export const textStyles = {
   /** Screen and sheet titles. */
   title: {
     fontFamily: fonts.title,
-    fontSize: 30,
-    lineHeight: 34,
-    letterSpacing: -1,
+    fontSize: 32,
+    lineHeight: 38,
+    letterSpacing: -1.1,
   },
   /** A route's name in a bar ("DFW → LGA"). */
   routeTitle: {

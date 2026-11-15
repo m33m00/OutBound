@@ -955,3 +955,16 @@ Same layout. What changed is the words and the weight of the quiet parts.
 - Shorter: Requests footer "Answers are anonymous.", empty My Trips "Saved routes and answered requests show up here.", empty saved routes "Tap the bookmark on a route to keep it here.", empty Requests "Asks about your airline's flights show up here.", credits "Demo credits. Nothing is charged.", plan picker "Demo only. Nothing is charged.", location card "Only used to pick the closest airport." Logbook drops its footer; the add-flight privacy line keeps only what's kept from a pass.
 - Type: secondary lines (the small style) are regular weight instead of medium, so they sit back under what they describe. Headings are tracked in a touch (-0.3), since Sora runs wide.
 - Kept on purpose: attributions (Logo.dev, NOAA, AeroDataBox), the airline independence line, report anonymity, error and denied-permission lines. "Departure Time" stays as John named it.
+
+## Round 207 (Nov 15): first-party calm, fewer containers, Home tab
+
+John: "I cant tell any difference" (about 206). "Less containers where you think it makes sense. It needs to look like an app Apple, Anthropic or OpenAI made." "Search button should be a Home button instead."
+
+Same layout. What changed is what you see on every screen:
+
+- Grays are true neutral now (page #f5f5f7, text #1c1c1f, secondary #6b6b72; dark mode near-black with gray cards), so boarding blue is the only color with a hue and the app stops reading blue-gray.
+- Cards: grouped lists (Settings, Logbook totals) have no outline in light mode, just a white card on the page gray with a very soft shadow; dark mode keeps a hairline. Result tickets keep a hairline edge (round 150) but it's much lighter, with a softer, wider shadow, and a little more room between them.
+- Containers that only grouped are gone: the box around the results banner ("7 departures in the next 5 hours"), the card around empty states, the tinted circles behind section icons in My Trips and the tinted tiles behind Settings row icons, the count chip beside a section title. Kept where they do a job: tickets, each leg's tappable box, the Leave By card, the filled main button, the canceled nonstop's red card, the count pills John asked for (round 195), the area code chips (round 202).
+- Type: page titles 32pt (from 30); Settings row values regular weight instead of semibold; tab labels medium instead of semibold.
+- Tab bar: hairline top in the line gray. The Search tab is Home (house icon), and the back pill on results says Home. Same screen.
+- Before and after drawings (from the app's own sizes and colors, not phone screenshots): outbound-design/r207_*_before_after.png in project files.

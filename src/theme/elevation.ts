@@ -7,7 +7,7 @@ import type { ViewStyle } from 'react-native';
  */
 export const elevation = {
   /** Result rows, saved route cards. */
-  card: { shadowOpacity: 0.07, shadowRadius: 14, shadowOffset: { width: 0, height: 4 }, elevation: 2 },
+  card: { shadowOpacity: 0.05, shadowRadius: 16, shadowOffset: { width: 0, height: 4 }, elevation: 1 },
   /** Things that float over the map: banners, the search drawer's cards. */
   raised: { shadowOpacity: 0.12, shadowRadius: 18, shadowOffset: { width: 0, height: 6 }, elevation: 4 },
 } as const satisfies Record<string, ViewStyle>;

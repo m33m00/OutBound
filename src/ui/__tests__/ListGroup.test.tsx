@@ -23,7 +23,7 @@ describe('ListGroup and ListRow', () => {
     mockFontScale = 1;
   });
 
-  it('groups, empty states and the logbook totals share one card look: card edge, lifted in light (round 163)', () => {
+  it('groups and the logbook totals share one card look, lifted in light with no edge; empty states sit on the page (rounds 163, 207)', () => {
     act(() => {
       r = create(
         <>
@@ -45,7 +45,13 @@ describe('ListGroup and ListRow', () => {
     expect(cards).toHaveLength(3);
     for (const card of cards) {
       const st = StyleSheet.flatten(card.props.style);
-      expect(st.borderColor).toBe(c.cardEdge);
+      if (card.props.testID === 'empty-state') {
+        // Round 207 (John: "Less containers"): no card behind an empty state.
+        expect(st.backgroundColor).toBeUndefined();
+        expect(st.borderWidth ?? 0).toBe(0);
+        continue;
+      }
+      expect(st.borderWidth).toBe(0);
       expect(st.backgroundColor).toBe(c.surface);
       expect(st.shadowOpacity).toBeGreaterThan(0);
     }

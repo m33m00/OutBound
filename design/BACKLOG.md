@@ -246,3 +246,4 @@ Each item names its owner. One item per work session. spec-keeper runs a pre-fli
 | 241 | Now line in the picked-day blue, rule a smidge thinner; no white circle behind the map's canceled X (round 204) | Done |
 | 242 | Map canceled X in a small light red circle like the cards; no line over Request Loads or under Leave by and Leave now (round 205) | Done |
 | 243 | Clean pass: cut helper and footer lines across Settings, Profile, Filters and empty states; quieter caption weight, tighter headings (round 206) | Done |
+| 244 | First-party calm: neutral grays, no outline on grouped cards, lighter ticket edge, no grouping boxes (banner, empty states, icon tiles), Search tab is Home (round 207) | Done |

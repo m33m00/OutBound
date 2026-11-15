@@ -12,19 +12,22 @@ export const colors = {
     // Surfaces
     // The Clean look (round 120, John picked look B on 2026-11-03): a pale page, white floating
     // cards, quiet tinted boxes inside them and one accent: boarding blue since round 139.
-    bg: '#f4f6f9',
+    // Round 207 (John: "look like an app Apple, Anthropic or OpenAI made", "Less containers"): the blue-gray
+    // grays turned true neutral, like a first-party app, so the boarding blue is the only color with a hue.
+    bg: '#f5f5f7',
     surface: '#ffffff',
-    surface2: '#f3f6fa',
-    line: '#dfe5ec',
-    line2: '#cbd4de',
-    // A result card's own edge, darker than the lines inside it so each ticket stands apart (round 150, John).
-    cardEdge: '#bfcad6',
+    surface2: '#f2f2f5',
+    line: '#e6e6eb',
+    line2: '#d4d4da',
+    // A result card's own edge, a touch darker than the lines inside it so each ticket stands apart (round 150,
+    // John). Soft since round 207: the shadow and the page gray do most of the separating now.
+    cardEdge: '#dcdce2',
 
     // Text
-    text: '#101824',
-    muted: '#56657a',
-    // Darker than the prototype #66758a to meet 4.5:1 (Q-006).
-    faint: '#5f6e83',
+    text: '#1c1c1f',
+    muted: '#6b6b72',
+    // Meets 4.5:1 on white and on the page gray (Q-006).
+    faint: '#6b6b72',
 
     // A card's header panel: the same white as the card in the Clean look.
     ink: '#ffffff',
@@ -102,19 +105,20 @@ export const colors = {
     timeVeryLate: '#c0262b',
   },
   dark: {
-    bg: '#0b1119',
-    surface: '#111a25',
-    surface2: '#172231',
-    line: '#1f2c3b',
-    line2: '#2a3a4d',
-    cardEdge: '#3a4e66',
+    // Neutral since round 207, like the light grays: near-black page, raised gray cards.
+    bg: '#0b0b0c',
+    surface: '#1b1b1e',
+    surface2: '#242428',
+    line: '#2a2a2f',
+    line2: '#38383e',
+    cardEdge: '#34343a',
 
-    text: '#e8eef5',
-    muted: '#9cadc0',
-    faint: '#8d9db0',
+    text: '#f2f2f4',
+    muted: '#a1a1a8',
+    faint: '#95959c',
 
     // A card's header panel: the same as the card in the Clean look (round 120).
-    ink: '#111a25',
+    ink: '#1b1b1e',
 
     accent: '#7aa7ff',
     onAccent: '#0a1530',

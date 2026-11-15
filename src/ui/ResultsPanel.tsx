@@ -206,7 +206,7 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
   const topRow = (
     <View style={[styles.bar, styles.pad, { borderBottomColor: c.line }]} testID="results-bar">
       <CenteredTitleRow
-        left={<BackButton label={tight ? '' : 'Search'} onPress={p.onBack} accessibilityLabel="Back to search" />}
+        left={<BackButton label={tight ? '' : 'Home'} onPress={p.onBack} accessibilityLabel="Back to home" />}
         title={
           <Text
             ref={listTitleRef}
@@ -952,7 +952,8 @@ const styles = StyleSheet.create({
   routeEndsLine: { flex: 1, height: 1 },
   filters: { alignSelf: 'flex-end' },
   // A little more air between tickets so each one reads as its own (round 150, John).
-  sep: { height: spacing.group + 4 },
+  // A little more again in round 207, so the list breathes like a first-party app.
+  sep: { height: spacing.section + 2 },
   state: { paddingVertical: spacing.page, gap: spacing.section, alignItems: 'flex-start' },
   loading: { flexDirection: 'row', alignItems: 'center', gap: spacing.group },
   loadingBlock: { paddingVertical: spacing.section, gap: spacing.group },

@@ -1143,7 +1143,8 @@ const styles = StyleSheet.create({
   strongBorder: {
     borderWidth: 2,
   },
-  liftLight: { shadowOpacity: 0.1, shadowRadius: 10, shadowOffset: { width: 0, height: 3 } },
+  // Soft and wide since round 207, so a ticket floats rather than sits in a box.
+  liftLight: { shadowOpacity: 0.06, shadowRadius: 16, shadowOffset: { width: 0, height: 4 } },
   flatDark: { shadowOpacity: 0 },
   edge: {
     width: EDGE_W,

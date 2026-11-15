@@ -30,7 +30,7 @@ export function AtAirportCard({ code, upcoming, onBoard, onReport, onDismiss }: 
       style={[styles.card, elevation.card, { backgroundColor: c.surface, borderColor: c.line, shadowColor: c.text }]}
       testID="at-airport-card">
       {/* Gray, not the accent: the icon isn't the tap (round 139). */}
-      <View style={[styles.icon, { backgroundColor: c.surface2 }]}>
+      <View style={styles.icon}>
         <Icon
           name="airplane.departure"
           size={16}

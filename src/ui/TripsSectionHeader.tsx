@@ -30,8 +30,9 @@ export function TripsSectionHeader({
   const c = useColors();
   return (
     <View style={[styles.wrap, rule && [styles.rule, { borderTopColor: c.line }]]} testID={testID}>
-      <View style={[styles.icon, { backgroundColor: c.surface2 }]}>
-        <Icon name={icon} size={16} tintColor={c.text} fallback={null} />
+      {/* A plain icon and count, no tinted circle or chip (round 207, John: "Less containers"). */}
+      <View style={styles.icon}>
+        <Icon name={icon} size={18} tintColor={c.muted} fallback={null} />
       </View>
       <View
         style={styles.titleLine}
@@ -42,7 +43,7 @@ export function TripsSectionHeader({
           {title}
         </Text>
         {count != null ? (
-          <View style={[styles.count, { backgroundColor: c.surface2 }]}>
+          <View style={styles.count}>
             <Text style={[styles.countText, { color: c.muted }]} maxFontSizeMultiplier={1.4}>
               {String(count)}
             </Text>
@@ -57,9 +58,9 @@ export function TripsSectionHeader({
 const styles = StyleSheet.create({
   wrap: { flexDirection: 'row', alignItems: 'center', gap: spacing.group, minHeight: 44 },
   rule: { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: spacing.page, marginTop: spacing.group },
-  icon: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+  icon: { width: 22, height: 32, alignItems: 'center', justifyContent: 'center' },
   titleLine: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.group },
   title: { fontSize: 20, lineHeight: 26, flexShrink: 1 },
-  count: { minWidth: 24, paddingHorizontal: 7, paddingVertical: 2, borderRadius: 999, alignItems: 'center' },
+  count: { paddingVertical: 2 },
   countText: { fontFamily: fonts.monoMedium, fontSize: 13, lineHeight: 17 },
 });

@@ -356,7 +356,7 @@ describe('ResultsPanel day and filters (Q-057)', () => {
     // Filters and Search are both pill buttons, so they share a height and a fully round shape.
     const flat = (st: unknown) => Object.assign({}, ...([st] as unknown[]).flat(5).filter(Boolean));
     const back = flat(
-      r!.root.find((n) => n.props.accessibilityLabel === 'Back to search' && typeof n.type === 'string').props.style,
+      r!.root.find((n) => n.props.accessibilityLabel === 'Back to home' && typeof n.type === 'string').props.style,
     );
     const filters = flat(r!.root.find((n) => n.props.testID === 'results-filters' && typeof n.type === 'string').props.style);
     expect(filters.minHeight).toBe(back.minHeight);
