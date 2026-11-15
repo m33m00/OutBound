@@ -11,7 +11,7 @@ name: Publish to Expo Go
 
 on:
   push:
-    branches: ['**']
+    branches: ['**', '!claude/shots-**']
   workflow_dispatch:
 
 concurrency:

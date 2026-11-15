@@ -1,0 +1,44 @@
+# Throwaway: renders the web build at phone size and saves pictures, for design before/after shots.
+# Lives only on claude/shots-* test copies; never meant for the official version.
+name: Design shots
+
+on:
+  push:
+    branches: ['claude/shots-**']
+
+permissions:
+  contents: read
+
+jobs:
+  shots:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        ref: [before, after]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Pick the version to draw
+        run: |
+          REF=$(grep "^${{ matrix.ref }}=" shots/refs.txt | cut -d= -f2)
+          cp -r shots /tmp/shots
+          git checkout -q "$REF"
+          echo "Drawing $REF"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx expo export --platform web --output-dir dist
+      - name: Take pictures
+        run: |
+          npx --yes http-server dist -p 8081 -s &
+          sleep 3
+          cd /tmp/shots && npm init -y >/dev/null && npm i playwright-core@1.49.1 >/dev/null
+          node shoot.mjs ${{ matrix.ref }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: shots-${{ matrix.ref }}
+          path: /tmp/shots/out
