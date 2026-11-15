@@ -81,8 +81,8 @@ export function friendlyAuthError(err: unknown): string {
   if (code === 'weak_password' || msg.includes('password should')) return 'Pick a stronger password.';
   if (code === 'over_email_send_rate_limit' || code === 'over_request_rate_limit' || msg.includes('rate limit'))
     return 'Too many tries. Wait a minute and try again.';
-  if (msg.includes('network') || msg.includes('fetch')) return 'Can’t reach OutBound right now. Check your connection.';
+  if (msg.includes('network') || msg.includes('fetch')) return 'Can’t reach Jaunt right now. Check your connection.';
   return 'Something went wrong. Try again.';
 }
 
-export const NOT_AIRLINE_EMAIL = 'Use your airline work email. OutBound is only for airline employees.';
+export const NOT_AIRLINE_EMAIL = 'Use your airline work email. Jaunt is only for airline employees.';

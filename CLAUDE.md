@@ -1,6 +1,6 @@
-# OutBound
+# Jaunt (repo name: OutBound)
 
-An iOS/Android app for airline employees who fly standby (nonrev): find routes home or out, see seat availability, and check real-time flight status, airport delays and weather. Personal/friends project, iPhone first.
+An iOS/Android app for airline employees who fly standby (nonrev): find routes home or out, see seat availability, and check real-time flight status, airport delays and weather. Personal/friends project, iPhone first. Renamed from OutBound to Jaunt on 2026-11-14; the Expo project, bundle IDs and repo keep the old name.
 
 Two people build it now: John (owner) and a friend, each working with their own Claude. Read this whole file before you change anything. Expo-specific rules are in `AGENTS.md` (imported at the end).
 
@@ -38,7 +38,7 @@ Full history in `design/DECISIONS.md`; these are the ones that come up most.
 - Text: read text black, secondary text gray. **Blue (boarding blue) only for tappable things**, plus the current route dot and the picked card outline. **Amber means "you"** (your airports, your stuff).
 - Buttons must look like buttons, not tappable words. One filled main button style, one light tint for secondary.
 - Consistent formats and font sizes everywhere. Cards can be taller and text bigger if it helps.
-- One font family (round 200, John picked Sora): Sora for all text and titles, Geist Mono only for times, flight numbers and other figures that must line up, Big Shoulders only for the OutBound wordmark. Weights come from `src/theme/fonts.ts`; don't add another family. Manrope (round 199) was dropped because it looked almost the same as Geist.
+- One font family (round 200, John picked Sora): Sora for all text and titles, Geist Mono only for times, flight numbers and other figures that must line up. The Jaunt wordmark is a drawing, not text: use `JauntWordmark` (`src/brand/`), never type the name in a brand font. Weights come from `src/theme/fonts.ts`; don't add another family. Manrope (round 199) was dropped because it looked almost the same as Geist.
 - Animations must mean something (round 198): they show what just changed or where something went, never decoration. Use `src/ui/motion.ts` (useChangePop, useCountRoll, glideNextLayout) or `Pop`. Never on first show, sway toned down, transitions glide not cut, and Reduce Motion means fade only, nothing moves.
 - One corner radius everywhere (round 198): `radius.all` (14) for every card, ticket, leg box, button, field, sheet, banner, popup, tile and checkbox, nested ones too. Only pills (`radius.pill`) and circles (logo badges, dots, round icons) stay fully round. No other radius numbers.
 - Sounds are subtle and only on key moments (round 197): a soft two-note chime when your load request is answered, one light tap when a request goes out, and a three-note falling chime when Leave by turns to Leave now on screen. Nothing jokey, nothing on ordinary taps. All behind Settings > Display > Sound effects. New sounds are original (design/chimes-synth.py), mixed quiet.
@@ -90,6 +90,10 @@ Full history in `design/DECISIONS.md`; these are the ones that come up most.
 - No scraping airline websites or employee portals.
 - Airline logos come only from Logo.dev with the publishable key from `LOGO_DEV_KEY`; keep the Logo.dev credit in Settings.
 - Membership is a demo only: no real payments.
+
+**Brand**
+
+- The app is Jaunt. Wordmark: lowercase "jaunt" with the t's crossbar as a contrail rising into a small plane (`src/brand/jauntMark.ts`, made by `design/assets/make-jaunt.py`; don't hand-edit). App icon: white tall t with the contrail and plane on boarding blue. The launch intro draws the same wordmark.
 
 ## Agent team
 

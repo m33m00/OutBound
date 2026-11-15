@@ -62,7 +62,7 @@ export function PassScanner({ visible, now, onScanned, onClose }: PassScannerPro
           <Icon name="camera" size={28} tintColor={c.text} fallback={null} />
         </View>
         <Text lineBreakStrategyIOS="push-out" style={[textStyles.heading, styles.center, { color: c.text }]}>
-          Camera is off for OutBound
+          Camera is off for Jaunt
         </Text>
         <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, styles.center, { color: c.muted }]}>
           It reads the barcode on your boarding pass. Nothing is saved but the flight.

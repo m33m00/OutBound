@@ -968,3 +968,11 @@ Same layout. What changed is what you see on every screen:
 - Type: page titles 32pt (from 30); Settings row values regular weight instead of semibold; tab labels medium instead of semibold.
 - Tab bar: hairline top in the line gray. The Search tab is Home (house icon), and the back pill on results says Home. Same screen.
 - Before and after drawings (from the app's own sizes and colors, not phone screenshots): outbound-design/r207_*_before_after.png in project files.
+
+## Name and brand: Jaunt (2026-11-14, John)
+- The app is renamed from OutBound to **Jaunt** (John: "Can we rename the app to Jaunt with the line ontop of the T slanted and with an airplace logo almost looking like a jetstream behind it"). Display name, wordmark, launch intro, app icon and in-app text say Jaunt. The Expo project (slug `outbound`, account `outboundapp`), bundle IDs, URL scheme, the GitHub repo and the legal site address stay as they are for now.
+- Wordmark (logo round 2, option 3, John: "I like 3"): lowercase "jaunt" in Sora SemiBold; the t's crossbar is a contrail that tilts up to the right and widens toward a small plane flying just ahead of it. Letters in the text color, contrail and plane in boarding blue. Drawn with Skia from `src/brand/jauntMark.ts` (made by `design/assets/make-jaunt.py`), so it's the same shape everywhere.
+- App icon (round 1's tall t, John: "with the app icon of the T with the trail and plane like option 1"): white tall t with the contrail on top and the plane, on boarding blue.
+- Launch intro (John: "Roll with that"): the plane flies in drawing its contrail, which lands as the t's crossbar while "jaunt" rises in letter by letter, then the plane takes off and the blue panel lifts away into the app. Reduce Motion: the finished wordmark, then a fade. Panel is boarding blue to match the icon.
+- Big Shoulders is no longer used for the wordmark.
+- Not yet checked: whether the name Jaunt is clear to use (trademark, App Store).

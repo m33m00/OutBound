@@ -50,7 +50,7 @@ export default function AccountScreen() {
         {preview ? (
           <>
             <ListGroup>
-              <ListRow label="Looking around" detail="This preview build lets you use OutBound without an account." />
+              <ListRow label="Looking around" detail="This preview build lets you use Jaunt without an account." />
             </ListGroup>
             <Button label="Create Account or Log In" onPress={() => account.logOut()} />
           </>

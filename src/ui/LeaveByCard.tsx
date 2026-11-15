@@ -112,7 +112,7 @@ export function LeaveByCard(p: LeaveByCardProps) {
   const note = departed
     ? null
     : p.locationStatus === 'denied'
-      ? 'Location is off for OutBound. Turn it on in iPhone Settings to get a drive estimate.'
+      ? 'Location is off for Jaunt. Turn it on in iPhone Settings to get a drive estimate.'
       : p.locationStatus === 'locating'
         ? 'Finding your location…'
         : null;

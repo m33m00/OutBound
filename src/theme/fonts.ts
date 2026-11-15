@@ -6,7 +6,7 @@ import { GeistMono_500Medium, GeistMono_600SemiBold } from '@expo-google-fonts/g
  * Sora for everything you read and every title (round 200, John picked it: "Unique clean font too", then
  * "Sora" after Manrope in round 199 looked almost the same as Geist). Open-licensed, wide and round, so the app
  * reads as its own. Geist Mono stays for times and flight numbers so digits line up row to row. Big Shoulders
- * stays only for the OUTBOUND wordmark.
+ * was for the old OutBound wordmark; the Jaunt wordmark is a drawing (src/brand).
  *
  * In React Native each weight is its own family name, so pick a family
  * instead of setting `fontWeight` (a bare fontWeight falls back to the system font on iOS).

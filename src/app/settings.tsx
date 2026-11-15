@@ -125,7 +125,7 @@ export default function SettingsScreen() {
             </View>
             <SectionFooter>
               {status === 'denied'
-                ? 'Location is off for OutBound. Turn it on in iPhone Settings, then try again.'
+                ? 'Location is off for Jaunt. Turn it on in iPhone Settings, then try again.'
                 : // The switch's hint already says what it's for (round 65), so the footer keeps the privacy line.
                   'Only used while the app is open.'}
             </SectionFooter>

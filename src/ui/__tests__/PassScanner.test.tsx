@@ -51,6 +51,6 @@ describe('PassScanner', () => {
     await act(async () => {
       r = create(<PassScanner visible now={NOW} onScanned={() => {}} onClose={() => {}} />);
     });
-    expect(texts()).toEqual(expect.arrayContaining(['Camera is off for OutBound', 'Open Settings']));
+    expect(texts()).toEqual(expect.arrayContaining(['Camera is off for Jaunt', 'Open Settings']));
   });
 });
