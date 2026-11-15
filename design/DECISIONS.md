@@ -976,3 +976,11 @@ Same layout. What changed is what you see on every screen:
 - Launch intro (John: "Roll with that"): the plane flies in drawing its contrail, which lands as the t's crossbar while "jaunt" rises in letter by letter, then the plane takes off and the blue panel lifts away into the app. Reduce Motion: the finished wordmark, then a fade. Panel is boarding blue to match the icon.
 - Big Shoulders is no longer used for the wordmark.
 - Not yet checked: whether the name Jaunt is clear to use (trademark, App Store).
+
+## Round 208 (Nov 15): blue Departed pill, the plane and contrail in the route title
+
+John: "Can you change the departed pill to be the same blue color." "When I search a market instead of having an arrow can it be like the airplane and trail like our app design instead of an arrow."
+
+- Departed is a solid boarding-blue pill with white words, the same blue as the picked day and the Now line. Arrived stays graphite. (A second exception to "blue means tap", like the Now line, because John asked for it.)
+- The results title ("DFW → LGA") has the Jaunt plane and contrail between the two codes instead of the arrow, in the blue it has in the wordmark. It's an image drawn from the wordmark's own shapes (design/assets/make-trail-mark.py writes assets/images/trail-mark.png at 1x to 3x, white on clear) and tinted in the app, 44 by 14pt, inline in the title so it still wraps and VoiceOver still reads "DFW to LGA".
+- Built on top of the Jaunt rename, so this test copy carries the rename too.

@@ -50,7 +50,8 @@ Full history in `design/DECISIONS.md`; these are the ones that come up most.
 - New time big; old time small and struck through, only in the header.
 - Time colors by lateness: green early, neutral on time, then yellow, orange, red as it gets later.
 - Durations always `5h 0m` style.
-- Departed pills are sky cyan, Arrived pills are graphite (round 201). On a results ticket the pill sits just left of Save at the top right, on the same line as the new times (a moved ticket's struck schedule sits above that line, round 202), so pills line up down the list whatever the times' length. A ticket whose flight has arrived is grayed out: its times, stops and route line fade, the pill and Save stay full strength. In the opened route, each leg keeps its own pill over its route line.
+- Departed pills are solid boarding blue with white words (round 208, John asked), Arrived pills are graphite (round 201). On a results ticket the pill sits just left of Save at the top right, on the same line as the new times (a moved ticket's struck schedule sits above that line, round 202), so pills line up down the list whatever the times' length. A ticket whose flight has arrived is grayed out: its times, stops and route line fade, the pill and Save stay full strength. In the opened route, each leg keeps its own pill over its route line.
+- The results title shows the Jaunt plane and contrail between the two codes, not an arrow (round 208), from assets/images/trail-mark.png tinted boarding blue.
 - Boarding time = departure minus 40 min domestic, minus 50 min international or widebody.
 
 **Availability**

@@ -5,6 +5,7 @@ import {
   Easing,
   ActivityIndicator,
   FlatList,
+  Image,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
   Pressable,
@@ -214,7 +215,7 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
             accessibilityRole="header"
             accessibilityLabel={routeSpoken}
             numberOfLines={2}>
-            {softArrows(routeTitle, c.faint)}
+            {trailTitle(routeTitle, c.accent)}
           </Text>
         }
         right={
@@ -700,18 +701,35 @@ function RouteEnds({ from, to }: { from: string; to: string }) {
   );
 }
 
-/** "DFW → LGA" with soft grey arrows so the codes lead (round 120, the Clean look). */
-function softArrows(title: string, accent: string) {
-  return title.split(' → ').flatMap((part, i) =>
-    i === 0
-      ? [part]
-      : [
-          <Text key={`a${i}`} style={{ color: accent }}>
-            {' → '}
-          </Text>,
-          part,
-        ],
-  );
+/** The Jaunt plane and its contrail, white on clear so it takes a tint (round 208; design/assets/make-trail-mark.py). */
+const TRAIL_MARK = require('../../assets/images/trail-mark.png');
+/** The mark's size in points, about the height of the route title's capitals. */
+export const TRAIL_MARK_SIZE = { width: 44, height: 14 } as const;
+
+/**
+ * "DFW", the plane and its contrail, "LGA" (round 208, John: "instead of having an arrow can it be like the
+ * airplane and trail like our app design"). The mark is the one from the Jaunt wordmark's t, in the boarding
+ * blue it has there, set inline so the title still wraps and reads as one header.
+ */
+function trailTitle(title: string, accent: string) {
+  return title
+    .split(' → ')
+    .flatMap((part, i) =>
+      i === 0
+        ? [part]
+        : [
+            ' ',
+            <Image
+              key={`t${i}`}
+              source={TRAIL_MARK}
+              style={[TRAIL_MARK_SIZE, { tintColor: accent }]}
+              accessibilityElementsHidden
+              importantForAccessibility="no"
+              testID="route-trail-mark"
+            />,
+            ` ${part}`,
+          ],
+    );
 }
 
 export function isHardPullDown(e: Pick<NativeScrollEvent, 'contentOffset'> & { velocity?: { x: number; y: number } }): boolean {

@@ -365,6 +365,29 @@ describe('ResultsPanel day and filters (Q-057)', () => {
     expect(filters.paddingHorizontal).toBe(back.paddingHorizontal);
   });
 
+  it('round 208 (John): the searched route shows the plane and contrail instead of an arrow', async () => {
+    const { request, list } = await results();
+    const state = { status: 'done' as const, request, results: list, hiddenCount: 0, hiddenResults: [], searchedAt: NOW };
+    await act(async () => {
+      r = create(
+        <ResultsPanel
+          state={state}
+          selectedId={null}
+          now={NOW}
+          onSelect={jest.fn()}
+          onBack={jest.fn()}
+          onRetry={jest.fn()}
+          days={dateChips('2026-10-19')}
+          onDay={jest.fn()}
+          onFilters={jest.fn()}
+        />,
+      );
+    });
+    const marks = r!.root.findAll((n) => n.props.testID === 'route-trail-mark' && typeof n.type === 'string');
+    expect(marks.length).toBeGreaterThan(0);
+    expect(texts().some((t) => t.includes('→'))).toBe(false);
+  });
+
   it('shows a red full pill beside the routes pill when some are full (round 195, John)', async () => {
     const { request, list } = await results();
     const marked = list.map((it, i) => (i === 0 ? { ...it, isFull: true } : it));

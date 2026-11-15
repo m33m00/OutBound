@@ -669,10 +669,10 @@ describe('ResultRow', () => {
       .map((n) => n.props.testID);
     expect(order).toEqual(['top-line', 'row-tag', 'row-action']);
     expect(row).toBeTruthy();
-    // Graphite, not Departed's cyan.
+    // Graphite, not Departed's boarding blue (round 208).
     const pill = host('row-tag').findAll((n) => typeof n.type === 'string')[1];
     expect(flat(pill.props.style).backgroundColor).toBe(colors.light.landedBg);
-    expect(colors.light.landedBg).not.toBe(colors.light.doneBg);
+    expect(colors.light.landedBg).not.toBe(colors.light.accent);
     // Everything but the pill and Save fades.
     expect(flat(host('top-line').props.style).opacity).toBe(ARRIVED_FADE);
     expect(flat(host('row-stops').props.style).opacity).toBe(ARRIVED_FADE);
@@ -1316,15 +1316,15 @@ describe('round 156 (John)', () => {
     expect(values.map(allText)).not.toContain('0');
   });
 
-  it('gives Departed and Arrived pills their own sky cyan, not gray', () => {
+  it('gives the Departed pill the boarding blue with white words (round 208)', () => {
     let r: ReactTestRenderer;
     act(() => {
-      r = create(<StatusTag label="Arrived" tone="gone" />);
+      r = create(<StatusTag label="Departed" tone="gone" />);
     });
     const pill = r!.root.findAll((n) => typeof n.type === 'string')[0];
     const style = Object.assign({}, ...([pill.props.style] as unknown[]).flat(5).filter(Boolean));
-    expect(style).toMatchObject({ backgroundColor: colors.light.doneBg, borderColor: colors.light.doneBg });
-    const word = r!.root.find((n) => typeof n.type === 'string' && n.props.children === 'Arrived');
-    expect(Object.assign({}, ...([word.props.style] as unknown[]).flat(5).filter(Boolean)).color).toBe(colors.light.done);
+    expect(style).toMatchObject({ backgroundColor: colors.light.accent, borderColor: colors.light.accent });
+    const word = r!.root.find((n) => typeof n.type === 'string' && n.props.children === 'Departed');
+    expect(Object.assign({}, ...([word.props.style] as unknown[]).flat(5).filter(Boolean)).color).toBe(colors.light.onAccent);
   });
 });
