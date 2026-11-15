@@ -1110,3 +1110,5 @@ John picked from the round 220 surfaces: "Something to do with the destination a
 ## Round 222 (Nov 15): landmark sketches off the tickets
 
 John: "Get rid of the backgrounds on the tickets I don't like it", "The landmark work". The landmark sketch per airport, the state-outline fallback and the draw-in animation are gone, with their images and generator. The faint paper grain and the warmer stub under the perforation stay; John can say if he wants those gone too. This is the third destination treatment taken back (stripe in 219, sketches in 221), so no destination art on tickets unless he asks.
+
+John, after round 222 went out: "Keep the grain". So the grain and warmer stub stay, and the repo guide now says tickets carry no destination stripes or landmark sketches.

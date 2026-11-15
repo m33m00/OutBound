@@ -44,6 +44,7 @@ Full history in `design/DECISIONS.md`; these are the ones that come up most.
 - Sounds are subtle and only on key moments (round 197): a soft two-note chime when your load request is answered, one light tap when a request goes out, and a three-note falling chime when Leave by turns to Leave now on screen. Nothing jokey, nothing on ordinary taps. All behind Settings > Display > Sound effects. New sounds are original (design/chimes-synth.py), mixed quiet.
 - **No middle dots (·) anywhere.** No "~" on estimates. Don't use the word "open".
 - No "follow the rules for sharing loads" footer.
+- Results tickets keep a plain faint paper grain and nothing else (round 222, John: "Keep the grain"). No destination colors or stripes (taken back in round 220) and no landmark sketches or other destination art (taken back in round 222).
 
 **Times and status**
 
