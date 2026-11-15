@@ -155,7 +155,7 @@ describe('RequestRow', () => {
     expect(label).not.toContain('now ');
   });
 
-  it('a canceled flight strikes its time and an answered delay shows the new time on the tag', async () => {
+  it('a canceled flight keeps its day and time with the Canceled pill, and an answered delay shows the new time on the tag', async () => {
     const [answered, waiting] = sampleMine(NOW);
     const canceled = {
       tag: { kind: 'canceled' as const, label: 'Canceled', spoken: 'Canceled, was 2:15 PM' },
@@ -186,8 +186,18 @@ describe('RequestRow', () => {
     const labels = r!.root
       .findAll((n) => n.props.testID === 'request-row' && n.props.onPress)
       .map((n) => n.props.accessibilityLabel as string);
-    expect(labels[0]).not.toContain('Departs');
-    expect(labels[0]).toContain('Canceled, was 2:15 PM');
+    // Round 217 (John: "you don't need to change the text to say Scheduled and crossed out"): the canceled ask reads
+    // like any other, day and time then when it was asked, with the Canceled pill under it.
+    const departs = r!.root.findAll((n) => typeof n.type === 'string' && n.props.testID === 'request-departs');
+    const canceledLine = lineTexts(departs[0]).join('');
+    expect(canceledLine).toMatch(/^(Today|Tomorrow|[A-Z][a-z]{2}, [A-Z][a-z]{2} \d+) \d+:\d\d\s?[AP]M \| asked /);
+    expect(canceledLine).not.toContain('Scheduled');
+    expect(
+      r!.root.findAll((n) => typeof n.type === 'string' && n.props.style?.textDecorationLine === 'line-through'),
+    ).toHaveLength(0);
+    expect(texts).toContain('Canceled');
+    expect(labels[0]).toContain('Departs');
+    expect(labels[0]).toMatch(/\. Canceled\. Waiting$/);
   });
 
   it('your own asks say Answered with the numbers, or Waiting, and offer no Answer button', async () => {
@@ -202,34 +212,45 @@ describe('RequestRow', () => {
     });
     const texts = hostTexts(r!);
     expect(texts).toEqual(expect.arrayContaining(['Answered', 'Waiting']));
-    // The numbers sit in a seat-colored pill with the seat and person icons, then "answered 2m ago" (round 164).
+    // The numbers sit in a seat-colored pill with the seat and person icons (round 164), over the Answered pill
+    // (round 217, John: "Move the load count ... ontop of the answered pill").
     const pill = r!.root.findAll((n) => typeof n.type === 'string' && n.props.testID === 'request-counts');
     expect(pill).toHaveLength(1);
     const pillTexts = pill[0]
       .findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string')
       .map((n) => n.props.children);
     expect(pillTexts).toEqual([String(answered.answer!.open), '/', String(answered.answer!.listed)]);
-    // Round 216 (John: "Yes fix all and add dates to the flights"): when it was answered follows the numbers, and
-    // when it was asked follows the flight's day and time, on the same line, so the rows line up.
-    const ages = r!.root
-      .findAll((n) => typeof n.type === 'string' && n.props.testID === 'request-age')
-      .map((n) => String(n.props.children));
-    expect(ages).toHaveLength(1);
-    expect(ages[0]).toMatch(/^answered (\d+[mhd] ago|just now)$/);
+    const side = r!.root.findAll((n) => typeof n.type === 'string' && n.props.testID === 'request-side');
+    const answeredSide = side[0].findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string');
+    const order = answeredSide.map((n) => n.props.children);
+    expect(order.indexOf('/')).toBeLessThan(order.indexOf('Answered'));
+    // Round 217 (John: "remove the timestamp of when it was answered"): the answered ask shows its day and time like
+    // the waiting one, with no "answered 2m ago"; the waiting one still says when it was asked.
     const departs = r!.root.findAll((n) => typeof n.type === 'string' && n.props.testID === 'request-departs');
-    expect(departs).toHaveLength(1);
-    const line = lineTexts(departs[0]).join('');
-    expect(line).toMatch(/^(Today|Tomorrow|[A-Z][a-z]{2}, [A-Z][a-z]{2} \d+) \d+:\d\d\s?[AP]M \| asked /);
+    expect(departs).toHaveLength(2);
+    const dayTime = /^(Today|Tomorrow|[A-Z][a-z]{2}, [A-Z][a-z]{2} \d+) \d+:\d\d\s?[AP]M/;
+    const answeredLine = lineTexts(departs[0]).join('');
+    expect(answeredLine).toMatch(new RegExp(`${dayTime.source}$`));
+    expect(hostTexts(r!).some((t) => /answered/.test(String(t)))).toBe(false);
+    expect(lineTexts(departs[1]).join('')).toMatch(new RegExp(`${dayTime.source} \\| asked `));
+    // The flight number and market stay on one line, shrinking to fit instead of wrapping.
+    const titles = r!.root.findAll((n) => typeof n.type === 'string' && n.props.testID === 'request-title');
+    expect(titles).toHaveLength(2);
+    for (const t of titles) {
+      expect(t.props.numberOfLines).toBe(1);
+      expect(t.props.adjustsFontSizeToFit).toBe(true);
+    }
     // Both rows lead with the round airline badge.
     expect(
       r!.root.findAll((n) => ['airline-mark', 'airline-logo'].includes(n.props.testID) && typeof n.type === 'string').length,
     ).toBeGreaterThanOrEqual(2);
     expect(r!.root.findAll((n) => n.props.testID === 'answer-request')).toHaveLength(0);
-    // VoiceOver hears "answered" once (in the detail), and Waiting at the end.
+    // VoiceOver hears the numbers, the day and time, then Answered or Waiting at the end; never when it was answered.
     const labels = r!.root
       .findAll((n) => n.props.accessible && typeof n.props.accessibilityLabel === 'string')
       .map((n) => String(n.props.accessibilityLabel));
-    expect(labels.some((l) => /answered .*\. Answered$/.test(l))).toBe(false);
+    expect(labels.some((l) => /Departs .*\. Answered$/.test(l))).toBe(true);
+    expect(labels.some((l) => /answered \d/.test(l))).toBe(false);
     expect(labels.some((l) => l.endsWith('. Waiting'))).toBe(true);
   });
 });

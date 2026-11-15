@@ -1,7 +1,6 @@
 import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
 import {
-  answeredAgo,
   answerTier,
   liveRequestDetail,
   requestDepartsLine,
@@ -34,6 +33,9 @@ export interface RequestRowProps {
   leg?: LegStatusView | null;
 }
 
+/** How far the flight number and market may shrink to stay on one line (round 217). */
+const TITLE_MIN_SCALE = 0.7;
+
 /** From this text size the button or badge moves under the text, so the flight never squeezes. */
 const STACK_AT_FONT_SCALE = 1.3;
 
@@ -51,8 +53,7 @@ export function RequestRow({ request, now, mine, onAnswer, onOpen, leg }: Reques
   const answered = request.answer != null;
   const tier = request.answer ? answerTier(request.answer) : null;
   const status = mine ? (answered ? 'Answered' : 'Waiting') : null;
-  // The detail already says "answered 2m ago", so VoiceOver only adds Waiting.
-  const spokenStatus = status === 'Waiting' ? status : null;
+  const spokenStatus = status;
   // Waiting: the old time struck, then the new time that matters now.
   const tag = leg?.tag ?? null;
   const live = liveRequestDetail(
@@ -62,22 +63,17 @@ export function RequestRow({ request, now, mine, onAnswer, onOpen, leg }: Reques
   );
   // Answered rows show the tier line, so the new time rides on the tag instead.
   const tagLabel = tag && answered && leg?.newText ? `${tag.label}, now ${leg.newText}` : tag?.label;
-  // The detail line already says the new and old times, so the tag only adds the delay.
-  const tagSpoken = tag ? (live && tag.kind === 'delayed' ? tag.spoken.split(', was ')[0] : tag.spoken) : null;
+  // The detail line already says the new and old times, so the tag only adds the delay; a canceled flight's
+  // line keeps its own time, so the tag only adds Canceled.
+  const tagSpoken = tag
+    ? (live && tag.kind === 'delayed') || tag.kind === 'canceled'
+      ? tag.spoken.split(', was ')[0]
+      : tag.spoken
+    : null;
   const label = forSpeech([title, live ? live.spoken : detail, tagSpoken, spokenStatus].filter(Boolean).join('. '));
-  // When it was asked or answered, on the same line as the flight's day and time, so every row lines up (round 216,
-  // John: "Yes fix all").
-  const age = request.answer ? answeredAgo(request.answer, now) : `asked ${formatAge(request.askedAt, now)}`;
-  const ageText = (
-    <Text
-      style={[textStyles.small, { color: c.muted }]}
-      numberOfLines={1}
-      importantForAccessibility="no-hide-descendants"
-      accessibilityElementsHidden
-      testID="request-age">
-      {age}
-    </Text>
-  );
+  // When it was asked, on the same line as the flight's day and time (round 216). An answered ask shows no time
+  // stamp at all (round 217, John: "remove the timestamp of when it was answered").
+  const age = request.answer ? null : `asked ${formatAge(request.askedAt, now)}`;
   const divider = <Text style={[textStyles.small, { color: c.line2 }]}>{INLINE_DIVIDER}</Text>;
   const body = (
     <>
@@ -90,39 +86,41 @@ export function RequestRow({ request, now, mine, onAnswer, onOpen, leg }: Reques
         style={stacked ? styles.textStacked : styles.text}
         accessible={!onOpen}
         accessibilityLabel={onOpen ? undefined : label}>
-        <Text lineBreakStrategyIOS="push-out" style={[textStyles.heading, { color: c.text }]}>
+        {/* Flight number and market stay on one line, shrinking a little to fit rather than wrapping (round 217,
+            John: "Can we make sure it doesn't wrap?"). */}
+        <Text
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={TITLE_MIN_SCALE}
+          style={[textStyles.heading, { color: c.text }]}
+          testID="request-title">
           <Divided text={title} fontSize={textStyles.heading.fontSize} />
         </Text>
         <View style={styles.detailLine}>
-          {tier && request.answer ? (
-            // The answer as the route line shows seats: seat and person icons over the numbers,
-            // in the seat color, in one pill (round 164; "just color and seat availability").
-            <>
-              <SeatCountPill open={request.answer.open} listed={request.answer.listed} tier={tier} testID="request-counts" />
-              {ageText}
-            </>
-          ) : null}
-          {/* The day and time it leaves, then when it was asked (round 216). */}
-          {tier && request.answer ? null : (
-            <Text
-              lineBreakStrategyIOS="push-out"
-              style={[textStyles.small, styles.detail, { color: c.muted }]}
-              testID="request-departs">
-              {live ? (
-                <>
-                  {live.prefix}
-                  {/* The old time sits struck before the new one (John, 2026-10-30). */}
-                  {live.struck ? <Text style={styles.struck}>{live.struck}</Text> : null}
-                  {live.time && live.struck ? '\u00a0' : null}
-                  {live.time ? <Text style={{ color: c.text, fontFamily: fonts.bodySemiBold }}>{live.time}</Text> : null}
-                </>
-              ) : (
-                requestDepartsLine(request, now)
-              )}
-              {divider}
-              {age}
-            </Text>
-          )}
+          {/* The day and time it leaves, then when it was asked (round 216); answered asks show the day and time
+              alone, like the others (round 217). */}
+          <Text
+            lineBreakStrategyIOS="push-out"
+            style={[textStyles.small, styles.detail, { color: c.muted }]}
+            testID="request-departs">
+            {live ? (
+              <>
+                {live.prefix}
+                {/* The old time sits struck before the new one (John, 2026-10-30). */}
+                {live.struck ? <Text style={styles.struck}>{live.struck}</Text> : null}
+                {live.time && live.struck ? '\u00a0' : null}
+                {live.time ? <Text style={{ color: c.text, fontFamily: fonts.bodySemiBold }}>{live.time}</Text> : null}
+              </>
+            ) : (
+              requestDepartsLine(request, now)
+            )}
+            {age ? (
+              <>
+                {divider}
+                {age}
+              </>
+            ) : null}
+          </Text>
         </View>
         {tag ? (
           <View style={styles.tagLine}>
@@ -130,7 +128,13 @@ export function RequestRow({ request, now, mine, onAnswer, onOpen, leg }: Reques
           </View>
         ) : null}
       </View>
-      <View style={[styles.side, stacked && styles.sideStacked]}>
+      <View style={[styles.side, stacked && styles.sideStacked]} testID="request-side">
+        {tier && request.answer ? (
+          // The answer as the route line shows seats: seat and person icons over the numbers, in the seat color, in
+          // one pill (round 164), sitting over the Answered pill (round 217, John: "Move the load count ... ontop of
+          // the answered pill").
+          <SeatCountPill open={request.answer.open} listed={request.answer.listed} tier={tier} testID="request-counts" />
+        ) : null}
         {status ? (
           <View
             style={[styles.badge, { backgroundColor: answered ? c.goodBg : c.surface2 }]}

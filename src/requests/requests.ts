@@ -161,7 +161,8 @@ export const answeredAgo = (a: LoadAnswer, now: number) => `${a.byYou ? 'you ans
 
 /** Second line of a request row. */
 export function requestDetail(r: LoadRequest, now: number): string {
-  if (r.answer) return `${answerText(r.answer)} · ${answeredAgo(r.answer, now)}`;
+  // When it was answered isn't shown or spoken (round 217, John: "remove the timestamp of when it was answered").
+  if (r.answer) return `${answerText(r.answer)} · ${departsText(r.flight, now)}`;
   return `${departsText(r.flight, now)} · asked ${formatAge(r.askedAt, now)}`;
 }
 
@@ -176,9 +177,9 @@ export interface RequestLive {
 export interface LiveRequestDetail {
   /** Muted words before the time: "Departs ", "Departs tomorrow ", "Scheduled ". */
   prefix: string;
-  /** The time that matters now, in full text color; null when there is none (canceled). */
+  /** The time that matters now, in full text color. */
   time: string | null;
-  /** The scheduled time, small and struck after it (delayed, canceled). */
+  /** The scheduled time, small and struck before the new one (delayed). */
   struck: string | null;
   /** " · asked 20m ago" */
   tail: string;
@@ -189,8 +190,8 @@ const nb = (s: string) => s.replace(/ /g, '\u00a0');
 
 /**
  * Lead with what matters now (John, 2026-10-30): a delay shows the new time
- * with the scheduled one struck after it; a canceled flight strikes the time;
- * a flight that left says Scheduled, not a future "Departs". Null: no change.
+ * with the scheduled one struck after it; a flight that left says Scheduled,
+ * not a future "Departs". Null: no change (a canceled flight too, round 217).
  */
 export function liveRequestDetail(r: LoadRequest, now: number, live: RequestLive | null): LiveRequestDetail | null {
   if (!live || r.answer) return null;
@@ -210,9 +211,10 @@ export function liveRequestDetail(r: LoadRequest, now: number, live: RequestLive
         spoken: `Departs ${day} ${time}, scheduled ${live.scheduledText}, asked ${asked}`,
       };
     }
+    // A canceled flight keeps its day and time like any other ask; the Canceled pill says the rest (round 217,
+    // John: "you don't need to change the text to say Scheduled and crossed out").
     case 'canceled':
-      // The tag says "Canceled, was 2:15 PM", so speech only adds when it was asked.
-      return { prefix: 'Scheduled ', time: null, struck: nb(live.scheduledText), tail, spoken: `asked ${asked}` };
+      return null;
     // A diverted flight left on its time and goes on late; its departure isn't struck (John, 2026-11-01).
     case 'diverted':
     case 'departed':

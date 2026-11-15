@@ -87,8 +87,9 @@ describe('request words', () => {
     const a = { open: 21, listed: 3, at: NOW - 5 * 60_000 };
     expect(answerTier(a)).toBe('good');
     expect(answerText(a)).toBe('21 seats · 3 listed');
-    expect(requestDetail({ ...req, answer: a }, NOW)).toBe('21 seats · 3 listed · answered 5m ago');
-    expect(requestDetail({ ...req, answer: { ...a, byYou: true } }, NOW)).toBe('21 seats · 3 listed · you answered 5m ago');
+    // Round 217: no "answered 5m ago"; the numbers, then when the flight leaves.
+    expect(requestDetail({ ...req, answer: a }, NOW)).toMatch(/^21 seats · 3 listed · Departs .*\d+:\d\d\s?[AP]M$/);
+    expect(requestDetail({ ...req, answer: { ...a, byYou: true } }, NOW)).not.toContain('answered');
   });
 
   it('seats after the standby list', () => {

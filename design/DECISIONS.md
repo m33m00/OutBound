@@ -1059,3 +1059,12 @@ John sent the Requests tab ("what about this page") and, on the five things name
 - Each row's second line is the day and time it leaves, then when it was asked: "Today 7:20 AM | asked 48m ago", "Tomorrow 6:55 AM", "Tue, Nov 17 7:30 AM". An answered row reads its numbers, then "answered 2m ago". Nothing floats above the button.
 - "Answers are anonymous" is gone from under the list; the answer sheet already says reports are anonymous.
 - My Trips' own requests and the answer sheet's flight line show the day the same way.
+
+## Round 217 (Nov 15): request rows, steadier
+
+John, on the Requests and My Trips rows: "If a flight is canceled you don't need to change the text to say Scheduled and crossed out. Just keep it like the other request but leave the canceled pill there. Move the load count when a request is answered to ontop of the answered pill and remove the timestamp of when it was answered", then "it looks like the market is wrapping down. Can we make sure it doesn't wrap?"
+
+- A canceled flight's ask reads like any other ("Today 10:25 AM | asked 4m ago"), with the red Canceled pill under it. No "Scheduled", nothing struck.
+- An answered ask shows its day and time like the waiting ones ("Today 8:05 AM"), with no "answered 36m ago" anywhere, spoken or shown.
+- The seat count pill sits on the right, over the Answered pill (and on its own at the right in the Requests tab's "You answered" rows).
+- The flight number and market ("AA 2400 | LAX ✈ DFW") never wrap: one line, shrinking up to 30% to fit.
