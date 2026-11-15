@@ -1080,3 +1080,12 @@ John sent the opened DAL to MIA nonstop ("What's wrong with this page") and, on 
 - No seats reported: the small seat icon over a dash, not an empty ring.
 - The codes at the top of the opened route (DAL ✈ MIA) are plain text, as on every other page.
 - No line above the pinned Request Loads button.
+
+## Round 219 (Nov 15): Leave by on one line, tickets by destination
+
+John, on the Leave by card's "Arrive at DAL by 1:55 PM to begin boarding" running onto two lines: "I dont like the text wraps here". Then, of the four destination ticket mockups, option 1: "I like this one".
+
+- Leave by's lines are short enough for one line beside the car button: "Arrive at DAL by 1:55 PM" (boarding implied), "You're at DAL | Boarding at 11:20 AM". VoiceOver still hears the airport's full name and "Your flight begins boarding at ...".
+- Beside the buttons the line never wraps; if a button crowds it, it shrinks a touch (to 85% at most). Only at large text sizes can it split, and then the detail gets its own line.
+- Results tickets carry where they go: a thin (3pt) stripe of a muted destination color down the left edge and a faint tint of it under the perforation (9% in light mode, 14% in dark). Colors by region: coral for Florida, the islands and Hawaii, pine for the Rockies, amber for California and the Southwest, misty teal for the Northwest, slate for the Northeast, dusk plum for the Midwest, clay for Texas and the South, sand anywhere else. None is blue or red, and the seat-colored route line is unchanged.
+- Canceled, full, departed and arrived tickets keep their own look, with no stripe. The opened route card has none either.

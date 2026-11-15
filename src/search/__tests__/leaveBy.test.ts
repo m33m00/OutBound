@@ -39,8 +39,8 @@ describe('computeLeaveBy', () => {
     const r = run();
     expect(r).toEqual({ kind: 'beAt', airport: 'BNA', beAtUtc: DEP - 75 * MIN, bufferMin: 75 });
     expect(leaveByText(r, BNA.tz)).toEqual({
-      // John's words (round 159).
-      title: 'Arrive at BNA by 7:45 AM to begin boarding',
+      // John's words (round 159), boarding left implied so it fits one line (round 219).
+      title: 'Arrive at BNA by 7:45 AM',
       sub: '1h 15m early to list and clear security',
     });
   });
@@ -104,16 +104,17 @@ describe('computeLeaveBy', () => {
 
   it('says you are at the airport within 3 km', () => {
     const r = run({ location: { lat: BNA.lat + 0.01, lon: BNA.lon, at: EARLY } });
-    // The airport's name too (John, 2026-11-02), and boarding in his words (round 159).
+    // One short line on screen (round 219, John: "I dont like the text wraps here"); VoiceOver still hears the
+    // airport's name (John, 2026-11-02) and boarding in his words (round 159).
     expect(leaveByText(r, BNA.tz)).toEqual({
-      title: `You’re at BNA (${AIRPORTS.BNA.name})`,
+      title: 'You’re at BNA',
       // Boarding 40 minutes before a domestic departure (round 162, John).
-      sub: 'Your flight begins boarding at 8:20 AM',
+      sub: `${AIRPORTS.BNA.name}. Your flight begins boarding at 8:20 AM`,
     });
-    expect(leaveByShort(r, BNA.tz)).toBe('Your flight begins boarding at 8:20 AM');
+    expect(leaveByShort(r, BNA.tz)).toBe('Boarding at 8:20 AM');
     // International or widebody: 50 minutes.
     const long = run({ location: { lat: BNA.lat + 0.01, lon: BNA.lon, at: EARLY }, boardingMin: 50 });
-    expect(leaveByShort(long, BNA.tz)).toBe('Your flight begins boarding at 8:10 AM');
+    expect(leaveByShort(long, BNA.tz)).toBe('Boarding at 8:10 AM');
   });
 
   it('says leave now when it is already too late', () => {

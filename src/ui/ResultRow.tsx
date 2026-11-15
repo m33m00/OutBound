@@ -40,6 +40,7 @@ import { Divided, MetaLine } from './MetaLine';
 import { COUNT_ICON, MiniRoute } from './MiniRoute';
 import { snapshotCard, TearSourceProvider, type TearSource } from './TearAway';
 import { TearSwipe, TearSwipeCard } from './TearSwipe';
+import { destinationTone, TONE_COLOR, TONE_TINT_ALPHA, withAlpha } from '@/search/destinationTone';
 import { TicketTear } from './TicketTear';
 import { pressStyle } from './press';
 import { ScalePressable } from './ScalePressable';
@@ -628,6 +629,8 @@ export const ResultRow = memo(function ResultRow({
 }: ResultRowProps) {
   const c = useColors();
   const scheme = useColorSchemeName();
+  // Where the perforation's dashes sit on the ticket, so the destination tint starts there (round 219).
+  const [tintTop, setTintTop] = useState<number | null>(null);
   // The route card's header tears off along its perforation when you save it (round 126, John); this
   // hides the real header while its copy flies into My Trips, then eases it back.
   const stubRef = useRef<ComponentRef<typeof View>>(null);
@@ -695,6 +698,10 @@ export const ResultRow = memo(function ResultRow({
   // The card's edge color where it isn't picked; the tear's notches outline in it too. Red only for a
   // canceled nonstop; a full route keeps the plain edge (round 161, John: "No red border for a full flight").
   const edgeColor = canceledRoute ? c.canceled : c.cardEdge;
+  // Where the ticket goes, as a thin stripe down its left edge and a faint tint under the perforation (round 219,
+  // John picked option 1 of the mockups: "I like this one"). Only on a plain white ticket: a canceled, full,
+  // departed or arrived one keeps its own look.
+  const toneColor = lastLeg ? TONE_COLOR[destinationTone(lastLeg.to)] : null;
   // The card's paper: a canceled nonstop's red wash, a full or departed route's gray, else white.
   const paper = canceledRoute ? c.canceledTint : it.isFull || dimmed ? c.surface2 : c.surface;
   // Every value shows its age: the summary's comes from the leg that sets it.
@@ -714,6 +721,7 @@ export const ResultRow = memo(function ResultRow({
   // A ticket whose flight has arrived is grayed out (round 201, John: "If it arrived the card should be greyed
   // out as well"): everything on it fades except its Arrived pill and Save.
   const arrived = !large && rowTag?.tone === 'landed';
+  const showTone = !large && !selected && !!toneColor && !canceledRoute && !dimmed && !it.isFull && !arrived;
   const ageWords = summaryAge ? summaryAge[0].toLowerCase() + summaryAge.slice(1) : null;
   const cardAge = ageWords ? `Seats ${ageWords}` : null;
   // A moved time (John, 2026-11-02): the schedule sits small and struck on its own line above, and the big
@@ -994,8 +1002,20 @@ export const ResultRow = memo(function ResultRow({
         !dimmed && (scheme === 'dark' ? styles.flatDark : styles.liftLight),
         (highlight || canceledRoute) && styles.strongBorder,
       ]}>
-      {/* No colored edge since round 140: the route line carries each leg's color now, and a full route keeps
-          its red outline. */}
+      {/* No seat-colored edge since round 140: the route line carries each leg's color. Since round 219 a quiet
+          destination stripe and a faint tint under the perforation say where the ticket goes. */}
+      {showTone ? (
+        <>
+          {tintTop != null ? (
+            <View
+              pointerEvents="none"
+              style={[styles.toneTint, { top: tintTop, backgroundColor: withAlpha(toneColor!, TONE_TINT_ALPHA[scheme]) }]}
+              testID="ticket-tone-tint"
+            />
+          ) : null}
+          <View pointerEvents="none" style={[styles.toneEdge, { backgroundColor: toneColor! }]} testID="ticket-tone-edge" />
+        </>
+      ) : null}
       <View ref={ticketRef} style={large ? styles.ticket : styles.content}>
         {selected ? (
           // Route card A (John, 2026-10-31): the seat chip up top, the times, then one box per flight.
@@ -1104,7 +1124,14 @@ export const ResultRow = memo(function ResultRow({
                 </View>
               </Animated.View>
               {/* A boarding pass perforation between the times and the route (round 121, John). */}
-              <View ref={perfRef} collapsable={false}>
+              <View
+                ref={perfRef}
+                collapsable={false}
+                onLayout={(e) => {
+                  const { y, height } = e.nativeEvent.layout;
+                  const top = Math.round(y + height / 2);
+                  setTintTop((prev) => (prev === top ? prev : top));
+                }}>
                 <TicketTear
                   notch={c.bg}
                   edge={edgeColor}
@@ -1143,6 +1170,8 @@ export const ARRIVED_FADE = 0.45;
 
 /** The route color strip down a row's left edge. */
 const EDGE_W = 5;
+/** The destination stripe down a ticket's left edge (round 219). */
+const TONE_EDGE_W = 3;
 
 const styles = StyleSheet.create({
   timesRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
@@ -1152,6 +1181,24 @@ const styles = StyleSheet.create({
   // An arrived ticket's faded content (round 201): the pill and Save stay full strength.
   arrivedFade: { opacity: ARRIVED_FADE },
   tearLine: { zIndex: 2 },
+  // The destination stripe and tint (round 219): drawn under the ticket's content, inside its rounded corners.
+  toneEdge: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: TONE_EDGE_W,
+    borderTopLeftRadius: radius.all - 1,
+    borderBottomLeftRadius: radius.all - 1,
+  },
+  toneTint: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderBottomLeftRadius: radius.all - 1,
+    borderBottomRightRadius: radius.all - 1,
+  },
   // No overflow clip, so the soft shadow shows; the edge rounds its own corners instead.
   row: {
     flexDirection: 'row',

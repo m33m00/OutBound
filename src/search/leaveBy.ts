@@ -132,12 +132,6 @@ export function driveQuery(input: {
   return { from: { lat: loc.lat, lon: loc.lon }, to: { lat: airport.lat, lon: airport.lon }, departMs };
 }
 
-/** "You’re at DAL (Dallas Love Field)". */
-function youreAt(code: string): string {
-  const name = AIRPORTS[code]?.name;
-  return name ? `You’re at ${code} (${name})` : `You’re at ${code}`;
-}
-
 /** "Arrive at DFW by 10:10 AM to begin boarding" (round 159, John). */
 function arriveBy(code: string, time: string): string {
   return `Arrive at ${code} by ${time} to begin boarding`;
@@ -160,8 +154,12 @@ export function leaveByText(r: LeaveBy, tz: string): LeaveByText {
     case 'departed':
       return { title: 'Departed', sub: `This flight has left ${r.airport}. Pick a later route.` };
     case 'atAirport':
-      // The airport's name too (John, 2026-11-02), and boarding in his words (round 159, John).
-      return { title: youreAt(r.airport), sub: boardingAt(t(r.boardUtc)) };
+      // One short line on screen (round 219, John: "I dont like the text wraps here"); VoiceOver still hears the
+      // airport's name (John, 2026-11-02) and boarding in his words (round 159).
+      return {
+        title: `You’re at ${r.airport}`,
+        sub: [AIRPORTS[r.airport]?.name, boardingAt(t(r.boardUtc))].filter(Boolean).join('. '),
+      };
     case 'leaveBy':
       // No "~" on the guess (round 138, John); a maps-service time adds "with traffic".
       return {
@@ -171,9 +169,10 @@ export function leaveByText(r: LeaveBy, tz: string): LeaveByText {
     case 'leaveNow':
       return { title: 'Leave now', sub: arriveBy(r.airport, t(r.beAtUtc)) };
     case 'beAt':
-      // John's words (round 159): "Arrive at DFW by 10:10 AM to begin boarding".
+      // "Arrive at DFW by 10:10 AM" (round 159), boarding left implied so it fits one line (round 219, John: "I
+      // dont like the text wraps here").
       return {
-        title: arriveBy(r.airport, t(r.beAtUtc)),
+        title: `Arrive at ${r.airport} by ${t(r.beAtUtc)}`,
         sub: `${formatDuration(r.bufferMin)} early to list and clear security`,
       };
   }
@@ -200,7 +199,8 @@ export function leaveByShort(r: LeaveBy, tz: string): string {
     case 'departed':
       return 'Pick a later route';
     case 'atAirport':
-      return boardingAt(t(r.boardUtc));
+      // Short, so "You’re at DAL | Boarding at 8:20 AM" stays one line (round 219).
+      return `Boarding at ${t(r.boardUtc)}`;
     case 'leaveBy':
     case 'leaveNow':
       // No line under the time (round 205, John: "We don't need the commentary ... below the Leave Now at the

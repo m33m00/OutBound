@@ -84,3 +84,42 @@ describe('opened route page, calmer (round 218)', () => {
     expect(computeLeaveBy({ ...base, location: near }).kind).toBe('leaveBy');
   });
 });
+
+// Round 219 (John picked option 1 of the destination mockups: "I like this one").
+describe('results ticket by destination (round 219)', () => {
+  let r: ReactTestRenderer | undefined;
+  afterEach(() => act(() => r?.unmount()));
+
+  it('draws a thin destination stripe and, under the perforation, a faint tint in the same color', async () => {
+    const it = await nonstop();
+    await act(async () => {
+      r = create(<ResultRow itinerary={it} selected={false} now={NOW} onPress={jest.fn()} />);
+    });
+    const edge = host(r!, 'ticket-tone-edge');
+    expect(edge).toHaveLength(1);
+    // DEN is the mountains: pine.
+    expect(flat(edge[0].props.style).backgroundColor).toBe('#557A6A');
+    expect(flat(edge[0].props.style).width).toBeLessThanOrEqual(4);
+    // The tint waits for the perforation's place, then starts there.
+    expect(host(r!, 'ticket-tone-tint')).toHaveLength(0);
+    const perf = r!.root.findAll(
+      (n) => typeof n.type === 'string' && typeof n.props.onLayout === 'function' && n.props.collapsable === false,
+    );
+    await act(async () => {
+      for (const p of perf) p.props.onLayout({ nativeEvent: { layout: { x: 0, y: 60, width: 300, height: 12 } } });
+    });
+    const tint = host(r!, 'ticket-tone-tint');
+    expect(tint).toHaveLength(1);
+    const st = flat(tint[0].props.style);
+    expect(st.top).toBe(66);
+    expect(String(st.backgroundColor)).toMatch(/^rgba\(85,122,106,0\.\d+\)$/);
+  });
+
+  it('the opened route card keeps its own look, with no stripe', async () => {
+    const it = await nonstop();
+    await act(async () => {
+      r = create(<ResultRow itinerary={it} selected large now={NOW} onPress={jest.fn()} />);
+    });
+    expect(host(r!, 'ticket-tone-edge')).toHaveLength(0);
+  });
+});
