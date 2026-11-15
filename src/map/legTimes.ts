@@ -88,7 +88,8 @@ export interface LegTimeSpec {
 }
 
 /**
- * Labels to draw: one per leg of the selected route that has both times.
+ * Labels to draw on the selected route: only a canceled leg's red "Canceled" pill. Flight times are off the map
+ * (round 212, John: "Remove the block time on the route map"); the tickets and the stops line still have them.
  * None without a selection.
  */
 export function legTimeSpecs(selected: RouteLine | null | undefined): LegTimeSpec[] {
@@ -103,16 +104,7 @@ export function legTimeSpecs(selected: RouteLine | null | undefined): LegTimeSpe
         legIndex,
         canceled: true,
       });
-      return;
     }
-    const min = legMinutes(leg.departUtc, leg.arriveUtc);
-    if (min == null) return;
-    out.push({
-      legId: leg.id,
-      text: formatLegDuration(min),
-      spoken: `${leg.fromCode} to ${leg.toCode}, flight time ${spokenLegDuration(min)}`,
-      legIndex,
-    });
   });
   return out;
 }

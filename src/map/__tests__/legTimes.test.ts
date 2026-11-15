@@ -90,32 +90,16 @@ describe('duration format (H:MM)', () => {
 });
 
 describe('which labels show', () => {
-  it('one per leg of the selected route', () => {
-    const s = legTimeSpecs(route);
-    expect(s.map((x) => [x.legId, x.text])).toEqual([
-      ['a', '2h 35m'],
-      ['b', '45m'],
-    ]);
+  // Round 212 (John: "Remove the block time on the route map"): no flight time pills on the map. Only a canceled
+  // leg gets a pill (round 199), covered in canceledLegRound199.test.ts.
+  it('no flight time on any leg of the selected route', () => {
+    expect(legTimeSpecs(route)).toEqual([]);
+    expect(legTimesSummary(route)).toBe('');
   });
 
   it('none without a selection (overview, ghosts, after deselect)', () => {
     expect(legTimeSpecs(null)).toEqual([]);
     expect(legTimeSpecs(undefined)).toEqual([]);
-  });
-
-  it('shows every timed leg of the selected route', () => {
-    expect(legTimeSpecs(route)).toHaveLength(2);
-  });
-
-  it('skips a leg without times, keeps the others', () => {
-    const partial: RouteLine = { ...route, legs: [{ ...route.legs[0], arriveUtc: undefined }, route.legs[1]] };
-    expect(legTimeSpecs(partial).map((x) => x.legId)).toEqual(['b']);
-    expect(legTimeSpecs(partial)[0].legIndex).toBe(1);
-  });
-
-  it('accessibility text per leg', () => {
-    expect(legTimesSummary(route)).toBe('DFW to ORD, flight time 2 hours 35 minutes. ORD to LGA, flight time 45 minutes.');
-    expect(legTimesSummary(null)).toBe('');
   });
 });
 

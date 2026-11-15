@@ -1011,3 +1011,10 @@ John: "Less containers where you think it's necessary. More glassy look where co
 - Glass now: the tab bar, the results panel over the map, the pinned Request bar, the My Trips select bar, the Saved and Deleted toast, Settings groups, every grouped list (Requests, My Trips, Logbook rows), the logbook totals, the airport info cards, the at-the-airport card, the date picker, and the credits balance, stats and history.
 - Fewer boxes: the flight status sheet's Departs and Arrives were two boxes and are now one glass group with a hairline between; the delays and weather sheet's airports were a box each and are now one group; "How credits work" lost its box.
 - Kept solid: result tickets and saved route tickets (the torn edge cuts into a solid page), the filled main button, pills, and the boxes you tap to pick something (plans, report choices, add-flight ways), so a choice still reads as a button.
+
+## Round 212 (Nov 15): no flight time on the route map
+
+John: "Remove the block time on the route map."
+
+- The selected route on the map no longer shows each leg's flight time pill ("2h 35m"). A canceled leg still gets its red Canceled pill over the X (round 199). VoiceOver's map summary drops the flight times too.
+- Durations elsewhere stay: the tickets' stops line and the opened route.

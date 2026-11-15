@@ -252,3 +252,4 @@ Each item names its owner. One item per work session. spec-keeper runs a pre-fli
 | 247 | Route mark level (horizontal contrail) and used on every route between airport codes (round 209) | Done |
 | 248 | Route mark never wraps apart from its codes, shorter trail, centred on the capitals (round 210) | Done |
 | 249 | Liquid Glass on the boxes that stay (tab bar, panel, bars, cards); fewer boxes in the status, delays and credits sheets (round 211) | Done |
+| 250 | No flight time pills on the route map; Canceled pill stays (round 212) | Done |

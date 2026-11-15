@@ -63,7 +63,7 @@ Full history in `design/DECISIONS.md`; these are the ones that come up most.
 **Routes and map**
 
 - **Route lines stay straight.** Curved and flowing lines were tried and rejected.
-- Map: no key or legend, no dotted lines, no direction arrows. Plain straight lines in seat colors. A canceled leg (round 199) is a red line with a small X at its middle (in a small light red circle with a red ring, like the cards' X, round 205) and a red Canceled pill just above the X in place of its flight time; on a connection only that leg changes.
+- Map: no key or legend, no dotted lines, no direction arrows. Plain straight lines in seat colors. A canceled leg (round 199) is a red line with a small X at its middle (in a small light red circle with a red ring, like the cards' X, round 205) and a red Canceled pill just above the X; on a connection only that leg changes. No flight time pills on the map (round 212, John: "Remove the block time on the route map").
 - Results header (round 202): a searched area shows as a plane icon and its airport codes only, no city words, so it stays on one line beside the route count pills. Filters is the same pill capsule as Search.
 - A canceled flight's time is crossed out by a bold red bar (StrikeOver, 2.5pt, round 203), not text's hairline strike-through. A moved (late) time's struck schedule keeps the normal thin strike.
 - The Now line in today's results is a solid boarding-blue capsule (white words) on a 1.5pt blue rule, the same blue as the picked day, so it stands out while scrolling (rounds 203 and 204; John asked for blue here, the one non-tappable use).
