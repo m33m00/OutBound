@@ -262,3 +262,4 @@ Each item names its owner. One item per work session. spec-keeper runs a pre-fli
 | 256 | Opened route: no long-drive guesses on Leave by, no credit box or second length on nonstops, no box in the ticket, plain codes, small seat dash, no line over Request Loads (round 218) | Done |
 | 257 | Leave by on one line (shorter copy, never wraps beside the buttons); results tickets by destination: muted stripe on the left edge and faint tint under the perforation (round 219) | Done |
 | 258 | Destination stripe taken back off tickets; soft paper tear sound when a saved ticket tears (round 220) | Done |
+| 259 | Results tickets: paper grain, warmer stub, and a hairline landmark sketch per airport (state outline for others) that draws in once (round 221) | Done |

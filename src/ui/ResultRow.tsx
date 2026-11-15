@@ -38,6 +38,7 @@ import { FlightPeek } from './FlightPeek';
 import { Icon } from './Icon';
 import { Divided, MetaLine } from './MetaLine';
 import { COUNT_ICON, MiniRoute } from './MiniRoute';
+import { SKETCH_GAP, SKETCH_H, SKETCH_RIGHT, TicketGrain, TicketSketchArt, ticketSketch } from './TicketPaper';
 import { snapshotCard, TearSourceProvider, type TearSource } from './TearAway';
 import { TearSwipe, TearSwipeCard } from './TearSwipe';
 import { TicketTear } from './TicketTear';
@@ -636,6 +637,8 @@ export const ResultRow = memo(function ResultRow({
   const ticketRef = useRef<ComponentRef<typeof View>>(null);
   const wholeRef = useRef<ComponentRef<typeof Animated.View>>(null);
   const perfRef = useRef<ComponentRef<typeof View>>(null);
+  // Where a results ticket's perforation runs, so its stub tone and the sketch above it line up (round 221).
+  const [perfY, setPerfY] = useState<number | null>(null);
   const cardHold = useRef(new Animated.Value(1)).current;
   // A memo row redraws when Bold Text changes.
   useBoldText();
@@ -955,6 +958,32 @@ export const ResultRow = memo(function ResultRow({
         };
   // Set while the route card draws its stub, so the swipe strip on the perforation tears the same card.
   let tearSource: TearSource | null = null;
+  // A results ticket's paper (round 221, John): a faint grain all over, the stub a shade warmer, and a hairline
+  // sketch of where it goes in the top right, drawn in once. Not on a canceled nonstop's red wash, and fainter on
+  // a departed or arrived ticket, like the rest of it.
+  const destination = it.legs[it.legs.length - 1]?.flight.to;
+  const sketch = !large && !selected && !canceledRoute && destination ? ticketSketch(destination) : null;
+  const sketchRoom = perfY != null ? perfY - SKETCH_GAP : 0;
+  const paperLayer =
+    large || selected ? null : (
+      <View pointerEvents="none" style={styles.paperLayer} testID="ticket-paper">
+        {paper === c.surface && perfY != null ? (
+          <View style={[styles.stubTone, { top: perfY, backgroundColor: c.ticketStub }]} testID="ticket-stub-tone" />
+        ) : null}
+        <TicketGrain scheme={scheme} />
+        {sketch && sketchRoom > 0 ? (
+          <View style={[styles.sketchSpot, { top: Math.max(0, sketchRoom - SKETCH_H), height: Math.min(SKETCH_H, sketchRoom) }]}>
+            <TicketSketchArt
+              sketch={sketch}
+              drawKey={it.id}
+              ink={c.text}
+              scheme={scheme}
+              strength={dimmed || arrived ? 0.5 : 1}
+            />
+          </View>
+        ) : null}
+      </View>
+    );
   const card = (
     // Soft depth and a gentle press: the card shrinks a hair and dims a little (round 113). The
     // route view's big card stays still under the finger.
@@ -994,6 +1023,7 @@ export const ResultRow = memo(function ResultRow({
         !dimmed && (scheme === 'dark' ? styles.flatDark : styles.liftLight),
         (highlight || canceledRoute) && styles.strongBorder,
       ]}>
+      {paperLayer}
       {/* No colored edge since round 140: the route line carries each leg's color now, and a full route keeps
           its red outline. A destination stripe was tried and taken back (rounds 219 and 220, John: "I don't like
           the color border stub"). */}
@@ -1105,7 +1135,10 @@ export const ResultRow = memo(function ResultRow({
                 </View>
               </Animated.View>
               {/* A boarding pass perforation between the times and the route (round 121, John). */}
-              <View ref={perfRef} collapsable={false}>
+              <View
+                ref={perfRef}
+                collapsable={false}
+                onLayout={(e) => setPerfY(e.nativeEvent.layout.y + e.nativeEvent.layout.height / 2)}>
                 <TicketTear
                   notch={c.bg}
                   edge={edgeColor}
@@ -1161,6 +1194,18 @@ const styles = StyleSheet.create({
     minHeight: 44,
   },
   shrink: { flexShrink: 1 },
+  // The ticket's paper, under everything on it, clipped to the card's corners (round 221).
+  paperLayer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderRadius: radius.all - CARD_EDGE_W,
+    overflow: 'hidden',
+  },
+  stubTone: { position: 'absolute', left: 0, right: 0, bottom: 0 },
+  sketchSpot: { position: 'absolute', right: SKETCH_RIGHT - CARD_EDGE_W, justifyContent: 'flex-end', overflow: 'hidden' },
   strongBorder: {
     borderWidth: 2,
   },

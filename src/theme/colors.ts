@@ -22,6 +22,9 @@ export const colors = {
     // A result card's own edge, a touch darker than the lines inside it so each ticket stands apart (round 150,
     // John). Soft since round 207: the shadow and the page gray do most of the separating now.
     cardEdge: '#dcdce2',
+    // A results ticket's stub under the perforation, a shade warmer than the paper above it (round 221, John
+    // picked the paper grain look).
+    ticketStub: '#faf9f7',
 
     // Text
     text: '#1c1c1f',
@@ -112,6 +115,7 @@ export const colors = {
     line: '#2a2a2f',
     line2: '#38383e',
     cardEdge: '#34343a',
+    ticketStub: '#1f1f22',
 
     text: '#f2f2f4',
     muted: '#a1a1a8',
