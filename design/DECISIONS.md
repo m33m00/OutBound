@@ -1106,3 +1106,7 @@ John picked from the round 220 surfaces: "Something to do with the destination a
 - A US airport added later with no landmark yet gets its state's outline (from the us-atlas Census shapes the globe already uses) with the airport circled. Outside the US, grain only.
 - Animation that means something: the first time a ticket shows, its sketch draws itself in left to right (about a second, easing out), like the city coming into view. It never loops and doesn't redraw when you scroll back. With Reduce Motion on it just fades in.
 - The sketch is ink at 30% in light mode and 22% in dark, half that on a departed or arrived ticket, and none on a canceled nonstop's red wash. Results tickets only; the opened route card keeps its ink header.
+
+## Round 222 (Nov 15): landmark sketches off the tickets
+
+John: "Get rid of the backgrounds on the tickets I don't like it", "The landmark work". The landmark sketch per airport, the state-outline fallback and the draw-in animation are gone, with their images and generator. The faint paper grain and the warmer stub under the perforation stay; John can say if he wants those gone too. This is the third destination treatment taken back (stripe in 219, sketches in 221), so no destination art on tickets unless he asks.
