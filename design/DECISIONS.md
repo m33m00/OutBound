@@ -942,3 +942,16 @@ John: "Can it be a circle and match how it looks in the card with a light red ba
 - Map: the canceled X sits in a small circle again (12pt across, smaller than round 199's 16pt), filled light red with a red ring, like the X on the cards. The cards' X circle is light red now too, so both match.
 - Request Loads: no "Seats are hidden. Loads are 1 credit per leg. X credits remaining." line. Round 192 had only taken it off the results list, so it still showed over the button. A line shows only when the request can't go: out of credits, or not enough for the legs checked.
 - Leave by and Leave now show just the time; the "Arrive at DFW by ... to begin boarding" line is gone from both (they stay alike, round 193). VoiceOver still hears it. At the airport the boarding time stays, since that's the card's main fact there.
+
+## Round 206 (Nov 15): clean pass, fewer words
+
+John: "The design of the app I really want it to look like something Anthropic or Apple made. A full pass through. Something super clean not too descriptive. I like the layout right now."
+
+Same layout. What changed is the words and the weight of the quiet parts.
+
+- Settings: the footers under Homes, Appearance, Notifications, Leave-by and Search defaults are gone, and so is "Saved on this phone." The empty Homes line is just "No main home yet." Rain radar's caption is "From NOAA". The "Google Maps opens in Safari" line under Directions is gone. Location keeps its one privacy line.
+- Profile: no "Settings are saved on this phone." The independence line and Logo.dev credit stay.
+- Filters: no helper lines under Departure Time and Airlines, no subtitle under "Only answered loads", and the avoid-airports note is "Only for connections."
+- Shorter: Requests footer "Answers are anonymous.", empty My Trips "Saved routes and answered requests show up here.", empty saved routes "Tap the bookmark on a route to keep it here.", empty Requests "Asks about your airline's flights show up here.", credits "Demo credits. Nothing is charged.", plan picker "Demo only. Nothing is charged.", location card "Only used to pick the closest airport." Logbook drops its footer; the add-flight privacy line keeps only what's kept from a pass.
+- Type: secondary lines (the small style) are regular weight instead of medium, so they sit back under what they describe. Headings are tracked in a touch (-0.3), since Sora runs wide.
+- Kept on purpose: attributions (Logo.dev, NOAA, AeroDataBox), the airline independence line, report anonymity, error and denied-permission lines. "Departure Time" stays as John named it.

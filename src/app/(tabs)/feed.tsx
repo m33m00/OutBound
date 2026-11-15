@@ -64,14 +64,10 @@ export default function FeedScreen() {
               <RequestRow key={r.id} request={r} now={now} leg={legFor(r)} onAnswer={() => setReporting(r.id)} />
             ))}
           </ListGroup>
-          <SectionFooter>People who ask see the numbers, never who answered.</SectionFooter>
+          <SectionFooter>Answers are anonymous.</SectionFooter>
         </View>
       ) : (
-        <EmptyState
-          icon="text.bubble"
-          title="No requests right now"
-          body="Asks about your airline’s flights show up here for you to answer."
-        />
+        <EmptyState icon="text.bubble" title="No requests right now" body="Asks about your airline’s flights show up here." />
       )}
       {done.length ? (
         <ListGroup title="You answered">

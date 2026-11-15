@@ -140,7 +140,7 @@ export function CreditsSheet({
 
           <Button label="Answer Loads" kind="secondary" icon="text.bubble" onPress={onAnswerLoads} />
           <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, styles.footer, { color: c.muted }]}>
-            Demo credits, kept on this phone. Nothing is charged.
+            Demo credits. Nothing is charged.
           </Text>
         </ScrollView>
       </SafeAreaView>

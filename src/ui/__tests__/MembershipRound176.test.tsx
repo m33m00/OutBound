@@ -43,7 +43,7 @@ describe('plans and credits (round 176)', () => {
     expect(all).toContain('Free');
     expect(all).toContain('Pay as you go');
     expect(all).toContain('Premium');
-    expect(all).toContain('nothing is charged');
+    expect(all).toContain('Nothing is charged');
     const cont = () =>
       r.root.findAll((n) => n.props.accessibilityLabel === 'Continue' && typeof n.props.onPress === 'function')[0];
     expect(cont().props.disabled).toBe(true);

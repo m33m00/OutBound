@@ -45,10 +45,12 @@ export const textStyles = {
     letterSpacing: 2.72,
     textTransform: 'uppercase',
   },
+  /** Section and card headings. Tracked in a little, since Sora runs wide (round 206). */
   heading: {
     fontFamily: fonts.bodySemiBold,
     fontSize: 16,
     lineHeight: 22,
+    letterSpacing: -0.3,
   },
   body: {
     fontFamily: fonts.body,
@@ -66,8 +68,9 @@ export const textStyles = {
     fontSize: 15,
     lineHeight: 20,
   },
+  /** Captions and secondary lines: regular weight so they sit quietly under what they describe (round 206). */
   small: {
-    fontFamily: fonts.bodyMedium,
+    fontFamily: fonts.body,
     fontSize: 12,
     lineHeight: 16,
   },

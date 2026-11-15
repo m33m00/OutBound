@@ -66,6 +66,7 @@ Full history in `design/DECISIONS.md`; these are the ones that come up most.
 - A canceled flight's time is crossed out by a bold red bar (StrikeOver, 2.5pt, round 203), not text's hairline strike-through. A moved (late) time's struck schedule keeps the normal thin strike.
 - The Now line in today's results is a solid boarding-blue capsule (white words) on a 1.5pt blue rule, the same blue as the picked day, so it stands out while scrolling (rounds 203 and 204; John asked for blue here, the one non-tappable use).
 - No commentary lines (round 205): the Request Loads bar shows a line over its button only when credits run short; Leave by and Leave now show just the time (VoiceOver still hears the arrive-by line).
+- Not too descriptive (round 206): no footers that explain a setting, no helper lines under filters, short empty states. Keep attributions, the independence line, privacy and error lines. Captions (textStyles.small) are regular weight; headings track -0.3.
 - Route line spans the full card width, an even share per leg for 0 to 3 stops. Canceled leg: red line with an X and a small red Canceled pill. At risk pill is gold (its own color, not the violet of delays or the amber of "you", round 202) and sits on the connecting stop, just over its dot on a 1-stop route. Late pills only on opened route or flight details, not on result tickets; Diverted stays on tickets.
 - Stops line under the times: `2 stops | 11h 30m | 35m connection at MIA`.
 - Each flight leg is its own tappable box.

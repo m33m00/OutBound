@@ -9,7 +9,7 @@ import { AddFlightSheet } from '@/ui/AddFlightSheet';
 import { Button } from '@/ui/Buttons';
 import { EmptyState } from '@/ui/EmptyState';
 import { selectionTick } from '@/ui/haptics';
-import { ListGroup, SectionFooter } from '@/ui/ListGroup';
+import { ListGroup } from '@/ui/ListGroup';
 import { LoggedFlightRow } from '@/ui/LoggedFlightRow';
 import { LogbookTotalsCard } from '@/ui/LogbookTotalsCard';
 import { TabScreen } from '@/ui/TabScreen';
@@ -90,7 +90,6 @@ export default function LogbookScreen() {
           </ListGroup>
         </View>
       ))}
-      <SectionFooter>Your logbook stays on this phone.</SectionFooter>
       {sheet}
     </TabScreen>
   );

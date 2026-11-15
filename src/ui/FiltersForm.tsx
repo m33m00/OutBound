@@ -99,9 +99,6 @@ export function FiltersForm({ filters: f, onChange }: { filters: SearchFilters; 
             />
           ))}
         </View>
-        <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>
-          When the first flight leaves, local time. None picked means any time.
-        </Text>
       </View>
 
       <View style={styles.block}>
@@ -145,9 +142,6 @@ export function FiltersForm({ filters: f, onChange }: { filters: SearchFilters; 
             />
           ))}
         </View>
-        <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>
-          Pick airlines to see only them, on every flight. None picked means every airline.
-        </Text>
       </View>
 
       <View style={styles.block}>
@@ -165,9 +159,6 @@ export function FiltersForm({ filters: f, onChange }: { filters: SearchFilters; 
           <View style={styles.flex}>
             <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, { color: c.text }]}>
               Only answered loads
-            </Text>
-            <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>
-              Every flight has seats someone reported
             </Text>
           </View>
           <View pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
@@ -274,7 +265,7 @@ function AvoidAirports({ codes, onChange }: { codes: string[]; onChange: (codes:
         <PillButton testID="filters-avoid-add" label="Add Airport" leading="plus" fallback="+" onPress={() => setPicking(true)} />
       </View>
       <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>
-        No connections there. The airports you search from and to always stay.
+        Only for connections.
       </Text>
       <AirportPicker
         visible={sheet.visible}

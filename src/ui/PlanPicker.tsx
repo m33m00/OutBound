@@ -100,7 +100,7 @@ export function PlanPicker({
             }}
           />
           <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, styles.footer, { color: c.muted }]}>
-            This is a demo, so nothing is charged. Change your plan any time in Settings.
+            Demo only. Nothing is charged.
           </Text>
         </ScrollView>
       </SafeAreaView>

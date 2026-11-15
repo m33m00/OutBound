@@ -249,7 +249,6 @@ export default function SettingsTab() {
 
       {/* Clears homes too, so it asks first (what it should clear is Q-064). */}
       <Button label="Reset All Settings" kind="secondary" onPress={() => confirmReset(reset)} />
-      <SectionFooter>Settings are saved on this phone.</SectionFooter>
     </TabScreen>
   );
 }

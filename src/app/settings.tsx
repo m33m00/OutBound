@@ -77,7 +77,7 @@ export default function SettingsScreen() {
             <View style={[card, styles.group]}>
               {homeList.length === 0 ? (
                 <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, styles.empty, { color: c.muted }]}>
-                  No main home yet. Set one to show Get Home when you’re away.
+                  No main home yet.
                 </Text>
               ) : (
                 homeList.map((h, i) => (
@@ -109,9 +109,6 @@ export default function SettingsScreen() {
                 <Button label="Add Home" kind="secondary" icon="plus" onPress={() => setPicking('extra')} />
               </View>
             </View>
-            <SectionFooter>
-              Search starts from your main home when location is off, and Get Home takes you back to it.
-            </SectionFooter>
           </View>
         ) : null}
 
@@ -142,7 +139,6 @@ export default function SettingsScreen() {
             <View style={[card, styles.group]}>
               <AppearanceChoice value={settings.appearance} onChange={(appearance) => update({ appearance })} />
             </View>
-            <SectionFooter>System matches your phone’s light or dark setting.</SectionFooter>
           </View>
         ) : null}
 
@@ -153,7 +149,7 @@ export default function SettingsScreen() {
             <View style={[card, styles.group]}>
               <SwitchRow
                 label="Rain radar"
-                caption="Live rain on the globe, from NOAA"
+                caption="From NOAA"
                 value={settings.radarOn}
                 onChange={(radarOn) => update({ radarOn })}
               />
@@ -179,8 +175,6 @@ export default function SettingsScreen() {
                 divided
               />
             </View>
-            {/* The switch captions already say who asks and the 5-a-day cap (round 73). */}
-            <SectionFooter>Notifications start once requests go live. Nobody sees who asked or who answered.</SectionFooter>
           </View>
         ) : null}
 
@@ -198,8 +192,6 @@ export default function SettingsScreen() {
               {/* Android always uses Google Maps, so there's nothing to pick there. */}
               {Platform.OS === 'ios' ? <MapsChoice value={settings.mapsApp} onChange={(mapsApp) => update({ mapsApp })} /> : null}
             </View>
-            {/* The Leave By card's chevron already shows it opens directions (round 78). */}
-            <SectionFooter>Time to list and clear security.</SectionFooter>
           </View>
         ) : null}
 
@@ -209,15 +201,11 @@ export default function SettingsScreen() {
             <View style={[card, styles.group]}>
               <FiltersForm filters={settings.search} onChange={(search) => update({ search })} />
             </View>
-            <SectionFooter>Every search starts with these. Change them for one search in Filters.</SectionFooter>
           </View>
         ) : null}
 
         {/* Clears homes too, so it asks first (what it should clear is Q-064). On the Settings tab since round 174. */}
         {!target ? <Button label="Reset All Settings" kind="secondary" onPress={() => confirmReset(reset)} /> : null}
-        <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>
-          Saved on this phone.
-        </Text>
         {/* Logo.dev's free plan asks for a visible link wherever its logos show (round 133); the Settings tab has it too. */}
         {logosOn() && !target ? (
           <Pressable
