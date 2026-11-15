@@ -138,8 +138,13 @@ async function findAll(
   const origins = new Map(endAirports(request.origin, !!request.originArea).filter(([c]) => !avoid.has(c)));
   const destinations = new Map(endAirports(request.destination, !!request.destinationArea).filter(([c]) => !avoid.has(c)));
   const airlineOk = (f: Flight) => airlineAllowed(f.airline, opt.airlines, opt.airlineRegion);
-  // Intermediate stops never use an origin- or destination-end airport.
-  const ends = new Set([...origins.keys(), ...destinations.keys()]);
+  // Intermediate stops never use an airport in the origin's or destination's area (Dallas: DAL and DFW),
+  // whether or not the area pill is on, so a route never flies away and connects back through the city it
+  // left or is headed to (Jayden, 2026-11-13: DAL > DEN > DFW > BNA).
+  const ends = new Set([
+    ...endAirports(request.origin, true).map(([c]) => c),
+    ...endAirports(request.destination, true).map(([c]) => c),
+  ]);
 
   // One fetch per airport, wide enough for the date plus a full-length trip.
   const windowStart = zonedToUtc(addDays(request.date, -1), '00:00', originAirport.tz);

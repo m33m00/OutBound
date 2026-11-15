@@ -102,6 +102,8 @@ export const SAMPLE_SCHEDULE: readonly (readonly [string, string, string, string
   ['WN', '1721', 'LAX', 'DAL', '11:20', 190],
   ['WN', '1723', 'LAX', 'DAL', '17:45', 190],
   ['AA', '1461', 'MIA', 'DFW', '16:15', 205],
+  // MIA had no way back to Love Field except a hop through DFW, which search no longer allows (2026-11-13).
+  ['WN', '1561', 'MIA', 'DAL', '13:10', 185],
   ['AA', '1731', 'ORD', 'DFW', '09:30', 155],
   ['WN', '1741', 'ORD', 'DAL', '17:40', 155],
   ['AA', '1611', 'PHX', 'DFW', '07:15', 135],
