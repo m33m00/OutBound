@@ -63,7 +63,7 @@ export default function LogInScreen() {
         onSubmitEditing={submit}
       />
       <ErrorLine text={error} />
-      <Button label={busy ? 'Logging In' : 'Log In'} onPress={submit} disabled={busy || !email.trim() || !password} />
+      <Button label={busy ? 'Logging In' : 'Log In'} onPress={submit} disabled={!email.trim() || !password} busy={busy} />
       <View style={styles.forgot}>
         <PillButton
           label="Forgot Password?"

@@ -43,7 +43,7 @@ export default function ForgotScreen() {
         autoFocus={!given}
       />
       <ErrorLine text={error} />
-      <Button label={busy ? 'Sending Code' : 'Send Code'} onPress={submit} disabled={busy || !email.trim()} />
+      <Button label={busy ? 'Sending Code' : 'Send Code'} onPress={submit} disabled={!email.trim()} busy={busy} />
     </AuthScreen>
   );
 }

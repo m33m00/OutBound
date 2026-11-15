@@ -5,6 +5,7 @@ import { boldTextOn, fonts, minTapTarget, radius, spacing, textStyles, useColors
 import { impactTick, successTap } from './haptics';
 import { Icon } from './Icon';
 import { ScalePressable } from './ScalePressable';
+import { TrailLoader } from './TrailLoader';
 
 interface ButtonProps {
   label: string;
@@ -20,6 +21,8 @@ interface ButtonProps {
   style?: StyleProp<ViewStyle>;
   /** What the tap feels like: primary buttons thump, "done" actions (submit, ask) get the success tap. */
   haptic?: 'impact' | 'success' | 'none';
+  /** Waiting on what the tap started: the loader takes the icon's place and the button can't be pressed again (round 223). */
+  busy?: boolean;
 }
 
 const HAPTIC = { impact: impactTick, success: successTap, none: () => {} };
@@ -35,6 +38,7 @@ export function Button({
   icon,
   style,
   haptic,
+  busy = false,
 }: ButtonProps) {
   const c = useColors();
   const primary = kind === 'primary';
@@ -49,13 +53,18 @@ export function Button({
         feel();
         onPress();
       }}
-      disabled={disabled}
+      disabled={disabled || busy}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel ?? label}
       accessibilityHint={accessibilityHint}
-      accessibilityState={{ disabled }}
-      style={[styles.button, { backgroundColor: bg, opacity: disabled ? 0.5 : 1 }, style]}>
-      {icon ? <Icon name={icon} size={18} tintColor={fg} fallback={null} /> : null}
+      accessibilityState={{ disabled: disabled || busy, busy }}
+      // A busy button stays full strength: it's working, not off.
+      style={[styles.button, { backgroundColor: bg, opacity: disabled && !busy ? 0.5 : 1 }, style]}>
+      {busy ? (
+        <TrailLoader size={18} color={fg} decorative />
+      ) : icon ? (
+        <Icon name={icon} size={18} tintColor={fg} fallback={null} />
+      ) : null}
       {label ? (
         <Text lineBreakStrategyIOS="push-out" style={[textStyles.button, { color: fg }]}>
           {label}

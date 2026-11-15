@@ -101,7 +101,12 @@ export default function VerifyScreen() {
         />
       </Pressable>
       <ErrorLine text={error} />
-      <Button label={busy ? 'Checking' : 'Continue'} onPress={() => check(code)} disabled={code.length !== CODE_LENGTH || busy} />
+      <Button
+        label={busy ? 'Checking' : 'Continue'}
+        onPress={() => check(code)}
+        disabled={code.length !== CODE_LENGTH}
+        busy={busy}
+      />
       <View style={styles.resend}>
         {wait > 0 ? (
           <Text style={[textStyles.small, { color: c.muted }]}>

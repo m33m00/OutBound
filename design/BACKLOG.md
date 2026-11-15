@@ -264,3 +264,4 @@ Each item names its owner. One item per work session. spec-keeper runs a pre-fli
 | 258 | Destination stripe taken back off tickets; soft paper tear sound when a saved ticket tears (round 220) | Done |
 | 259 | Results tickets: paper grain, warmer stub, and a hairline landmark sketch per airport (state outline for others) that draws in once (round 221) | Done; sketches taken off in round 222 |
 | 260 | Landmark sketches off the tickets; grain and warmer stub stay (round 222) | Done |
+| 261 | One plane and trail loader everywhere something loads (round 223) | Done |

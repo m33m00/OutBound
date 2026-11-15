@@ -22,6 +22,7 @@ import { useGlassWell } from './Glass';
 import { Icon } from './Icon';
 import { pressStyle } from './press';
 import { withTick } from './haptics';
+import { TrailLoader } from './TrailLoader';
 import { useReducedMotion } from './useReducedMotion';
 
 export interface SearchPanelProps {
@@ -33,6 +34,8 @@ export interface SearchPanelProps {
   onPickOrigin: () => void;
   /** What the empty From card says ("Finding nearest airport…" after Allow); default "Choose airport". */
   originEmptyText?: string;
+  /** Still finding the nearest airport: the From card shows the loader beside its line (round 223). */
+  originWaiting?: boolean;
   onPickDestination: () => void;
   onSwap: () => void;
   /** Area toggle per airport code (Q-048); missing = off. */
@@ -63,6 +66,8 @@ interface AirportCardProps {
   code: string | null;
   /** Second line while empty; defaults to "Choose airport". */
   emptyText?: string;
+  /** Waiting on something to fill it (your location): the loader shows beside the line. */
+  waiting?: boolean;
   onPress: () => void;
   areaOn: boolean;
   onToggleArea: () => void;
@@ -112,6 +117,7 @@ export function AirportCard({
   label,
   code,
   emptyText = 'Choose airport',
+  waiting = false,
   onPress,
   areaOn,
   onToggleArea,
@@ -201,17 +207,23 @@ export function AirportCard({
         {/* Two lines so long names ("Dallas/Fort Worth International") show at big text sizes. */}
         {/* An empty side says what to do in blue, so a dimmed Find Routes never needs explaining (round 53);
             a status before it ("Location is off.") stays gray. */}
-        <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]} numberOfLines={2}>
-          {name ??
-            (action ? (
-              <>
-                {action.status ? `${action.status} ` : null}
-                <Text style={{ color: c.accent, fontFamily: textStyles.bodyStrong.fontFamily }}>{action.ask}</Text>
-              </>
-            ) : (
-              emptyText
-            ))}
-        </Text>
+        <View style={styles.emptyLine}>
+          {waiting && !code ? <TrailLoader size={13} decorative /> : null}
+          <Text
+            lineBreakStrategyIOS="push-out"
+            style={[textStyles.small, styles.emptyText, { color: c.muted }]}
+            numberOfLines={2}>
+            {name ??
+              (action ? (
+                <>
+                  {action.status ? `${action.status} ` : null}
+                  <Text style={{ color: c.accent, fontFamily: textStyles.bodyStrong.fontFamily }}>{action.ask}</Text>
+                </>
+              ) : (
+                emptyText
+              ))}
+          </Text>
+        </View>
       </Pressable>
     </View>
   );
@@ -395,6 +407,7 @@ export function SearchPanel(p: SearchPanelProps) {
           label="From"
           code={p.origin}
           emptyText={p.originEmptyText}
+          waiting={p.originWaiting}
           onPress={p.onPickOrigin}
           areaOn={!!(p.origin && p.areaOn[p.origin])}
           onToggleArea={() => p.origin && p.onToggleArea(p.origin)}
@@ -554,6 +567,8 @@ function useChipHighlight(target: ChipBox | undefined, boxes: Record<string, Chi
 }
 
 const styles = StyleSheet.create({
+  emptyLine: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  emptyText: { flexShrink: 1 },
   // The From and To codes are the hero of the search card, a little bigger than codes elsewhere (round 114).
   bigCode: { fontSize: 30, lineHeight: 34, letterSpacing: -0.5 },
   chipDate: { alignItems: 'center' },

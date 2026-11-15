@@ -1112,3 +1112,11 @@ John picked from the round 220 surfaces: "Something to do with the destination a
 John: "Get rid of the backgrounds on the tickets I don't like it", "The landmark work". The landmark sketch per airport, the state-outline fallback and the draw-in animation are gone, with their images and generator. The faint paper grain and the warmer stub under the perforation stay; John can say if he wants those gone too. This is the third destination treatment taken back (stripe in 219, sketches in 221), so no destination art on tickets unless he asks.
 
 John, after round 222 went out: "Keep the grain". So the grain and warmer stub stay, and the repo guide now says tickets carry no destination stripes or landmark sketches.
+
+## Round 223 (Nov 15): one plane and trail loader everywhere
+
+John: "Can you streamline the animation of the T across the app. Where it uses the plane and trail. For anything loading etc". Every wait now shows the same small loader: the t from the jaunt wordmark, with the plane flying in and drawing the contrail that becomes the t's crossbar (900ms, eased out, the launch screen's own draw), a short hold, then the plane takes off and the trail fades (640ms, eased in, the launch screen's take-off), and round again. Stem gray, trail and plane boarding blue; one color on buttons. Only its size changes from place to place.
+
+Where: finding routes (results panel), a new day loading under the day switch, flight status loading, the flight status Refresh pill while it refreshes, Delete Account while it deletes, every account button while it waits (Button `busy`), the From card while it finds your nearest airport, and the Leave by card while it finds your location. No system spinner is left.
+
+Built from three tinted pictures moved with native-driver Animated, so it keeps going while the search keeps the JS thread busy. Reduce Motion: the finished t fades softly in and out, nothing moves. The launch screen keeps its full version.

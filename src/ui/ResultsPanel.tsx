@@ -3,7 +3,6 @@ import {
   AccessibilityInfo,
   Animated,
   Easing,
-  ActivityIndicator,
   FlatList,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
@@ -38,6 +37,7 @@ import { ResultRow, type LegPicks } from './ResultRow';
 import { SavedToast } from './SavedToast';
 import { SaveRouteButton } from './SaveRouteButton';
 import { StaggerIn } from './StaggerIn';
+import { TrailLoader } from './TrailLoader';
 import { TrailMark, trails } from './TrailMark';
 
 export interface ResultsPanelProps {
@@ -309,9 +309,13 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
           ) : null}
         </View>
       ) : (
-        <Text style={[textStyles.small, { color: c.muted }]} numberOfLines={1} testID="results-count">
-          {summary}
-        </Text>
+        <View style={styles.loading}>
+          {/* A new day loading for the same route shows the loader too (round 223). */}
+          {paging ? <TrailLoader size={14} decorative /> : null}
+          <Text style={[textStyles.small, { color: c.muted }]} numberOfLines={1} testID="results-count">
+            {summary}
+          </Text>
+        </View>
       )}
     </View>
   ) : null;
@@ -428,7 +432,7 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
           {header}
           <View style={styles.loadingBlock} accessible accessibilityLabel="Finding routes">
             <View style={styles.loading}>
-              <ActivityIndicator color={c.muted} />
+              <TrailLoader size={22} decorative />
               <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, { color: c.muted }]}>
                 Finding routes…
               </Text>

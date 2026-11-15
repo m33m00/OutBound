@@ -73,7 +73,13 @@ export default function SignUpScreen() {
         <InlineLink label="Privacy Policy" onPress={() => openLegal('privacy')} />, including no abusive or false reports.
       </CheckRow>
       <ErrorLine text={error} />
-      <Button label={busy ? 'Creating Account' : 'Create Account'} onPress={submit} disabled={!ready} haptic="success" />
+      <Button
+        label={busy ? 'Creating Account' : 'Create Account'}
+        onPress={submit}
+        disabled={!ready && !busy}
+        busy={busy}
+        haptic="success"
+      />
     </AuthScreen>
   );
 }

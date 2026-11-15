@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { Modal, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AIRPORTS, aircraftLabel, localDate, type Flight, type LegSeats } from '@/engine';
@@ -31,6 +31,7 @@ import { ReportForm } from './ReportSheet';
 import { STATE_TONE, TONE_BG, TONE_FG } from './statusTone';
 import { SheetHeader, TITLE_MAX_SCALE } from './SheetHeader';
 import { TIER_FG } from './tierColors';
+import { TrailLoader } from './TrailLoader';
 import { useAnnounceLater } from './useAnnounceLater';
 import { Divided } from './MetaLine';
 import { Glass } from './Glass';
@@ -201,7 +202,7 @@ export function FlightStatusSheet({ flight, visible, now, onClose, liveOptions, 
                   {FETCH_FAILED_TEXT}
                 </Text>
               ) : null}
-              {loading && !response ? <ActivityIndicator accessibilityLabel="Loading flight status" /> : null}
+              {loading && !response ? <TrailLoader size={28} label="Loading flight status" /> : null}
               {response && !status ? (
                 <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, { color: c.text }]}>
                   {response.state === 'unavailable' ? FETCH_FAILED_TEXT : 'No status for this flight yet.'}
@@ -277,7 +278,11 @@ export function FlightStatusSheet({ flight, visible, now, onClose, liveOptions, 
                       accessibilityLabel={loading ? 'Refreshing flight status' : 'Refresh flight status'}
                       accessibilityState={{ busy: loading }}
                       style={pressStyle([styles.refresh, styles.refreshPill, { backgroundColor: c.accentSoft }])}>
-                      <Icon name="arrow.clockwise" size={13} weight="semibold" tintColor={c.accent} fallback={null} />
+                      {loading ? (
+                        <TrailLoader size={15} color={c.accent} decorative />
+                      ) : (
+                        <Icon name="arrow.clockwise" size={13} weight="semibold" tintColor={c.accent} fallback={null} />
+                      )}
                       <Text lineBreakStrategyIOS="push-out" style={[textStyles.bodyStrong, { color: c.accent }]}>
                         {loading ? 'Refreshing…' : 'Refresh'}
                       </Text>
