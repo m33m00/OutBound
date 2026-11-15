@@ -36,6 +36,7 @@ import { marketArrows } from '@/ui/TrailMark';
 import { TripsSectionHeader } from '@/ui/TripsSectionHeader';
 import { useFlightLoad } from '@/ui/useFlightLoad';
 import { useSheetContent } from '@/ui/useSheetContent';
+import { GlassBackdrop } from '@/ui/Glass';
 
 /**
  * Your own load requests and saved routes (Q-042). Saved routes (Q-043, John
@@ -184,7 +185,8 @@ export default function TripsScreen() {
   const selectable = selectingRequests ? requestBlocks.map((b) => b.key) : list.map((r) => r.key);
   const allPicked = selectable.length > 0 && selectable.every((k) => picked.includes(k));
   const selectBar = selectingWhat ? (
-    <View style={[styles.bar, { backgroundColor: c.surface, borderTopColor: c.cardEdge }]} testID="select-bar">
+    <View style={[styles.bar, { borderTopColor: c.cardEdge }]} testID="select-bar">
+      <GlassBackdrop />
       <PillButton
         label={allPicked ? 'Deselect All' : 'Select All'}
         onPress={() => setPicked(allPicked ? [] : selectable)}

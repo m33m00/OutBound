@@ -19,12 +19,12 @@ import { formatAge } from '@/search/format';
 import { fonts, spacing, textStyles, useColors } from '@/theme';
 
 import { Button } from './Buttons';
-import { useCardSurface } from './cardSurface';
 import { withTick } from './haptics';
 import { useCountRoll } from './motion';
 import { Icon } from './Icon';
 import { pressStyle } from './press';
 import { SheetHeader } from './SheetHeader';
+import { Glass } from './Glass';
 
 /** The credits icon, the same on Free and Pay as you go (round 176, John). */
 export const CREDITS_ICON = 'ticket.fill' as const;
@@ -87,26 +87,25 @@ export function CreditsSheet({
   now?: number;
 }) {
   const c = useColors();
-  const card = useCardSurface();
   const total = balance(wallet);
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <SafeAreaView style={[styles.screen, { backgroundColor: c.bg }]} edges={['top', 'bottom']} testID="credits-sheet">
         <SheetHeader title="Credits" subtitle={`${TIER_LABEL[tier]} plan`} action="Done" onAction={onClose} />
         <ScrollView contentContainerStyle={styles.body}>
-          <View style={[card, styles.balance]} accessible accessibilityLabel={`${creditsWord(total)} left`}>
+          <Glass style={styles.balance} accessible accessibilityLabel={`${creditsWord(total)} left`}>
             <Icon name={CREDITS_ICON} size={22} tintColor={c.accent} fallback={null} />
             <Text style={[styles.big, { color: c.text }]} testID="credits-balance">
               {total}
             </Text>
             <Text style={[textStyles.bodyStrong, { color: c.muted }]}>{total === 1 ? 'credit left' : 'credits left'}</Text>
-          </View>
+          </Glass>
           <View style={styles.stats}>
             <Stat label="Earned" value={String(earnedTotal(wallet))} testID="credits-earned" />
             <Stat label="Spent" value={String(spentTotal(wallet))} testID="credits-spent" />
           </View>
 
-          <View style={[card, styles.how]}>
+          <View style={styles.how}>
             <Text style={[textStyles.heading, { color: c.text }]} accessibilityRole="header">
               How credits work
             </Text>
@@ -120,7 +119,7 @@ export function CreditsSheet({
           </View>
 
           {wallet.entries.length ? (
-            <View style={[card, styles.history]} testID="credits-history">
+            <Glass style={styles.history} testID="credits-history">
               <Text style={[textStyles.heading, { color: c.text }]} accessibilityRole="header">
                 Recent
               </Text>
@@ -135,7 +134,7 @@ export function CreditsSheet({
                   <Text style={[styles.delta, { color: e.delta > 0 ? c.timeEarly : c.text }]}>{deltaText(e.delta)}</Text>
                 </View>
               ))}
-            </View>
+            </Glass>
           ) : null}
 
           <Button label="Answer Loads" kind="secondary" icon="text.bubble" onPress={onAnswerLoads} />
@@ -150,14 +149,13 @@ export function CreditsSheet({
 
 function Stat({ label, value, testID }: { label: string; value: string; testID: string }) {
   const c = useColors();
-  const card = useCardSurface();
   return (
-    <View style={[card, styles.stat]} accessible accessibilityLabel={`${label} ${value}`}>
+    <Glass style={styles.stat} accessible accessibilityLabel={`${label} ${value}`}>
       <Text style={[textStyles.small, { color: c.muted }]}>{label}</Text>
       <Text style={[styles.statValue, { color: c.text }]} testID={testID}>
         {value}
       </Text>
-    </View>
+    </Glass>
   );
 }
 

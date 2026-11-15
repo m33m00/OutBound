@@ -1,11 +1,12 @@
 import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
 import { atAirportNote } from '@/requests/atAirport';
-import { elevation, radius, spacing, textStyles, useColors } from '@/theme';
+import { spacing, textStyles, useColors } from '@/theme';
 
 import { Button } from './Buttons';
 import { Icon } from './Icon';
 import { pressStyle } from './press';
+import { Glass } from './Glass';
 
 export interface AtAirportCardProps {
   /** Airport you're at. */
@@ -26,9 +27,7 @@ export function AtAirportCard({ code, upcoming, onBoard, onReport, onDismiss }: 
   const stacked = useWindowDimensions().fontScale >= 1.3;
   const note = atAirportNote(code, upcoming);
   return (
-    <View
-      style={[styles.card, elevation.card, { backgroundColor: c.surface, borderColor: c.line, shadowColor: c.text }]}
-      testID="at-airport-card">
+    <Glass style={styles.card} testID="at-airport-card">
       {/* Gray, not the accent: the icon isn't the tap (round 139). */}
       <View style={styles.icon}>
         <Icon
@@ -75,7 +74,7 @@ export function AtAirportCard({ code, upcoming, onBoard, onReport, onDismiss }: 
           />
         </Pressable>
       ) : null}
-    </View>
+    </Glass>
   );
 }
 
@@ -91,8 +90,6 @@ const styles = StyleSheet.create({
     rowGap: spacing.group,
     paddingVertical: spacing.group,
     paddingHorizontal: spacing.rowX,
-    borderRadius: radius.all,
-    borderWidth: StyleSheet.hairlineWidth,
   },
   icon: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
   text: { flex: 1, minWidth: 180, gap: 2 },

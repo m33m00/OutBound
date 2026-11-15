@@ -22,13 +22,12 @@ import { useSharedLocation } from '@/ui/LocationProvider';
 import { pressStyle } from '@/ui/press';
 import { AppearanceChoice, MapsChoice, SwitchRow } from '@/ui/SettingsControls';
 import { useSheetContent } from '@/ui/useSheetContent';
-import { useCardSurface } from '@/ui/cardSurface';
+import { Glass } from '@/ui/Glass';
 
 /** Tester settings (backlog 12; Q-003, Q-024). Saved on this phone (Q-025). */
 export default function SettingsScreen() {
   const c = useColors();
   // Every group is the shared card (round 163), the same as Profile, Trips and Logbook.
-  const card = useCardSurface();
   const { settings, update, reset } = useSettings();
   const { status, request } = useSharedLocation();
   const [picking, setPicking] = useState<'main' | 'extra' | null>(null);
@@ -74,7 +73,7 @@ export default function SettingsScreen() {
         {show('homes') ? (
           <View style={styles.section} onLayout={sectionLayout('homes')}>
             <SectionHeader title="Homes" />
-            <View style={[card, styles.group]}>
+            <Glass style={styles.group}>
               {homeList.length === 0 ? (
                 <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, styles.empty, { color: c.muted }]}>
                   No main home yet.
@@ -108,21 +107,21 @@ export default function SettingsScreen() {
                 {homes.main ? null : <Button label="Set Main Home" onPress={() => setPicking('main')} />}
                 <Button label="Add Home" kind="secondary" icon="plus" onPress={() => setPicking('extra')} />
               </View>
-            </View>
+            </Glass>
           </View>
         ) : null}
 
         {show('location') ? (
           <View style={styles.section} onLayout={sectionLayout('location')}>
             <SectionHeader title="Location" />
-            <View style={[card, styles.group]}>
+            <Glass style={styles.group}>
               <SwitchRow
                 label="Use your location"
                 hint="For the nearest airport and your drive estimate"
                 value={settings.useLocation}
                 onChange={setUseLocation}
               />
-            </View>
+            </Glass>
             <SectionFooter>
               {status === 'denied'
                 ? 'Location is off for Jaunt. Turn it on in iPhone Settings, then try again.'
@@ -136,9 +135,9 @@ export default function SettingsScreen() {
         {show('appearance') ? (
           <View style={styles.section} onLayout={sectionLayout('appearance')}>
             <SectionHeader title="Appearance" />
-            <View style={[card, styles.group]}>
+            <Glass style={styles.group}>
               <AppearanceChoice value={settings.appearance} onChange={(appearance) => update({ appearance })} />
-            </View>
+            </Glass>
           </View>
         ) : null}
 
@@ -146,21 +145,21 @@ export default function SettingsScreen() {
         {!target ? (
           <View style={styles.section}>
             <SectionHeader title="Map" />
-            <View style={[card, styles.group]}>
+            <Glass style={styles.group}>
               <SwitchRow
                 label="Rain radar"
                 caption="From NOAA"
                 value={settings.radarOn}
                 onChange={(radarOn) => update({ radarOn })}
               />
-            </View>
+            </Glass>
           </View>
         ) : null}
 
         {show('notify') ? (
           <View style={styles.section} onLayout={sectionLayout('notify')}>
             <SectionHeader title="Notifications" />
-            <View style={[card, styles.group]}>
+            <Glass style={styles.group}>
               <SwitchRow
                 label="Answers to your requests"
                 caption="As soon as someone replies"
@@ -174,14 +173,14 @@ export default function SettingsScreen() {
                 onChange={(on) => update({ notify: { ...settings.notify, airlineAsks: on } })}
                 divided
               />
-            </View>
+            </Glass>
           </View>
         ) : null}
 
         {show('leaveBy') ? (
           <View style={styles.section} onLayout={sectionLayout('leaveBy')}>
             <SectionHeader title="Leave-by" />
-            <View style={[card, styles.group]}>
+            <Glass style={styles.group}>
               <Stepper
                 label="Be at the airport before departure"
                 value={settings.bufferMin}
@@ -191,16 +190,16 @@ export default function SettingsScreen() {
               />
               {/* Android always uses Google Maps, so there's nothing to pick there. */}
               {Platform.OS === 'ios' ? <MapsChoice value={settings.mapsApp} onChange={(mapsApp) => update({ mapsApp })} /> : null}
-            </View>
+            </Glass>
           </View>
         ) : null}
 
         {show('search') ? (
           <View style={styles.section} onLayout={sectionLayout('search')}>
             <SectionHeader title="Search defaults" />
-            <View style={[card, styles.group]}>
+            <Glass style={styles.group}>
               <FiltersForm filters={settings.search} onChange={(search) => update({ search })} />
-            </View>
+            </Glass>
           </View>
         ) : null}
 

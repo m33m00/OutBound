@@ -4,6 +4,7 @@ import { creditsWord, REQUEST_COST } from '@/membership/membership';
 import { spacing, textStyles, useColors } from '@/theme';
 
 import { Button } from './Buttons';
+import { GlassBackdrop } from './Glass';
 
 /**
  * The pinned button's words (round 190, John: a large "request all legs for X credits" button).
@@ -61,9 +62,11 @@ export function RequestLoadsBar({
   const note = requestNote(picked, credits);
   return (
     <View
-      style={[styles.bar, { backgroundColor: c.surface, borderTopColor: c.line }]}
+      style={[styles.bar, { borderTopColor: c.line }]}
       onLayout={(e: LayoutChangeEvent) => onHeight?.(e.nativeEvent.layout.height)}
       testID="request-loads">
+      {/* The pinned bar is glass, so the list shows softly through it (round 211, John). */}
+      <GlassBackdrop />
       {note ? (
         <Text
           lineBreakStrategyIOS="push-out"

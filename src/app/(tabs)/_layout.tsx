@@ -7,6 +7,7 @@ import { fonts, minTapTarget, useBoldText, useColors } from '@/theme';
 import { useRequests } from '@/requests/RequestsProvider';
 import { Icon } from '@/ui/Icon';
 import { useChangePop } from '@/ui/motion';
+import { GlassBackdrop } from '@/ui/Glass';
 
 /** Bottom tab bar (backlog 16; Q-042): Home (was Search, round 207), Requests (was Feed, round 167), My Trips, Logbook, Settings (was Profile, round 174). */
 export default function TabsLayout() {
@@ -35,8 +36,9 @@ export default function TabsLayout() {
         headerShown: false,
         tabBarActiveTintColor: c.accent,
         tabBarInactiveTintColor: c.muted,
-        // A quiet bar (round 207): the page's own color with a hairline, medium labels.
-        tabBarStyle: { backgroundColor: c.surface, borderTopColor: c.line },
+        // A quiet bar (round 207) in glass (round 211, John: "More glassy look where containers exist").
+        tabBarStyle: { backgroundColor: 'transparent', borderTopColor: c.line },
+        tabBarBackground: () => <GlassBackdrop />,
         tabBarLabelStyle: { fontFamily: fonts.bodyMedium, fontSize: 10.5 },
         tabBarItemStyle: { minHeight: minTapTarget },
       }}>

@@ -5,6 +5,7 @@ import { GestureDetector, usePanGesture } from 'react-native-gesture-handler';
 import { minTapTarget, radius, useColors } from '@/theme';
 
 import { useReducedMotion } from './useReducedMotion';
+import { GlassBackdrop } from './Glass';
 
 const SNAP_NAMES = ['Peek', 'Half', 'Full'];
 /**
@@ -226,12 +227,14 @@ export function Sheet({ snaps, index, onIndexChange, children, locked = false, f
           {
             height: full,
             transform: [{ translateY }],
-            backgroundColor: c.surface,
+            // Glass behind the panel (round 211, John: "More glassy look where containers exist").
+            backgroundColor: 'transparent',
             borderColor: c.line,
             shadowColor: c.text,
           },
           flush && styles.flush,
         ]}>
+        <GlassBackdrop />
         {locked ? (
           <View style={{ height: SHEET_LOCKED_TOP }} testID="sheet-locked-top" />
         ) : (

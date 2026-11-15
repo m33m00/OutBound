@@ -8,11 +8,11 @@ import { AIRPORTS, placeLabel } from '@/engine';
 import { formatTime } from '@/search/format';
 import { spacing, textStyles, useColors, radius } from '@/theme';
 
-import { useCardSurface } from './cardSurface';
 import { selectionTick } from './haptics';
 import { Icon } from './Icon';
 import { SheetHeader } from './SheetHeader';
 import { useSheetContent } from './useSheetContent';
+import { Glass } from './Glass';
 
 /** Opens the airport summary for a code; null where no summary is set up. */
 const OpenContext = createContext<((code: string) => void) | null>(null);
@@ -141,9 +141,8 @@ export function AirportSummarySheet({
 
 function SummaryCard({ icon, title, children, testID }: { icon: SFSymbol; title: string; children: ReactNode; testID?: string }) {
   const c = useColors();
-  const card = useCardSurface();
   return (
-    <View style={[card, styles.card]} testID={testID}>
+    <Glass style={styles.card} testID={testID}>
       <View style={styles.cardHead}>
         <View style={[styles.iconTile, { backgroundColor: c.accentSoft }]}>
           <Icon name={icon} size={16} tintColor={c.accent} fallback={null} />
@@ -153,7 +152,7 @@ function SummaryCard({ icon, title, children, testID }: { icon: SFSymbol; title:
         </Text>
       </View>
       {children}
-    </View>
+    </Glass>
   );
 }
 

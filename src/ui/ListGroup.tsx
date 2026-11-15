@@ -5,9 +5,9 @@ import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-na
 import { forSpeech } from '@/search/format';
 import { minTapTarget, radius, spacing, textStyles, useColors } from '@/theme';
 
-import { useCardSurface } from './cardSurface';
 import { Icon } from './Icon';
 import { ROUTE_ARROW, trails } from './TrailMark';
+import { Glass } from './Glass';
 
 /** From this text size a row's value goes under its label. */
 const STACK_VALUE_SCALE = 1.3;
@@ -43,13 +43,12 @@ export function SectionFooter({ children }: { children: ReactNode }) {
  */
 export function ListGroup({ title, children }: { title?: string; children: ReactNode }) {
   const c = useColors();
-  const card = useCardSurface();
   const rows = Children.toArray(children).filter(Boolean);
   return (
     <View style={styles.wrap}>
       {title ? <SectionHeader title={title} /> : null}
       {/* The shared card look (round 163); the inner view clips a pressed row's corners without clipping the lift. */}
-      <View style={card} testID="list-group-card">
+      <Glass testID="list-group-card">
         <View style={styles.clip}>
           {rows.map((row, i) => (
             <Fragment key={i}>
@@ -69,7 +68,7 @@ export function ListGroup({ title, children }: { title?: string; children: React
             </Fragment>
           ))}
         </View>
-      </View>
+      </Glass>
     </View>
   );
 }

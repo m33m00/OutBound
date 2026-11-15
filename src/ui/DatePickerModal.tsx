@@ -5,8 +5,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { fromPickerDate, toPickerDate } from '@/search/dates';
 import { spacing, textStyles, useColors, useColorSchemeName } from '@/theme';
 
-import { useCardSurface } from './cardSurface';
 import { SheetHeader } from './SheetHeader';
+import { Glass } from './Glass';
 
 export interface DatePickerModalProps {
   visible: boolean;
@@ -34,13 +34,12 @@ export function DatePickerModal({
 }: DatePickerModalProps) {
   const c = useColors();
   const scheme = useColorSchemeName();
-  const card = useCardSurface();
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <SafeAreaView style={[styles.screen, { backgroundColor: c.bg }]} edges={['top', 'bottom']}>
         <SheetHeader title={title} action="Done" onAction={onClose} />
         {/* The calendar sits on the shared card, like every other panel (round 166). */}
-        <View style={[card, styles.card]} testID="date-picker-card">
+        <Glass style={styles.card} testID="date-picker-card">
           <DateTimePicker
             value={toPickerDate(date)}
             mode="date"
@@ -55,7 +54,7 @@ export function DatePickerModal({
               if (e.type === 'set' || e.type === 'dismissed') onClose();
             }}
           />
-        </View>
+        </Glass>
         <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, styles.note, { color: c.muted }]}>
           {note}
         </Text>

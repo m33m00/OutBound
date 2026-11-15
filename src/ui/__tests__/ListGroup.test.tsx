@@ -52,7 +52,10 @@ describe('ListGroup and ListRow', () => {
         continue;
       }
       expect(st.borderWidth).toBe(0);
-      expect(st.backgroundColor).toBe(c.surface);
+      // Round 211 (John: "More glassy look where containers exist"): without Liquid Glass the card is see-through
+      // white, not solid.
+      expect(st.backgroundColor).toBe('rgba(255,255,255,0.78)');
+      expect(st.backgroundColor).not.toBe(c.surface);
       expect(st.shadowOpacity).toBeGreaterThan(0);
     }
     // Highlights are rows now: label left, answer right.

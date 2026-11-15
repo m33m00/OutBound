@@ -1002,3 +1002,12 @@ John, with a screenshot of the Requests list where WN 1340 broke as "DAL" then t
 - Code, mark, code are one unit: a no-break space and a word joiner sit on each side of the mark, so a line can break before the route but never inside it.
 - The trail is 60% of the logo's length (the plane stays the same size), so a route takes less room and fits on the line it starts on more often. The mark went from 46 to 35 wide for 16 tall.
 - Raised: in his screenshot the mark's bottom sat on the codes' baseline, about a sixth of its height below the middle of the capitals. The picture now has the mark at the top of its box, which lands it on the middle of the codes. Where the mark stands on its own (the bar on an opened route) it's nudged back down so it stays centred between the code pills.
+
+## Round 211 (Nov 15): fewer boxes, glass where boxes stay
+
+John: "Less containers where you think it's necessary. More glassy look where containers exist."
+
+- Glass is iOS's own Liquid Glass (expo-glass-effect, already part of the app and in Expo Go): what sits behind shows through softly blurred, with a light edge. One shared piece, src/ui/Glass.tsx. With Reduce Transparency on it's a solid card; on a phone without Liquid Glass, cards are see-through white (dark gray in dark mode) and bars stay solid so their words never sit over an unblurred map.
+- Glass now: the tab bar, the results panel over the map, the pinned Request bar, the My Trips select bar, the Saved and Deleted toast, Settings groups, every grouped list (Requests, My Trips, Logbook rows), the logbook totals, the airport info cards, the at-the-airport card, the date picker, and the credits balance, stats and history.
+- Fewer boxes: the flight status sheet's Departs and Arrives were two boxes and are now one glass group with a hairline between; the delays and weather sheet's airports were a box each and are now one group; "How credits work" lost its box.
+- Kept solid: result tickets and saved route tickets (the torn edge cuts into a solid page), the filled main button, pills, and the boxes you tap to pick something (plans, report choices, add-flight ways), so a choice still reads as a button.

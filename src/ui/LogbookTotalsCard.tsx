@@ -6,9 +6,9 @@ import { type SFSymbol } from 'expo-symbols';
 
 import { spacing, textStyles, useColors } from '@/theme';
 
-import { useCardSurface } from './cardSurface';
 import { Icon } from './Icon';
 import { RouteText } from './TrailMark';
+import { Glass } from './Glass';
 
 /**
  * Flights, miles and airports across the whole logbook, big numbers up top.
@@ -16,7 +16,6 @@ import { RouteText } from './TrailMark';
  */
 export function LogbookTotalsCard({ totals, highlights }: { totals: LogbookTotals; highlights?: LogbookHighlights }) {
   const c = useColors();
-  const card = useCardSurface();
   const cells = [
     { n: totals.flights, one: 'Flight', many: 'Flights' },
     { n: totals.miles, one: 'Mile', many: 'Miles' },
@@ -52,10 +51,10 @@ export function LogbookTotalsCard({ totals, highlights }: { totals: LogbookTotal
   }
   const label = cells.map((x) => `${groupDigits(x.n)} ${(x.n === 1 ? x.one : x.many).toLowerCase()}`).join(', ');
   return (
-    <View
+    <Glass
       accessible
       accessibilityLabel={[label, ...lines.map((l) => forSpeech(l.replace(' mi)', ' miles)')))].join('. ')}
-      style={[card, styles.card]}
+      style={styles.card}
       testID="logbook-totals">
       <View style={styles.cells}>
         {cells.map((x, i) => (
@@ -102,7 +101,7 @@ export function LogbookTotalsCard({ totals, highlights }: { totals: LogbookTotal
           ))}
         </View>
       ) : null}
-    </View>
+    </Glass>
   );
 }
 

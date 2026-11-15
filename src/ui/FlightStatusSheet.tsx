@@ -33,6 +33,7 @@ import { SheetHeader, TITLE_MAX_SCALE } from './SheetHeader';
 import { TIER_FG } from './tierColors';
 import { useAnnounceLater } from './useAnnounceLater';
 import { Divided } from './MetaLine';
+import { Glass } from './Glass';
 
 export interface FlightStatusSheetProps {
   /** The opened flight; null = closed (no request is made). */
@@ -137,7 +138,7 @@ export function FlightStatusSheet({ flight, visible, now, onClose, liveOptions, 
         accessibilityLabel={forSpeech(
           [`${label}, ${code}`, delay, movementSpoken(m, tz), placeText(m)].filter(Boolean).join('. '),
         )}
-        style={[styles.card, { backgroundColor: c.surface, borderColor: c.line }]}>
+        style={styles.card}>
         <View style={styles.top}>
           <Text style={[textStyles.code, { color: c.text }]}>{code}</Text>
           <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>
@@ -229,8 +230,13 @@ export function FlightStatusSheet({ flight, visible, now, onClose, liveOptions, 
                       {stateWord(status, flight.to)}
                     </Text>
                   </View>
-                  {side('Departs', flight.from, status.departure)}
-                  {side('Arrives', flight.to, status.arrival)}
+                  {/* Departs and Arrives share one glass group with a hairline between, not two boxes (round 211,
+                      John: "Less containers where you think it's necessary"). */}
+                  <Glass style={styles.sides} testID="status-sides">
+                    {side('Departs', flight.from, status.departure)}
+                    <View style={[styles.sideSep, { backgroundColor: c.line }]} />
+                    {side('Arrives', flight.to, status.arrival)}
+                  </Glass>
                 </>
               ) : null}
               {/* How old the status is sits right under it: an old "Delayed" must say so before anything else. */}
@@ -410,7 +416,7 @@ function LoadCard({
     return () => clearTimeout(t);
   }, [canceled, askState]);
   return (
-    <View style={[styles.load, { backgroundColor: c.surface, borderColor: c.line }]} testID="load-card">
+    <Glass style={styles.load} testID="load-card">
       <Text ref={headerRef} style={[textStyles.heading, { color: c.text }]} accessibilityRole="header">
         Seats
       </Text>
@@ -509,7 +515,7 @@ function LoadCard({
           style={styles.cancelAsk}
         />
       ) : null}
-    </View>
+    </Glass>
   );
 }
 
@@ -528,7 +534,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   body: { gap: spacing.section, paddingBottom: spacing.page },
-  card: { borderRadius: radius.all, borderWidth: StyleSheet.hairlineWidth, padding: spacing.rowX, gap: 4 },
+  sides: { overflow: 'hidden' },
+  sideSep: { height: StyleSheet.hairlineWidth, marginLeft: spacing.rowX },
+  card: { padding: spacing.rowX, gap: 4 },
   // Wraps at big text sizes; the delay stays right-aligned on whichever line it lands.
   top: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: spacing.group },
   trailing: { marginLeft: 'auto', flexShrink: 1 },
@@ -549,7 +557,7 @@ const styles = StyleSheet.create({
   ageLine: { flexDirection: 'row', alignItems: 'flex-start', gap: 6, flexShrink: 1 },
   ageIcon: { marginTop: 3 },
   ageText: { flexShrink: 1 },
-  load: { borderRadius: radius.all, borderWidth: StyleSheet.hairlineWidth, padding: spacing.rowX, gap: spacing.group },
+  load: { padding: spacing.rowX, gap: spacing.group },
   loadButtons: { flexDirection: 'row', gap: spacing.group },
   loadButtonsStacked: { flexDirection: 'column' },
   loadButton: { flex: 1 },
