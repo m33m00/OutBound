@@ -38,7 +38,24 @@ describe('the plane and contrail between airport codes (round 209)', () => {
     const big = trailMarkSize(22);
     expect(big.height).toBeGreaterThan(small.height);
     // Much wider than tall: a level trail, not the slanted one from the logo.
-    expect(big.width / big.height).toBeGreaterThan(2.5);
+    expect(big.width / big.height).toBeGreaterThan(2);
+  });
+
+  it('keeps code, mark, code on one line: no breakable space on either side of the mark (round 210)', () => {
+    act(() => {
+      r = create(<RouteText text="WN 1340 | DAL → DEN" style={{ fontSize: 17 }} />);
+    });
+    const strings: string[] = [];
+    const walk = (n: unknown): void => {
+      if (typeof n === 'string') strings.push(n);
+      else if (Array.isArray(n)) n.forEach(walk);
+      else if (n && typeof n === 'object' && 'children' in n) walk((n as { children: unknown }).children);
+    };
+    walk(r.toJSON());
+    // Around the mark there's a no-break space and a word joiner, never a plain space.
+    expect(strings).toContain('\u00A0\u2060');
+    expect(strings).toContain('\u2060\u00A0');
+    expect(strings.some((t) => t.endsWith('DAL ') || t.startsWith(' DEN'))).toBe(false);
   });
 
   it('shows in sheet subtitles and list headings too', () => {

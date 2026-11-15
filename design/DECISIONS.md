@@ -994,3 +994,11 @@ John: "Instead of a slanted trail for the market can it be horizontal." Then: "A
 - Boarding blue everywhere; on a saved route that has passed it takes the faded text color with the rest of the ticket.
 - One shared piece, src/ui/TrailMark.tsx: `RouteText` and `trails()` swap " → " for the mark sized to the text beside it (about a capital letter tall, centred on the codes), and VoiceOver still hears "DAL to LAX". The picture is 46 by 16 with the mark in the middle (design/assets/make-trail-mark.py).
 - Left as an arrow: the Remove logbook flight alert, since system alerts only take plain text.
+
+## Round 210 (Nov 15): the route mark stays on one line and sits centred
+
+John, with a screenshot of the Requests list where WN 1340 broke as "DAL" then the mark and "DEN" on the next line: "The trail wraps some of the markets on various pages can we fix that? Also bring it up more and allign it center."
+
+- Code, mark, code are one unit: a no-break space and a word joiner sit on each side of the mark, so a line can break before the route but never inside it.
+- The trail is 60% of the logo's length (the plane stays the same size), so a route takes less room and fits on the line it starts on more often. The mark went from 46 to 35 wide for 16 tall.
+- Raised: in his screenshot the mark's bottom sat on the codes' baseline, about a sixth of its height below the middle of the capitals. The picture now has the mark at the top of its box, which lands it on the middle of the codes. Where the mark stands on its own (the bar on an opened route) it's nudged back down so it stays centred between the code pills.

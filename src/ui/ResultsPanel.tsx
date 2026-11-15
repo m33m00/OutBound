@@ -693,7 +693,7 @@ function RouteEnds({ from, to }: { from: string; to: string }) {
       {pill(from)}
       {/* The plane and its level contrail between the codes, like every route title (round 209, John). */}
       <View style={styles.routeEndsTrack}>
-        <TrailMark fontSize={styles.endCode.fontSize ?? 15} />
+        <TrailMark fontSize={styles.endCode.fontSize ?? 15} alone />
       </View>
       {pill(to)}
     </View>

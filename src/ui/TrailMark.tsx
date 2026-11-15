@@ -5,12 +5,15 @@ import { forSpeech } from '@/search/format';
 import { useColors } from '@/theme';
 
 /**
- * The Jaunt plane and its level contrail, white on clear so it takes a tint (round 208, level since round 209;
- * design/assets/make-trail-mark.py). The picture is 46 by 16: the mark in the middle, clear space above and
- * below, so set inline on the baseline it sits level with the middle of the airport codes.
+ * The Jaunt plane and its level contrail, white on clear so it takes a tint (round 208, level since round 209,
+ * shorter and raised in round 210; design/assets/make-trail-mark.py). The picture is 35 by 16 with the mark in its
+ * top 11: iOS sets an inline picture a little below the baseline, so drawn at the top it lands on the middle of
+ * the airport codes' capitals (round 210, John: "bring it up more and allign it center").
  */
 const TRAIL_MARK = require('../../assets/images/trail-mark.png');
-const ASPECT = 46 / 16;
+const ASPECT = 35 / 16;
+/** Where the mark stands on its own, centred in its box: how far to move it down, as a share of its height. */
+const ALONE_DROP = 2.5 / 16;
 /** How tall the picture is next to text of a given size: about a capital letter. */
 const CAP = 0.72;
 
@@ -26,13 +29,21 @@ export function trailMarkSize(fontSize: number) {
   return { width: Math.round(height * ASPECT), height };
 }
 
-/** The plane and contrail on its own, in boarding blue unless `color` says otherwise. */
-export function TrailMark({ fontSize, color }: { fontSize: number; color?: string }) {
+/**
+ * The plane and contrail, in boarding blue unless `color` says otherwise. `alone` when it stands in a row of its
+ * own rather than inside text, so it centres in its box.
+ */
+export function TrailMark({ fontSize, color, alone = false }: { fontSize: number; color?: string; alone?: boolean }) {
   const c = useColors();
+  const size = trailMarkSize(fontSize);
   return (
     <Image
       source={TRAIL_MARK}
-      style={[trailMarkSize(fontSize), { tintColor: color ?? c.accent }]}
+      style={[
+        size,
+        { tintColor: color ?? c.accent },
+        alone && { transform: [{ translateY: Math.round(size.height * ALONE_DROP) }] },
+      ]}
       accessibilityElementsHidden
       importantForAccessibility="no"
       testID="route-trail-mark"
@@ -40,9 +51,14 @@ export function TrailMark({ fontSize, color }: { fontSize: number; color?: strin
   );
 }
 
+/** A no-break space and a word joiner: the line never breaks between a code and the mark. */
+const HOLD = '\u00A0\u2060';
+const HOLD_AFTER = '\u2060\u00A0';
+
 /**
  * Route text with the plane and contrail where the arrow was, for use as a Text's children (round 209, John:
- * "Apply it everywhere for s market"). Text without an arrow comes back as the same string.
+ * "Apply it everywhere for s market"). Code, mark, code stay on one line together (round 210, John: "The trail
+ * wraps some of the markets"). Text without an arrow comes back as the same string.
  */
 export function trails(text: string, fontSize: number, color?: string): ReactNode {
   const parts = text.split(ROUTE_ARROW);
@@ -51,8 +67,9 @@ export function trails(text: string, fontSize: number, color?: string): ReactNod
     <Fragment key={i}>
       {i > 0 ? (
         <>
-          {' '}
-          <TrailMark fontSize={fontSize} color={color} />{' '}
+          {HOLD}
+          <TrailMark fontSize={fontSize} color={color} />
+          {HOLD_AFTER}
         </>
       ) : null}
       {part}
