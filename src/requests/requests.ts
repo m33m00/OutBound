@@ -11,6 +11,7 @@
 import { addDays, AIRPORTS, localDate, tierForNetSeats, zonedToUtc, type Flight, type SeatTier } from '@/engine';
 import { sampleAircraft } from '@/engine/aircraft';
 import { SAMPLE_SCHEDULE } from '@/engine/sample/schedule';
+import { shortDate } from '@/search/dates';
 import { formatAge, formatTime, seatPair } from '@/search/format';
 
 /** Max open asks per person (DECISIONS.md). */
@@ -130,9 +131,25 @@ export const requestTitle = (r: LoadRequest) =>
 /** "Departs 10:55 AM", local at the origin; "Departs tomorrow 7:30 AM" for the next day there. */
 /** `atUtc`: a live delayed time to show instead of the schedule (round 50). */
 export function departsText(f: Flight, now: number, atUtc: number = f.departUtc): string {
+  return `Departs ${departWhen(f, now, atUtc)}`;
+}
+
+/**
+ * The day a flight leaves, at its airport: "Today", "Tomorrow", then "Tue, Nov 17" (round 216, John: "add dates to
+ * the flights. Some people will ask for days in advance").
+ */
+export function departDay(f: Flight, now: number, atUtc: number = f.departUtc): string {
   const tz = AIRPORTS[f.from].tz;
-  const day = localDate(atUtc, tz) === localDate(now, tz) ? '' : 'tomorrow ';
-  return `Departs ${day}${formatTime(atUtc, tz)}`;
+  const day = localDate(atUtc, tz);
+  const today = localDate(now, tz);
+  if (day === today) return 'Today';
+  if (day === addDays(today, 1)) return 'Tomorrow';
+  return shortDate(day);
+}
+
+/** "Today 7:20 AM", "Tomorrow 6:55 AM", "Tue, Nov 17 7:30 AM" (round 216). */
+export function departWhen(f: Flight, now: number, atUtc: number = f.departUtc): string {
+  return `${departDay(f, now, atUtc)} ${formatTime(atUtc, AIRPORTS[f.from].tz)}`;
 }
 
 /** "18 seats · 3 listed": both numbers (Q-065; no "open", round 138; no tier word, round 140). */
@@ -183,14 +200,14 @@ export function liveRequestDetail(r: LoadRequest, now: number, live: RequestLive
   switch (live.kind) {
     case 'delayed': {
       if (live.newUtc == null) return null;
-      const lead = departsText(r.flight, now, live.newUtc);
       const time = formatTime(live.newUtc, tz);
+      const day = departDay(r.flight, now, live.newUtc);
       return {
-        prefix: `${lead.slice(0, lead.length - time.length)}`,
+        prefix: `${day} `,
         time: nb(time),
         struck: nb(live.scheduledText),
         tail,
-        spoken: `${lead}, scheduled ${live.scheduledText}, asked ${asked}`,
+        spoken: `Departs ${day} ${time}, scheduled ${live.scheduledText}, asked ${asked}`,
       };
     }
     case 'canceled':
@@ -272,7 +289,7 @@ export function upcomingRequests(mine: LoadRequest[], now: number, gone?: (r: Lo
 }
 
 /** The departure line of an ask without when it was asked, which the row shows on its own (round 167). */
-export const requestDepartsLine = (r: LoadRequest, now: number) => departsText(r.flight, now);
+export const requestDepartsLine = (r: LoadRequest, now: number) => departWhen(r.flight, now);
 
 /** ready: can ask; asked: already asked about this flight; full: 5 asks still waiting; left: the flight has gone. */
 export type AskState = 'ready' | 'asked' | 'full' | 'left';

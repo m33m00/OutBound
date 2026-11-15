@@ -10,7 +10,7 @@ import { forSpeech } from '@/search/format';
 import { legLookup, legStatus } from '@/search/statusTags';
 import { SCHEDULE_SOURCE } from '@/search/useRouteSearch';
 import { EmptyState } from '@/ui/EmptyState';
-import { ListGroup, SectionFooter } from '@/ui/ListGroup';
+import { ListGroup } from '@/ui/ListGroup';
 import { ReportSheet } from '@/ui/ReportSheet';
 import { RequestRow } from '@/ui/RequestRow';
 import { TabScreen } from '@/ui/TabScreen';
@@ -58,19 +58,20 @@ export default function FeedScreen() {
   return (
     <TabScreen title="Requests">
       {open.length ? (
+        // Plain rows on the page with no heading over them or note under them (round 216, John: "Yes fix all"):
+        // the tab's title says what they are, and the answer sheet says reports are anonymous.
         <View style={styles.section}>
-          <ListGroup title="Requests on your airline’s flights">
+          <ListGroup plain>
             {open.map((r) => (
               <RequestRow key={r.id} request={r} now={now} leg={legFor(r)} onAnswer={() => setReporting(r.id)} />
             ))}
           </ListGroup>
-          <SectionFooter>Answers are anonymous.</SectionFooter>
         </View>
       ) : (
         <EmptyState icon="text.bubble" title="No requests right now" body="Asks about your airline’s flights show up here." />
       )}
       {done.length ? (
-        <ListGroup title="You answered">
+        <ListGroup title="You answered" plain>
           {done.map((r) => (
             <RequestRow key={r.id} request={r} now={now} leg={legFor(r)} />
           ))}

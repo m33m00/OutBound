@@ -209,14 +209,17 @@ describe('RequestRow', () => {
       .findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string')
       .map((n) => n.props.children);
     expect(pillTexts).toEqual([String(answered.answer!.open), '/', String(answered.answer!.listed)]);
-    // When it was asked or answered sits on its own at the right, never wrapping the line (round 167).
+    // Round 216 (John: "Yes fix all and add dates to the flights"): when it was answered follows the numbers, and
+    // when it was asked follows the flight's day and time, on the same line, so the rows line up.
     const ages = r!.root
       .findAll((n) => typeof n.type === 'string' && n.props.testID === 'request-age')
       .map((n) => String(n.props.children));
-    expect(ages).toHaveLength(2);
-    expect(ages.every((t) => /^(\d+[mhd] ago|just now)$/.test(t))).toBe(true);
-    expect(r!.root.findAll((n) => typeof n.type === 'string' && n.props.testID === 'request-departs')).toHaveLength(1);
-    expect(lineTexts(r!.root).some((t) => / asked /.test(t))).toBe(false);
+    expect(ages).toHaveLength(1);
+    expect(ages[0]).toMatch(/^answered (\d+[mhd] ago|just now)$/);
+    const departs = r!.root.findAll((n) => typeof n.type === 'string' && n.props.testID === 'request-departs');
+    expect(departs).toHaveLength(1);
+    const line = lineTexts(departs[0]).join('');
+    expect(line).toMatch(/^(Today|Tomorrow|[A-Z][a-z]{2}, [A-Z][a-z]{2} \d+) \d+:\d\d\s?[AP]M \| asked /);
     // Both rows lead with the round airline badge.
     expect(
       r!.root.findAll((n) => ['airline-mark', 'airline-logo'].includes(n.props.testID) && typeof n.type === 'string').length,

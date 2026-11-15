@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
 import {
+  answeredAgo,
   answerTier,
   liveRequestDetail,
   requestDepartsLine,
@@ -10,11 +11,12 @@ import {
 } from '@/requests/requests';
 import { formatAge, forSpeech } from '@/search/format';
 import type { LegStatusView } from '@/search/statusTags';
-import { fonts, minTapTarget, radius, spacing, textStyles, useColors } from '@/theme';
+import { fonts, minTapTarget, spacing, textStyles, useColors } from '@/theme';
 
 import { AirlineMark } from './AirlinePill';
+import { PillButton } from './Buttons';
 import { Icon } from './Icon';
-import { Divided } from './MetaLine';
+import { Divided, INLINE_DIVIDER } from './MetaLine';
 import { pressStyle } from './press';
 import { StatusTag, TAG_TONE } from './StatusTag';
 import { SeatCountPill } from './SeatCountPill';
@@ -63,6 +65,20 @@ export function RequestRow({ request, now, mine, onAnswer, onOpen, leg }: Reques
   // The detail line already says the new and old times, so the tag only adds the delay.
   const tagSpoken = tag ? (live && tag.kind === 'delayed' ? tag.spoken.split(', was ')[0] : tag.spoken) : null;
   const label = forSpeech([title, live ? live.spoken : detail, tagSpoken, spokenStatus].filter(Boolean).join('. '));
+  // When it was asked or answered, on the same line as the flight's day and time, so every row lines up (round 216,
+  // John: "Yes fix all").
+  const age = request.answer ? answeredAgo(request.answer, now) : `asked ${formatAge(request.askedAt, now)}`;
+  const ageText = (
+    <Text
+      style={[textStyles.small, { color: c.muted }]}
+      numberOfLines={1}
+      importantForAccessibility="no-hide-descendants"
+      accessibilityElementsHidden
+      testID="request-age">
+      {age}
+    </Text>
+  );
+  const divider = <Text style={[textStyles.small, { color: c.line2 }]}>{INLINE_DIVIDER}</Text>;
   const body = (
     <>
       {/* The same round airline badge as the tickets (round 164). */}
@@ -81,9 +97,12 @@ export function RequestRow({ request, now, mine, onAnswer, onOpen, leg }: Reques
           {tier && request.answer ? (
             // The answer as the route line shows seats: seat and person icons over the numbers,
             // in the seat color, in one pill (round 164; "just color and seat availability").
-            <SeatCountPill open={request.answer.open} listed={request.answer.listed} tier={tier} testID="request-counts" />
+            <>
+              <SeatCountPill open={request.answer.open} listed={request.answer.listed} tier={tier} testID="request-counts" />
+              {ageText}
+            </>
           ) : null}
-          {/* When it was asked or answered sits on its own at the right, so this line never wraps (round 167, John). */}
+          {/* The day and time it leaves, then when it was asked (round 216). */}
           {tier && request.answer ? null : (
             <Text
               lineBreakStrategyIOS="push-out"
@@ -100,6 +119,8 @@ export function RequestRow({ request, now, mine, onAnswer, onOpen, leg }: Reques
               ) : (
                 requestDepartsLine(request, now)
               )}
+              {divider}
+              {age}
             </Text>
           )}
         </View>
@@ -110,14 +131,6 @@ export function RequestRow({ request, now, mine, onAnswer, onOpen, leg }: Reques
         ) : null}
       </View>
       <View style={[styles.side, stacked && styles.sideStacked]}>
-        <Text
-          style={[textStyles.small, { color: c.muted }]}
-          numberOfLines={1}
-          importantForAccessibility="no-hide-descendants"
-          accessibilityElementsHidden
-          testID="request-age">
-          {formatAge(request.answer ? request.answer.at : request.askedAt, now)}
-        </Text>
         {status ? (
           <View
             style={[styles.badge, { backgroundColor: answered ? c.goodBg : c.surface2 }]}
@@ -131,15 +144,14 @@ export function RequestRow({ request, now, mine, onAnswer, onOpen, leg }: Reques
           </View>
         ) : null}
         {!mine && !answered && onAnswer ? (
-          <Pressable
+          // A light pill, not a filled button: the app keeps one filled main button (round 216).
+          <PillButton
+            label="Answer"
             onPress={onAnswer}
-            accessibilityRole="button"
             accessibilityLabel={`Answer ${forSpeech(title)}`}
             accessibilityHint="Opens Report Load"
             testID="answer-request"
-            style={pressStyle([styles.answer, { backgroundColor: c.accent }])}>
-            <Text style={[textStyles.button, { color: c.onAccent }]}>Answer</Text>
-          </Pressable>
+          />
         ) : null}
       </View>
       {onOpen ? (
@@ -186,18 +198,11 @@ const styles = StyleSheet.create({
   // Large text: the chevron stays, at the row's top right, so the row still reads as tappable.
   chevronStacked: { position: 'absolute', top: spacing.rowY + 4, right: spacing.rowX },
   detailLine: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6, marginTop: 2 },
-  // The age over the button or badge, both at the right edge.
+  // The button or badge at the right edge.
   side: { alignItems: 'flex-end', gap: 6 },
   sideStacked: { alignItems: 'flex-start', alignSelf: 'flex-start' },
   detail: { flexShrink: 1 },
   mark: { alignSelf: 'flex-start', marginTop: 2 },
   badge: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 999 },
   badgeText: { fontFamily: fonts.bodySemiBold },
-  answer: {
-    minHeight: minTapTarget,
-    paddingHorizontal: spacing.page,
-    borderRadius: radius.all,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
 });

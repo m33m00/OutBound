@@ -1048,3 +1048,14 @@ John sent the DAL to LAX results page in light mode ("what about this page") and
 - Every route with a stop says its connection now: the tightest one, "2h 10m connection at DEN", where before only those under an hour showed.
 - Routes that double back are gone: Jayden's change (#20) is brought into this test copy, so no route connects through the origin's or destination's area (DAL and DFW are both Dallas). DAL to DEN to DFW to LAX no longer shows.
 - Ticket outlines are a hairline. The white paper and torn notches still make each one a ticket.
+
+## Round 216 (Nov 15): the Requests tab, calmer, with dates
+
+John sent the Requests tab ("what about this page") and, on the five things named back to him, said "Yes fix all and add dates to the flights. Some people will ask for days in advance".
+
+- Answer is a light blue pill, not a big filled button on every row: the app keeps one filled main button.
+- The requests are plain rows on the page with hairlines between, no card, outline or shadow; "You answered" too.
+- No "Requests on your airline's flights" heading over them: the tab's title says it.
+- Each row's second line is the day and time it leaves, then when it was asked: "Today 7:20 AM | asked 48m ago", "Tomorrow 6:55 AM", "Tue, Nov 17 7:30 AM". An answered row reads its numbers, then "answered 2m ago". Nothing floats above the button.
+- "Answers are anonymous" is gone from under the list; the answer sheet already says reports are anonymous.
+- My Trips' own requests and the answer sheet's flight line show the day the same way.
