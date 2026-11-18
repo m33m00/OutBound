@@ -12,9 +12,10 @@ import {
 } from 'react-native';
 
 import { useAirportHold } from './AirportSummary';
-import { AIRPORTS, areaFor } from '@/engine';
+import { AIRPORTS, areaFor, type PlaceRef } from '@/engine';
 import { QUICK_DATE_CHIPS, type DateChip } from '@/search/dates';
-import { minTapTarget, radius, spacing, textStyles, useColors } from '@/theme';
+import { inPlace, placeCodes } from '@/search/places';
+import { fonts, minTapTarget, radius, spacing, textStyles, useColors } from '@/theme';
 
 import { Button } from './Buttons';
 import { DatePickerModal } from './DatePickerModal';
@@ -31,6 +32,9 @@ export interface SearchPanelProps {
   onDate: (date: string) => void;
   origin: string | null;
   destination: string | null;
+  /** A whole country, state or city picked as From or To (round 224): the card shows its name. */
+  originGroup?: PlaceRef | null;
+  destinationGroup?: PlaceRef | null;
   onPickOrigin: () => void;
   /** What the empty From card says ("Finding nearest airport…" after Allow); default "Choose airport". */
   originEmptyText?: string;
@@ -75,6 +79,8 @@ interface AirportCardProps {
   swapCount?: number;
   /** Which side the new code comes from: 1 = from the right (From), -1 = from the left (To). */
   slideFrom?: 1 | -1;
+  /** A whole place picked (round 224): its name big, its airports under it, and no area pill. */
+  group?: PlaceRef | null;
 }
 
 /** Swap motion (John, 2026-11-01): the button turns half a turn while the codes slide past each other. */
@@ -123,6 +129,7 @@ export function AirportCard({
   onToggleArea,
   swapCount = 0,
   slideFrom = 1,
+  group,
 }: AirportCardProps) {
   const reduce = useReducedMotion();
   const slide = useSwapSlide(swapCount, slideFrom * SWAP_SLIDE, reduce);
@@ -131,10 +138,10 @@ export function AirportCard({
   const action = !code && ask ? { status: emptyText.slice(0, ask.index).trim(), ask: ask[1] } : null;
   const c = useColors();
   const well = useGlassWell();
-  const name = code ? AIRPORTS[code]?.name : undefined;
-  const area = code ? areaFor(code) : null;
-  // Hold the card for the airport's summary (round 174).
-  const hold = useAirportHold(code);
+  const name = group ? placeCodes(group.airports) : code ? AIRPORTS[code]?.name : undefined;
+  const area = code && !group ? areaFor(code) : null;
+  // Hold the card for the airport's summary (round 174); a place has no one summary.
+  const hold = useAirportHold(group ? null : code);
   const whole = area != null && areaOn;
   const ink = areaOn ? c.onAccent : c.muted;
   return (
@@ -179,13 +186,15 @@ export function AirportCard({
         accessibilityHint={hold.onLongPress ? 'Hold for airport info' : undefined}
         accessibilityRole="button"
         accessibilityLabel={
-          code
-            ? `${label}: ${code}, ${name}${whole ? `, all ${area.city} airports` : ''}. Change`
-            : emptyText === 'Choose airport'
-              ? `${label}: choose an airport`
-              : /choose/i.test(emptyText)
-                ? `${label}: ${emptyText}`
-                : `${label}: ${emptyText} Choose an airport`
+          group
+            ? `${label}: all of ${inPlace(group.name)}, ${listText(group.airports)}. Change`
+            : code
+              ? `${label}: ${code}, ${name}${whole ? `, all ${area.city} airports` : ''}. Change`
+              : emptyText === 'Choose airport'
+                ? `${label}: choose an airport`
+                : /choose/i.test(emptyText)
+                  ? `${label}: ${emptyText}`
+                  : `${label}: ${emptyText} Choose an airport`
         }
         style={pressStyle(styles.cardButton, 'link')}>
         <Text
@@ -195,9 +204,21 @@ export function AirportCard({
           {label}
         </Text>
         <Animated.View style={slide} testID="card-code">
-          <Text lineBreakStrategyIOS="push-out" style={[textStyles.code, styles.bigCode, { color: code ? c.text : c.faint }]}>
-            {code ?? '—'}
-          </Text>
+          {group ? (
+            // A place's name in the same big line a code takes, shrinking to fit rather than wrapping.
+            <Text
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.6}
+              style={[textStyles.code, styles.bigCode, styles.bigPlace, { color: c.text }]}
+              testID="card-place">
+              {group.name}
+            </Text>
+          ) : (
+            <Text lineBreakStrategyIOS="push-out" style={[textStyles.code, styles.bigCode, { color: code ? c.text : c.faint }]}>
+              {code ?? '—'}
+            </Text>
+          )}
         </Animated.View>
         {whole ? (
           <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.text }]}>
@@ -406,6 +427,7 @@ export function SearchPanel(p: SearchPanelProps) {
         <AirportCard
           label="From"
           code={p.origin}
+          group={p.originGroup}
           emptyText={p.originEmptyText}
           waiting={p.originWaiting}
           onPress={p.onPickOrigin}
@@ -435,6 +457,7 @@ export function SearchPanel(p: SearchPanelProps) {
         <AirportCard
           label="To"
           code={p.destination}
+          group={p.destinationGroup}
           onPress={p.onPickDestination}
           areaOn={!!(p.destination && p.areaOn[p.destination])}
           onToggleArea={() => p.destination && p.onToggleArea(p.destination)}
@@ -571,6 +594,8 @@ const styles = StyleSheet.create({
   emptyText: { flexShrink: 1 },
   // The From and To codes are the hero of the search card, a little bigger than codes elsewhere (round 114).
   bigCode: { fontSize: 30, lineHeight: 34, letterSpacing: -0.5 },
+  // A place's name is words, not a code: Sora, a size down so "United States" fits half the panel.
+  bigPlace: { fontFamily: fonts.bodySemiBold, fontSize: 24, letterSpacing: -0.3 },
   chipDate: { alignItems: 'center' },
   chipBack: { position: 'absolute', borderRadius: radius.all },
   body: { paddingHorizontal: spacing.page, paddingBottom: spacing.page, gap: spacing.section },

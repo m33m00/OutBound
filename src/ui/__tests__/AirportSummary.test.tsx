@@ -3,7 +3,7 @@ import { Text } from 'react-native';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 
 import { AIRPORT_INFO, airportInfo, checkedText } from '@/airports/airportInfo';
-import { AIRPORTS } from '@/engine';
+import { AIRPORTS, SAMPLE_ONLY_AIRPORTS } from '@/engine';
 
 import { AirportSummaryProvider, AirportSummarySheet, useAirportHold } from '../AirportSummary';
 
@@ -19,8 +19,8 @@ const text = (r: ReactTestRenderer) =>
     .join('\n');
 
 describe('airport summary (round 174)', () => {
-  it('has checked facts for every airport in the table, nothing invented', () => {
-    for (const code of Object.keys(AIRPORTS)) {
+  it('has checked facts for every airport in the table (round 224 sample-only ones aside), nothing invented', () => {
+    for (const code of Object.keys(AIRPORTS).filter((c) => !SAMPLE_ONLY_AIRPORTS.has(c))) {
       const info = airportInfo(code);
       expect(info).not.toBeNull();
       expect(info!.checked).toMatch(/^\d{4}-\d{2}-\d{2}$/);

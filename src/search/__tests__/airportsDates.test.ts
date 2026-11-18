@@ -6,7 +6,8 @@ describe('matchAirports', () => {
     expect(matchAirports('  ')).toHaveLength(SEARCH_AIRPORTS.length);
   });
   it('puts an exact code first, then prefixes, then names', () => {
-    expect(matchAirports('dal').map((a) => a.code)).toEqual(['DAL', 'DFW']); // DFW name has "Dallas"
+    expect(matchAirports('dal').map((a) => a.code)).toEqual(['DAL', 'DFW']); // DFW name has "Dallas", Fort Lauderdale doesn't count
+    expect(matchAirports('cancun').map((a) => a.code)).toEqual(['CUN']);
     expect(
       matchAirports('D')
         .map((a) => a.code)

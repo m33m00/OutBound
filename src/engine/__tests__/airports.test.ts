@@ -9,9 +9,14 @@ describe('areaFor (Q-048)', () => {
   });
 
   it('needs 2+ airports in the data', () => {
-    // LGA, ORD, LAX and MIA are in the data, but their area partners are not yet.
-    for (const code of ['LGA', 'ORD', 'LAX', 'MIA', 'BNA']) expect(areaFor(code)).toBeNull();
-    expect(areaFor('JFK')).toBeNull(); // not in the data at all
+    // LAX's area partners aren't in the data yet, and Nashville has no area.
+    for (const code of ['LAX', 'BNA']) expect(areaFor(code)).toBeNull();
+    expect(areaFor('EWR')).toBeNull(); // not in the data at all
+    // Round 224's sample airports fill out New York, Chicago, Miami, Houston, London and Tokyo.
+    expect(areaFor('LGA')).toEqual({ city: 'New York', airports: ['JFK', 'LGA'] });
+    expect(areaFor('ORD')).toEqual({ city: 'Chicago', airports: ['ORD', 'MDW'] });
+    expect(areaFor('MIA')).toEqual({ city: 'Miami', airports: ['MIA', 'FLL'] });
+    expect(areaFor('NRT')).toEqual({ city: 'Tokyo', airports: ['HND', 'NRT'] });
   });
 
   it('counts only known airports, in table order', () => {

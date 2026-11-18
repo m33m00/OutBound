@@ -1,6 +1,7 @@
 /** Preview arc and home ripple (John, 2026-11-01), with Skia mocked to plain elements. */
 jest.mock('@shopify/react-native-skia', () => ({
   Circle: 'Circle',
+  Group: 'SkiaGroup',
   Path: 'SkiaPath',
   Skia: { Path: { MakeFromSVGString: (d: string) => ({ d }) } },
 }));

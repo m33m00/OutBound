@@ -1,6 +1,6 @@
 import { AIRPORTS } from '@/engine';
 
-import { nearestAirport } from '../airports';
+import { nearestAirport, searchAirports } from '../airports';
 import { chooseOrigin, restSpot, showLocationCard } from '../origin';
 
 describe('nearestAirport (Q-051)', () => {
@@ -15,9 +15,11 @@ describe('nearestAirport (Q-051)', () => {
 
   it('answers however far away the phone is', () => {
     // Honolulu: nothing nearby in the sample data, still an airport.
-    expect(nearestAirport(21.3, -157.85)).toBe('LAX');
-    // London.
-    expect(nearestAirport(51.5, -0.12)).toBe('LGA');
+    expect(nearestAirport(21.3, -157.85)).toBe('SFO');
+    // London (Heathrow since round 224 added it).
+    expect(nearestAirport(51.5, -0.12)).toBe('LHR');
+    // Mid-Pacific with only the US airports: still an airport.
+    expect(nearestAirport(0, -170, searchAirports(true))).toBe('LAX');
   });
 
   it('is null only with no airports', () => {

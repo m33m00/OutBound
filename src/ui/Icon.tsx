@@ -9,6 +9,9 @@ import { Platform, type ColorValue } from 'react-native';
  */
 export const MATERIAL: Partial<Record<SFSymbol, keyof typeof MaterialIcons.glyphMap>> = {
   magnifyingglass: 'search',
+  // Round 224: countries, states and cities in the airport picker.
+  globe: 'public',
+  'building.2': 'location-city',
   // Round 176: plans and credits.
   'ticket.fill': 'confirmation-number',
   'lock.fill': 'lock',

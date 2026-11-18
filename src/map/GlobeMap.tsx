@@ -42,7 +42,8 @@ import { hitTestRoutes } from './hitTest';
 import { RouteLegend } from './RouteLegend';
 import { recordRouteLayer, type RouteLayer } from './routeLayer';
 import { RoutePulses } from './RoutePulses';
-import { HomeRipple, PreviewArc } from './HomeMotion';
+import { HomeRipple, PreviewArcs } from './HomeMotion';
+import { PREVIEW } from './homeMotionTiming';
 import { drawnRoutes, nextSelection, routeSpokenName } from './routeModel';
 import { recordBaseLayer, recordRimLayer } from './staticLayer';
 import { canvasLayerOrder, RADAR, radarKey, radarSummary, type CanvasLayerName } from './radar';
@@ -515,18 +516,30 @@ export function GlobeMap({
   ]);
   const radarSpoken = radarSummary(radarImages.length);
 
-  // Preview arc between From and To before a search (John, 2026-11-01), re-projected with the camera.
-  const previewKey = preview ? JSON.stringify([preview.from, preview.to]) : '';
+  // Preview arcs between From and To before a search (John, 2026-11-01; several for a place since round 224),
+  // bowed only a little and re-projected with the camera.
+  const previewKey = preview?.lines.length ? JSON.stringify(preview.lines.map((l) => [l.from, l.to])) : '';
   const previewSamples = useMemo(() => {
     if (!previewKey) return null;
-    const [a, b] = JSON.parse(previewKey) as [LonLat, LonLat];
-    return arcSamples(a, b);
+    const pairs = JSON.parse(previewKey) as [LonLat, LonLat][];
+    return { lines: pairs.map(([a, b]) => arcSamples(a, b, PREVIEW.lift)), ends: uniqueEnds(pairs) };
   }, [previewKey]);
-  const previewRuns = useMemo(() => {
+  const previewDrawn = useMemo(() => {
     if (!previewSamples || !viewport || !camera || drawn.length > 0) return null;
-    const runs = projectSamples(previewSamples, makeLiftedProjector(camera, viewport));
-    return runs.length ? runs : null;
+    const project = makeLiftedProjector(camera, viewport);
+    const lines = previewSamples.lines.map((s) => projectSamples(s, project)).filter((r) => r.length > 0);
+    if (!lines.length) return null;
+    // A dot at each airport only when there are several lines: one line's two ends already carry the marks.
+    const dots =
+      previewSamples.lines.length > 1
+        ? previewSamples.ends.flatMap((ll) => {
+            const p = project(ll, 1);
+            return p.visible ? [{ x: p.x, y: p.y }] : [];
+          })
+        : [];
+    return { lines, dots };
   }, [previewSamples, viewport, camera, drawn.length]);
+  const previewRuns = previewDrawn;
   // Ripple off the home pin: only with home motion on, nothing selected, and the globe still.
   const homeMark = marks.find((m) => m.kind === 'home');
   const ripple = useMemo(() => {
@@ -744,7 +757,14 @@ export function GlobeMap({
                   return (
                     <Group key={name}>
                       {previewRuns ? (
-                        <PreviewArc runs={previewRuns} pairKey={previewKey} color={markColorSet.ink} animate={!reduceMotion} />
+                        <PreviewArcs
+                          lines={previewRuns.lines}
+                          dots={previewRuns.dots}
+                          pairKey={previewKey}
+                          color={palette.accent}
+                          ring={palette.bg}
+                          animate={!reduceMotion}
+                        />
                       ) : null}
                       {ripple ? <HomeRipple x={ripple.x} y={ripple.y} r={ripple.r} color={markColorSet.you} /> : null}
                       <Picture picture={picture} />
@@ -788,3 +808,10 @@ const styles = StyleSheet.create({
   fill: { flex: 1 },
   legend: { position: 'absolute' },
 });
+
+/** Each airport at the end of a preview line, once. */
+function uniqueEnds(pairs: readonly [LonLat, LonLat][]): LonLat[] {
+  const seen = new Map<string, LonLat>();
+  for (const ll of pairs.flat()) seen.set(ll.join(','), ll);
+  return [...seen.values()];
+}

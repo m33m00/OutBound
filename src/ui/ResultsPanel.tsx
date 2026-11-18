@@ -15,9 +15,10 @@ import {
 } from 'react-native';
 import { GestureDetector, usePanGesture } from 'react-native-gesture-handler';
 
-import { AIRPORTS, areaFor, localDate, type Flight, type Itinerary, type SearchRequest } from '@/engine';
+import { AIRPORTS, areaFor, localDate, type Flight, type Itinerary, type PlaceRef, type SearchRequest } from '@/engine';
 import type { RouteImpact } from '@/live';
 import { shortDate, type DateChip } from '@/search/dates';
+import { inPlace, placeCodes } from '@/search/places';
 import { formatTime } from '@/search/format';
 import { departedFirst, type RowStatus } from '@/search/statusTags';
 import type { SearchState } from '@/search/useRouteSearch';
@@ -102,7 +103,9 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
     p.state.status === 'loading' &&
     !!prev &&
     prev.request.origin === p.state.request.origin &&
-    prev.request.destination === p.state.request.destination;
+    prev.request.destination === p.state.request.destination &&
+    prev.request.originGroup?.key === p.state.request.originGroup?.key &&
+    prev.request.destinationGroup?.key === p.state.request.destinationGroup?.key;
   const shown: SearchState = paging && prev ? prev : p.state;
   const dim = useRef(new Animated.Value(1)).current;
   useEffect(() => {
@@ -117,8 +120,12 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
   }, [paging, reduceMotion, dim]);
   const { request } = p.state;
   const listDate = shown.request.date;
-  const routeTitle = `${request.origin} → ${request.destination}`;
-  const routeSpoken = `${request.origin} to ${request.destination}`;
+  // A picked country, state or city is titled by its name: "United States → Madrid" (round 224).
+  const fromName = request.originGroup?.name ?? request.origin;
+  const toName = request.destinationGroup?.name ?? request.destination;
+  const placeTitle = !!(request.originGroup || request.destinationGroup);
+  const routeTitle = `${fromName} → ${toName}`;
+  const routeSpoken = `${fromName} to ${toName}`;
   const results = departedFirst(shown.status !== 'done' ? [] : p.showingHidden ? shown.hiddenResults : shown.results, p.statuses);
   const full = results.filter((r) => r.isFull).length;
   // The Now line is for today's flights only (John, 2026-11-02), by the origin's own date.
@@ -215,7 +222,10 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
             style={[textStyles.routeTitle, styles.title, { color: c.text }]}
             accessibilityRole="header"
             accessibilityLabel={routeSpoken}
-            numberOfLines={2}>
+            // Place names shrink to fit one line rather than wrap (no wrapping, John).
+            numberOfLines={placeTitle ? 1 : 2}
+            adjustsFontSizeToFit={placeTitle}
+            minimumFontScale={0.7}>
             {trails(routeTitle, textStyles.routeTitle.fontSize)}
           </Text>
         }
@@ -258,9 +268,16 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
   const areas = areaLines(request);
   const countBeside = stepsDays && !!summary;
   const callout = areaCallouts(request)[0] ?? null;
+  // The line the callout stands for (each side has at most one line, From's first); it's said, not shown twice.
+  const calloutLine = callout ? (callout.from ? areas[0] : areas[areas.length - 1]) : undefined;
   const notes = [
     ...(!stepsDays && summary ? [{ key: 'summary', text: summary, testID: 'results-summary', strong: true }] : []),
-    ...(countBeside ? areas.slice(1) : areas).map((text) => ({ key: text, text, testID: undefined, strong: false })),
+    ...(countBeside && calloutLine ? areas.filter((l) => l !== calloutLine) : areas).map((text) => ({
+      key: text,
+      text,
+      testID: undefined,
+      strong: false,
+    })),
     ...(p.note ? [{ key: 'note', text: p.note, testID: 'results-note', strong: false }] : []),
     ...(p.showingHidden
       ? [{ key: 'hidden', text: 'Showing routes your filters hid, for this search only.', testID: undefined, strong: false }]
@@ -272,7 +289,7 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
       {/* The searched area as its airport codes only, so it stays on one line (round 202, John: "only put airport
           codes to shorten the callout because it's wrapping onto a second row"). VoiceOver still says it whole. */}
       {callout ? (
-        <View style={styles.areaCallout} accessible accessibilityLabel={areas[0]} testID="results-leaving">
+        <View style={styles.areaCallout} accessible accessibilityLabel={calloutLine} testID="results-leaving">
           <Icon
             name={callout.from ? 'airplane.departure' : 'airplane.arrival'}
             size={14}
@@ -810,7 +827,9 @@ function PagerMarks({ count, index, onPick }: { count: number; index: number; on
  * the picked airports: "Leaving from any Dallas, TX airport (DAL, DFW)".
  */
 export function areaLines(request: SearchRequest): string[] {
-  const line = (code: string, on: boolean | undefined, lead: string) => {
+  const line = (code: string, on: boolean | undefined, lead: string, group?: PlaceRef) => {
+    // A picked country, state or city (round 224): "Leaving from anywhere in Spain (MAD, BCN)".
+    if (group) return `${lead} anywhere in ${inPlace(group.name)} (${placeCodes(group.airports)})`;
     const area = on ? areaFor(code) : null;
     if (!area) return null;
     // "Dallas, TX": the state for a US area, the country code elsewhere (round 161, John).
@@ -820,8 +839,8 @@ export function areaLines(request: SearchRequest): string[] {
     return `${lead} any ${place} airport (${area.airports.join(', ')})`;
   };
   return [
-    line(request.origin, request.originArea, 'Leaving from'),
-    line(request.destination, request.destinationArea, 'Landing at'),
+    line(request.origin, request.originArea, 'Leaving from', request.originGroup),
+    line(request.destination, request.destinationArea, 'Landing at', request.destinationGroup),
   ].filter((l): l is string => l != null);
 }
 
@@ -835,13 +854,16 @@ export interface AreaCallout {
 }
 
 export function areaCallouts(request: SearchRequest): AreaCallout[] {
-  const side = (code: string, on: boolean | undefined, from: boolean): AreaCallout | null => {
+  const side = (code: string, on: boolean | undefined, from: boolean, group?: PlaceRef): AreaCallout | null => {
+    // A place's codes, while they still fit one line; a big place says its count in the line under instead.
+    if (group) return group.airports.length <= 4 ? { from, codes: group.airports } : null;
     const area = on ? areaFor(code) : null;
     return area ? { from, codes: area.airports } : null;
   };
-  return [side(request.origin, request.originArea, true), side(request.destination, request.destinationArea, false)].filter(
-    (x): x is AreaCallout => x != null,
-  );
+  return [
+    side(request.origin, request.originArea, true, request.originGroup),
+    side(request.destination, request.destinationArea, false, request.destinationGroup),
+  ].filter((x): x is AreaCallout => x != null);
 }
 
 /**

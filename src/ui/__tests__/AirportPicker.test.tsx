@@ -69,6 +69,9 @@ describe('AirportPicker (design round 3)', () => {
     act(() => {
       r = create(<AirportPicker visible title="To" onPick={jest.fn()} onClose={jest.fn()} />);
     });
+    // 30 airports since round 224, so find it by typing rather than scrolling.
+    const input = r!.root.find((n) => n.props.accessibilityLabel === 'Search airports' && n.props.onChangeText);
+    act(() => input.props.onChangeText('LAX'));
     await act(async () => {
       rows()
         .find((n) => n.props.accessibilityLabel.startsWith('LAX'))!

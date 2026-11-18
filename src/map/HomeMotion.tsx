@@ -1,7 +1,7 @@
-import { Circle, Path, Skia, type SkPath } from '@shopify/react-native-skia';
+import { Circle, Group, Path, Skia, type SkPath } from '@shopify/react-native-skia';
 import { useEffect, useMemo, useState } from 'react';
 
-import { runsToSvg, type Runs } from './arcs';
+import { runsToSvg, type Pt, type Runs } from './arcs';
 import { drawProgress, PREVIEW, RIPPLE, rippleAt } from './homeMotionTiming';
 
 /** Skia path through screen runs (each run its own contour). */
@@ -41,12 +41,8 @@ export function HomeRipple({ x, y, r, color }: { x: number; y: number; r: number
   return <Circle cx={x} cy={y} r={r + ring.grow} color={color} opacity={ring.alpha} style="stroke" strokeWidth={2} />;
 }
 
-/**
- * Faint arc between From and To before a search, drawing itself from From each time the pair
- * changes, then staying put (John, 2026-11-01). `animate` false (Reduce Motion) shows it whole.
- */
-export function PreviewArc({ runs, pairKey, color, animate }: { runs: Runs; pairKey: string; color: string; animate: boolean }) {
-  const path = useMemo(() => runsPath(runs), [runs]);
+/** Draws 0 to 1 over PREVIEW.drawMs each time `key` changes; whole at once without motion. */
+function useDrawIn(key: string, animate: boolean): number {
   const [progress, setProgress] = useState(animate ? 0 : 1);
   useEffect(() => {
     if (!animate) {
@@ -68,19 +64,64 @@ export function PreviewArc({ runs, pairKey, color, animate }: { runs: Runs; pair
       alive = false;
       cancelAnimationFrame(frame);
     };
-  }, [pairKey, animate]);
-  if (!path || progress <= 0) return null;
+  }, [key, animate]);
+  return progress;
+}
+
+/**
+ * The preview between From and To before a search (John, 2026-11-01): each line draws itself from its From
+ * end, all together, then stays put. Since round 224 there can be several (a country, state or city), each a
+ * thin blue line with a small dot at both airports, like the hub map John sent. `animate` false (Reduce
+ * Motion) shows them whole.
+ */
+export function PreviewArcs({
+  lines,
+  dots = [],
+  pairKey,
+  color,
+  ring,
+  animate,
+}: {
+  lines: readonly Runs[];
+  dots?: readonly Pt[];
+  pairKey: string;
+  color: string;
+  /** The thin ring around each dot, so it reads on land and sea alike. */
+  ring?: string;
+  animate: boolean;
+}) {
+  const paths = useMemo(() => lines.map(runsPath), [lines]);
+  const progress = useDrawIn(pairKey, animate);
+  if (progress <= 0) return null;
   return (
-    <Path
-      path={path}
-      start={0}
-      end={progress}
-      style="stroke"
-      strokeWidth={PREVIEW.width}
-      strokeCap="round"
-      strokeJoin="round"
-      color={color}
-      opacity={PREVIEW.alpha}
-    />
+    <>
+      {paths.map((path, i) =>
+        path ? (
+          <Path
+            key={i}
+            path={path}
+            start={0}
+            end={progress}
+            style="stroke"
+            strokeWidth={PREVIEW.width}
+            strokeCap="round"
+            strokeJoin="round"
+            color={color}
+            opacity={PREVIEW.alpha}
+          />
+        ) : null,
+      )}
+      {dots.map((d, i) => (
+        <Group key={`dot${i}`} opacity={progress}>
+          {ring ? <Circle cx={d.x} cy={d.y} r={PREVIEW.dot + PREVIEW.ring} color={ring} /> : null}
+          <Circle cx={d.x} cy={d.y} r={PREVIEW.dot} color={color} />
+        </Group>
+      ))}
+    </>
   );
+}
+
+/** One preview line, as before round 224. */
+export function PreviewArc({ runs, pairKey, color, animate }: { runs: Runs; pairKey: string; color: string; animate: boolean }) {
+  return <PreviewArcs lines={[runs]} pairKey={pairKey} color={color} animate={animate} />;
 }

@@ -1,7 +1,7 @@
 import type { Airport } from './types';
 
 /**
- * Sample airport table. The real list (~30 airports) arrives with the
+ * Sample airport table (30 airports since round 224). The real list arrives with the
  * schedule DB. Coordinates are airport reference points, rounded.
  */
 export const AIRPORTS: Record<string, Airport> = Object.fromEntries(
@@ -19,12 +19,77 @@ export const AIRPORTS: Record<string, Airport> = Object.fromEntries(
       ['ORD', "Chicago O'Hare", -87.9073, 41.9742, 'America/Chicago', 'Chicago', 'IL', 'US', "O'Hare"],
       ['PHX', 'Phoenix', -112.0116, 33.4342, 'America/Phoenix', 'Phoenix', 'AZ', 'US', 'Sky Harbor'],
       ['SEA', 'Seattle', -122.3088, 47.4502, 'America/Los_Angeles', 'Seattle', 'WA', 'US', 'Seattle-Tacoma'],
+      // Round 224 (John: browse by country, state and city, "especially for international"): more US airports
+      // so states and cities have choices, and a few abroad so countries do. Sample data like the rest.
+      ['AUS', 'Austin', -97.6699, 30.1945, 'America/Chicago', 'Austin', 'TX', 'US', 'Austin-Bergstrom'],
+      ['IAH', 'Houston Bush', -95.3414, 29.9902, 'America/Chicago', 'Houston', 'TX', 'US', 'George Bush Intercontinental'],
+      ['HOU', 'Houston Hobby', -95.2789, 29.6454, 'America/Chicago', 'Houston', 'TX', 'US', 'Hobby'],
+      ['JFK', 'New York JFK', -73.7781, 40.6413, 'America/New_York', 'New York', 'NY', 'US', 'John F. Kennedy International'],
+      ['MDW', 'Chicago Midway', -87.7524, 41.7868, 'America/Chicago', 'Chicago', 'IL', 'US', 'Midway'],
+      [
+        'SFO',
+        'San Francisco',
+        -122.379,
+        37.6213,
+        'America/Los_Angeles',
+        'San Francisco',
+        'CA',
+        'US',
+        'San Francisco International',
+      ],
+      ['MCO', 'Orlando', -81.3081, 28.4312, 'America/New_York', 'Orlando', 'FL', 'US', 'Orlando International'],
+      [
+        'FLL',
+        'Fort Lauderdale',
+        -80.1527,
+        26.0742,
+        'America/New_York',
+        'Fort Lauderdale',
+        'FL',
+        'US',
+        'Fort Lauderdale-Hollywood',
+      ],
+      ['YYZ', 'Toronto', -79.6248, 43.6777, 'America/Toronto', 'Toronto', 'ON', 'CA', 'Pearson'],
+      ['YVR', 'Vancouver', -123.1815, 49.1947, 'America/Vancouver', 'Vancouver', 'BC', 'CA', 'Vancouver International'],
+      ['CUN', 'Cancún', -86.8771, 21.0365, 'America/Cancun', 'Cancún', 'ROO', 'MX', 'Cancún International'],
+      ['MEX', 'Mexico City', -99.0721, 19.4361, 'America/Mexico_City', 'Mexico City', 'CMX', 'MX', 'Benito Juárez International'],
+      ['LHR', 'London Heathrow', -0.4543, 51.47, 'Europe/London', 'London', 'ENG', 'GB', 'Heathrow'],
+      ['LGW', 'London Gatwick', -0.1821, 51.1537, 'Europe/London', 'London', 'ENG', 'GB', 'Gatwick'],
+      ['MAD', 'Madrid', -3.5676, 40.4983, 'Europe/Madrid', 'Madrid', 'MD', 'ES', 'Adolfo Suárez Madrid-Barajas'],
+      ['BCN', 'Barcelona', 2.0785, 41.2974, 'Europe/Madrid', 'Barcelona', 'CT', 'ES', 'Josep Tarradellas Barcelona-El Prat'],
+      ['HND', 'Tokyo Haneda', 139.7798, 35.5494, 'Asia/Tokyo', 'Tokyo', '13', 'JP', 'Haneda'],
+      ['NRT', 'Tokyo Narita', 140.3929, 35.772, 'Asia/Tokyo', 'Tokyo', '12', 'JP', 'Narita'],
     ] as const
   ).map(([code, name, lon, lat, tz, city, region, country, airportName]) => [
     code,
     { code, name, lon, lat, tz, city, region, country, airportName },
   ]),
 );
+
+/**
+ * The round 224 airports are sample data only: the daily live schedule pull (scheduleConfig.ts) costs money per
+ * airport and still covers just the first twelve, so with live schedules on the picker hides these.
+ */
+export const SAMPLE_ONLY_AIRPORTS: ReadonlySet<string> = new Set([
+  'AUS',
+  'IAH',
+  'HOU',
+  'JFK',
+  'MDW',
+  'SFO',
+  'MCO',
+  'FLL',
+  'YYZ',
+  'YVR',
+  'CUN',
+  'MEX',
+  'LHR',
+  'LGW',
+  'MAD',
+  'BCN',
+  'HND',
+  'NRT',
+]);
 
 /**
  * Where an airport is, the way a person says it: "Dallas, TX" in the US, and city plus country code

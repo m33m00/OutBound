@@ -101,7 +101,7 @@ describe('createScheduleProvider', () => {
   });
 
   it('drops rows outside the window, from another airport or to an unknown airport', async () => {
-    const odd = [...table, flight('WN', '88', 'DAL', 'HOU', NOW + H, 60), flight('WN', '7', 'DFW', 'DEN', NOW + H, 90)];
+    const odd = [...table, flight('WN', '88', 'DAL', 'OKC', NOW + H, 60), flight('WN', '7', 'DFW', 'DEN', NOW + H, 90)];
     const fetcher: Fetcher = async () => ({
       ok: true,
       status: 200,
