@@ -12,15 +12,18 @@ import {
 } from 'react-native';
 
 import { useAirportHold } from './AirportSummary';
-import { AIRPORTS, areaFor } from '@/engine';
+import { AIRPORTS, areaFor, type PlaceRef } from '@/engine';
 import { QUICK_DATE_CHIPS, type DateChip } from '@/search/dates';
-import { minTapTarget, radius, spacing, textStyles, useColors } from '@/theme';
+import { inPlace, placeCodes } from '@/search/places';
+import { fonts, minTapTarget, radius, spacing, textStyles, useColors } from '@/theme';
 
 import { Button } from './Buttons';
 import { DatePickerModal } from './DatePickerModal';
+import { useGlassWell } from './Glass';
 import { Icon } from './Icon';
 import { pressStyle } from './press';
 import { withTick } from './haptics';
+import { TrailLoader } from './TrailLoader';
 import { useReducedMotion } from './useReducedMotion';
 
 export interface SearchPanelProps {
@@ -29,9 +32,14 @@ export interface SearchPanelProps {
   onDate: (date: string) => void;
   origin: string | null;
   destination: string | null;
+  /** A whole country, state or city picked as From or To (round 224): the card shows its name. */
+  originGroup?: PlaceRef | null;
+  destinationGroup?: PlaceRef | null;
   onPickOrigin: () => void;
   /** What the empty From card says ("Finding nearest airport…" after Allow); default "Choose airport". */
   originEmptyText?: string;
+  /** Still finding the nearest airport: the From card shows the loader beside its line (round 223). */
+  originWaiting?: boolean;
   onPickDestination: () => void;
   onSwap: () => void;
   /** Area toggle per airport code (Q-048); missing = off. */
@@ -62,6 +70,8 @@ interface AirportCardProps {
   code: string | null;
   /** Second line while empty; defaults to "Choose airport". */
   emptyText?: string;
+  /** Waiting on something to fill it (your location): the loader shows beside the line. */
+  waiting?: boolean;
   onPress: () => void;
   areaOn: boolean;
   onToggleArea: () => void;
@@ -69,6 +79,8 @@ interface AirportCardProps {
   swapCount?: number;
   /** Which side the new code comes from: 1 = from the right (From), -1 = from the left (To). */
   slideFrom?: 1 | -1;
+  /** A whole place picked (round 224): its name big, its airports under it, and no area pill. */
+  group?: PlaceRef | null;
 }
 
 /** Swap motion (John, 2026-11-01): the button turns half a turn while the codes slide past each other. */
@@ -111,11 +123,13 @@ export function AirportCard({
   label,
   code,
   emptyText = 'Choose airport',
+  waiting = false,
   onPress,
   areaOn,
   onToggleArea,
   swapCount = 0,
   slideFrom = 1,
+  group,
 }: AirportCardProps) {
   const reduce = useReducedMotion();
   const slide = useSwapSlide(swapCount, slideFrom * SWAP_SLIDE, reduce);
@@ -123,14 +137,15 @@ export function AirportCard({
   const ask = /(Choose airport)$/.exec(emptyText);
   const action = !code && ask ? { status: emptyText.slice(0, ask.index).trim(), ask: ask[1] } : null;
   const c = useColors();
-  const name = code ? AIRPORTS[code]?.name : undefined;
-  const area = code ? areaFor(code) : null;
-  // Hold the card for the airport's summary (round 174).
-  const hold = useAirportHold(code);
+  const well = useGlassWell();
+  const name = group ? placeCodes(group.airports) : code ? AIRPORTS[code]?.name : undefined;
+  const area = code && !group ? areaFor(code) : null;
+  // Hold the card for the airport's summary (round 174); a place has no one summary.
+  const hold = useAirportHold(group ? null : code);
   const whole = area != null && areaOn;
   const ink = areaOn ? c.onAccent : c.muted;
   return (
-    <View style={[styles.card, { backgroundColor: c.surface2 }]}>
+    <View style={[styles.card, { backgroundColor: well }]}>
       {area ? (
         // Keeps the pill (and its slop) clear of the From/To label on the left.
         <View style={styles.pillSlot} pointerEvents="box-none">
@@ -171,13 +186,15 @@ export function AirportCard({
         accessibilityHint={hold.onLongPress ? 'Hold for airport info' : undefined}
         accessibilityRole="button"
         accessibilityLabel={
-          code
-            ? `${label}: ${code}, ${name}${whole ? `, all ${area.city} airports` : ''}. Change`
-            : emptyText === 'Choose airport'
-              ? `${label}: choose an airport`
-              : /choose/i.test(emptyText)
-                ? `${label}: ${emptyText}`
-                : `${label}: ${emptyText} Choose an airport`
+          group
+            ? `${label}: all of ${inPlace(group.name)}, ${listText(group.airports)}. Change`
+            : code
+              ? `${label}: ${code}, ${name}${whole ? `, all ${area.city} airports` : ''}. Change`
+              : emptyText === 'Choose airport'
+                ? `${label}: choose an airport`
+                : /choose/i.test(emptyText)
+                  ? `${label}: ${emptyText}`
+                  : `${label}: ${emptyText} Choose an airport`
         }
         style={pressStyle(styles.cardButton, 'link')}>
         <Text
@@ -187,9 +204,21 @@ export function AirportCard({
           {label}
         </Text>
         <Animated.View style={slide} testID="card-code">
-          <Text lineBreakStrategyIOS="push-out" style={[textStyles.code, styles.bigCode, { color: code ? c.text : c.faint }]}>
-            {code ?? '—'}
-          </Text>
+          {group ? (
+            // A place's name in the same big line a code takes, shrinking to fit rather than wrapping.
+            <Text
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.6}
+              style={[textStyles.code, styles.bigCode, styles.bigPlace, { color: c.text }]}
+              testID="card-place">
+              {group.name}
+            </Text>
+          ) : (
+            <Text lineBreakStrategyIOS="push-out" style={[textStyles.code, styles.bigCode, { color: code ? c.text : c.faint }]}>
+              {code ?? '—'}
+            </Text>
+          )}
         </Animated.View>
         {whole ? (
           <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.text }]}>
@@ -199,17 +228,23 @@ export function AirportCard({
         {/* Two lines so long names ("Dallas/Fort Worth International") show at big text sizes. */}
         {/* An empty side says what to do in blue, so a dimmed Find Routes never needs explaining (round 53);
             a status before it ("Location is off.") stays gray. */}
-        <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]} numberOfLines={2}>
-          {name ??
-            (action ? (
-              <>
-                {action.status ? `${action.status} ` : null}
-                <Text style={{ color: c.accent, fontFamily: textStyles.bodyStrong.fontFamily }}>{action.ask}</Text>
-              </>
-            ) : (
-              emptyText
-            ))}
-        </Text>
+        <View style={styles.emptyLine}>
+          {waiting && !code ? <TrailLoader size={13} decorative /> : null}
+          <Text
+            lineBreakStrategyIOS="push-out"
+            style={[textStyles.small, styles.emptyText, { color: c.muted }]}
+            numberOfLines={2}>
+            {name ??
+              (action ? (
+                <>
+                  {action.status ? `${action.status} ` : null}
+                  <Text style={{ color: c.accent, fontFamily: textStyles.bodyStrong.fontFamily }}>{action.ask}</Text>
+                </>
+              ) : (
+                emptyText
+              ))}
+          </Text>
+        </View>
       </Pressable>
     </View>
   );
@@ -238,6 +273,7 @@ export const WRAP_CHIPS_SCALE = 1.2;
 
 export function SearchPanel(p: SearchPanelProps) {
   const c = useColors();
+  const well = useGlassWell();
   const { fontScale } = useWindowDimensions();
   const wrapChips = fontScale >= WRAP_CHIPS_SCALE;
   // Why Find Routes is off, for VoiceOver and (same airport) on screen.
@@ -308,7 +344,7 @@ export function SearchPanel(p: SearchPanelProps) {
               <View
                 key={`back-${key}`}
                 pointerEvents="none"
-                style={[styles.chipBack, { left: b.x, top: b.y, width: b.width, height: b.height, backgroundColor: c.surface2 }]}
+                style={[styles.chipBack, { left: b.x, top: b.y, width: b.width, height: b.height, backgroundColor: well }]}
               />
             ))
           : null}
@@ -342,7 +378,7 @@ export function SearchPanel(p: SearchPanelProps) {
                 styles.chip,
                 styles.dateChip,
                 wrapChips && styles.dateChipWrap,
-                { backgroundColor: slider ? 'transparent' : on ? c.accent : c.surface2 },
+                { backgroundColor: slider ? 'transparent' : on ? c.accent : well },
               ])}>
               <ChipDate chip={chip} on={on} lit={slider ? litAt(chip.date) : undefined} />
             </Pressable>
@@ -359,7 +395,7 @@ export function SearchPanel(p: SearchPanelProps) {
             styles.calendar,
             later ? styles.dateChip : null,
             wrapChips && styles.dateChipWrap,
-            { backgroundColor: slider ? 'transparent' : later ? c.accent : c.surface2 },
+            { backgroundColor: slider ? 'transparent' : later ? c.accent : well },
           ])}>
           {/* A later day reads like any other chip; the calendar icon alone means "pick a day". */}
           {later ? (
@@ -391,7 +427,9 @@ export function SearchPanel(p: SearchPanelProps) {
         <AirportCard
           label="From"
           code={p.origin}
+          group={p.originGroup}
           emptyText={p.originEmptyText}
+          waiting={p.originWaiting}
           onPress={p.onPickOrigin}
           areaOn={!!(p.origin && p.areaOn[p.origin])}
           onToggleArea={() => p.origin && p.onToggleArea(p.origin)}
@@ -419,6 +457,7 @@ export function SearchPanel(p: SearchPanelProps) {
         <AirportCard
           label="To"
           code={p.destination}
+          group={p.destinationGroup}
           onPress={p.onPickDestination}
           areaOn={!!(p.destination && p.areaOn[p.destination])}
           onToggleArea={() => p.destination && p.onToggleArea(p.destination)}
@@ -551,8 +590,12 @@ function useChipHighlight(target: ChipBox | undefined, boxes: Record<string, Chi
 }
 
 const styles = StyleSheet.create({
+  emptyLine: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  emptyText: { flexShrink: 1 },
   // The From and To codes are the hero of the search card, a little bigger than codes elsewhere (round 114).
   bigCode: { fontSize: 30, lineHeight: 34, letterSpacing: -0.5 },
+  // A place's name is words, not a code: Sora, a size down so "United States" fits half the panel.
+  bigPlace: { fontFamily: fonts.bodySemiBold, fontSize: 24, letterSpacing: -0.3 },
   chipDate: { alignItems: 'center' },
   chipBack: { position: 'absolute', borderRadius: radius.all },
   body: { paddingHorizontal: spacing.page, paddingBottom: spacing.page, gap: spacing.section },

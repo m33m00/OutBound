@@ -37,6 +37,7 @@ import {
   labelBounds,
   labelOrder,
   LABEL_FONT,
+  LABEL_GLOW_SIGMA,
   MARK,
   markExtent,
   placeLabels,
@@ -252,7 +253,10 @@ export function recordMarksLayer({
       const { m, font, text, cap } = measured[i];
       const x = p.x - text.x;
       const baseline = p.y - (cap.y + cap.height / 2);
+      // A soft glow, not a hard sticker edge (round 213, John: "Fix all of them"): the halo is blurred so the
+      // code reads cleanly on the map the way Apple Maps labels do.
       const halo = paint(colors.halo, PaintStyle.Stroke, LABEL_FONT[m.kind].halo);
+      halo.setMaskFilter(Skia.MaskFilter.MakeBlur(BlurStyle.Normal, LABEL_GLOW_SIGMA, true));
       canvas.drawText(m.label, x, baseline, halo, font);
       canvas.drawText(m.label, x, baseline, fill, font);
       labelBoxes.push(p.box);

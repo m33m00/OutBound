@@ -32,7 +32,8 @@ export function ResultsBanner({
     AccessibilityInfo.announceForAccessibility?.(spoken);
   }, [spoken]);
   return (
-    <View style={[styles.banner, { backgroundColor: c.surface2, borderColor: c.line }]}>
+    // No box since round 207 (John: "Less containers"): a plain line with its own close button.
+    <View style={styles.banner}>
       <View style={styles.message}>
         <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, { color: c.text }]}>
           {banner.text}
@@ -76,10 +77,7 @@ const styles = StyleSheet.create({
   banner: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: radius.all,
-    borderWidth: 1,
-    paddingLeft: spacing.rowX,
-    paddingVertical: 4,
+    paddingVertical: 2,
   },
   message: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: spacing.group },
   link: { alignSelf: 'flex-start' },

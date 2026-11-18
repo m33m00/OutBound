@@ -3,7 +3,6 @@ import {
   AccessibilityInfo,
   Animated,
   Easing,
-  ActivityIndicator,
   FlatList,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
@@ -16,9 +15,10 @@ import {
 } from 'react-native';
 import { GestureDetector, usePanGesture } from 'react-native-gesture-handler';
 
-import { AIRPORTS, areaFor, localDate, type Flight, type Itinerary, type SearchRequest } from '@/engine';
+import { AIRPORTS, areaFor, localDate, type Flight, type Itinerary, type PlaceRef, type SearchRequest } from '@/engine';
 import type { RouteImpact } from '@/live';
 import { shortDate, type DateChip } from '@/search/dates';
+import { inPlace, placeCodes } from '@/search/places';
 import { formatTime } from '@/search/format';
 import { departedFirst, type RowStatus } from '@/search/statusTags';
 import type { SearchState } from '@/search/useRouteSearch';
@@ -27,7 +27,7 @@ import { fonts, radius, spacing, textStyles, useColors } from '@/theme';
 import { Appear } from './Appear';
 import { BackButton } from './BackButton';
 import { CenteredTitleRow } from './CenteredTitleRow';
-import { Button } from './Buttons';
+import { Button, PillButton } from './Buttons';
 import { DayStepper } from './DayStepper';
 import { FLIP_NUDGE, takeFlipHint } from './flipHint';
 import { withTick } from './haptics';
@@ -38,6 +38,8 @@ import { ResultRow, type LegPicks } from './ResultRow';
 import { SavedToast } from './SavedToast';
 import { SaveRouteButton } from './SaveRouteButton';
 import { StaggerIn } from './StaggerIn';
+import { TrailLoader } from './TrailLoader';
+import { TrailMark, trails } from './TrailMark';
 
 export interface ResultsPanelProps {
   state: Exclude<SearchState, { status: 'idle' }>;
@@ -101,7 +103,9 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
     p.state.status === 'loading' &&
     !!prev &&
     prev.request.origin === p.state.request.origin &&
-    prev.request.destination === p.state.request.destination;
+    prev.request.destination === p.state.request.destination &&
+    prev.request.originGroup?.key === p.state.request.originGroup?.key &&
+    prev.request.destinationGroup?.key === p.state.request.destinationGroup?.key;
   const shown: SearchState = paging && prev ? prev : p.state;
   const dim = useRef(new Animated.Value(1)).current;
   useEffect(() => {
@@ -116,8 +120,12 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
   }, [paging, reduceMotion, dim]);
   const { request } = p.state;
   const listDate = shown.request.date;
-  const routeTitle = `${request.origin} → ${request.destination}`;
-  const routeSpoken = `${request.origin} to ${request.destination}`;
+  // A picked country, state or city is titled by its name: "United States → Madrid" (round 224).
+  const fromName = request.originGroup?.name ?? request.origin;
+  const toName = request.destinationGroup?.name ?? request.destination;
+  const placeTitle = !!(request.originGroup || request.destinationGroup);
+  const routeTitle = `${fromName} → ${toName}`;
+  const routeSpoken = `${fromName} to ${toName}`;
   const results = departedFirst(shown.status !== 'done' ? [] : p.showingHidden ? shown.hiddenResults : shown.results, p.statuses);
   const full = results.filter((r) => r.isFull).length;
   // The Now line is for today's flights only (John, 2026-11-02), by the origin's own date.
@@ -204,22 +212,28 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
   // Fixed above the list (results take over, Q-062): back, route and Filters on one line,
   // the day and count under it.
   const topRow = (
-    <View style={[styles.bar, styles.pad, { borderBottomColor: c.line }]} testID="results-bar">
+    <View style={[styles.bar, styles.pad]} testID="results-bar">
       <CenteredTitleRow
-        left={<BackButton label={tight ? '' : 'Search'} onPress={p.onBack} accessibilityLabel="Back to search" />}
+        // A plain back arrow (round 215, John: "Fix all of them"): "< Home" read oddly with the Home tab right there.
+        left={<BackButton label="" plain onPress={p.onBack} accessibilityLabel="Back to home" />}
         title={
           <Text
             ref={listTitleRef}
             style={[textStyles.routeTitle, styles.title, { color: c.text }]}
             accessibilityRole="header"
             accessibilityLabel={routeSpoken}
-            numberOfLines={2}>
-            {softArrows(routeTitle, c.faint)}
+            // Place names shrink to fit one line rather than wrap (no wrapping, John).
+            numberOfLines={placeTitle ? 1 : 2}
+            adjustsFontSizeToFit={placeTitle}
+            minimumFontScale={0.7}>
+            {trails(routeTitle, textStyles.routeTitle.fontSize)}
           </Text>
         }
         right={
           p.onFilters ? (
-            <Button
+            // The same capsule as Search on the other side, same height and shape (round 202, John: "The filters
+            // button should match the search pill container shape and size").
+            <PillButton
               label={
                 tight
                   ? p.filtersChanged
@@ -230,10 +244,13 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
                     : 'Filters'
               }
               accessibilityLabel={p.filtersChanged ? `Filters, ${p.filtersChanged} changed` : 'Filters'}
-              icon="line.3.horizontal.decrease.circle"
-              kind="secondary"
+              leading="line.3.horizontal.decrease.circle"
+              // Blue words with no tint behind (round 215): only the picked day is filled on this bar.
+              tone="plain"
               onPress={p.onFilters}
+              hitSlop={{ right: 8 }}
               style={styles.filters}
+              testID="results-filters"
             />
           ) : null
         }
@@ -250,9 +267,17 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
   // many are full next to the text where it says Leaving from").
   const areas = areaLines(request);
   const countBeside = stepsDays && !!summary;
+  const callout = areaCallouts(request)[0] ?? null;
+  // The line the callout stands for (each side has at most one line, From's first); it's said, not shown twice.
+  const calloutLine = callout ? (callout.from ? areas[0] : areas[areas.length - 1]) : undefined;
   const notes = [
     ...(!stepsDays && summary ? [{ key: 'summary', text: summary, testID: 'results-summary', strong: true }] : []),
-    ...(countBeside ? areas.slice(1) : areas).map((text) => ({ key: text, text, testID: undefined, strong: false })),
+    ...(countBeside && calloutLine ? areas.filter((l) => l !== calloutLine) : areas).map((text) => ({
+      key: text,
+      text,
+      testID: undefined,
+      strong: false,
+    })),
     ...(p.note ? [{ key: 'note', text: p.note, testID: 'results-note', strong: false }] : []),
     ...(p.showingHidden
       ? [{ key: 'hidden', text: 'Showing routes your filters hid, for this search only.', testID: undefined, strong: false }]
@@ -261,9 +286,28 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
   const countPills = !paging && p.state.status === 'done' && results.length > 0;
   const countRow = countBeside ? (
     <View style={styles.countRow} testID="results-count-row">
-      <Text style={[textStyles.small, styles.countLead, { color: c.muted }]} testID="results-leaving">
-        {areas[0] ?? ''}
-      </Text>
+      {/* The searched area as its airport codes only, so it stays on one line (round 202, John: "only put airport
+          codes to shorten the callout because it's wrapping onto a second row"). VoiceOver still says it whole. */}
+      {callout ? (
+        <View style={styles.areaCallout} accessible accessibilityLabel={calloutLine} testID="results-leaving">
+          <Icon
+            name={callout.from ? 'airplane.departure' : 'airplane.arrival'}
+            size={14}
+            weight="semibold"
+            tintColor={c.muted}
+            fallback={null}
+          />
+          {callout.codes.map((code) => (
+            <View key={code} style={[styles.areaCode, { borderColor: c.line2 }]} testID="results-area-code">
+              <Text style={[styles.areaCodeText, { color: c.text }]} maxFontSizeMultiplier={1.4}>
+                {code}
+              </Text>
+            </View>
+          ))}
+        </View>
+      ) : (
+        <View testID="results-leaving" />
+      )}
       {/* Pills, not words, so the count reads at a glance (round 195, John: "can we change that from just text to
           like a pill? Right now it kind of blends in"). Gray for routes, red only when some are full. */}
       {countPills ? (
@@ -282,9 +326,13 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
           ) : null}
         </View>
       ) : (
-        <Text style={[textStyles.small, { color: c.muted }]} numberOfLines={1} testID="results-count">
-          {summary}
-        </Text>
+        <View style={styles.loading}>
+          {/* A new day loading for the same route shows the loader too (round 223). */}
+          {paging ? <TrailLoader size={14} decorative /> : null}
+          <Text style={[textStyles.small, { color: c.muted }]} numberOfLines={1} testID="results-count">
+            {summary}
+          </Text>
+        </View>
       )}
     </View>
   ) : null;
@@ -401,7 +449,7 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
           {header}
           <View style={styles.loadingBlock} accessible accessibilityLabel="Finding routes">
             <View style={styles.loading}>
-              <ActivityIndicator color={c.muted} />
+              <TrailLoader size={22} decorative />
               <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, { color: c.muted }]}>
                 Finding routes…
               </Text>
@@ -478,10 +526,12 @@ export const ResultsPanel = forwardRef<FlatList<Itinerary>, ResultsPanelProps>(f
             <GestureDetector gesture={flipPan}>
               <View collapsable={false}>
                 <CenteredTitleRow
-                  style={[styles.bar, styles.pad, styles.routeBar, { borderBottomColor: c.line }]}
+                  style={[styles.bar, styles.pad, styles.routeBar]}
                   onLayout={(e) => setBarH(e.nativeEvent.layout.height)}
                   testID="route-bar"
-                  left={<BackButton label="" onPress={() => p.onSelect(focused.id)} accessibilityLabel="Back to all routes" />}
+                  left={
+                    <BackButton label="" plain onPress={() => p.onSelect(focused.id)} accessibilityLabel="Back to all routes" />
+                  }
                   title={
                     <View style={styles.routeMiddle}>
                       <View
@@ -656,9 +706,8 @@ export const PULL_DOWN_VELOCITY = 1;
 function RouteEnds({ from, to }: { from: string; to: string }) {
   const c = useColors();
   const pill = (code: string) => (
-    // Content, not a control, so the same black text and plain pill as the airports in the boxes
-    // (round 136, John: "What's with the navy colors").
-    <View style={[styles.endPill, { backgroundColor: c.surface2, borderColor: c.line }]} testID="route-end">
+    // Content, not a control: plain black codes, no bubble, as on every other page (round 218, John: "Fix all of them").
+    <View style={styles.endPill} testID="route-end">
       <Text style={[styles.endCode, { color: c.text }]} maxFontSizeMultiplier={1.3}>
         {code}
       </Text>
@@ -667,27 +716,12 @@ function RouteEnds({ from, to }: { from: string; to: string }) {
   return (
     <View style={styles.routeEnds}>
       {pill(from)}
+      {/* The plane and its level contrail between the codes, like every route title (round 209, John). */}
       <View style={styles.routeEndsTrack}>
-        <View style={[styles.routeEndsLine, { backgroundColor: c.line2 }]} />
-        <Icon name="airplane" size={12} tintColor={c.faint} fallback={<Text style={{ color: c.faint }}>✈</Text>} />
-        <View style={[styles.routeEndsLine, { backgroundColor: c.line2 }]} />
+        <TrailMark fontSize={styles.endCode.fontSize ?? 15} alone />
       </View>
       {pill(to)}
     </View>
-  );
-}
-
-/** "DFW → LGA" with soft grey arrows so the codes lead (round 120, the Clean look). */
-function softArrows(title: string, accent: string) {
-  return title.split(' → ').flatMap((part, i) =>
-    i === 0
-      ? [part]
-      : [
-          <Text key={`a${i}`} style={{ color: accent }}>
-            {' → '}
-          </Text>,
-          part,
-        ],
   );
 }
 
@@ -793,7 +827,9 @@ function PagerMarks({ count, index, onPick }: { count: number; index: number; on
  * the picked airports: "Leaving from any Dallas, TX airport (DAL, DFW)".
  */
 export function areaLines(request: SearchRequest): string[] {
-  const line = (code: string, on: boolean | undefined, lead: string) => {
+  const line = (code: string, on: boolean | undefined, lead: string, group?: PlaceRef) => {
+    // A picked country, state or city (round 224): "Leaving from anywhere in Spain (MAD, BCN)".
+    if (group) return `${lead} anywhere in ${inPlace(group.name)} (${placeCodes(group.airports)})`;
     const area = on ? areaFor(code) : null;
     if (!area) return null;
     // "Dallas, TX": the state for a US area, the country code elsewhere (round 161, John).
@@ -803,9 +839,31 @@ export function areaLines(request: SearchRequest): string[] {
     return `${lead} any ${place} airport (${area.airports.join(', ')})`;
   };
   return [
-    line(request.origin, request.originArea, 'Leaving from'),
-    line(request.destination, request.destinationArea, 'Landing at'),
+    line(request.origin, request.originArea, 'Leaving from', request.originGroup),
+    line(request.destination, request.destinationArea, 'Landing at', request.destinationGroup),
   ].filter((l): l is string => l != null);
+}
+
+/**
+ * The searched areas as their airport codes, for the callout over the tickets (round 202, John): which side
+ * (leaving or landing) and its codes, in the same order as areaLines.
+ */
+export interface AreaCallout {
+  from: boolean;
+  codes: readonly string[];
+}
+
+export function areaCallouts(request: SearchRequest): AreaCallout[] {
+  const side = (code: string, on: boolean | undefined, from: boolean, group?: PlaceRef): AreaCallout | null => {
+    // A place's codes, while they still fit one line; a big place says its count in the line under instead.
+    if (group) return group.airports.length <= 4 ? { from, codes: group.airports } : null;
+    const area = on ? areaFor(code) : null;
+    return area ? { from, codes: area.airports } : null;
+  };
+  return [
+    side(request.origin, request.originArea, true, request.originGroup),
+    side(request.destination, request.destinationArea, false, request.destinationGroup),
+  ].filter((x): x is AreaCallout => x != null);
 }
 
 /**
@@ -821,38 +879,58 @@ export function nowLineIndex(results: Itinerary[], now: number, statuses?: Recor
   return i > 0 ? i : -1;
 }
 
-/** Thin rule with "Now · 9:40 PM" (origin time) between routes that left and routes to come. */
+/**
+ * "Now · 9:40 PM" (origin time) between routes that left and routes to come. Since round 203 it's a solid
+ * capsule on a thick rule (boarding blue since round 204), so it stands out while the list scrolls (John: "Now Line
+ * divider ... should be more obvious to see when scrolling. It's kind of hidden in the mix").
+ */
 function NowLine({ time }: { time: string | null }) {
   const c = useColors();
+  // The same boarding blue as the picked day (round 204, John: "Can the now line instead of black be the same
+  // blue for the dates").
+  const ink = { color: c.onAccent };
   return (
     <View
       style={styles.nowLine}
       testID="now-line"
       accessible
       accessibilityLabel={`Now${time ? `, ${time}` : ''}. Flights below haven’t left yet.`}>
-      <View style={[styles.rule, { backgroundColor: c.text }]} />
+      <View style={[styles.rule, { backgroundColor: c.accent }]} testID="now-rule" />
       {/* "Now" and the time set apart by a thin divider, not a dot (rounds 123 and 124, John). */}
-      <View style={styles.nowWords}>
-        <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { fontFamily: fonts.bodySemiBold, color: c.text }]}>
+      <View style={[styles.nowWords, { backgroundColor: c.accent }]} testID="now-pill">
+        <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, styles.nowText, { fontFamily: fonts.bodyBold }, ink]}>
           Now
         </Text>
-        {time ? <View style={[styles.nowDivider, { backgroundColor: c.line2 }]} /> : null}
+        {time ? <View style={[styles.nowDivider, { backgroundColor: c.onAccent }]} /> : null}
         {time ? (
-          <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { fontFamily: fonts.bodyMedium, color: c.text }]}>
+          <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, styles.nowText, { fontFamily: fonts.bodyMedium }, ink]}>
             {time}
           </Text>
         ) : null}
       </View>
-      <View style={[styles.rule, { backgroundColor: c.text }]} />
+      <View style={[styles.rule, { backgroundColor: c.accent }]} />
     </View>
   );
 }
 
+/** How thick the Now line's rule is (round 203; a hairline before; a smidge thinner since round 204, John: "It's
+ * also just a smidge too thick"). */
+export const NOW_RULE = 1.5;
+
 const styles = StyleSheet.create({
   fill: { flex: 1 },
-  nowWords: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  // The Now capsule (round 203): filled with the picked day's blue since round 204, the words in white.
+  nowWords: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    borderRadius: radius.pill,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+  },
+  nowText: { fontSize: 14, lineHeight: 18 },
   // A thin divider between Now and the time (round 124, John: "Needs dividers").
-  nowDivider: { width: 1, height: 11, opacity: 0.45 },
+  nowDivider: { width: 1, height: 12, opacity: 0.5 },
   selectedBlock: { gap: spacing.group },
   hidden: { display: 'none' },
   // Tighter above and between the Leave By card and the route card so the whole route fits (round 122).
@@ -869,8 +947,12 @@ const styles = StyleSheet.create({
   countPills: { flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 0 },
   countPill: { paddingHorizontal: 9, paddingVertical: 3, borderRadius: 999 },
   countPillText: { fontFamily: fonts.bodySemiBold, fontSize: 13, lineHeight: 17 },
-  countLead: { flexShrink: 1 },
-  bar: { gap: 4, paddingBottom: spacing.group, borderBottomWidth: StyleSheet.hairlineWidth },
+  // The searched area's callout (round 202): a plane, then each airport code in a small outlined chip.
+  areaCallout: { flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1 },
+  areaCode: { borderWidth: 1, borderRadius: radius.pill, paddingHorizontal: 8, paddingVertical: 2 },
+  areaCodeText: { fontFamily: fonts.mono, fontSize: 13, lineHeight: 17, letterSpacing: 0.5 },
+  // No line under the bar (round 215): the tickets start below on the same page color.
+  bar: { gap: 4, paddingBottom: spacing.group },
   title: { textAlign: 'center' },
   // The route view's bar (round 134): back on the left, the market and its dots centered.
   routeBar: { paddingTop: 2 },
@@ -881,13 +963,13 @@ const styles = StyleSheet.create({
   dot: { width: 6, height: 6, borderRadius: 3 },
   dotOn: { width: 16 },
   routeEnds: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  endPill: { borderRadius: radius.pill, paddingHorizontal: 9, paddingVertical: 3, borderWidth: StyleSheet.hairlineWidth },
+  endPill: { paddingVertical: 3 },
   endCode: { fontFamily: fonts.mono, fontSize: 16, lineHeight: 21, letterSpacing: 0.5 },
-  routeEndsTrack: { flexDirection: 'row', alignItems: 'center', gap: 4, width: 64 },
-  routeEndsLine: { flex: 1, height: 1 },
-  filters: { paddingHorizontal: spacing.section },
+  routeEndsTrack: { alignItems: 'center', justifyContent: 'center', width: 52 },
+  filters: { alignSelf: 'flex-end', marginRight: -10 },
   // A little more air between tickets so each one reads as its own (round 150, John).
-  sep: { height: spacing.group + 4 },
+  // A little more again in round 207, so the list breathes like a first-party app.
+  sep: { height: spacing.section + 2 },
   state: { paddingVertical: spacing.page, gap: spacing.section, alignItems: 'flex-start' },
   loading: { flexDirection: 'row', alignItems: 'center', gap: spacing.group },
   loadingBlock: { paddingVertical: spacing.section, gap: spacing.group },
@@ -902,8 +984,9 @@ const styles = StyleSheet.create({
   placeholderBar: { borderRadius: 4 },
   errorTop: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.section },
   errorText: { flex: 1, gap: 2 },
-  nowLine: { flexDirection: 'row', alignItems: 'center', gap: spacing.group, paddingTop: 2 },
-  rule: { flex: 1, height: StyleSheet.hairlineWidth * 2 },
+  nowLine: { flexDirection: 'row', alignItems: 'center', paddingVertical: 4 },
+  // A thick rule into the capsule, so the line reads across the whole list (round 203).
+  rule: { flex: 1, height: NOW_RULE },
 });
 
 /** A slim result row's shape (times, seat chip; route; airline pills) in gray, while routes load. */

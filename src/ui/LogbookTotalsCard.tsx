@@ -6,8 +6,9 @@ import { type SFSymbol } from 'expo-symbols';
 
 import { spacing, textStyles, useColors } from '@/theme';
 
-import { useCardSurface } from './cardSurface';
 import { Icon } from './Icon';
+import { RouteText } from './TrailMark';
+import { Glass } from './Glass';
 
 /**
  * Flights, miles and airports across the whole logbook, big numbers up top.
@@ -15,7 +16,6 @@ import { Icon } from './Icon';
  */
 export function LogbookTotalsCard({ totals, highlights }: { totals: LogbookTotals; highlights?: LogbookHighlights }) {
   const c = useColors();
-  const card = useCardSurface();
   const cells = [
     { n: totals.flights, one: 'Flight', many: 'Flights' },
     { n: totals.miles, one: 'Mile', many: 'Miles' },
@@ -51,10 +51,10 @@ export function LogbookTotalsCard({ totals, highlights }: { totals: LogbookTotal
   }
   const label = cells.map((x) => `${groupDigits(x.n)} ${(x.n === 1 ? x.one : x.many).toLowerCase()}`).join(', ');
   return (
-    <View
+    <Glass
       accessible
       accessibilityLabel={[label, ...lines.map((l) => forSpeech(l.replace(' mi)', ' miles)')))].join('. ')}
-      style={[card, styles.card]}
+      style={styles.card}
       testID="logbook-totals">
       <View style={styles.cells}>
         {cells.map((x, i) => (
@@ -85,9 +85,12 @@ export function LogbookTotalsCard({ totals, highlights }: { totals: LogbookTotal
                 numberOfLines={1}>
                 {x.label}
               </Text>
-              <Text lineBreakStrategyIOS="push-out" style={[textStyles.bodyStrong, { color: c.text }]} numberOfLines={1}>
-                {x.value}
-              </Text>
+              <RouteText
+                lineBreakStrategyIOS="push-out"
+                style={[textStyles.bodyStrong, { color: c.text }]}
+                numberOfLines={1}
+                text={x.value}
+              />
               <Text
                 lineBreakStrategyIOS="push-out"
                 style={[textStyles.small, styles.rowSub, { color: c.muted }]}
@@ -98,7 +101,7 @@ export function LogbookTotalsCard({ totals, highlights }: { totals: LogbookTotal
           ))}
         </View>
       ) : null}
-    </View>
+    </Glass>
   );
 }
 

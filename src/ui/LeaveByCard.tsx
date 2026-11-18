@@ -22,6 +22,7 @@ import { pressStyle } from './press';
 import { playSound } from './sounds';
 import type { LocationStatus } from './useCurrentLocation';
 import { Divided } from './MetaLine';
+import { TrailLoader } from './TrailLoader';
 
 export interface LeaveByCardProps {
   /** Departure airport of the selected route's first leg. */
@@ -112,7 +113,7 @@ export function LeaveByCard(p: LeaveByCardProps) {
   const note = departed
     ? null
     : p.locationStatus === 'denied'
-      ? 'Location is off for OutBound. Turn it on in iPhone Settings to get a drive estimate.'
+      ? 'Location is off for Jaunt. Turn it on in iPhone Settings to get a drive estimate.'
       : p.locationStatus === 'locating'
         ? 'Finding your location…'
         : null;
@@ -183,8 +184,13 @@ export function LeaveByCard(p: LeaveByCardProps) {
             <Text
               style={[textStyles.bodyStrong, { color: atAirport ? c.youText : c.text }]}
               lineBreakStrategyIOS="push-out"
+              // Beside the buttons the line never wraps; it shrinks a touch if a button crowds it (round 219, John:
+              // "I dont like the text wraps here"). At large text it may still split onto two lines.
+              numberOfLines={inline ? 1 : undefined}
+              adjustsFontSizeToFit={inline}
+              minimumFontScale={0.85}
               onTextLayout={(e) => {
-                if (e.nativeEvent.lines.length > 1) setWrapped(lineKey);
+                if (!inline && e.nativeEvent.lines.length > 1) setWrapped(lineKey);
               }}
               testID="leave-by-line">
               {keepTimes(text.title)}
@@ -239,9 +245,13 @@ export function LeaveByCard(p: LeaveByCardProps) {
       {note ? (
         <View style={styles.details} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
           {note ? (
-            <Text style={[textStyles.small, { color: c.muted }]} lineBreakStrategyIOS="push-out">
-              {note}
-            </Text>
+            <View style={styles.noteRow}>
+              {/* Waiting on your location shows the loader (round 223). */}
+              {p.locationStatus === 'locating' ? <TrailLoader size={13} decorative /> : null}
+              <Text style={[textStyles.small, styles.noteText, { color: c.muted }]} lineBreakStrategyIOS="push-out">
+                {note}
+              </Text>
+            </View>
           ) : null}
         </View>
       ) : null}
@@ -252,6 +262,8 @@ export function LeaveByCard(p: LeaveByCardProps) {
 }
 
 const styles = StyleSheet.create({
+  noteRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  noteText: { flexShrink: 1 },
   // Slim: one row about 44pt tall, so the map keeps the room (John, 2026-11-01).
   card: {
     gap: 4,

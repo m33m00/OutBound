@@ -1,35 +1,12 @@
-import { Canvas, Circle, Group, Path, Skia, type SkPath } from '@shopify/react-native-skia';
+import { Canvas, Group, Path } from '@shopify/react-native-skia';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Easing, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { Animated, Easing, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
 
-import { fonts } from '@/theme';
+import { planePolygon, polygonPath, trailPolygon } from '@/brand/geometry';
+import { LETTERS } from '@/brand/jauntMark';
 import { useReducedMotion } from '@/ui/useReducedMotion';
 
-import {
-  COLORS,
-  exitPlan,
-  ICON,
-  introFrame,
-  introLayout,
-  planePolygon,
-  REDUCED_INTRO_MS,
-  skipTo,
-  TIMING,
-  type IntroFrame,
-} from './introMotion';
-
-/** The route as a Skia path, built once (it never changes, only how much of it shows). */
-function makeRoutePath(): SkPath | null {
-  const { start: s, c1, c2, end: e } = ICON;
-  return Skia.Path.MakeFromSVGString(`M${s.x} ${s.y}C${c1.x} ${c1.y} ${c2.x} ${c2.y} ${e.x} ${e.y}`);
-}
-
-function makePlanePath(frame: IntroFrame): SkPath {
-  const pts = planePolygon(frame.plane.at, frame.plane.heading).map((pt) => Skia.Point(pt.x, pt.y));
-  return Skia.Path.Polygon(pts, true);
-}
-
-const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+import { COLORS, exitPlan, introFrame, introLayout, REDUCED_INTRO_MS, skipTo, TIMING } from './introMotion';
 
 /** When the JS-drawn part ends and the native exit takes over, in ms. */
 const exitAt = (reduceMotion: boolean) => (reduceMotion ? TIMING.reducedHold : TIMING.exit.start);
@@ -37,9 +14,9 @@ const exitAt = (reduceMotion: boolean) => (reduceMotion ? TIMING.reducedHold : T
 /**
  * The animated loading screen shown over the app when it opens (App Store round 1). It sits on top
  * of the real first screen, which loads underneath, so it never makes anyone wait longer than the
- * animation. Tap anywhere to skip to the take-off. Reduce Motion shows the finished mark and fades.
+ * animation. Tap anywhere to skip to the take-off. Reduce Motion shows the finished wordmark and fades.
  *
- * The drawing (dot, route, split-flap letters) runs on the JS thread with a timer and plain Skia
+ * The drawing (letters rising in, the contrail drawing out) runs on the JS thread with a timer and plain Skia
  * props, no Reanimated, the same safe pattern as the route pulse after round 85's crash. At the
  * take-off the picture freezes and the plane's flight and the panel's lift run as native-driver
  * Animated timings (round 169), so they stay smooth while the app mounts underneath and keeps the
@@ -51,7 +28,6 @@ export function LaunchIntro({ onDone }: { onDone: () => void }) {
   const [t, setT] = useState(0);
   const [exiting, setExiting] = useState(false);
   const offset = useRef(0);
-  const route = useMemo(makeRoutePath, []);
   const layout = useMemo(() => introLayout(width, height), [width, height]);
   const doneRef = useRef(onDone);
   doneRef.current = onDone;
@@ -103,13 +79,10 @@ export function LaunchIntro({ onDone }: { onDone: () => void }) {
   }, [reduceMotion, fly, lift, fade, plan]);
 
   const f = introFrame(t, reduceMotion);
-  const origin = {
-    x: lerp(layout.originFrom.x, layout.originTo.x, f.settle),
-    y: lerp(layout.originFrom.y, layout.originTo.y, f.settle),
-  };
   const s = layout.scale;
-  const plane = f.plane.opacity > 0 ? makePlanePath(f) : null;
-  const group = [{ translateX: origin.x }, { translateY: origin.y }, { scale: s }];
+  const group = [{ translateX: layout.origin.x }, { translateY: layout.origin.y }, { scale: s }];
+  const trail = f.drawn > 0 ? polygonPath(trailPolygon(f.drawn)) : null;
+  const plane = f.plane.opacity > 0 ? polygonPath(planePolygon(f.plane.at, f.plane.heading)) : null;
 
   const skip = () => {
     if (reduceMotion || exiting) return;
@@ -129,15 +102,18 @@ export function LaunchIntro({ onDone }: { onDone: () => void }) {
         onPress={skip}
         accessible
         accessibilityRole="image"
-        accessibilityLabel="OutBound"
+        accessibilityLabel="Jaunt"
         accessibilityHint="Tap to skip">
         <Canvas style={StyleSheet.absoluteFill} pointerEvents="none">
           <Group transform={group}>
-            {route && f.drawn > 0 ? (
-              <Path path={route} style="stroke" strokeWidth={ICON.stroke} strokeCap="round" color={COLORS.white} end={f.drawn} />
-            ) : null}
-            <Circle cx={ICON.start.x} cy={ICON.start.y} r={ICON.ring * f.dot} color={COLORS.white} />
-            <Circle cx={ICON.start.x} cy={ICON.start.y} r={ICON.dot * f.dot} color={COLORS.amber} />
+            {LETTERS.map((d, i) =>
+              f.letters[i].opacity > 0 ? (
+                <Group key={i} transform={[{ translateY: f.letters[i].rise }]}>
+                  <Path path={d} color={COLORS.white} opacity={f.letters[i].opacity} />
+                </Group>
+              ) : null,
+            )}
+            {trail ? <Path path={trail} color={COLORS.white} /> : null}
           </Group>
         </Canvas>
 
@@ -158,18 +134,6 @@ export function LaunchIntro({ onDone }: { onDone: () => void }) {
             <Group transform={group}>{plane ? <Path path={plane} color={COLORS.white} opacity={f.plane.opacity} /> : null}</Group>
           </Canvas>
         </Animated.View>
-
-        <View style={[styles.word, { top: layout.wordTop, gap: layout.tileGap, opacity: f.wordOpacity }]} pointerEvents="none">
-          {f.letters.map((l, i) => (
-            <View key={i} style={[styles.tile, { width: layout.tileW, height: layout.tileH, transform: [{ scaleY: l.flip }] }]}>
-              <Text allowFontScaling={false} style={[styles.letter, { fontSize: layout.tileH * 0.72, lineHeight: layout.tileH }]}>
-                {l.char}
-              </Text>
-              <View style={styles.shine} />
-              <View style={styles.hinge} />
-            </View>
-          ))}
-        </View>
       </Pressable>
     </Animated.View>
   );
@@ -177,15 +141,4 @@ export function LaunchIntro({ onDone }: { onDone: () => void }) {
 
 const styles = StyleSheet.create({
   panel: { backgroundColor: COLORS.panel },
-  word: { position: 'absolute', left: 0, right: 0, flexDirection: 'row', justifyContent: 'center' },
-  tile: {
-    backgroundColor: COLORS.tile,
-    borderRadius: 4,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-  },
-  letter: { color: COLORS.white, fontFamily: fonts.brand, textAlign: 'center' },
-  shine: { position: 'absolute', left: 0, right: 0, top: 0, height: '50%', backgroundColor: COLORS.tileShine },
-  hinge: { position: 'absolute', left: 0, right: 0, top: '50%', height: 1, marginTop: -0.5, backgroundColor: COLORS.tileEdge },
 });

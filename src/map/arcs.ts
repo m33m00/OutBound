@@ -40,13 +40,17 @@ export function arcLift(d: number): number {
   return 0.012 + 0.11 * Math.min(1, d / 1.2);
 }
 
-export function arcSamples(a: LonLat, b: LonLat): ArcSample[] {
+/**
+ * `liftScale` under 1 bows the arc less: the home preview uses PREVIEW_LIFT so its lines curve gently, like
+ * the hub map John sent (round 224: "Like this for example.. on how curved I'd want it").
+ */
+export function arcSamples(a: LonLat, b: LonLat, liftScale = 1): ArcSample[] {
   const A: [number, number] = [a[0], a[1]];
   const B: [number, number] = [b[0], b[1]];
   const at = geoInterpolate(A, B);
   const d = geoDistance(A, B);
   const n = Math.max(MIN_SAMPLES, Math.round(d * SAMPLES_PER_RAD));
-  const peak = arcLift(d);
+  const peak = arcLift(d) * liftScale;
   const out: ArcSample[] = [];
   for (let i = 0; i <= n; i++) {
     const t = i / n;
@@ -93,11 +97,7 @@ export type LiftedProjector = ReturnType<typeof makeLiftedProjector>;
  * Screen runs for samples. `surface` drops the lift (ground shadow).
  * Hidden points split the line; single-point runs are dropped.
  */
-export function projectSamples(
-  samples: readonly ArcSample[],
-  project: LiftedProjector,
-  surface = false,
-): Runs {
+export function projectSamples(samples: readonly ArcSample[], project: LiftedProjector, surface = false): Runs {
   const runs: Runs = [];
   let run: Pt[] = [];
   for (const s of samples) {

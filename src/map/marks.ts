@@ -142,6 +142,9 @@ export const LABEL_FONT: Record<MarkKind, LabelFont> = {
   stop: { weight: 600, size: 11.5, halo: 3.5 },
 };
 
+/** Blur on the label halo (round 213): a soft glow instead of a hard white outline. */
+export const LABEL_GLOW_SIGMA = 1.6;
+
 /** Gap from the mark center to the label's near edge (prototype: home 14, alt home 11, others 8). */
 export const LABEL_GAP: Record<MarkKind, number> = {
   home: 12,

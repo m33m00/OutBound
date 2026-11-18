@@ -4,7 +4,6 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { spacing, textStyles, useColors } from '@/theme';
 
-import { useCardSurface } from './cardSurface';
 import { Icon } from './Icon';
 
 export interface EmptyStateProps {
@@ -25,14 +24,14 @@ export interface EmptyStateProps {
  */
 export function EmptyState({ icon, title, body, points, action }: EmptyStateProps) {
   const c = useColors();
-  const card = useCardSurface();
   const label = [title, body, ...(points ?? [])].map((t) => t.replace(/[.\s]+$/, '')).join('. ');
   return (
-    <View style={[card, styles.card]} testID="empty-state">
+    // No card around it since round 207 (John: "Less containers"): it sits on the page, centered.
+    <View style={styles.card} testID="empty-state">
       <View accessible accessibilityLabel={label} style={styles.text}>
         {/* Gray, not the accent: nothing here is tappable (round 139). */}
-        <View style={[styles.icon, { backgroundColor: c.surface2 }]}>
-          <Icon name={icon} size={26} tintColor={c.muted} fallback={null} />
+        <View style={styles.icon}>
+          <Icon name={icon} size={34} tintColor={c.muted} fallback={null} />
         </View>
         <Text lineBreakStrategyIOS="push-out" style={[textStyles.heading, styles.center, { color: c.text }]}>
           {title}

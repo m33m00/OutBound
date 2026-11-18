@@ -7,8 +7,9 @@ import { fonts, minTapTarget, useBoldText, useColors } from '@/theme';
 import { useRequests } from '@/requests/RequestsProvider';
 import { Icon } from '@/ui/Icon';
 import { useChangePop } from '@/ui/motion';
+import { GlassBackdrop } from '@/ui/Glass';
 
-/** Bottom tab bar (backlog 16; Q-042): Search, Requests (was Feed, round 167), My Trips, Logbook, Settings (was Profile, round 174). */
+/** Bottom tab bar (backlog 16; Q-042): Home (was Search, round 207), Requests (was Feed, round 167), My Trips, Logbook, Settings (was Profile, round 174). */
 export default function TabsLayout() {
   const c = useColors();
   // Redraws the labels when Bold Text changes.
@@ -35,11 +36,15 @@ export default function TabsLayout() {
         headerShown: false,
         tabBarActiveTintColor: c.accent,
         tabBarInactiveTintColor: c.muted,
-        tabBarStyle: { backgroundColor: c.surface, borderTopColor: c.cardEdge },
-        tabBarLabelStyle: { fontFamily: fonts.bodySemiBold, fontSize: 11 },
+        // A quiet bar (round 207) in glass (round 211, John: "More glassy look where containers exist").
+        // No line along its top (round 213): it runs into the Home sheet above without a seam.
+        tabBarStyle: { backgroundColor: 'transparent', borderTopWidth: 0 },
+        tabBarBackground: () => <GlassBackdrop />,
+        tabBarLabelStyle: { fontFamily: fonts.bodyMedium, fontSize: 10.5 },
         tabBarItemStyle: { minHeight: minTapTarget },
       }}>
-      <Tabs.Screen name="index" options={{ title: 'Search', tabBarIcon: icon('magnifyingglass') }} />
+      {/* Search became Home (round 207, John: "Search button should be a Home button instead"). Same screen. */}
+      <Tabs.Screen name="index" options={{ title: 'Home', tabBarIcon: icon('house', 'house.fill') }} />
       <Tabs.Screen
         name="feed"
         options={{

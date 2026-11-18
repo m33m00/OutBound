@@ -120,24 +120,26 @@ describe('slim row seat and stop text (design round 22)', () => {
     ).toBe('No Estimate');
   });
 
-  it('reads stops, then trip time, then a short connection last (round 149, John)', () => {
+  it('reads stops, then trip time, then the connection last, on every route with a stop (rounds 149 and 215, John)', () => {
     expect(slimStops(route([seats({})], 'good'), undefined, '5h 0m')).toBe('Nonstop · 5h 0m');
     expect(slimStops(route([seats({}), seats({})], 'good', [{ airport: 'DEN', layoverMin: 45 }]), undefined, '4h 20m')).toBe(
       '1 stop · 4h 20m · 45m connection at DEN',
     );
-    expect(slimStops(route([seats({}), seats({})], 'good', [{ airport: 'DEN', layoverMin: 90 }]))).toBe('1 stop');
+    expect(slimStops(route([seats({}), seats({})], 'good', [{ airport: 'DEN', layoverMin: 90 }]))).toBe(
+      '1 stop · 1h 30m connection at DEN',
+    );
   });
 
   it('uses live connection minutes when given, and names a missed one (John, 2026-11-02)', () => {
     const r = route([seats({}), seats({})], 'good', [{ airport: 'DEN', layoverMin: 90 }]);
     expect(slimStops(r, [35])).toBe('1 stop · 35m connection at DEN');
     expect(slimStops(r, [-10])).toBe('1 stop · missed connection at DEN');
-    expect(slimStops(r, [NaN])).toBe('1 stop');
+    expect(slimStops(r, [NaN])).toBe('1 stop · 1h 30m connection at DEN');
   });
 
-  it('shows only the tightest of several short connections, so the line fits', () => {
+  it('shows only the tightest of several connections, so the line fits', () => {
     const r = route([seats({}), seats({}), seats({})], 'good', [
-      { airport: 'ORD', layoverMin: 50 },
+      { airport: 'ORD', layoverMin: 150 },
       { airport: 'CLT', layoverMin: 35 },
     ]);
     expect(shortLayovers(r)).toBe('35m connection at CLT');

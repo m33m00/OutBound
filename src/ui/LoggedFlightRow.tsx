@@ -8,6 +8,7 @@ import { AirlinePill } from './AirlinePill';
 import { Icon } from './Icon';
 import { pressStyle } from './press';
 import { Divided } from './MetaLine';
+import { RouteText } from './TrailMark';
 
 export interface LoggedFlightRowProps {
   flight: LoggedFlight;
@@ -43,9 +44,7 @@ export function LoggedFlightRow({ flight: f, now, onRemove, onEdit }: LoggedFlig
         testID="edit-logged-flight"
         style={pressStyle(styles.main)}>
         <View style={styles.top}>
-          <Text lineBreakStrategyIOS="push-out" style={[textStyles.heading, { color: c.text }]}>
-            {route}
-          </Text>
+          <RouteText lineBreakStrategyIOS="push-out" style={[textStyles.heading, { color: c.text }]} text={route} />
           {miles != null ? (
             <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, styles.miles, { color: c.muted }]}>
               {`${groupDigits(miles)} mi`}

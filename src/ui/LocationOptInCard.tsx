@@ -21,7 +21,7 @@ export function LocationOptInCard({ onAllow, onNotNow }: LocationOptInCardProps)
       </Text>
       {/* Provisional body copy (not John-decided). */}
       <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, { color: c.muted }]}>
-        Uses your location only to pick the closest airport. Change it anytime in Profile.
+        Only used to pick the closest airport.
       </Text>
       <View style={styles.buttons}>
         <Button label="Allow" onPress={onAllow} accessibilityLabel="Allow location access" style={styles.button} />

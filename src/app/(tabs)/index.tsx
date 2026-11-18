@@ -3,11 +3,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { BackHandler, FlatList, StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { AIRPORTS, areaFor, localDate, toRouteLine, type Flight, type Itinerary } from '@/engine';
+import { AIRPORTS, areaFor, localDate, toRouteLine, type Flight, type Itinerary, type PlaceRef } from '@/engine';
 import { flightLookupKey, sampleRouteImpacts, useDriveTime, useFlightStatuses, useRouteImpacts } from '@/live';
 import { GlobeMap, type LonLat, type MapAirport } from '@/map';
 import { nearestAirport } from '@/search/airports';
 import { otherEndExcludes, searchRequest, showGetHome } from '@/search/areas';
+import { restBetween } from '@/search/places';
 import { dateChips } from '@/search/dates';
 import { boardingLeadMin, driveQuery } from '@/search/leaveBy';
 import { chooseOrigin, restSpot, showLocationCard, type RestSpot } from '@/search/origin';
@@ -16,6 +17,7 @@ import { SAMPLE_TZ, SCHEDULE_SOURCE, useRouteSearch } from '@/search/useRouteSea
 import { minTapTarget, spacing, textStyles, useColors } from '@/theme';
 import { openRequest, reopenOutcome, savedKey, savedRouteFrom, type SavedRoute } from '@/trips/savedRoutes';
 import { useSavedRoutes } from '@/trips/SavedRoutesProvider';
+import { previewLines } from '@/map/previewLines';
 import { AirportPicker } from '@/ui/AirportPicker';
 import { Appear } from '@/ui/Appear';
 import { useSettings } from '@/settings/SettingsProvider';
@@ -50,6 +52,7 @@ import { useRadarLayers } from '@/ui/useRadarLayers';
 import { useSheetContent } from '@/ui/useSheetContent';
 import { selectionTick } from '@/ui/haptics';
 import { TearAwayHost } from '@/ui/TearAway';
+import { JauntWordmark } from '@/brand/JauntWordmark';
 
 /** Peek height above the home indicator. */
 const PEEK = 132;
@@ -97,6 +100,9 @@ export default function HomeScreen() {
   // runs; a cold start begins fresh). Otherwise the nearest airport when
   // location is on, else main home, else the last searched origin, else empty.
   const [pickedOrigin, setPickedOrigin] = useState<string | null | undefined>(undefined);
+  // A whole country, state or city picked as From or To (round 224); the end's code is then its first airport.
+  const [originGroup, setOriginGroup] = useState<PlaceRef | null>(null);
+  const [destGroup, setDestGroup] = useState<PlaceRef | null>(null);
   const nearest = useMemo(
     () => (settings.useLocation && location ? nearestAirport(location.lat, location.lon) : null),
     [settings.useLocation, location],
@@ -104,9 +110,19 @@ export default function HomeScreen() {
   const origin = chooseOrigin({ picked: pickedOrigin, nearest, mainHome, lastOrigin: settings.lastOrigin });
   const restRef = useRef<RestSpot<LonLat> | null>(null);
   const homeCenter = useMemo<LonLat | null>(() => {
-    restRef.current = restSpot(restRef.current, origin, destination, (code) => [AIRPORTS[code].lon, AIRPORTS[code].lat]);
+    // A picked place (round 224) rests the globe between the two sides, so the whole preview is in view.
+    const fromId = originGroup?.key ?? origin;
+    const toId = destGroup?.key ?? destination;
+    restRef.current = restSpot(restRef.current, fromId, toId, (code) =>
+      originGroup || destGroup
+        ? restBetween(
+            originGroup?.airports ?? (origin ? [origin] : []),
+            destGroup?.airports ?? (destination ? [destination] : []),
+          )
+        : [AIRPORTS[code].lon, AIRPORTS[code].lat],
+    );
     return restRef.current.spot;
-  }, [origin, destination]);
+  }, [origin, destination, originGroup, destGroup]);
   const locationCard = showLocationCard({
     settingsLoaded,
     locationAsked: settings.locationAsked,
@@ -265,7 +281,9 @@ export default function HomeScreen() {
     state.status === 'done' &&
     state.request.date === date &&
     state.request.origin === origin &&
-    state.request.destination === destination;
+    state.request.destination === destination &&
+    state.request.originGroup?.key === originGroup?.key &&
+    state.request.destinationGroup?.key === destGroup?.key;
   const banner = bannerCurrent ? emptyBanner : null;
   // First launch: the location card plus the search fields don't fit at half height, so
   // the panel opens full while the card shows and drops to half once it's answered.
@@ -339,20 +357,22 @@ export default function HomeScreen() {
   const toggleArea = (code: string) => updateSettings({ areaOn: { ...areaOn, [code]: !areaOn[code] } });
 
   const runSearch = useCallback(
-    (d = date, to = destination, toArea?: boolean) => {
+    (d = date, to = destination, toArea?: boolean, toGroup: PlaceRef | null = destGroup) => {
       if (!origin || !to) return;
       setSelectedId(null);
       // Results take over (Q-062): the list opens near full height.
       setSheetIndex(SHEET.full);
       // Remembered as the fallback From when location is off (Q-051).
       if (origin !== settings.lastOrigin) updateSettings({ lastOrigin: origin });
-      search(searchRequest(origin, to, d, areaOn, toArea), filters);
+      search(searchRequest(origin, to, d, areaOn, toArea, { origin: originGroup, destination: toGroup }), filters);
     },
-    [origin, destination, date, filters, search, areaOn, settings.lastOrigin, updateSettings],
+    [origin, destination, date, filters, search, areaOn, settings.lastOrigin, updateSettings, originGroup, destGroup],
   );
   // Re-run the shown search (retry, tomorrow, filters) with its own To and area choice.
   const rerun = (d: string) =>
-    state.status === 'idle' ? runSearch(d) : runSearch(d, state.request.destination, !!state.request.destinationArea);
+    state.status === 'idle'
+      ? runSearch(d)
+      : runSearch(d, state.request.destination, !!state.request.destinationArea, state.request.destinationGroup ?? null);
 
   // No flights on the searched day (Q-073): one tap searches the next day, inside the 0-7 day window.
   const nextDay = state.status === 'done' ? neighborDays(chips, state.request.date).next : null;
@@ -372,8 +392,9 @@ export default function HomeScreen() {
   const getHome = () => {
     if (!mainHome) return;
     setDestination(mainHome);
+    setDestGroup(null);
     // Always the whole home area, whatever its toggle says (Q-048).
-    runSearch(date, mainHome, true);
+    runSearch(date, mainHome, true, null);
   };
 
   // Map marks (item 9): homes (main first), the search origin, and the requested
@@ -381,16 +402,18 @@ export default function HomeScreen() {
   // (e.g. DAL when From is DFW) get a ring when their route is selected.
   const homeMarks = useMemo(() => homes.map((h) => mark(h.code)), [homes]);
   const searched = state.status === 'idle' ? null : state.request;
-  const markOrigin = searched?.origin ?? origin;
+  // A picked place (round 224) has no one airport to mark: before a search its preview dots show where, and
+  // after it the routes show their own ends.
+  const markOrigin = searched ? (searched.originGroup ? null : searched.origin) : originGroup ? null : origin;
   const markDestinations = useMemo(() => {
-    const to = searched?.destination ?? destination;
+    const to = searched ? (searched.destinationGroup ? null : searched.destination) : destGroup ? null : destination;
     const codes = new Set(to ? [to] : []);
     for (const r of results) codes.add(r.destination);
     // Where the picked route's flight diverted to, when the live data says (John, 2026-11-01).
     const picked = selectedId ? rowStatuses?.[selectedId] : undefined;
     for (const l of picked?.legs ?? []) if (l.divertedTo && AIRPORTS[l.divertedTo]) codes.add(l.divertedTo);
     return [...codes].map(mark);
-  }, [searched, destination, results, selectedId, rowStatuses]);
+  }, [searched, destination, destGroup, results, selectedId, rowStatuses]);
 
   const select = useCallback((id: string | null) => {
     setSelectedId(id);
@@ -410,6 +433,8 @@ export default function HomeScreen() {
     const request = openRequest(opening, Date.now());
     setPickedOrigin(request.origin);
     setDestination(request.destination);
+    setOriginGroup(request.originGroup ?? null);
+    setDestGroup(request.destinationGroup ?? null);
     setDate(request.date);
     setSelectedId(null);
     setReopening(opening);
@@ -469,16 +494,14 @@ export default function HomeScreen() {
       return () => setFocused(false);
     }, []),
   );
-  const previewPair = useMemo(
-    () =>
-      origin && destination && origin !== destination && AIRPORTS[origin] && AIRPORTS[destination]
-        ? {
-            from: [AIRPORTS[origin].lon, AIRPORTS[origin].lat] as LonLat,
-            to: [AIRPORTS[destination].lon, AIRPORTS[destination].lat] as LonLat,
-          }
-        : null,
-    [origin, destination],
-  );
+  // The lines the globe previews before a search: one for two airports, a few across a picked place (round 224).
+  const previewPair = useMemo(() => {
+    if (!origin || !destination) return null;
+    const ends = (codes: readonly string[]) =>
+      codes.filter((code) => AIRPORTS[code]).map((code) => ({ code, coord: mark(code).coord, city: AIRPORTS[code].city }));
+    const lines = previewLines(ends(originGroup?.airports ?? [origin]), ends(destGroup?.airports ?? [destination]));
+    return lines.length ? { lines: lines.map((l) => ({ from: l.from.coord, to: l.to.coord })) } : null;
+  }, [origin, destination, originGroup, destGroup]);
   // Only while Search is the tab on screen, so back on another tab isn't taken here.
   useFocusEffect(
     useCallback(() => {
@@ -550,9 +573,7 @@ export default function HomeScreen() {
       {/* Saving a route tears a little ticket off into My Trips (round 125); the layer sits over it all. */}
       <TearAwayHost>
         <View style={styles.topBar}>
-          <Text style={[textStyles.wordmark, { color: c.text }]} accessibilityRole="header">
-            OutBound
-          </Text>
+          <JauntWordmark height={28} ink={c.text} accent={c.accent} />
           {/* Free and Pay as you go keep count of credits here; Premium doesn't (round 176). */}
           <CreditsChip onAnswerLoads={answerLoads} />
         </View>
@@ -609,6 +630,8 @@ export default function HomeScreen() {
                     onDate={setDate}
                     origin={origin}
                     destination={destination}
+                    originGroup={originGroup}
+                    destinationGroup={destGroup}
                     onPickOrigin={() => setPicking('origin')}
                     originEmptyText={
                       origin
@@ -619,10 +642,13 @@ export default function HomeScreen() {
                             ? 'Location is off. Choose airport'
                             : undefined
                     }
+                    originWaiting={!origin && locationStatus === 'locating'}
                     onPickDestination={() => setPicking('destination')}
                     onSwap={() => {
                       setPickedOrigin(destination);
                       setDestination(origin);
+                      setOriginGroup(destGroup);
+                      setDestGroup(originGroup);
                     }}
                     areaOn={areaOn}
                     onToggleArea={toggleArea}
@@ -742,14 +768,33 @@ export default function HomeScreen() {
         <AirportPicker
           visible={pickerSheet.visible}
           title={pickerSheet.shown === 'origin' ? 'From' : 'To'}
-          current={pickerSheet.shown === 'origin' ? origin : destination}
+          current={pickerSheet.shown === 'origin' ? (originGroup ? null : origin) : destGroup ? null : destination}
+          currentGroup={pickerSheet.shown === 'origin' ? originGroup?.key : destGroup?.key}
           nearest={nearest}
           homes={homes}
-          // Neither end offers the other end's area (round 138, John: no Dallas to Dallas).
-          exclude={otherEndExcludes(pickerSheet.shown === 'origin' ? destination : origin)}
+          // Neither end offers the other end's area (round 138, John: no Dallas to Dallas), or a place picked there.
+          exclude={
+            pickerSheet.shown === 'origin' ? otherEndExcludes(destination, destGroup) : otherEndExcludes(origin, originGroup)
+          }
           onPick={(code) => {
-            if (picking === 'origin') setPickedOrigin(code);
-            else setDestination(code);
+            if (picking === 'origin') {
+              setPickedOrigin(code);
+              setOriginGroup(null);
+            } else {
+              setDestination(code);
+              setDestGroup(null);
+            }
+            setPicking(null);
+          }}
+          // A whole country, state or city (round 224): searches every airport in it.
+          onPickGroup={(group) => {
+            if (picking === 'origin') {
+              setPickedOrigin(group.airports[0]);
+              setOriginGroup(group);
+            } else {
+              setDestination(group.airports[0]);
+              setDestGroup(group);
+            }
             setPicking(null);
           }}
           onClose={() => setPicking(null)}

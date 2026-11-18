@@ -2,10 +2,12 @@ import type { SFSymbol } from 'expo-symbols';
 import { Children, Fragment, isValidElement, type ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
+import { forSpeech } from '@/search/format';
 import { minTapTarget, radius, spacing, textStyles, useColors } from '@/theme';
 
-import { useCardSurface } from './cardSurface';
 import { Icon } from './Icon';
+import { ROUTE_ARROW, trails } from './TrailMark';
+import { Glass } from './Glass';
 
 /** From this text size a row's value goes under its label. */
 const STACK_VALUE_SCALE = 1.3;
@@ -14,8 +16,13 @@ const STACK_VALUE_SCALE = 1.3;
 export function SectionHeader({ title }: { title: string }) {
   const c = useColors();
   return (
-    <Text lineBreakStrategyIOS="push-out" style={[textStyles.small, styles.title, { color: c.muted }]} accessibilityRole="header">
-      {title.toUpperCase()}
+    <Text
+      lineBreakStrategyIOS="push-out"
+      style={[textStyles.small, styles.title, { color: c.muted }]}
+      accessibilityRole="header"
+      accessibilityLabel={title.includes(ROUTE_ARROW) ? forSpeech(title) : undefined}>
+      {/* A route in the heading shows the plane and contrail (round 209, John). */}
+      {trails(title.toUpperCase(), textStyles.small.fontSize)}
     </Text>
   );
 }
@@ -34,15 +41,38 @@ export function SectionFooter({ children }: { children: ReactNode }) {
  * Grouped list card (iOS Settings style): optional heading above, rows
  * separated by hairlines inset to the text.
  */
-export function ListGroup({ title, children }: { title?: string; children: ReactNode }) {
+export function ListGroup({
+  title,
+  children,
+  plain = false,
+}: {
+  title?: string;
+  children: ReactNode;
+  /** Rows straight on the page with hairlines between, no card around them (round 216, the Requests tab). */
+  plain?: boolean;
+}) {
   const c = useColors();
-  const card = useCardSurface();
   const rows = Children.toArray(children).filter(Boolean);
+  if (plain) {
+    return (
+      <View style={styles.wrap} testID="list-group-plain">
+        {title ? <SectionHeader title={title} /> : null}
+        <View>
+          {rows.map((row, i) => (
+            <Fragment key={i}>
+              {i > 0 ? <View style={[styles.sep, styles.sepPlain, { backgroundColor: c.line }]} /> : null}
+              {row}
+            </Fragment>
+          ))}
+        </View>
+      </View>
+    );
+  }
   return (
     <View style={styles.wrap}>
       {title ? <SectionHeader title={title} /> : null}
       {/* The shared card look (round 163); the inner view clips a pressed row's corners without clipping the lift. */}
-      <View style={card} testID="list-group-card">
+      <Glass testID="list-group-card">
         <View style={styles.clip}>
           {rows.map((row, i) => (
             <Fragment key={i}>
@@ -62,7 +92,7 @@ export function ListGroup({ title, children }: { title?: string; children: React
             </Fragment>
           ))}
         </View>
-      </View>
+      </Glass>
     </View>
   );
 }
@@ -88,7 +118,7 @@ export function ListRow({ label, value, detail, onPress, accessibilityHint, valu
   const stacked = useWindowDimensions().fontScale >= STACK_VALUE_SCALE;
   const valueText = value ? (
     <Text
-      style={[textStyles.bodyStrong, !stacked && styles.value, { color: valueAccent ? c.accent : c.muted }]}
+      style={[textStyles.body, !stacked && styles.value, { color: valueAccent ? c.accent : c.muted }]}
       numberOfLines={stacked ? undefined : 2}>
       {value}
     </Text>
@@ -96,8 +126,8 @@ export function ListRow({ label, value, detail, onPress, accessibilityHint, valu
   const content = (
     <>
       {icon ? (
-        <View style={[styles.iconTile, { backgroundColor: c.surface2 }]} testID="list-row-icon">
-          <Icon name={icon} size={15} tintColor={c.text} fallback={null} />
+        <View style={styles.iconTile} testID="list-row-icon">
+          <Icon name={icon} size={17} tintColor={c.muted} fallback={null} />
         </View>
       ) : null}
       <View style={styles.left}>
@@ -149,6 +179,8 @@ const styles = StyleSheet.create({
   footer: { paddingHorizontal: spacing.rowX },
   clip: { borderRadius: radius.all - 1, overflow: 'hidden' },
   sep: { height: StyleSheet.hairlineWidth, marginLeft: spacing.rowX },
+  // On the page, a row's hairline starts at its text, past the airline badge (round 216).
+  sepPlain: { marginLeft: spacing.rowX + 30 + spacing.section },
   // rowX + the 30pt tile + its 2pt margin + the row gap.
   sepIcon: { marginLeft: spacing.rowX + 32 + spacing.group },
   row: {
@@ -160,6 +192,7 @@ const styles = StyleSheet.create({
     gap: spacing.group,
   },
   left: { flex: 1, gap: 2 },
-  iconTile: { width: 30, height: 30, borderRadius: radius.all, alignItems: 'center', justifyContent: 'center', marginRight: 2 },
+  // A plain icon, no tinted tile (round 207).
+  iconTile: { width: 24, height: 30, alignItems: 'center', justifyContent: 'center', marginRight: 2 },
   value: { flexShrink: 1, maxWidth: '45%', textAlign: 'right' },
 });

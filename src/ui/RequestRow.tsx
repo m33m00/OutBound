@@ -10,11 +10,12 @@ import {
 } from '@/requests/requests';
 import { formatAge, forSpeech } from '@/search/format';
 import type { LegStatusView } from '@/search/statusTags';
-import { fonts, minTapTarget, radius, spacing, textStyles, useColors } from '@/theme';
+import { fonts, minTapTarget, spacing, textStyles, useColors } from '@/theme';
 
 import { AirlineMark } from './AirlinePill';
+import { PillButton } from './Buttons';
 import { Icon } from './Icon';
-import { Divided } from './MetaLine';
+import { Divided, INLINE_DIVIDER } from './MetaLine';
 import { pressStyle } from './press';
 import { StatusTag, TAG_TONE } from './StatusTag';
 import { SeatCountPill } from './SeatCountPill';
@@ -31,6 +32,9 @@ export interface RequestRowProps {
   /** Live status of the flight (My Trips): a delay, departure or cancel shows on the row (round 50). */
   leg?: LegStatusView | null;
 }
+
+/** How far the flight number and market may shrink to stay on one line (round 217). */
+const TITLE_MIN_SCALE = 0.7;
 
 /** From this text size the button or badge moves under the text, so the flight never squeezes. */
 const STACK_AT_FONT_SCALE = 1.3;
@@ -49,8 +53,7 @@ export function RequestRow({ request, now, mine, onAnswer, onOpen, leg }: Reques
   const answered = request.answer != null;
   const tier = request.answer ? answerTier(request.answer) : null;
   const status = mine ? (answered ? 'Answered' : 'Waiting') : null;
-  // The detail already says "answered 2m ago", so VoiceOver only adds Waiting.
-  const spokenStatus = status === 'Waiting' ? status : null;
+  const spokenStatus = status;
   // Waiting: the old time struck, then the new time that matters now.
   const tag = leg?.tag ?? null;
   const live = liveRequestDetail(
@@ -60,9 +63,18 @@ export function RequestRow({ request, now, mine, onAnswer, onOpen, leg }: Reques
   );
   // Answered rows show the tier line, so the new time rides on the tag instead.
   const tagLabel = tag && answered && leg?.newText ? `${tag.label}, now ${leg.newText}` : tag?.label;
-  // The detail line already says the new and old times, so the tag only adds the delay.
-  const tagSpoken = tag ? (live && tag.kind === 'delayed' ? tag.spoken.split(', was ')[0] : tag.spoken) : null;
+  // The detail line already says the new and old times, so the tag only adds the delay; a canceled flight's
+  // line keeps its own time, so the tag only adds Canceled.
+  const tagSpoken = tag
+    ? (live && tag.kind === 'delayed') || tag.kind === 'canceled'
+      ? tag.spoken.split(', was ')[0]
+      : tag.spoken
+    : null;
   const label = forSpeech([title, live ? live.spoken : detail, tagSpoken, spokenStatus].filter(Boolean).join('. '));
+  // When it was asked, on the same line as the flight's day and time (round 216). An answered ask shows no time
+  // stamp at all (round 217, John: "remove the timestamp of when it was answered").
+  const age = request.answer ? null : `asked ${formatAge(request.askedAt, now)}`;
+  const divider = <Text style={[textStyles.small, { color: c.line2 }]}>{INLINE_DIVIDER}</Text>;
   const body = (
     <>
       {/* The same round airline badge as the tickets (round 164). */}
@@ -74,34 +86,41 @@ export function RequestRow({ request, now, mine, onAnswer, onOpen, leg }: Reques
         style={stacked ? styles.textStacked : styles.text}
         accessible={!onOpen}
         accessibilityLabel={onOpen ? undefined : label}>
-        <Text lineBreakStrategyIOS="push-out" style={[textStyles.heading, { color: c.text }]}>
-          <Divided text={title} />
+        {/* Flight number and market stay on one line, shrinking a little to fit rather than wrapping (round 217,
+            John: "Can we make sure it doesn't wrap?"). */}
+        <Text
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={TITLE_MIN_SCALE}
+          style={[textStyles.heading, { color: c.text }]}
+          testID="request-title">
+          <Divided text={title} fontSize={textStyles.heading.fontSize} />
         </Text>
         <View style={styles.detailLine}>
-          {tier && request.answer ? (
-            // The answer as the route line shows seats: seat and person icons over the numbers,
-            // in the seat color, in one pill (round 164; "just color and seat availability").
-            <SeatCountPill open={request.answer.open} listed={request.answer.listed} tier={tier} testID="request-counts" />
-          ) : null}
-          {/* When it was asked or answered sits on its own at the right, so this line never wraps (round 167, John). */}
-          {tier && request.answer ? null : (
-            <Text
-              lineBreakStrategyIOS="push-out"
-              style={[textStyles.small, styles.detail, { color: c.muted }]}
-              testID="request-departs">
-              {live ? (
-                <>
-                  {live.prefix}
-                  {/* The old time sits struck before the new one (John, 2026-10-30). */}
-                  {live.struck ? <Text style={styles.struck}>{live.struck}</Text> : null}
-                  {live.time && live.struck ? '\u00a0' : null}
-                  {live.time ? <Text style={{ color: c.text, fontFamily: fonts.bodySemiBold }}>{live.time}</Text> : null}
-                </>
-              ) : (
-                requestDepartsLine(request, now)
-              )}
-            </Text>
-          )}
+          {/* The day and time it leaves, then when it was asked (round 216); answered asks show the day and time
+              alone, like the others (round 217). */}
+          <Text
+            lineBreakStrategyIOS="push-out"
+            style={[textStyles.small, styles.detail, { color: c.muted }]}
+            testID="request-departs">
+            {live ? (
+              <>
+                {live.prefix}
+                {/* The old time sits struck before the new one (John, 2026-10-30). */}
+                {live.struck ? <Text style={styles.struck}>{live.struck}</Text> : null}
+                {live.time && live.struck ? '\u00a0' : null}
+                {live.time ? <Text style={{ color: c.text, fontFamily: fonts.bodySemiBold }}>{live.time}</Text> : null}
+              </>
+            ) : (
+              requestDepartsLine(request, now)
+            )}
+            {age ? (
+              <>
+                {divider}
+                {age}
+              </>
+            ) : null}
+          </Text>
         </View>
         {tag ? (
           <View style={styles.tagLine}>
@@ -109,15 +128,13 @@ export function RequestRow({ request, now, mine, onAnswer, onOpen, leg }: Reques
           </View>
         ) : null}
       </View>
-      <View style={[styles.side, stacked && styles.sideStacked]}>
-        <Text
-          style={[textStyles.small, { color: c.muted }]}
-          numberOfLines={1}
-          importantForAccessibility="no-hide-descendants"
-          accessibilityElementsHidden
-          testID="request-age">
-          {formatAge(request.answer ? request.answer.at : request.askedAt, now)}
-        </Text>
+      <View style={[styles.side, stacked && styles.sideStacked]} testID="request-side">
+        {tier && request.answer ? (
+          // The answer as the route line shows seats: seat and person icons over the numbers, in the seat color, in
+          // one pill (round 164), sitting over the Answered pill (round 217, John: "Move the load count ... ontop of
+          // the answered pill").
+          <SeatCountPill open={request.answer.open} listed={request.answer.listed} tier={tier} testID="request-counts" />
+        ) : null}
         {status ? (
           <View
             style={[styles.badge, { backgroundColor: answered ? c.goodBg : c.surface2 }]}
@@ -131,15 +148,14 @@ export function RequestRow({ request, now, mine, onAnswer, onOpen, leg }: Reques
           </View>
         ) : null}
         {!mine && !answered && onAnswer ? (
-          <Pressable
+          // A light pill, not a filled button: the app keeps one filled main button (round 216).
+          <PillButton
+            label="Answer"
             onPress={onAnswer}
-            accessibilityRole="button"
             accessibilityLabel={`Answer ${forSpeech(title)}`}
             accessibilityHint="Opens Report Load"
             testID="answer-request"
-            style={pressStyle([styles.answer, { backgroundColor: c.accent }])}>
-            <Text style={[textStyles.button, { color: c.onAccent }]}>Answer</Text>
-          </Pressable>
+          />
         ) : null}
       </View>
       {onOpen ? (
@@ -186,18 +202,11 @@ const styles = StyleSheet.create({
   // Large text: the chevron stays, at the row's top right, so the row still reads as tappable.
   chevronStacked: { position: 'absolute', top: spacing.rowY + 4, right: spacing.rowX },
   detailLine: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6, marginTop: 2 },
-  // The age over the button or badge, both at the right edge.
+  // The button or badge at the right edge.
   side: { alignItems: 'flex-end', gap: 6 },
   sideStacked: { alignItems: 'flex-start', alignSelf: 'flex-start' },
   detail: { flexShrink: 1 },
   mark: { alignSelf: 'flex-start', marginTop: 2 },
   badge: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 999 },
   badgeText: { fontFamily: fonts.bodySemiBold },
-  answer: {
-    minHeight: minTapTarget,
-    paddingHorizontal: spacing.page,
-    borderRadius: radius.all,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
 });

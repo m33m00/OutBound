@@ -240,3 +240,29 @@ Each item names its owner. One item per work session. spec-keeper runs a pre-fli
 | 233 | Animations that mean something; one corner radius (14) everywhere; font pick waiting on OK to add a package (round 198) | Done |
 | 234 | Manrope for all text (times stay Geist Mono); canceled leg on the map: red line, X at its middle, red Canceled pill (round 199) | Done |
 | 235 | Sora for all text and titles, replacing Manrope (times stay Geist Mono) (round 200) | Done |
+| 236 | Routes never connect through the origin's or destination's area (DAL and DFW count as Dallas), even with the area pill off; sample MIA to DAL return added | Done |
+| 238 | Departed/Arrived pill next to Save; Arrived graphite, Departed cyan; arrived tickets grayed out (round 201) | Done |
+| 239 | Pills and Save line up with the new (late) times; At risk gold and lower on 1-stop routes; area callout shows codes only; Filters matches Search (round 202) | Done |
+| 240 | Bold red bar through canceled times; Now line is a solid capsule on a thick rule (round 203) | Done |
+| 241 | Now line in the picked-day blue, rule a smidge thinner; no white circle behind the map's canceled X (round 204) | Done |
+| 242 | Map canceled X in a small light red circle like the cards; no line over Request Loads or under Leave by and Leave now (round 205) | Done |
+| 243 | Clean pass: cut helper and footer lines across Settings, Profile, Filters and empty states; quieter caption weight, tighter headings (round 206) | Done |
+| 244 | First-party calm: neutral grays, no outline on grouped cards, lighter ticket edge, no grouping boxes (banner, empty states, icon tiles), Search tab is Home (round 207) | Done |
+| 245 | Rename to Jaunt: lowercase jaunt wordmark with the contrail t (header, welcome), tall t app icon, new launch intro, in-app text and permission prompts say Jaunt | Done |
+| 246 | Departed pill in boarding blue; Jaunt plane and contrail in place of the arrow in the results title (round 208) | Done |
+| 247 | Route mark level (horizontal contrail) and used on every route between airport codes (round 209) | Done |
+| 248 | Route mark never wraps apart from its codes, shorter trail, centred on the capitals (round 210) | Done |
+| 249 | Liquid Glass on the boxes that stay (tab bar, panel, bars, cards); fewer boxes in the status, delays and credits sheets (round 211) | Done |
+| 250 | No flight time pills on the route map; Canceled pill stays (round 212) | Done |
+| 251 | Light mode Home: wordmark redraws dark, light map at night, soft map labels, even glass sheet with no seam above the tab bar (round 213) | Done |
+| 252 | Airport picker: plain rows, airport name over city, Recent and All airports headings, blue codes, centered header with grabber (round 214) | Done |
+| 253 | Results page: only the picked day filled, plain back arrow and Filters, no lines or glass band over the results, connection time on every route with a stop, hairline ticket edges, Jayden's no-backtracking rule brought in (round 215) | Done |
+| 254 | Requests tab: light Answer pill, plain rows (no card or heading), flight day and time with when it was asked on one line, no anonymous footer (round 216) | Done |
+| 255 | Request rows: canceled asks keep their day and time with the Canceled pill, answered asks show the seat count over the Answered pill with no answered time, flight and market on one line (round 217) | Done |
+| 256 | Opened route: no long-drive guesses on Leave by, no credit box or second length on nonstops, no box in the ticket, plain codes, small seat dash, no line over Request Loads (round 218) | Done |
+| 257 | Leave by on one line (shorter copy, never wraps beside the buttons); results tickets by destination: muted stripe on the left edge and faint tint under the perforation (round 219) | Done |
+| 258 | Destination stripe taken back off tickets; soft paper tear sound when a saved ticket tears (round 220) | Done |
+| 259 | Results tickets: paper grain, warmer stub, and a hairline landmark sketch per airport (state outline for others) that draws in once (round 221) | Done; sketches taken off in round 222 |
+| 260 | Landmark sketches off the tickets; grain and warmer stub stay (round 222) | Done |
+| 261 | One plane and trail loader everywhere something loads (round 223) | Done |
+| 262 | From and To by country, state and city, with a gentle curved preview of the lines (round 224) | Done |

@@ -2,7 +2,16 @@ import { endAirports } from './airports';
 import { airlineAllowed, leavesInTimes } from './filters';
 import { legSeats, routeTier, tierRank } from './seats';
 import { addDays, daysBetween, localDate, minutes, zonedToUtc } from './time';
-import type { Flight, FlightDataProvider, Itinerary, LegSeats, SearchOptions, SearchOutcome, SearchRequest } from './types';
+import type {
+  Flight,
+  FlightDataProvider,
+  Itinerary,
+  LegSeats,
+  SearchOptions,
+  PlaceRef,
+  SearchOutcome,
+  SearchRequest,
+} from './types';
 
 const MIN = 60_000;
 
@@ -135,11 +144,24 @@ async function findAll(
   // Area toggle on (Q-048): that end searches every airport in its area. An avoided area airport is
   // dropped, but the airport typed in From or To always stays (round 174).
   const avoid = new Set(opt.avoidAirports.filter((c) => c !== request.origin && c !== request.destination));
-  const origins = new Map(endAirports(request.origin, !!request.originArea).filter(([c]) => !avoid.has(c)));
-  const destinations = new Map(endAirports(request.destination, !!request.destinationArea).filter(([c]) => !avoid.has(c)));
+  // A whole country, state or city (round 224) searches every airport in it, with no transfer time to show.
+  const endOf = (code: string, wholeArea: boolean, group?: PlaceRef): [string, number | null][] =>
+    group ? group.airports.map((c) => [c, null]) : endAirports(code, wholeArea);
+  const origins = new Map(endOf(request.origin, !!request.originArea, request.originGroup).filter(([c]) => !avoid.has(c)));
+  const destinations = new Map(
+    endOf(request.destination, !!request.destinationArea, request.destinationGroup).filter(([c]) => !avoid.has(c)),
+  );
   const airlineOk = (f: Flight) => airlineAllowed(f.airline, opt.airlines, opt.airlineRegion);
-  // Intermediate stops never use an origin- or destination-end airport.
-  const ends = new Set([...origins.keys(), ...destinations.keys()]);
+  // Intermediate stops never use an airport in the origin's or destination's area (Dallas: DAL and DFW),
+  // whether or not the area pill is on, so a route never flies away and connects back through the city it
+  // left or is headed to (Jayden, 2026-11-13: DAL > DEN > DFW > BNA).
+  // A group end counts the same way: no connection back through Texas on a Texas search.
+  const ends = new Set(
+    [
+      ...(request.originGroup?.airports ?? [request.origin]),
+      ...(request.destinationGroup?.airports ?? [request.destination]),
+    ].flatMap((code) => endAirports(code, true).map(([c]) => c)),
+  );
 
   // One fetch per airport, wide enough for the date plus a full-length trip.
   const windowStart = zonedToUtc(addDays(request.date, -1), '00:00', originAirport.tz);
@@ -217,8 +239,9 @@ async function findAll(
         departUtc: first.departUtc,
         arriveUtc: last.arriveUtc,
         totalMin: minutes(last.arriveUtc - first.departUtc),
-        requestedOrigin: request.origin,
-        requestedDestination: request.destination,
+        // A group end has no one airport you asked for, so no "Leaves from AUS, near DAL" note.
+        requestedOrigin: request.originGroup ? first.from : request.origin,
+        requestedDestination: request.destinationGroup ? last.to : request.destination,
         origin: first.from,
         destination: last.to,
         originTransferMin: origins.get(first.from) ?? null,

@@ -125,7 +125,8 @@ describe('LeaveByCard location button', () => {
     expect(texts).not.toContain('Flight delayed to 2:40 PM');
     // The title still counts back from the schedule: 4 h out minus the 60 min buffer.
     // John's words, with nothing beside them (round 159).
-    expect(lineText(r!)).toMatch(/^Arrive at DFW by \d{1,2}:\d\d\u00a0[AP]M to begin boarding$/);
+    // Boarding left implied so it fits one line (round 219, John: "I dont like the text wraps here").
+    expect(lineText(r!)).toMatch(/^Arrive at DFW by \d{1,2}:\d\d\u00a0[AP]M$/);
     const label = r!.root.find(
       (n) =>
         n.props.accessible &&
@@ -183,7 +184,7 @@ describe('LeaveByCard location button', () => {
     expect(r!.root.find((n) => n.props.testID === 'leave-by-card' && 'disabled' in n.props).props.disabled).toBe(true);
   });
 
-  it('is one slim row: the time and the boarding line, with the drive time on the directions button (rounds 169, 193)', () => {
+  it('is one slim row: just the time, with the drive time on the directions button (rounds 169, 193, 205)', () => {
     mockFontScale = 1;
     act(() => {
       r = create(
@@ -201,8 +202,8 @@ describe('LeaveByCard location button', () => {
     });
     // The time, then the boarding line beside it like Leave now's (round 193, John: some had it, some didn't).
     expect(lineText(r!)).toMatch(/^Leave by \d{1,2}:\d{2}\u00a0(AM|PM)/);
-    expect(lineText(r!)).toContain('Arrive at DFW by');
-    expect(lineText(r!)).toContain('to begin boarding');
+    // Nothing under or beside the time (round 205, John: "We don't need the commentary ... below the Leave Now").
+    expect(lineText(r!)).not.toContain('Arrive at DFW by');
     expect(lineText(r!)).not.toContain('·');
     // John: "can the estimated time to drive there be next to the car icon".
     const car = r!.root.find((n) => n.props.testID === 'leave-by-car' && typeof n.type === 'string');
@@ -266,7 +267,7 @@ describe('LeaveByCard location button', () => {
     expect(label).toContain('32 minutes drive');
   });
 
-  it('puts the detail on its own line, with no dot, when the row would wrap (John, 2026-11-02)', () => {
+  it('one line beside the buttons; at large text the detail gets its own line, with no dot (John, 2026-11-02)', () => {
     mockFontScale = 1;
     act(() => {
       r = create(
@@ -281,12 +282,34 @@ describe('LeaveByCard location button', () => {
         />,
       );
     });
-    expect(lineText(r!)).toMatch(/^You’re at DAL \(Dallas Love Field\)\u2002\|\u2002Your flight begins boarding at /);
+    expect(lineText(r!)).toMatch(/^You’re at DAL\u2002\|\u2002Boarding at /);
+    // Round 219 (John: "I dont like the text wraps here"): beside the buttons it never wraps.
+    const one = r!.root.find((n) => n.props.testID === 'leave-by-line' && typeof n.type === 'string');
+    expect(one.props.numberOfLines).toBe(1);
+    expect(one.props.adjustsFontSizeToFit).toBe(true);
+    // The spoken line keeps the airport's name and boarding in John's words.
+    const spoken = r!.root.find((n) => n.props.accessible && String(n.props.accessibilityLabel).startsWith('You’re at DAL'));
+    expect(spoken.props.accessibilityLabel).toContain('Dallas Love Field. Your flight begins boarding at');
+    // At large text the line may split, and then the detail gets its own line.
+    mockFontScale = 1.5;
+    act(() => {
+      r!.update(
+        <LeaveByCard
+          airport={AIRPORTS.DAL}
+          departUtc={NOW + 2 * 3600_000}
+          bufferMin={60}
+          now={NOW + 1}
+          location={{ lat: AIRPORTS.DAL.lat, lon: AIRPORTS.DAL.lon, at: NOW }}
+          locationStatus="idle"
+          onUseLocation={jest.fn()}
+        />,
+      );
+    });
     const line = r!.root.find((n) => n.props.testID === 'leave-by-line' && typeof n.type === 'string');
     act(() => line.props.onTextLayout({ nativeEvent: { lines: [{}, {}] } }));
-    expect(lineText(r!)).toBe('You’re at DAL (Dallas Love Field)');
+    expect(lineText(r!)).toBe('You’re at DAL');
     const detail = r!.root.find((n) => n.props.testID === 'leave-by-detail' && typeof n.type === 'string');
-    expect([detail.props.children].flat().join('')).toMatch(/^Your flight begins boarding at /);
+    expect([detail.props.children].flat().join('')).toMatch(/^Boarding at /);
   });
 
   it('at the airport: a walking person with the gate under it, walking directions to the gate (round 159, John)', () => {

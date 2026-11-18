@@ -1,4 +1,4 @@
-import { areaFor, type SearchRequest } from '@/engine';
+import { areaFor, type PlaceRef, type SearchRequest } from '@/engine';
 
 /**
  * Search request from the cards (Q-048): each end uses its remembered area
@@ -11,13 +11,17 @@ export function searchRequest(
   date: string,
   areaOn: Readonly<Record<string, boolean>>,
   wholeToArea?: boolean,
+  groups: { origin?: PlaceRef | null; destination?: PlaceRef | null } = {},
 ): SearchRequest {
+  // A whole country, state or city (round 224) already holds every airport it means, so no area toggle.
   return {
     origin,
     destination,
     date,
-    originArea: !!areaOn[origin],
-    destinationArea: wholeToArea ?? !!areaOn[destination],
+    originArea: groups.origin ? false : !!areaOn[origin],
+    destinationArea: groups.destination ? false : (wholeToArea ?? !!areaOn[destination]),
+    ...(groups.origin ? { originGroup: groups.origin } : {}),
+    ...(groups.destination ? { destinationGroup: groups.destination } : {}),
   };
 }
 
@@ -35,7 +39,9 @@ export function showGetHome(homes: readonly { code: string }[], origin: string |
  * Airports the other end's picker leaves out (round 138, John): the picked airport and every airport in its
  * area, both ways, so Dallas as From means neither DAL nor DFW is offered as To (and the other way round).
  */
-export function otherEndExcludes(code: string | null | undefined): string[] {
+export function otherEndExcludes(code: string | null | undefined, group?: PlaceRef | null): string[] {
+  // A picked place leaves out each of its airports and their areas (round 224).
+  if (group) return [...new Set(group.airports.flatMap((a) => otherEndExcludes(a)))];
   if (!code) return [];
   return areaFor(code)?.airports.slice() ?? [code];
 }

@@ -23,6 +23,8 @@ export interface Airport {
   city?: string;
   region?: string;
   country?: string;
+  /** The airport's own name, the way people say it ("Hartsfield-Jackson", "LaGuardia"), for the airport picker (round 214). */
+  airportName?: string;
 }
 
 /** One scheduled flight leg. */
@@ -141,6 +143,24 @@ export interface SearchRequest {
   originArea?: boolean;
   /** Same for the destination. Get Home always turns it on. */
   destinationArea?: boolean;
+  /**
+   * A whole country, state or city picked as From (round 224, John: browse "what country you want to depart out
+   * of, what state... and what city"): the search starts from every airport in it, and `origin` is its first
+   * airport. Area toggles don't apply to a group end.
+   */
+  originGroup?: PlaceRef;
+  /** Same for To. */
+  destinationGroup?: PlaceRef;
+}
+
+/** A picked country, state or city: what it's called and the airports in it. */
+export interface PlaceRef {
+  /** Stable id, e.g. "region:US-TX". */
+  key: string;
+  /** As people say it: "Texas", "Spain", "Dallas". */
+  name: string;
+  /** Its airports in the app's data, in a stable order. Always 2+. */
+  airports: string[];
 }
 
 export interface SearchOptions {

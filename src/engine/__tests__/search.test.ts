@@ -169,6 +169,26 @@ describe('searchItineraries: airport areas (Dallas: DAL, DFW)', () => {
     const viaDal = [flight('a', 'WN', 'DFW', 'DAL', '06:00', 30), flight('b', 'WN', 'DAL', 'LAX', '08:00', 200)];
     expect(ids(await search(viaDal, 'DFW', 'LAX', {}, {}, DATE, wholeFrom))).toEqual(['b']);
   });
+
+  it('never connects through the origin area with the toggle off (DAL > DEN > DFW > BNA)', async () => {
+    const backThroughDallas = [
+      flight('dal-den', 'WN', 'DAL', 'DEN', '06:55', 125),
+      flight('den-dfw', 'AA', 'DEN', 'DFW', '10:50', 120),
+      flight('dfw-bna', 'AA', 'DFW', 'BNA', '15:10', 105),
+      flight('den-bna', 'WN', 'DEN', 'BNA', '11:00', 150),
+    ];
+    expect(ids(await search(backThroughDallas, 'DAL', 'BNA'))).toEqual(['dal-den+den-bna']);
+  });
+
+  it('never connects through the destination area with the toggle off', async () => {
+    const viaDal = [flight('to-dal', 'WN', 'BNA', 'DAL', '06:00', 120), flight('dal-dfw', 'WN', 'DAL', 'DFW', '09:00', 30)];
+    expect(await search(viaDal, 'BNA', 'DFW')).toEqual([]);
+  });
+
+  it('never hops between area airports as a first leg', async () => {
+    const hop = [flight('hop', 'AA', 'DFW', 'DAL', '06:00', 30), flight('out', 'WN', 'DAL', 'LAX', '08:00', 200)];
+    expect(await search(hop, 'DFW', 'LAX')).toEqual([]);
+  });
 });
 
 describe('searchItineraries: sort and limit', () => {

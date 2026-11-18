@@ -84,14 +84,24 @@ describe('canceled leg line', () => {
   });
 });
 
+describe('canceled X, round 205', () => {
+  it('sits in a small circle like the cards\' X (John: "Can it be a circle ... a little smaller too")', () => {
+    // Smaller than round 199's 8pt disc, and the X fits inside its ring.
+    expect(CANCELED_X.disc).toBeLessThan(8);
+    expect(Math.hypot(CANCELED_X.half, CANCELED_X.half) + CANCELED_X.width / 2).toBeLessThan(
+      CANCELED_X.disc - CANCELED_X.ring / 2,
+    );
+  });
+});
+
 describe('canceled pill', () => {
   const canceled = markCanceledLegs(route, status(null, 'canceled'));
 
-  it('reads Canceled in place of the flight time, only on the canceled leg', () => {
+  it('reads Canceled only on the canceled leg; the other leg has no pill since round 212', () => {
     const specs = legTimeSpecs(canceled);
-    expect(specs.map((s) => s.text)).toEqual(['2h 35m', 'Canceled']);
-    expect(specs.map((s) => !!s.canceled)).toEqual([false, true]);
-    expect(legTimesSummary(canceled)).toBe('DFW to ORD, flight time 2 hours 35 minutes. ORD to LGA, canceled.');
+    expect(specs.map((s) => s.text)).toEqual(['Canceled']);
+    expect(specs.map((s) => s.legIndex)).toEqual([1]);
+    expect(legTimesSummary(canceled)).toBe('ORD to LGA, canceled.');
   });
 
   it('shows even when the leg has no times', () => {

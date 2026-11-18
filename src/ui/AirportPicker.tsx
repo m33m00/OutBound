@@ -1,9 +1,20 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Modal, Pressable, SectionList, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { placeLabel } from '@/engine';
-import { pickerSections, type PickerItem } from '@/search/airports';
+import { placeLabel, type Airport, type PlaceRef } from '@/engine';
+import { matchAirports, pickerSections, SEARCH_AIRPORTS } from '@/search/airports';
+import {
+  findPlace,
+  inPlace,
+  matchPlaces,
+  placeCodes,
+  placeRef,
+  placeTree,
+  type PlaceKind,
+  type PlaceNode,
+} from '@/search/places';
+import { rememberAirport, useRecentAirports } from '@/search/recentAirports';
 import { fonts, minTapTarget, radius, spacing, textStyles, useColors } from '@/theme';
 
 import { AirportSummarySheet } from './AirportSummary';
@@ -24,46 +35,225 @@ export interface AirportPickerProps {
   homes?: readonly { code: string; main: boolean }[];
   /** Airports not offered at all: the other end's area (round 138, John). */
   exclude?: readonly string[];
+  /**
+   * A whole country, state or city picked (round 224). Without it the picker offers airports only.
+   */
+  onPickGroup?: (group: PlaceRef) => void;
+  /** The place picked now, checked on its "All of" row. */
+  currentGroup?: string | null;
 }
 
-export function AirportPicker({ visible, title, onPick, onClose, current, nearest, homes, exclude }: AirportPickerProps) {
+/** One row of the list: an airport, a place to open, a place's "All of" pick, or the way back up. */
+type Row =
+  | { kind: 'airport'; airport: Airport; tag?: string }
+  | { kind: 'place'; place: PlaceNode }
+  | { kind: 'all'; place: PlaceNode }
+  | { kind: 'back'; to: string | null; label: string };
+
+interface Section {
+  title: string | null;
+  data: Row[];
+}
+
+const KIND_ICON: Record<PlaceKind, 'globe' | 'map' | 'building.2'> = { country: 'globe', region: 'map', city: 'building.2' };
+
+export function AirportPicker({
+  visible,
+  title,
+  onPick,
+  onClose,
+  current,
+  nearest,
+  homes,
+  exclude,
+  onPickGroup,
+  currentGroup,
+}: AirportPickerProps) {
   const c = useColors();
   const searchCard = useCardSurface({ lift: false });
   const [query, setQuery] = useState('');
   // Hold a row for its airport summary (round 174); the sheet lives inside this modal so it can open over it.
   const [info, setInfo] = useState<string | null>(null);
-  const sections = pickerSections(query, { nearest, homes, exclude });
+  const recent = useRecentAirports();
+  // Countries, states and cities (round 224), from the airports this end can use.
+  const offered = useMemo(
+    () => (exclude?.length ? SEARCH_AIRPORTS.filter((a) => !exclude.includes(a.code)) : SEARCH_AIRPORTS),
+    [exclude],
+  );
+  const tree = useMemo(() => (onPickGroup ? placeTree(offered) : []), [onPickGroup, offered]);
+  // Which place is open; null is the top. Opens where the picked place sits, so its check shows.
+  const [at, setAt] = useState<string | null>(null);
+  useEffect(() => {
+    if (visible) setAt(findPlace(tree, currentGroup)?.parent ?? null);
+    // Only when the sheet opens.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible]);
+  const open = findPlace(tree, at);
+
+  const sections = useMemo<Section[]>(() => {
+    const airportRows = (items: { airport: Airport; tag?: string }[]): Row[] =>
+      items.map((i) => ({ kind: 'airport', airport: i.airport, ...(i.tag ? { tag: i.tag } : {}) }));
+    const typed = query.trim();
+    if (typed) {
+      // Places first ("Spain"), then the airports, those in a matching place included.
+      const places = matchPlaces(tree, typed);
+      const inPlaces = new Set(places.flatMap((p) => p.airports));
+      const matched = matchAirports(typed, offered);
+      const more = offered.filter((a) => inPlaces.has(a.code) && !matched.includes(a));
+      return [
+        {
+          title: null,
+          data: [
+            ...places.map((place): Row => ({ kind: 'place', place })),
+            ...airportRows([...matched, ...more].map((airport) => ({ airport }))),
+          ],
+        },
+      ];
+    }
+    if (open) {
+      const up = findPlace(tree, open.parent);
+      return [
+        { title: null, data: [{ kind: 'back', to: open.parent, label: up?.name ?? 'All airports' }] },
+        {
+          title: open.name,
+          data: [
+            { kind: 'all', place: open },
+            ...open.children.map(
+              (ch): Row => ('place' in ch ? { kind: 'place', place: ch.place } : { kind: 'airport', airport: ch.airport }),
+            ),
+          ],
+        },
+      ];
+    }
+    const plain = pickerSections('', { nearest, homes, recent, exclude });
+    // With places on, "All airports" lists countries to open (round 224).
+    return plain.map((sec) =>
+      sec.title === 'All airports' && tree.length
+        ? { title: sec.title, data: tree.map((place): Row => ({ kind: 'place', place })) }
+        : { title: sec.title, data: airportRows(sec.data) },
+    );
+  }, [query, tree, offered, open, nearest, homes, recent, exclude]);
   const empty = sections.every((s) => s.data.length === 0);
   // Same tick as every other pick (design round 10).
   const pick = (code: string) => {
     selectionTick();
     setQuery('');
+    setAt(null);
+    rememberAirport(code);
     onPick(code);
   };
-  // Return picks the top match once something is typed (design round 29).
-  const topMatch = query.trim() ? sections.find((s) => s.data.length)?.data[0]?.airport.code : undefined;
+  const pickGroup = (place: PlaceNode) => {
+    selectionTick();
+    setQuery('');
+    setAt(null);
+    onPickGroup?.(placeRef(place));
+  };
+  const go = (key: string | null) => {
+    selectionTick();
+    setQuery('');
+    setAt(key);
+  };
+  // Return picks the top airport match once something is typed (design round 29).
+  const topMatch = query.trim()
+    ? sections.flatMap((s) => s.data).find((r): r is Extract<Row, { kind: 'airport' }> => r.kind === 'airport')?.airport.code
+    : undefined;
 
   const close = () => {
     setQuery('');
+    setAt(null);
     onClose();
   };
 
-  // Each section is one card of rows, like Settings and Trips (round 163): the first row rounds the top,
-  // the last the bottom, hairlines between.
-  const renderItem = ({
-    item,
-    index,
-    section,
-  }: {
-    item: PickerItem;
-    index: number;
-    section: { data: readonly PickerItem[] };
-  }) => {
+  // "‹ United States": the way back up a level, in blue like every other thing you press.
+  const renderBack = (item: Extract<Row, { kind: 'back' }>) => (
+    <Pressable
+      onPress={() => go(item.to)}
+      accessibilityRole="button"
+      accessibilityLabel={`Back to ${item.label}`}
+      testID="place-back"
+      hitSlop={4}
+      style={({ pressed }) => [styles.back, pressed && { opacity: 0.6 }]}>
+      <Icon
+        name="chevron.left"
+        size={15}
+        weight="semibold"
+        tintColor={c.accent}
+        fallback={<Text style={[textStyles.bodyStrong, { color: c.accent }]}>‹</Text>}
+      />
+      <Text style={[textStyles.bodyStrong, { color: c.accent }]} numberOfLines={1}>
+        {item.label}
+      </Text>
+    </Pressable>
+  );
+
+  // A country, state or city: opens to what's inside. "All of Texas" picks the whole place instead (round 224).
+  // A place with one airport in it is that airport, so its row picks it straight away.
+  const renderPlace = (item: Extract<Row, { kind: 'place' | 'all' }>, index: number) => {
+    const { place } = item;
+    const all = item.kind === 'all';
+    const single = !all && place.airports.length === 1;
+    const lone = single ? offered.find((a) => a.code === place.airports[0]) : undefined;
+    const on = all && place.key === currentGroup;
+    const titleText = all ? `All of ${inPlace(place.name)}` : place.name;
+    const sub = lone ? (lone.airportName ?? lone.name) : placeCodes(place.airports, all ? 6 : 4);
+    const press = all ? () => pickGroup(place) : lone ? () => pick(lone.code) : () => go(place.key);
+    return (
+      <Pressable
+        onPress={press}
+        accessibilityRole="button"
+        accessibilityState={all ? { selected: on } : undefined}
+        accessibilityLabel={`${titleText}, ${sub}`}
+        accessibilityHint={all || lone ? undefined : 'Shows what is in it'}
+        testID={all ? 'place-all' : 'place-row'}
+        style={({ pressed }) => [styles.item, pressed && { backgroundColor: c.surface2 }]}>
+        {index === 0 ? null : <View style={[styles.sep, { backgroundColor: c.line }]} />}
+        <View style={styles.codeSlot}>
+          {lone ? (
+            <Text style={[styles.code, { color: c.accent }]} maxFontSizeMultiplier={1.4} testID="airport-code">
+              {lone.code}
+            </Text>
+          ) : all ? (
+            <Text style={[styles.code, { color: c.accent }]} maxFontSizeMultiplier={1.4}>
+              ALL
+            </Text>
+          ) : (
+            <Icon name={KIND_ICON[place.kind]} size={18} tintColor={c.accent} fallback={null} />
+          )}
+        </View>
+        <View style={styles.name}>
+          <Text style={[textStyles.bodyStrong, { color: c.text }]} numberOfLines={1}>
+            {titleText}
+          </Text>
+          <Text style={[textStyles.small, { color: c.muted }]} numberOfLines={1} testID="place-codes">
+            {sub}
+          </Text>
+        </View>
+        {on ? (
+          <Icon
+            name="checkmark"
+            size={16}
+            weight="semibold"
+            tintColor={c.accent}
+            fallback={<Text style={[textStyles.bodyStrong, { color: c.accent }]}>✓</Text>}
+          />
+        ) : all || lone ? null : (
+          <Icon name="chevron.right" size={14} tintColor={c.faint} fallback={null} />
+        )}
+      </Pressable>
+    );
+  };
+
+  // Plain rows on the sheet, no card or outline around them (round 214, John: "Fix all of them"), with
+  // hairlines between that start at the airport's name.
+  const renderItem = ({ item, index }: { item: Row; index: number }) => {
+    if (item.kind === 'back') return renderBack(item);
+    if (item.kind !== 'airport') return renderPlace(item, index);
     const { airport, tag } = item;
     const on = airport.code === current;
     const first = index === 0;
-    const last = index === section.data.length - 1;
     const place = placeLabel(airport.code);
+    // The airport's own name on top and the city under it, so "Atlanta" isn't said twice (round 214).
+    const name = airport.airportName ?? airport.name;
     return (
       <Pressable
         onPress={() => pick(airport.code)}
@@ -78,24 +268,17 @@ export function AirportPicker({ visible, title, onPick, onClose, current, neares
         }}
         accessibilityRole="button"
         accessibilityState={{ selected: on }}
-        accessibilityLabel={[airport.code, airport.name, place !== airport.code ? place : null, tag].filter(Boolean).join(', ')}
+        accessibilityLabel={[airport.code, name, place !== airport.code ? place : null, tag].filter(Boolean).join(', ')}
         testID="airport-row"
-        style={({ pressed }) => [
-          styles.item,
-          { backgroundColor: pressed ? c.surface2 : c.surface, borderColor: c.cardEdge },
-          first && styles.itemFirst,
-          last && styles.itemLast,
-        ]}>
+        style={({ pressed }) => [styles.item, pressed && { backgroundColor: c.surface2 }]}>
         {first ? null : <View style={[styles.sep, { backgroundColor: c.line }]} />}
-        {/* The code in its own pill, the same as the airport pills on a route (round 163). */}
-        <View style={[styles.codePill, { backgroundColor: c.surface2 }]} testID="airport-code-pill">
-          <Text style={[styles.code, { color: c.text }]} maxFontSizeMultiplier={1.4}>
-            {airport.code}
-          </Text>
-        </View>
+        {/* The code on its own in boarding blue, no bubble (round 214). */}
+        <Text style={[styles.code, { color: c.accent }]} maxFontSizeMultiplier={1.4} testID="airport-code">
+          {airport.code}
+        </Text>
         <View style={styles.name}>
           <Text lineBreakStrategyIOS="push-out" style={[textStyles.bodyStrong, { color: c.text }]} numberOfLines={2}>
-            {airport.name}
+            {name}
           </Text>
           {place !== airport.code ? (
             <Text
@@ -131,13 +314,13 @@ export function AirportPicker({ visible, title, onPick, onClose, current, neares
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={close}>
       <SafeAreaView style={[styles.screen, { backgroundColor: c.bg }]} edges={['top', 'bottom']}>
-        <SheetHeader title={title} action="Cancel" onAction={close} />
+        <SheetHeader title={title} action="Cancel" onAction={close} centered />
         <View style={[searchCard, styles.input]}>
           <Icon name="magnifyingglass" size={16} tintColor={c.faint} fallback={null} />
           <TextInput
             value={query}
             onChangeText={setQuery}
-            placeholder="Airport code or city"
+            placeholder={onPickGroup ? 'Airport, city, state or country' : 'Airport code or city'}
             placeholderTextColor={c.faint}
             autoFocus
             autoCapitalize="characters"
@@ -151,10 +334,18 @@ export function AirportPicker({ visible, title, onPick, onClose, current, neares
         </View>
         <SectionList
           sections={sections}
-          keyExtractor={(item, i) => `${item.tag ? 'quick' : 'all'}-${item.airport.code}-${i}`}
+          keyExtractor={(item, i) =>
+            item.kind === 'airport'
+              ? `${item.tag ? 'quick' : 'all'}-${item.airport.code}-${i}`
+              : item.kind === 'back'
+                ? `back-${item.to}`
+                : `${item.kind}-${item.place.key}`
+          }
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
           stickySectionHeadersEnabled={false}
+          // A level of places is short; draw it all at once so a state far down is there to tap.
+          initialNumToRender={32}
           renderItem={renderItem}
           renderSectionHeader={({ section }) =>
             section.title ? (
@@ -167,7 +358,7 @@ export function AirportPicker({ visible, title, onPick, onClose, current, neares
           ListFooterComponent={
             empty ? (
               <Text lineBreakStrategyIOS="push-out" style={[textStyles.body, styles.empty, { color: c.muted }]}>
-                No airports match “{query.trim()}”.
+                No {onPickGroup ? 'airports or places' : 'airports'} match “{query.trim()}”.
               </Text>
             ) : undefined
           }
@@ -177,6 +368,9 @@ export function AirportPicker({ visible, title, onPick, onClose, current, neares
     </Modal>
   );
 }
+
+/** Room for a three-letter code in the mono face. */
+const CODE_WIDTH = 44;
 
 const styles = StyleSheet.create({
   screen: { flex: 1, paddingHorizontal: spacing.page },
@@ -198,15 +392,26 @@ const styles = StyleSheet.create({
     gap: spacing.section,
     paddingVertical: spacing.rowY,
     paddingHorizontal: spacing.rowX,
-    borderLeftWidth: 1,
-    borderRightWidth: 1,
+    borderRadius: radius.all,
   },
-  itemFirst: { borderTopWidth: 1, borderTopLeftRadius: radius.all, borderTopRightRadius: radius.all },
-  itemLast: { borderBottomWidth: 1, borderBottomLeftRadius: radius.all, borderBottomRightRadius: radius.all },
-  // Inset to the text, like every grouped list.
-  sep: { position: 'absolute', top: 0, left: spacing.rowX, right: 0, height: StyleSheet.hairlineWidth },
-  codePill: { minWidth: 56, paddingHorizontal: 8, paddingVertical: 4, borderRadius: radius.all, alignItems: 'center' },
-  code: { fontFamily: fonts.mono, fontSize: 15, lineHeight: 20, letterSpacing: 0.4 },
+  // Starts at the airport's name, past the code.
+  sep: {
+    position: 'absolute',
+    top: 0,
+    left: spacing.rowX + CODE_WIDTH + spacing.section,
+    right: 0,
+    height: StyleSheet.hairlineWidth,
+  },
+  codeSlot: { width: CODE_WIDTH, alignItems: 'flex-start', justifyContent: 'center' },
+  back: {
+    minHeight: minTapTarget,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: spacing.rowX - 4,
+    alignSelf: 'flex-start',
+  },
+  code: { width: CODE_WIDTH, fontFamily: fonts.mono, fontSize: 15, lineHeight: 20, letterSpacing: 0.4 },
   name: { flex: 1, gap: 1 },
   tag: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 999 },
   tagText: { fontFamily: fonts.bodySemiBold },

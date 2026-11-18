@@ -146,20 +146,18 @@ export function neutralSeatText(it: Itinerary, now: number): string {
   return seatText(least.seats, now);
 }
 
-/** Connections shorter than this show their length on the slim row. */
-export const SHORT_LAYOVER_MIN = 60;
-
 /**
- * The route's tightest short connection: "35m connection at MIA", or "missed connection at MIA" (round 149,
- * John). With more than one short connection only the tightest shows, so the stops line stays one line on
- * the smallest iPhone. Null when no connection is short.
+ * The route's tightest connection: "35m connection at MIA", "2h 10m connection at DEN", or "missed connection
+ * at MIA". Every route with a stop shows it (round 215, John: "Fix all of them", where only some tickets said
+ * their connection); short ones alone showed before (round 149). With more than one connection only the
+ * tightest shows, so the stops line stays one line on the smallest iPhone. Null for a nonstop.
  */
 export function shortLayovers(it: Itinerary, layovers?: readonly number[]): string | null {
   // Live layovers when given (a delay moves them, John 2026-11-02); a missed one says so.
   const mins = it.connections.map((c, i) => (layovers && Number.isFinite(layovers[i]) ? layovers[i] : c.layoverMin));
-  const short = it.connections.flatMap((c, i) => (mins[i] < SHORT_LAYOVER_MIN ? [{ airport: c.airport, min: mins[i] }] : []));
-  if (!short.length) return null;
-  const tightest = short.reduce((a, b) => (b.min < a.min ? b : a));
+  const all = it.connections.map((c, i) => ({ airport: c.airport, min: mins[i] }));
+  if (!all.length) return null;
+  const tightest = all.reduce((a, b) => (b.min < a.min ? b : a));
   return tightest.min < 0
     ? `missed connection at ${tightest.airport}`
     : `${formatDuration(tightest.min)} connection at ${tightest.airport}`;

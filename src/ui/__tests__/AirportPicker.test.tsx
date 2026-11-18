@@ -1,12 +1,17 @@
 import React from 'react';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 
+import { colors } from '@/theme';
+
+import { resetRecentAirportsForTests } from '@/search/recentAirports';
+
 import { AirportPicker } from '../AirportPicker';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 describe('AirportPicker (design round 3)', () => {
   let r: ReactTestRenderer | undefined;
+  beforeEach(() => resetRecentAirportsForTests());
   afterEach(() => act(() => r?.unmount()));
 
   const rows = () =>
@@ -30,39 +35,52 @@ describe('AirportPicker (design round 3)', () => {
       );
     });
     const labels = rows().map((n) => n.props.accessibilityLabel);
-    expect(labels[0]).toBe('DFW, Dallas/Fort Worth, Dallas, TX, Nearest');
-    expect(labels[1]).toBe('DAL, Dallas Love Field, Dallas, TX, Main home');
-    const dal = rows().find((n) => n.props.accessibilityLabel.startsWith('DAL, Dallas Love Field, Dallas, TX, Main'))!;
+    expect(labels[0]).toBe('DFW, DFW International, Dallas, TX, Nearest');
+    expect(labels[1]).toBe('DAL, Love Field, Dallas, TX, Main home');
+    const dal = rows().find((n) => n.props.accessibilityLabel.startsWith('DAL, Love Field, Dallas, TX, Main'))!;
     expect(dal.props.accessibilityState).toEqual({ selected: true });
     act(() => dal.props.onPress());
     expect(onPick).toHaveBeenCalledWith('DAL');
   });
 
-  it('draws each section as one rounded card with the code in a pill and the city under the name (round 163)', () => {
+  // Round 214 (John, on the To picker): "Fix all of them", then the big "To" "feels plain and almost touching
+  // the corner".
+  it('lists plain rows with a blue code, the airport name over its city, under a heading, in a centered header', () => {
     act(() => {
-      r = create(
-        <AirportPicker
-          visible
-          title="To"
-          nearest="DFW"
-          homes={[{ code: 'DAL', main: true }]}
-          onPick={jest.fn()}
-          onClose={jest.fn()}
-        />,
-      );
+      r = create(<AirportPicker visible title="To" exclude={['DAL', 'DFW']} onPick={jest.fn()} onClose={jest.fn()} />);
     });
     const flat = (st: unknown) => Object.assign({}, ...[st].flat(5).filter(Boolean));
-    const quick = rows().slice(0, 2);
-    const style = (n: (typeof quick)[0]) =>
-      flat(typeof n.props.style === 'function' ? n.props.style({ pressed: false }) : n.props.style);
-    expect(style(quick[0]).borderTopLeftRadius).toBeGreaterThan(0);
-    expect(style(quick[0]).borderBottomLeftRadius).toBeUndefined();
-    expect(style(quick[1]).borderBottomLeftRadius).toBeGreaterThan(0);
-    expect(style(quick[1]).borderTopLeftRadius).toBeUndefined();
-    const hosts = (n: (typeof quick)[0], id: string) => n.findAll((x) => typeof x.type === 'string' && x.props.testID === id);
-    expect(hosts(quick[0], 'airport-code-pill')).toHaveLength(1);
-    const place = hosts(quick[0], 'airport-place')[0];
-    expect([place.props.children].flat().join('')).toBe('Dallas, TX');
+    const atl = rows()[0];
+    const style = flat(typeof atl.props.style === 'function' ? atl.props.style({ pressed: false }) : atl.props.style);
+    expect(style.borderWidth ?? style.borderTopWidth ?? 0).toBe(0);
+    expect(style.backgroundColor).toBeUndefined();
+    const hosts = (id: string) => atl.findAll((x) => typeof x.type === 'string' && x.props.testID === id);
+    expect(hosts('airport-code-pill')).toHaveLength(0);
+    expect(flat(hosts('airport-code')[0].props.style).color).toBe(colors.light.accent);
+    const lines = atl.findAll((x) => (x.type as unknown) === 'Text').map((n) => [n.props.children].flat().join(''));
+    expect(lines).toEqual(['ATL', 'Hartsfield-Jackson', 'Atlanta, GA']);
+    const headers = r!.root.findAll((n) => n.props.accessibilityRole === 'header' && (n.type as unknown) === 'Text');
+    expect(headers.map((n) => [n.props.children].flat().join(''))).toEqual(['To', 'ALL AIRPORTS']);
+    expect(r!.root.findAll((n) => n.props.testID === 'sheet-grabber' && typeof n.type === 'string')).toHaveLength(1);
+    expect(flat(headers[0].props.style).textAlign).toBe('center');
+  });
+
+  it('puts your last picks first, under Recent', async () => {
+    act(() => {
+      r = create(<AirportPicker visible title="To" onPick={jest.fn()} onClose={jest.fn()} />);
+    });
+    // 30 airports since round 224, so find it by typing rather than scrolling.
+    const input = r!.root.find((n) => n.props.accessibilityLabel === 'Search airports' && n.props.onChangeText);
+    act(() => input.props.onChangeText('LAX'));
+    await act(async () => {
+      rows()
+        .find((n) => n.props.accessibilityLabel.startsWith('LAX'))!
+        .props.onPress();
+    });
+    const labels = rows().map((n) => n.props.accessibilityLabel.slice(0, 3));
+    expect(labels[0]).toBe('LAX');
+    const headers = r!.root.findAll((n) => n.props.accessibilityRole === 'header' && (n.type as unknown) === 'Text');
+    expect(headers.map((n) => [n.props.children].flat().join(''))).toEqual(['To', 'RECENT', 'ALL AIRPORTS']);
   });
 
   it('finds airports by city too (round 163)', () => {

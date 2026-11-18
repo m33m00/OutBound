@@ -1,4 +1,4 @@
-import { AIRPORTS } from '@/engine';
+import { AIRPORTS, SAMPLE_ONLY_AIRPORTS } from '@/engine';
 
 import { SCHEDULE_CONFIG as CFG, type ScheduleConfig } from '../../../supabase/functions/_shared/scheduleConfig';
 import {
@@ -30,8 +30,9 @@ const PULLED = new Date(NOW).toISOString();
 const KNOWN = new Set(CFG.airports.map((a) => a.code));
 
 describe('schedule config', () => {
-  it('pulls exactly the airports in the app table, with the same time zones', () => {
-    expect(CFG.airports.map((a) => a.code).sort()).toEqual(Object.keys(AIRPORTS).sort());
+  it('pulls exactly the airports in the app table (less the round 224 sample-only ones), with the same time zones', () => {
+    const pulled = Object.keys(AIRPORTS).filter((c) => !SAMPLE_ONLY_AIRPORTS.has(c));
+    expect(CFG.airports.map((a) => a.code).sort()).toEqual(pulled.sort());
     for (const a of CFG.airports) expect(a.tz).toBe(AIRPORTS[a.code].tz);
   });
 

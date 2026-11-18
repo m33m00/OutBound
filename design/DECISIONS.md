@@ -901,3 +901,233 @@ John couldn't see a difference after round 199 ("i cant tell a difference"). Man
 
 - Added @expo-google-fonts/sora, removed @expo-google-fonts/manrope. Sora 400 to 800 for all text and titles, bold text and the map's IATA labels. Times and flight numbers stay Geist Mono; the wordmark stays Big Shoulders.
 - Sora is about 10% wider than Geist at the same size, so it reads bigger. Sizes are unchanged; any line that now truncates or wraps badly gets fixed when spotted on a phone. CLAUDE.md updated.
+
+## Round 201 (Nov 14): Departed and Arrived pills by Save, two colors, arrived tickets grayed
+
+John: "Moved the departed and arrived pill next to the save button so it all aligns going top down and not dependent on the length of the departure and arrival times which seems like what it's doing. Different colors for departed and arrived. If it arrived the card should be greyed out as well."
+
+- Results tickets: the pill moved off the times line to just left of Save, top right, so the pills form one column down the list. The times get the whole line.
+- Colors: Departed keeps sky cyan; Arrived is graphite (light: #384250 on #dfe4eb; dark: #cbd3de on #29323e). Not violet (that's Delayed and Diverted), not green (early times and seats), not blue (tappable). Every Arrived pill uses it: tickets, the opened route's legs, Requests and the flight status sheet.
+- Arrived tickets: the times, stops line and route line fade to 45%; the Arrived pill and Save stay full strength. Departed tickets keep the light gray they had. Before, arrived and departed both only got the very light gray card, which barely showed.
+- CLAUDE.md rule updated.
+
+## Round 202 (Nov 14): pills by the new times, gold At risk, codes-only area callout, Filters like Search
+
+John, on round 201: "The pills should always align with the new departure and arrival time listed if it's delayed for example. Not the original time." "At Risk pill sits too high and can come down closer to the route line. Can we also make it a different color? Like yellow/gold?" "List only the airports at the top of the search... only put airport codes to shorten the callout because it's wrapping onto a second row." "The filters button should match the search pill container shape and size if possible on the flight summary page."
+
+- On a results ticket whose times moved, the small struck schedule now sits above the whole top row. The new times, the Departed or Arrived pill and Save share one line under it, so the pill lines up with the new times. The opened route card keeps its layout.
+- At risk and Missed get a gold of their own (`risk`, `riskBg`, `riskFg`), yellower than the amber that means "you" and the amber seat tier. The stop's ring turns gold too. On a 1-stop route the pill sits just over its stop's dot, beside the seat numbers; with 2 or more stops the stretches are short, so it keeps its room above the numbers.
+- The area line over the tickets is now a plane (takeoff when leaving, landing when arriving) and each airport code in a small outlined chip, no city words, so it stays on one line beside the count pills. VoiceOver still reads the full sentence.
+- Filters is now the same pill button as Search: same height, fully round, same tint and padding.
+
+## Round 203 (Nov 14): bolder canceled strike, Now line that stands out
+
+John: "Canceled line crossing out the time should be thicker." "Now Line divider when you search a market should be more obvious to see when scrolling. It's kind of hidden in the mix."
+
+- iOS can't thicken text's own strike-through, so a canceled time now gets a red bar drawn over it (`StrikeOver`, 2.5pt, a hair past each end). It's used on a canceled nonstop's top times and on each canceled leg's two times. A late flight's small struck schedule keeps the thin strike, since it isn't canceled.
+- The Now line is now a solid capsule in the text color with the words flipped ("Now | 9:40 AM"), on a 2pt rule in the text color across the list. Black and white only, so it doesn't borrow a color that means something else (blue tappable, amber "you", red canceled or full).
+
+## Round 204 (Nov 14): Now line in the date blue, a smidge thinner
+
+John: "Can the now line instead of black be the same blue for the dates etc" and "It's also just a smidge too thick."
+
+- The Now capsule and its rule are now the boarding blue of the picked day button, with white words. Blue normally means "you can tap this"; John asked for it here, so the Now line is the one exception.
+- The rule went from 2pt to 1.5pt.
+- Map: the white circle behind a canceled leg's X is gone (John: "The white circle background for a canceled leg on the route map I don't like"). The X is a little bigger (12pt across) with a thin light edge on its own strokes, the same as the line's halo, so it still reads over the red line.
+
+## Round 205 (Nov 14): map X back in a circle, less commentary
+
+John: "Can it be a circle and match how it looks in the card with a light red background? It can be a little smaller too." "We don't need the commentary at the bottom above the request loads button and below the Leave Now at the top."
+
+- Map: the canceled X sits in a small circle again (12pt across, smaller than round 199's 16pt), filled light red with a red ring, like the X on the cards. The cards' X circle is light red now too, so both match.
+- Request Loads: no "Seats are hidden. Loads are 1 credit per leg. X credits remaining." line. Round 192 had only taken it off the results list, so it still showed over the button. A line shows only when the request can't go: out of credits, or not enough for the legs checked.
+- Leave by and Leave now show just the time; the "Arrive at DFW by ... to begin boarding" line is gone from both (they stay alike, round 193). VoiceOver still hears it. At the airport the boarding time stays, since that's the card's main fact there.
+
+## Round 206 (Nov 15): clean pass, fewer words
+
+John: "The design of the app I really want it to look like something Anthropic or Apple made. A full pass through. Something super clean not too descriptive. I like the layout right now."
+
+Same layout. What changed is the words and the weight of the quiet parts.
+
+- Settings: the footers under Homes, Appearance, Notifications, Leave-by and Search defaults are gone, and so is "Saved on this phone." The empty Homes line is just "No main home yet." Rain radar's caption is "From NOAA". The "Google Maps opens in Safari" line under Directions is gone. Location keeps its one privacy line.
+- Profile: no "Settings are saved on this phone." The independence line and Logo.dev credit stay.
+- Filters: no helper lines under Departure Time and Airlines, no subtitle under "Only answered loads", and the avoid-airports note is "Only for connections."
+- Shorter: Requests footer "Answers are anonymous.", empty My Trips "Saved routes and answered requests show up here.", empty saved routes "Tap the bookmark on a route to keep it here.", empty Requests "Asks about your airline's flights show up here.", credits "Demo credits. Nothing is charged.", plan picker "Demo only. Nothing is charged.", location card "Only used to pick the closest airport." Logbook drops its footer; the add-flight privacy line keeps only what's kept from a pass.
+- Type: secondary lines (the small style) are regular weight instead of medium, so they sit back under what they describe. Headings are tracked in a touch (-0.3), since Sora runs wide.
+- Kept on purpose: attributions (Logo.dev, NOAA, AeroDataBox), the airline independence line, report anonymity, error and denied-permission lines. "Departure Time" stays as John named it.
+
+## Round 207 (Nov 15): first-party calm, fewer containers, Home tab
+
+John: "I cant tell any difference" (about 206). "Less containers where you think it makes sense. It needs to look like an app Apple, Anthropic or OpenAI made." "Search button should be a Home button instead."
+
+Same layout. What changed is what you see on every screen:
+
+- Grays are true neutral now (page #f5f5f7, text #1c1c1f, secondary #6b6b72; dark mode near-black with gray cards), so boarding blue is the only color with a hue and the app stops reading blue-gray.
+- Cards: grouped lists (Settings, Logbook totals) have no outline in light mode, just a white card on the page gray with a very soft shadow; dark mode keeps a hairline. Result tickets keep a hairline edge (round 150) but it's much lighter, with a softer, wider shadow, and a little more room between them.
+- Containers that only grouped are gone: the box around the results banner ("7 departures in the next 5 hours"), the card around empty states, the tinted circles behind section icons in My Trips and the tinted tiles behind Settings row icons, the count chip beside a section title. Kept where they do a job: tickets, each leg's tappable box, the Leave By card, the filled main button, the canceled nonstop's red card, the count pills John asked for (round 195), the area code chips (round 202).
+- Type: page titles 32pt (from 30); Settings row values regular weight instead of semibold; tab labels medium instead of semibold.
+- Tab bar: hairline top in the line gray. The Search tab is Home (house icon), and the back pill on results says Home. Same screen.
+- Before and after drawings (from the app's own sizes and colors, not phone screenshots): outbound-design/r207_*_before_after.png in project files.
+
+## Name and brand: Jaunt (2026-11-14, John)
+- The app is renamed from OutBound to **Jaunt** (John: "Can we rename the app to Jaunt with the line ontop of the T slanted and with an airplace logo almost looking like a jetstream behind it"). Display name, wordmark, launch intro, app icon and in-app text say Jaunt. The Expo project (slug `outbound`, account `outboundapp`), bundle IDs, URL scheme, the GitHub repo and the legal site address stay as they are for now.
+- Wordmark (logo round 2, option 3, John: "I like 3"): lowercase "jaunt" in Sora SemiBold; the t's crossbar is a contrail that tilts up to the right and widens toward a small plane flying just ahead of it. Letters in the text color, contrail and plane in boarding blue. Drawn with Skia from `src/brand/jauntMark.ts` (made by `design/assets/make-jaunt.py`), so it's the same shape everywhere.
+- App icon (round 1's tall t, John: "with the app icon of the T with the trail and plane like option 1"): white tall t with the contrail on top and the plane, on boarding blue.
+- Launch intro (John: "Roll with that"): the plane flies in drawing its contrail, which lands as the t's crossbar while "jaunt" rises in letter by letter, then the plane takes off and the blue panel lifts away into the app. Reduce Motion: the finished wordmark, then a fade. Panel is boarding blue to match the icon.
+- Big Shoulders is no longer used for the wordmark.
+- Not yet checked: whether the name Jaunt is clear to use (trademark, App Store).
+
+## Round 208 (Nov 15): blue Departed pill, the plane and contrail in the route title
+
+John: "Can you change the departed pill to be the same blue color." "When I search a market instead of having an arrow can it be like the airplane and trail like our app design instead of an arrow."
+
+- Departed is a solid boarding-blue pill with white words, the same blue as the picked day and the Now line. Arrived stays graphite. (A second exception to "blue means tap", like the Now line, because John asked for it.)
+- The results title ("DFW → LGA") has the Jaunt plane and contrail between the two codes instead of the arrow, in the blue it has in the wordmark. It's an image drawn from the wordmark's own shapes (design/assets/make-trail-mark.py writes assets/images/trail-mark.png at 1x to 3x, white on clear) and tinted in the app, 44 by 14pt, inline in the title so it still wraps and VoiceOver still reads "DFW to LGA".
+- Built on top of the Jaunt rename, so this test copy carries the rename too.
+
+## Round 209 (Nov 15): a level plane and contrail on every route
+
+John: "Instead of a slanted trail for the market can it be horizontal." Then: "Apply it everywhere for s market."
+
+- The route mark turns level: the plane points straight right with its contrail straight behind it. The logo and wordmark keep the slanted contrail t; only the route mark changed.
+- It shows wherever two airport codes make a route: the results title, the open route's bar (in place of the thin lines and small gray plane between the code pills), saved route tickets, request rows, My Trips route headings, the logbook (rows and Longest), and sheet subtitles (flight status, report, delays and weather), plus the boarding pass line in Add Flight.
+- Boarding blue everywhere; on a saved route that has passed it takes the faded text color with the rest of the ticket.
+- One shared piece, src/ui/TrailMark.tsx: `RouteText` and `trails()` swap " → " for the mark sized to the text beside it (about a capital letter tall, centred on the codes), and VoiceOver still hears "DAL to LAX". The picture is 46 by 16 with the mark in the middle (design/assets/make-trail-mark.py).
+- Left as an arrow: the Remove logbook flight alert, since system alerts only take plain text.
+
+## Round 210 (Nov 15): the route mark stays on one line and sits centred
+
+John, with a screenshot of the Requests list where WN 1340 broke as "DAL" then the mark and "DEN" on the next line: "The trail wraps some of the markets on various pages can we fix that? Also bring it up more and allign it center."
+
+- Code, mark, code are one unit: a no-break space and a word joiner sit on each side of the mark, so a line can break before the route but never inside it.
+- The trail is 60% of the logo's length (the plane stays the same size), so a route takes less room and fits on the line it starts on more often. The mark went from 46 to 35 wide for 16 tall.
+- Raised: in his screenshot the mark's bottom sat on the codes' baseline, about a sixth of its height below the middle of the capitals. The picture now has the mark at the top of its box, which lands it on the middle of the codes. Where the mark stands on its own (the bar on an opened route) it's nudged back down so it stays centred between the code pills.
+
+## Round 211 (Nov 15): fewer boxes, glass where boxes stay
+
+John: "Less containers where you think it's necessary. More glassy look where containers exist."
+
+- Glass is iOS's own Liquid Glass (expo-glass-effect, already part of the app and in Expo Go): what sits behind shows through softly blurred, with a light edge. One shared piece, src/ui/Glass.tsx. With Reduce Transparency on it's a solid card; on a phone without Liquid Glass, cards are see-through white (dark gray in dark mode) and bars stay solid so their words never sit over an unblurred map.
+- Glass now: the tab bar, the results panel over the map, the pinned Request bar, the My Trips select bar, the Saved and Deleted toast, Settings groups, every grouped list (Requests, My Trips, Logbook rows), the logbook totals, the airport info cards, the at-the-airport card, the date picker, and the credits balance, stats and history.
+- Fewer boxes: the flight status sheet's Departs and Arrives were two boxes and are now one glass group with a hairline between; the delays and weather sheet's airports were a box each and are now one group; "How credits work" lost its box.
+- Kept solid: result tickets and saved route tickets (the torn edge cuts into a solid page), the filled main button, pills, and the boxes you tap to pick something (plans, report choices, add-flight ways), so a choice still reads as a button.
+
+## Round 212 (Nov 15): no flight time on the route map
+
+John: "Remove the block time on the route map."
+
+- The selected route on the map no longer shows each leg's flight time pill ("2h 35m"). A canceled leg still gets its red Canceled pill over the X (round 199). VoiceOver's map summary drops the flight times too.
+- Durations elsewhere stay: the tickets' stops line and the opened route.
+
+## Round 213 (Nov 15): light mode fixes on Home
+
+John sent a light mode Home screenshot ("In light mode, what do you think looks wrong here..") and, on the four things named back to him, said "Fix all of them".
+
+- The jaunt wordmark was nearly invisible: its drawing kept the colors it first drew with, so after the app came up in dark and turned light, the letters stayed dark mode's near-white and the plane its lighter blue. It now redraws whenever its colors change: near-black letters, boarding blue plane and contrail in light mode.
+- The map was slate gray because after dark the night shade laid a deep navy over the whole light map. In light mode the night shade is now a thin cool tint, so the map stays light at night; dark mode keeps its own. Route lines stay straight; radar keeps its strength.
+- Airport labels on the map had a hard white outline that read as stickers. The halo behind the dark letters is now a soft blurred glow, the way map apps label places.
+- The Home sheet's glass picked up a blotchy blue from the map and radar behind it. Glass bars (the sheets, the tab bar, the pinned bars) now carry a soft neutral veil, so they read as one even gray and match each other. The tab bar lost its top line, so the sheet runs into it without a seam. The date chips and the From and To boxes are a lighter pane of the same glass instead of flat gray cards (the usual quiet gray where there's no Liquid Glass).
+
+## Round 214 (Nov 15): the airport picker
+
+John sent the To picker in light mode ("What about this page now") and, on the four things named back to him, said "Fix all of them". Then: "I don't like the To on the top left.. it just feels plain and almost touching the corner".
+
+- No card: the airports are plain rows on the sheet with hairlines between, no white box or gray outline.
+- The airport's own name on top (Hartsfield-Jackson, LaGuardia, O'Hare, Sky Harbor) and the city and state under it, so a city is never said twice. Searching by those names works too.
+- The list is labeled: "All airports" always has its heading, and your last three picks sit above it under "Recent" (kept on the phone, shared by every picker), after "Your airports" when there are any. "All airports" rather than "Popular", since it is the whole list.
+- The code is plain boarding blue in the mono face, no gray bubble.
+- The header is iOS's own sheet header: a grabber on top, a smaller title centered on the same line as Cancel. Same for From, and for the home airport and filter pickers that use the same sheet.
+
+## Round 215 (Nov 15): the results page, calmer
+
+John sent the DAL to LAX results page in light mode ("what about this page") and, on the six things named back to him, said "Fix all of them".
+
+- Less blue: only the picked day is filled. The other days are plain words (dark day, gray date), the day arrows, Filters and the credit count are blue with no tint behind, and Back is just the arrow.
+- No hard lines: with results or an open route the sheet is the page color all the way up, so there's no line under the logo row and no glass band behind the bars ending in a line. The search panel keeps its glass.
+- Back is a plain arrow; "< Home" read oddly with the Home tab right there.
+- Every route with a stop says its connection now: the tightest one, "2h 10m connection at DEN", where before only those under an hour showed.
+- Routes that double back are gone: Jayden's change (#20) is brought into this test copy, so no route connects through the origin's or destination's area (DAL and DFW are both Dallas). DAL to DEN to DFW to LAX no longer shows.
+- Ticket outlines are a hairline. The white paper and torn notches still make each one a ticket.
+
+## Round 216 (Nov 15): the Requests tab, calmer, with dates
+
+John sent the Requests tab ("what about this page") and, on the five things named back to him, said "Yes fix all and add dates to the flights. Some people will ask for days in advance".
+
+- Answer is a light blue pill, not a big filled button on every row: the app keeps one filled main button.
+- The requests are plain rows on the page with hairlines between, no card, outline or shadow; "You answered" too.
+- No "Requests on your airline's flights" heading over them: the tab's title says it.
+- Each row's second line is the day and time it leaves, then when it was asked: "Today 7:20 AM | asked 48m ago", "Tomorrow 6:55 AM", "Tue, Nov 17 7:30 AM". An answered row reads its numbers, then "answered 2m ago". Nothing floats above the button.
+- "Answers are anonymous" is gone from under the list; the answer sheet already says reports are anonymous.
+- My Trips' own requests and the answer sheet's flight line show the day the same way.
+
+## Round 217 (Nov 15): request rows, steadier
+
+John, on the Requests and My Trips rows: "If a flight is canceled you don't need to change the text to say Scheduled and crossed out. Just keep it like the other request but leave the canceled pill there. Move the load count when a request is answered to ontop of the answered pill and remove the timestamp of when it was answered", then "it looks like the market is wrapping down. Can we make sure it doesn't wrap?"
+
+- A canceled flight's ask reads like any other ("Today 10:25 AM | asked 4m ago"), with the red Canceled pill under it. No "Scheduled", nothing struck.
+- An answered ask shows its day and time like the waiting ones ("Today 8:05 AM"), with no "answered 36m ago" anywhere, spoken or shown.
+- The seat count pill sits on the right, over the Answered pill (and on its own at the right in the Requests tab's "You answered" rows).
+- The flight number and market ("AA 2400 | LAX ✈ DFW") never wrap: one line, shrinking up to 30% to fit.
+
+## Round 218 (Nov 15): the opened route, calmer
+
+John sent the opened DAL to MIA nonstop ("What's wrong with this page") and, on the seven things named back to him, said "Fix all of them".
+
+- Leave by no longer guesses long drives. The rough straight-line guess only shows within about 100 km (about a 2h 30m drive); farther out the card says when to be at the airport until a maps service gives a real drive time (that still counts out to 400 km). The 8h drive it showed came from that guess.
+- A nonstop has no "1 credit" checkbox: the Request Loads button already says the credit. Routes with more than one leg keep a box per leg.
+- A nonstop's flight length shows once, in the header ("Nonstop 2h 50m"), not again under the line.
+- No gray box inside the white ticket, and the airport codes in it are plain text, no bubbles.
+- No seats reported: the small seat icon over a dash, not an empty ring.
+- The codes at the top of the opened route (DAL ✈ MIA) are plain text, as on every other page.
+- No line above the pinned Request Loads button.
+
+## Round 219 (Nov 15): Leave by on one line, tickets by destination
+
+John, on the Leave by card's "Arrive at DAL by 1:55 PM to begin boarding" running onto two lines: "I dont like the text wraps here". Then, of the four destination ticket mockups, option 1: "I like this one".
+
+- Leave by's lines are short enough for one line beside the car button: "Arrive at DAL by 1:55 PM" (boarding implied), "You're at DAL | Boarding at 11:20 AM". VoiceOver still hears the airport's full name and "Your flight begins boarding at ...".
+- Beside the buttons the line never wraps; if a button crowds it, it shrinks a touch (to 85% at most). Only at large text sizes can it split, and then the detail gets its own line.
+- Results tickets carry where they go: a thin (3pt) stripe of a muted destination color down the left edge and a faint tint of it under the perforation (9% in light mode, 14% in dark). Colors by region: coral for Florida, the islands and Hawaii, pine for the Rockies, amber for California and the Southwest, misty teal for the Northwest, slate for the Northeast, dusk plum for the Midwest, clay for Texas and the South, sand anywhere else. None is blue or red, and the seat-colored route line is unchanged.
+- Canceled, full, departed and arrived tickets keep their own look, with no stripe. The opened route card has none either.
+
+## Round 220 (Nov 15): plain tickets again, and a tear sound
+
+John, with a round 219 screenshot: "I don't like the color border stub. I was just thinking designing the ticket so it doesn't look just blank. Can you give me mockups. Also when I save a ticket and it tears it can you have a sound effect for that".
+
+- The destination stripe and tint are gone; tickets are plain white again while he picks a surface treatment from new mockups (outbound-design/ticket-surface-*.png). Nothing built until he picks.
+- Saving a ticket now plays a soft paper rip as it tears, from the bookmark or the swipe. It's original, made from filtered noise (design/tear-synth.py), about a third of a second and mixed quieter than the chimes. The Sound effects switch in Settings turns it off with the rest.
+
+## Round 221 (Nov 15): paper grain tickets with a landmark sketch that draws in
+
+John picked from the round 220 surfaces: "Something to do with the destination and option 2" (paper grain), then from four destination touches: "Landmark sketch but a little more detailed?", "And different for each one subtly", and "Sure lets go with this and can it be animated?". Mockups: outbound-design/ticket-grain-dest-*.png and ticket-landmark-detail-*.png.
+
+- Every results ticket has a faint paper grain (assets/images/grain-light@3x.png and grain-dark@3x.png, design/paper-grain.py), and its stub under the perforation is a shade warmer (`ticketStub`: #faf9f7 light, #1f1f22 dark). A full, departed or canceled ticket keeps its own gray or red paper, with the grain over it.
+- The top right carries a hairline sketch of where the ticket goes, pressed faintly into the paper and fading in from the left so it never sits under the duration. Each of the app's 12 airports has its own (design/landmark-sketches.py writes assets/images/landmarks/*.png): Atlanta's lattice-topped Bank of America Plaza and Westin cylinder among trees, Nashville's AT&T tower and Pinnacle over the river, Charlotte's crown of rods with a checkered flag, Love Field's Reunion Tower, Fountain Place and the Margaret Hunt Hill Bridge, Denver's tent roof under the Front Range, DFW's control tower, terminal and a plane on approach, LAX's Theme Building and palms, LaGuardia's Empire State and Chrysler over the East River, Miami's Art Deco hotel, palms and surf, O'Hare's Willis Tower and Hancock over the lake, Phoenix's Camelback Mountain and saguaros, and Seattle's Space Needle with Mount Rainier.
+- A US airport added later with no landmark yet gets its state's outline (from the us-atlas Census shapes the globe already uses) with the airport circled. Outside the US, grain only.
+- Animation that means something: the first time a ticket shows, its sketch draws itself in left to right (about a second, easing out), like the city coming into view. It never loops and doesn't redraw when you scroll back. With Reduce Motion on it just fades in.
+- The sketch is ink at 30% in light mode and 22% in dark, half that on a departed or arrived ticket, and none on a canceled nonstop's red wash. Results tickets only; the opened route card keeps its ink header.
+
+## Round 222 (Nov 15): landmark sketches off the tickets
+
+John: "Get rid of the backgrounds on the tickets I don't like it", "The landmark work". The landmark sketch per airport, the state-outline fallback and the draw-in animation are gone, with their images and generator. The faint paper grain and the warmer stub under the perforation stay; John can say if he wants those gone too. This is the third destination treatment taken back (stripe in 219, sketches in 221), so no destination art on tickets unless he asks.
+
+John, after round 222 went out: "Keep the grain". So the grain and warmer stub stay, and the repo guide now says tickets carry no destination stripes or landmark sketches.
+
+## Round 223 (Nov 15): one plane and trail loader everywhere
+
+John: "Can you streamline the animation of the T across the app. Where it uses the plane and trail. For anything loading etc". Every wait now shows the same small loader: the t from the jaunt wordmark, with the plane flying in and drawing the contrail that becomes the t's crossbar (900ms, eased out, the launch screen's own draw), a short hold, then the plane takes off and the trail fades (640ms, eased in, the launch screen's take-off), and round again. Stem gray, trail and plane boarding blue; one color on buttons. Only its size changes from place to place.
+
+Where: finding routes (results panel), a new day loading under the day switch, flight status loading, the flight status Refresh pill while it refreshes, Delete Account while it deletes, every account button while it waits (Button `busy`), the From card while it finds your nearest airport, and the Leave by card while it finds your location. No system spinner is left.
+
+Built from three tinted pictures moved with native-driver Animated, so it keeps going while the search keeps the JS thread busy. Reduce Motion: the finished t fades softly in and out, nothing moves. The launch screen keeps its full version.
+
+## Round 224 (Nov 18): browse From and To by country, state and city, with a curved preview
+
+John: "For the Departure and Arrival. Can you great a hierarchy/grouping depending on what country you want to depart out of, what state you want to depart out of, and what city you want to depart of and include those options of airports in the search? Sometimes we don't even know what options exist when we want to go to an international destination". Then "Can you draw the routlines too as a preview when showing lets say United States of America to Madrid, Spain for example", "I don't like straight lines.." and a hub map: "Like this for example.. on how curved I'd want it".
+
+- The From and To pickers keep Your airports and Recent; All airports now lists countries, the United States first, then A to Z. A country opens to its states (US and Canada) or its cities (everywhere else), a state to its cities, a city to its airports. A level with only one place in it is skipped (Illinois opens straight onto O'Hare and Midway), and a place with one airport just picks it.
+- Every opened place starts with "All of Texas" (or the country, state or city): that picks the whole place. Typing finds places too ("Spain", "Texas", "New York"), above the airports in them. Return still picks an airport.
+- A picked place shows its name big on the card ("Spain") with its codes under it, or a count when there are more than four. The search leaves from or lands at any airport in it and never connects through another airport in the same place, so each airport shows its own routes. Results are titled "United States → Madrid" and say "Leaving from anywhere in the United States (20 airports)".
+- The home globe previews the trip before you search: one line for two airports, or up to 8 for a place, spread across it one per city and each to the nearest airport on the other side, every airport on the smaller side getting at least one. Gentle great-circle arcs, bowed a third as much as a flown route, thin boarding-blue lines with a small dot at each airport, no arrows. They draw themselves in from From; Reduce Motion shows them whole. The globe rests halfway between the two sides. Searched routes keep their straight lines.
+- To have places worth browsing, the sample data gained 18 airports (Austin, both Houstons, JFK, Midway, San Francisco, Orlando, Fort Lauderdale, Toronto, Vancouver, Cancún, Mexico City, Heathrow, Gatwick, Madrid, Barcelona, Haneda, Narita) and sample flights for them. They're sample only (`SAMPLE_ONLY_AIRPORTS`): the paid live schedule pull is unchanged, and with live schedules on the picker hides them.
+- Name search now matches the start of a word, so "dal" finds Dallas but not Fort Lauderdale, and accents don't matter ("cancun").

@@ -8,6 +8,7 @@ import { Appear } from './Appear';
 import { selectionTick } from './haptics';
 import { Icon } from './Icon';
 import { pressStyle } from './press';
+import { Glass } from './Glass';
 
 /** How long "Saved · Undo" stays after a swipe save (round 138). */
 export const SAVED_TOAST_MS = 5000;
@@ -44,7 +45,7 @@ export function SavedToast({
   return (
     <View pointerEvents="box-none" style={styles.wrap} testID={testID}>
       <Appear>
-        <View style={[styles.toast, elevation.raised, { backgroundColor: c.surface, borderColor: c.line }]}>
+        <Glass style={[styles.toast, elevation.raised, { shadowColor: c.text }]}>
           <Icon name={icon} size={15} tintColor={c.muted} fallback={null} />
           <Text style={[textStyles.bodyStrong, styles.words, { color: c.text }]}>{label}</Text>
           <Pressable
@@ -61,7 +62,7 @@ export function SavedToast({
             style={pressStyle([styles.undo, { backgroundColor: c.accentSoft }])}>
             <Text style={[textStyles.bodyStrong, { color: c.accent }]}>Undo</Text>
           </Pressable>
-        </View>
+        </Glass>
       </Appear>
     </View>
   );
@@ -77,7 +78,6 @@ const styles = StyleSheet.create({
     paddingRight: 6,
     minHeight: minTapTarget,
     borderRadius: radius.all,
-    borderWidth: StyleSheet.hairlineWidth,
   },
   words: { flexShrink: 1 },
   undo: { borderRadius: 999, paddingHorizontal: 14, paddingVertical: 6 },

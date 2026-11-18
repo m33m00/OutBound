@@ -32,9 +32,11 @@ import { SwipeToDelete } from '@/ui/SwipeToDelete';
 import { glideNextLayout } from '@/ui/motion';
 import { TabScreen } from '@/ui/TabScreen';
 import { useReducedMotion } from '@/ui/useReducedMotion';
+import { marketArrows } from '@/ui/TrailMark';
 import { TripsSectionHeader } from '@/ui/TripsSectionHeader';
 import { useFlightLoad } from '@/ui/useFlightLoad';
 import { useSheetContent } from '@/ui/useSheetContent';
+import { GlassBackdrop } from '@/ui/Glass';
 
 /**
  * Your own load requests and saved routes (Q-042). Saved routes (Q-043, John
@@ -170,11 +172,7 @@ export default function TripsScreen() {
     return (
       <TabScreen title="My Trips">
         {loaded ? (
-          <EmptyState
-            icon="suitcase"
-            title="No trips yet"
-            body="Routes you bookmark in Search and answers to your load requests show up here."
-          />
+          <EmptyState icon="suitcase" title="No trips yet" body="Saved routes and answered requests show up here." />
         ) : null}
         {sheet}
       </TabScreen>
@@ -187,7 +185,8 @@ export default function TripsScreen() {
   const selectable = selectingRequests ? requestBlocks.map((b) => b.key) : list.map((r) => r.key);
   const allPicked = selectable.length > 0 && selectable.every((k) => picked.includes(k));
   const selectBar = selectingWhat ? (
-    <View style={[styles.bar, { backgroundColor: c.surface, borderTopColor: c.cardEdge }]} testID="select-bar">
+    <View style={[styles.bar, { borderTopColor: c.cardEdge }]} testID="select-bar">
+      <GlassBackdrop />
       <PillButton
         label={allPicked ? 'Deselect All' : 'Select All'}
         onPress={() => setPicked(allPicked ? [] : selectable)}
@@ -248,7 +247,7 @@ export default function TripsScreen() {
       const on = picked.includes(b.key);
       return (
         <View key={b.key} testID={b.route ? 'request-route' : 'request-flights'} style={styles.blockGap}>
-          {b.route ? <SectionHeader title={routeHeading(b.route.title, b.requests.length)} /> : null}
+          {b.route ? <SectionHeader title={routeHeading(marketArrows(b.route.title), b.requests.length)} /> : null}
           <Pressable
             onPress={() => toggle(b.key)}
             accessibilityRole="checkbox"
@@ -266,7 +265,7 @@ export default function TripsScreen() {
     }
     return (
       <View key={b.key} testID={b.route ? 'request-route' : 'request-flights'} style={styles.blockGap}>
-        {b.route ? <SectionHeader title={routeHeading(b.route.title, b.requests.length)} /> : null}
+        {b.route ? <SectionHeader title={routeHeading(marketArrows(b.route.title), b.requests.length)} /> : null}
         {/* Swipe left to delete a request, or a whole requested route (round 195, John). */}
         <SwipeToDelete
           label={`Delete ${blockTitle(b)}`}
@@ -322,9 +321,7 @@ export default function TripsScreen() {
         />
         {/* No saved routes yet: say where the bookmark is and give a way there (round 52). */}
         {/* No Find Routes button: the Search tab is one tap away (John, 2026-11-02). */}
-        {list.length ? null : (
-          <SectionFooter>Open a route in Search, then tap the bookmark beside its name to keep it here.</SectionFooter>
-        )}
+        {list.length ? null : <SectionFooter>Tap the bookmark on a route to keep it here.</SectionFooter>}
         {list.map((route) => {
           const card = (
             <SavedRouteCard

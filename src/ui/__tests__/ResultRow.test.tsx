@@ -1,4 +1,5 @@
 import React from 'react';
+import { Text } from 'react-native';
 import { act, create, type ReactTestInstance, type ReactTestRenderer } from 'react-test-renderer';
 
 import { createMemoryProvider, searchItineraries, zonedToUtc } from '@/engine';
@@ -6,8 +7,9 @@ import { flightLookupKey, type FlightStatus } from '@/live';
 import { legLookup, rowStatus } from '@/search/statusTags';
 import { colors, inkColors } from '@/theme';
 
-import { CARD_EDGE_W, connectionText, dotSeats, measurePerfOn, ResultRow, seatCounts } from '../ResultRow';
+import { ARRIVED_FADE, CARD_EDGE_W, connectionText, dotSeats, measurePerfOn, ResultRow, seatCounts } from '../ResultRow';
 import { StatusTag } from '../StatusTag';
+import { STRIKE_W } from '../StrikeOver';
 import { TicketTear } from '../TicketTear';
 import { TIER_FG } from '../tierColors';
 
@@ -481,8 +483,10 @@ describe('ResultRow', () => {
         const ids = track
           .findAll((n) => typeof n.type === 'string' && ['leg-tag', 'leg-length'].includes(n.props.testID))
           .map((n) => n.props.testID);
-        // The length is always the last thing, under the line, tagged or not.
-        expect(ids[ids.length - 1]).toBe('leg-length');
+        // The length is always the last thing, under the line, tagged or not; a nonstop's length is the header's
+        // alone (round 218, John: "Fix all of them").
+        if (it.legs.length > 1) expect(ids[ids.length - 1]).toBe('leg-length');
+        else expect(ids).not.toContain('leg-length');
         // Both end columns are the same fixed width and raised the same amount in every box.
         const ends = (line.children as ReactTestInstance[]).filter(
           (n) => typeof n !== 'string' && n.props.testID !== 'leg-track',
@@ -519,7 +523,7 @@ describe('ResultRow', () => {
     const order = track
       .findAll((n) => typeof n.type === 'string' && ['leg-tag', 'leg-length'].includes(n.props.testID))
       .map((n) => n.props.testID);
-    expect(order).toEqual(['leg-tag', 'leg-length']);
+    expect(order).toEqual(it.legs.length > 1 ? ['leg-tag', 'leg-length'] : ['leg-tag']);
     expect(words(track.findAll((n) => n.props.testID === 'leg-tag' && typeof n.type === 'string')[0])).toContain('25m late');
     // Not on the flight chip's row any more.
     const group = box.findAll((n) => n.props.testID === 'leg-flight' && typeof n.type === 'string')[0];
@@ -630,12 +634,78 @@ describe('ResultRow', () => {
       );
     });
     expect(strings(r!.root)).toContain('Departed');
-    // Round 196, John: the pill sits at the top, right of the times, not down at the bottom of the ticket.
+    // Round 201, John: the pill sits by Save, not after the times, so pills line up down the list.
     const line = r!.root.find((n) => n.props.testID === 'row-times-line' && typeof n.type === 'string');
     const kids = (line.children as ReactTestInstance[]).map((n) => n.props.testID);
-    expect(kids).toEqual(['row-times', 'row-tag']);
-    expect(strings(line)).toContain('Departed');
+    expect(kids).toEqual(['row-times']);
+    const top = r!.root.find((n) => n.props.testID === 'top-line' && typeof n.type === 'string');
+    expect(top.findAll((n) => n.props.testID === 'row-tag')).toHaveLength(0);
+    const tag = r!.root.find((n) => n.props.testID === 'row-tag' && typeof n.type === 'string');
+    expect(strings(tag)).toContain('Departed');
     expect(r!.root.findAll((n) => n.props.testID === 'flights-line')).toHaveLength(0);
+    // Departed isn't grayed out like Arrived (round 201).
+    expect(r!.root.findAll((n) => n.props.testID === 'row-arrived-fade')).toHaveLength(0);
+  });
+
+  it('round 201 (John): the pill sits just left of Save, Arrived is graphite, and an arrived ticket is grayed out', async () => {
+    const it = await fullItinerary();
+    const save = <Text testID="save-button">Save</Text>;
+    await act(async () => {
+      r = create(
+        <ResultRow
+          itinerary={it}
+          selected={false}
+          now={NOW}
+          onPress={jest.fn()}
+          topAction={save}
+          status={statusFor(it, live(it, 'arrived'))}
+        />,
+      );
+    });
+    const flat = (st: unknown) => Object.assign({}, ...([st] as unknown[]).flat(5).filter(Boolean));
+    const host = (id: string) => r!.root.find((n) => n.props.testID === id && typeof n.type === 'string');
+    // Same row as Save: top-line, then the pill, then Save.
+    const row = host('top-line').parent!;
+    const order = r!.root
+      .findAll((n) => typeof n.type === 'string' && ['top-line', 'row-tag', 'row-action'].includes(n.props.testID))
+      .map((n) => n.props.testID);
+    expect(order).toEqual(['top-line', 'row-tag', 'row-action']);
+    expect(row).toBeTruthy();
+    // Graphite, not Departed's boarding blue (round 208).
+    const pill = host('row-tag').findAll((n) => typeof n.type === 'string')[1];
+    expect(flat(pill.props.style).backgroundColor).toBe(colors.light.landedBg);
+    expect(colors.light.landedBg).not.toBe(colors.light.accent);
+    // Everything but the pill and Save fades.
+    expect(flat(host('top-line').props.style).opacity).toBe(ARRIVED_FADE);
+    expect(flat(host('row-stops').props.style).opacity).toBe(ARRIVED_FADE);
+    expect(flat(host('row-arrived-fade').props.style).opacity).toBe(ARRIVED_FADE);
+    expect(flat(host('row-tag').props.style).opacity).toBeUndefined();
+    expect(flat(host('row-action').props.style).opacity).toBeUndefined();
+  });
+
+  it('round 202 (John): on a late flight the pill and Save line up with the new times, the struck schedule sits above', async () => {
+    const it = await fullItinerary();
+    const save = <Text testID="save-button">Save</Text>;
+    // Left 25 minutes late, so it lands 25 minutes late: the arrival moved.
+    const base = live(it, 'departed', 25);
+    const lands = new Date(it.legs[0].flight.arriveUtc + 25 * 60_000).toISOString();
+    const late = { ...base, arrival: { ...base.arrival, estimatedUtc: lands } };
+    await act(async () => {
+      r = create(
+        <ResultRow itinerary={it} selected={false} now={NOW} onPress={jest.fn()} topAction={save} status={statusFor(it, late)} />,
+      );
+    });
+    const host = (id: string) => r!.root.find((n) => n.props.testID === id && typeof n.type === 'string');
+    const has = (n: ReactTestInstance, id: string) =>
+      n.findAll((k) => k.props.testID === id && typeof k.type === 'string').length > 0;
+    // The pill, Save and the new times share one row; the struck schedule sits above it, not in it.
+    const rows = r!.root.findAll(
+      (n) => typeof n.type === 'string' && has(n, 'top-line') && has(n, 'row-tag') && has(n, 'row-action') && !has(n, 'row-was'),
+    );
+    expect(rows.length).toBeGreaterThan(0);
+    expect(has(host('top-line'), 'row-was')).toBe(false);
+    expect(r!.root.findAll((n) => n.props.testID === 'row-was' && typeof n.type === 'string')).toHaveLength(1);
+    expect(allText(host('row-tag'))).toBe('Departed');
   });
 
   it('route card legs show both times: new ones when moved, a canceled leg keeps its schedule, struck (John, 2026-11-02)', async () => {
@@ -666,10 +736,25 @@ describe('ResultRow', () => {
         <ResultRow itinerary={it} selected large now={NOW} onPress={jest.fn()} status={statusFor(it, live(it, 'canceled'))} />,
       );
     });
-    // The leg keeps its scheduled times, both ends struck. A connection's top times are left as they
-    // are (round 160, John: "leave it alone"); only a canceled nonstop grays them.
-    const struck = struckTexts();
-    expect(struck.map((n) => n.props.testID)).toEqual(['leg-clock', 'leg-arrive']);
+    // The leg keeps its scheduled times, both ends crossed out by a bold red bar (round 203, John: "Canceled
+    // line crossing out the time should be thicker"). A connection's top times are left as they are (round 160,
+    // John: "leave it alone"); only a canceled nonstop grays them.
+    expect(struckTexts()).toHaveLength(0);
+    const bars = r!.root.findAll((n) => n.props.testID === 'leg-time-strike' && typeof n.type === 'string');
+    expect(bars).toHaveLength(2);
+    const barStyle = Object.assign({}, ...([bars[0].props.style] as unknown[]).flat(5).filter(Boolean));
+    expect(barStyle).toMatchObject({ height: STRIKE_W, backgroundColor: colors.light.canceled });
+    expect(STRIKE_W).toBeGreaterThanOrEqual(2);
+    // Each bar sits with its own time.
+    const timeIn = (bar: ReactTestInstance) => {
+      // The nearest box around the bar that holds a time.
+      for (let up: ReactTestInstance | null = bar.parent; up; up = up.parent) {
+        const found = up.findAll((n) => typeof n.type === 'string' && ['leg-clock', 'leg-arrive'].includes(n.props.testID));
+        if (found.length) return found.map((n) => n.props.testID as string).join();
+      }
+      return null;
+    };
+    expect(bars.map(timeIn).sort()).toEqual(['leg-arrive', 'leg-clock']);
     expect(r!.root.findAll((n) => n.props.testID === 'row-times-canceled')).toHaveLength(0);
     const after = r!.root.findAll((n) => n.props.testID === 'leg-timeline' && typeof n.type === 'string')[0];
     const words = after
@@ -1147,10 +1232,11 @@ describe('canceled ticket (round 152)', () => {
     expect(style.backgroundColor).toBe(colors.light.canceledTint);
     const top = r!.root.findAll((n) => n.props.testID === 'row-times-canceled' && typeof n.type === 'string');
     expect(top).toHaveLength(1);
-    // A red line through the time (round 161, John).
-    expect(Object.assign({}, ...[top[0].props.style].flat(5).filter(Boolean))).toMatchObject({
-      textDecorationLine: 'line-through',
-      textDecorationColor: colors.light.canceled,
+    // A red line through the time (round 161, John), bold since round 203 ("should be thicker").
+    const bar = r!.root.find((n) => n.props.testID === 'row-times-strike' && typeof n.type === 'string');
+    expect(Object.assign({}, ...([bar.props.style] as unknown[]).flat(5).filter(Boolean))).toMatchObject({
+      height: STRIKE_W,
+      backgroundColor: colors.light.canceled,
     });
     const host = (id: string) => r!.root.findAll((n) => n.props.testID === id && typeof n.type === 'string');
     expect(host('mini-route-canceled')).toHaveLength(1);
@@ -1232,15 +1318,15 @@ describe('round 156 (John)', () => {
     expect(values.map(allText)).not.toContain('0');
   });
 
-  it('gives Departed and Arrived pills their own sky cyan, not gray', () => {
+  it('gives the Departed pill the boarding blue with white words (round 208)', () => {
     let r: ReactTestRenderer;
     act(() => {
-      r = create(<StatusTag label="Arrived" tone="gone" />);
+      r = create(<StatusTag label="Departed" tone="gone" />);
     });
     const pill = r!.root.findAll((n) => typeof n.type === 'string')[0];
     const style = Object.assign({}, ...([pill.props.style] as unknown[]).flat(5).filter(Boolean));
-    expect(style).toMatchObject({ backgroundColor: colors.light.doneBg, borderColor: colors.light.doneBg });
-    const word = r!.root.find((n) => typeof n.type === 'string' && n.props.children === 'Arrived');
-    expect(Object.assign({}, ...([word.props.style] as unknown[]).flat(5).filter(Boolean)).color).toBe(colors.light.done);
+    expect(style).toMatchObject({ backgroundColor: colors.light.accent, borderColor: colors.light.accent });
+    const word = r!.root.find((n) => typeof n.type === 'string' && n.props.children === 'Departed');
+    expect(Object.assign({}, ...([word.props.style] as unknown[]).flat(5).filter(Boolean)).color).toBe(colors.light.onAccent);
   });
 });

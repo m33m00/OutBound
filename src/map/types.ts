@@ -179,10 +179,11 @@ export interface GlobeMapProps {
    */
   home?: LonLat | null;
   /**
-   * From and To before a search: a faint arc draws itself between them (John, 2026-11-01).
+   * From and To before a search: arcs draw themselves between them (John, 2026-11-01). One line for two
+   * airports; for a country, state or city, a few spread across it (round 224, src/map/previewLines.ts).
    * Only while no routes are drawn.
    */
-  preview?: { from: LonLat; to: LonLat } | null;
+  preview?: { lines: readonly { from: LonLat; to: LonLat }[] } | null;
   /**
    * Home motion on (John, 2026-11-01): a soft ripple off the home pin (the idle sway was removed
    * 2026-11-02; the globe stays still until moved). The screen turns it off while results are up or the tab is

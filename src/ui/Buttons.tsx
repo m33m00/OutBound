@@ -5,6 +5,7 @@ import { boldTextOn, fonts, minTapTarget, radius, spacing, textStyles, useColors
 import { impactTick, successTap } from './haptics';
 import { Icon } from './Icon';
 import { ScalePressable } from './ScalePressable';
+import { TrailLoader } from './TrailLoader';
 
 interface ButtonProps {
   label: string;
@@ -20,6 +21,8 @@ interface ButtonProps {
   style?: StyleProp<ViewStyle>;
   /** What the tap feels like: primary buttons thump, "done" actions (submit, ask) get the success tap. */
   haptic?: 'impact' | 'success' | 'none';
+  /** Waiting on what the tap started: the loader takes the icon's place and the button can't be pressed again (round 223). */
+  busy?: boolean;
 }
 
 const HAPTIC = { impact: impactTick, success: successTap, none: () => {} };
@@ -35,6 +38,7 @@ export function Button({
   icon,
   style,
   haptic,
+  busy = false,
 }: ButtonProps) {
   const c = useColors();
   const primary = kind === 'primary';
@@ -49,13 +53,18 @@ export function Button({
         feel();
         onPress();
       }}
-      disabled={disabled}
+      disabled={disabled || busy}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel ?? label}
       accessibilityHint={accessibilityHint}
-      accessibilityState={{ disabled }}
-      style={[styles.button, { backgroundColor: bg, opacity: disabled ? 0.5 : 1 }, style]}>
-      {icon ? <Icon name={icon} size={18} tintColor={fg} fallback={null} /> : null}
+      accessibilityState={{ disabled: disabled || busy, busy }}
+      // A busy button stays full strength: it's working, not off.
+      style={[styles.button, { backgroundColor: bg, opacity: disabled && !busy ? 0.5 : 1 }, style]}>
+      {busy ? (
+        <TrailLoader size={18} color={fg} decorative />
+      ) : icon ? (
+        <Icon name={icon} size={18} tintColor={fg} fallback={null} />
+      ) : null}
       {label ? (
         <Text lineBreakStrategyIOS="push-out" style={[textStyles.button, { color: fg }]}>
           {label}
@@ -73,8 +82,11 @@ export interface PillButtonProps {
   /** Empty for an icon-only round button (the label still goes to VoiceOver). */
   label: string;
   onPress?: () => void;
-  /** soft: tinted, for Back, Cancel and moving around. filled: the one action that finishes (Done). onDark: over the camera. */
-  tone?: 'soft' | 'filled' | 'onDark';
+  /**
+   * soft: tinted, for Back, Cancel and moving around. filled: the one action that finishes (Done). onDark: over
+   * the camera. plain: blue words or an icon with no tint behind (round 215, the results bar: "Too much blue").
+   */
+  tone?: 'soft' | 'filled' | 'onDark' | 'plain';
   /** SF Symbol before the label, e.g. chevron.left for Back. */
   leading?: SFSymbol;
   /** SF Symbol after the label, e.g. chevron.right for a step forward. */
@@ -117,7 +129,8 @@ export function PillButton({
   testID,
 }: PillButtonProps) {
   const c = useColors();
-  const bg = tone === 'filled' ? c.accent : tone === 'onDark' ? 'rgba(255,255,255,0.2)' : c.accentSoft;
+  const bg =
+    tone === 'filled' ? c.accent : tone === 'onDark' ? 'rgba(255,255,255,0.2)' : tone === 'plain' ? 'transparent' : c.accentSoft;
   const fg = tone === 'filled' ? c.onAccent : tone === 'onDark' ? '#ffffff' : c.accent;
   const iconOnly = !label;
   const icon = (name: SFSymbol) => (

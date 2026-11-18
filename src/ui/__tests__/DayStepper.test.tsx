@@ -2,6 +2,7 @@ import React from 'react';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 
 import { dateChips } from '@/search/dates';
+import { colors } from '@/theme';
 
 import { DAY_GAP, DAY_MIN, DayStepper, fitDays, neighborDays, windowStart } from '../DayStepper';
 
@@ -144,5 +145,21 @@ describe('DayStepper', () => {
     };
     expect(bg('2026-10-31')).not.toBe(bg('2026-11-01'));
     expect(bg('2026-11-01')).toBe(bg('2026-10-30'));
+  });
+
+  // Round 215 (John, on the results page): "Fix all of them". Only the picked day is filled; the rest and the
+  // arrows are plain, with no blue tint behind.
+  it('fills only the picked day', () => {
+    act(() => {
+      r = create(<DayStepper days={DAYS} date="2026-10-31" onDay={jest.fn()} />);
+    });
+    const flat = (st: unknown) => Object.assign({}, ...([st] as unknown[]).flat(5).filter(Boolean));
+    const bgOf = (id: string) => {
+      const n = r!.root.find((x) => x.props.testID === id && typeof x.type === 'string');
+      return flat(typeof n.props.style === 'function' ? n.props.style({ pressed: false }) : n.props.style).backgroundColor;
+    };
+    expect(bgOf('day-2026-10-31')).toBe(colors.light.accent);
+    expect(bgOf('day-2026-11-01')).toBeUndefined();
+    expect(bgOf('day-next')).toBeUndefined();
   });
 });

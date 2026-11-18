@@ -5,6 +5,7 @@ import { GestureDetector, usePanGesture } from 'react-native-gesture-handler';
 import { minTapTarget, radius, useColors } from '@/theme';
 
 import { useReducedMotion } from './useReducedMotion';
+import { GlassBackdrop } from './Glass';
 
 const SNAP_NAMES = ['Peek', 'Half', 'Full'];
 /**
@@ -226,12 +227,21 @@ export function Sheet({ snaps, index, onIndexChange, children, locked = false, f
           {
             height: full,
             transform: [{ translateY }],
-            backgroundColor: c.surface,
+            // Glass behind the panel (round 211, John: "More glassy look where containers exist").
+            backgroundColor: 'transparent',
             borderColor: c.line,
             shadowColor: c.text,
           },
           flush && styles.flush,
         ]}>
+        {/* Results and an open route fill the sheet with the page color (tickets need it for their torn edges),
+            so the sheet is that page all the way up: no glass band over the bars ending in a line (round 215, John:
+            "Fix all of them"). The search panel keeps its glass. */}
+        {locked ? (
+          <View style={[StyleSheet.absoluteFill, { backgroundColor: c.bg }]} pointerEvents="none" testID="sheet-page" />
+        ) : (
+          <GlassBackdrop />
+        )}
         {locked ? (
           <View style={{ height: SHEET_LOCKED_TOP }} testID="sheet-locked-top" />
         ) : (
@@ -262,7 +272,8 @@ export function Sheet({ snaps, index, onIndexChange, children, locked = false, f
 }
 
 const styles = StyleSheet.create({
-  flush: { borderTopLeftRadius: 0, borderTopRightRadius: 0, borderLeftWidth: 0, borderRightWidth: 0 },
+  // Full height under the top bar: square, and no line where it meets the logo row (round 215).
+  flush: { borderTopLeftRadius: 0, borderTopRightRadius: 0, borderWidth: 0, shadowOpacity: 0 },
   clip: {
     position: 'absolute',
     top: 0,

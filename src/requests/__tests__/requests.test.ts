@@ -16,7 +16,9 @@ import {
   answerText,
   answerTier,
   clampReport,
+  departDay,
   departsText,
+  departWhen,
   MAX_LISTED,
   MAX_OPEN,
   MAX_OPEN_REQUESTS,
@@ -66,16 +68,28 @@ describe('request words', () => {
     expect(requestTitle(req)).toBe(`${req.flight.airline} ${req.flight.flightNumber} · ${req.flight.from} → ${req.flight.to}`);
     const tz = AIRPORTS[req.flight.from].tz;
     const sameDay = localDate(req.flight.departUtc, tz) === localDate(NOW, tz);
-    expect(departsText(req.flight, NOW).startsWith(sameDay ? 'Departs ' : 'Departs tomorrow ')).toBe(true);
+    expect(departsText(req.flight, NOW).startsWith(sameDay ? 'Departs Today ' : 'Departs Tomorrow ')).toBe(true);
     expect(requestDetail(req, NOW)).toMatch(/^Departs .* · asked \d+[mh] ago$/);
+  });
+
+  // Round 216 (John): "add dates to the flights. Some people will ask for days in advance".
+  it('names the day it leaves: Today, Tomorrow, then the date', () => {
+    const at = (days: number) => ({ ...req.flight, departUtc: req.flight.departUtc + days * 86_400_000 });
+    const base = departDay(req.flight, NOW);
+    const offset = base === 'Today' ? 0 : 1;
+    expect(departDay(at(0 - offset), NOW)).toBe('Today');
+    expect(departDay(at(1 - offset), NOW)).toBe('Tomorrow');
+    expect(departDay(at(3 - offset), NOW)).toMatch(/^[A-Z][a-z]{2}, [A-Z][a-z]{2} \d+$/);
+    expect(departWhen(at(3 - offset), NOW)).toMatch(/^[A-Z][a-z]{2}, [A-Z][a-z]{2} \d+ \d+:\d\d\s?[AP]M$/);
   });
 
   it('an answer reads as both numbers, no tier word (Q-065, round 140)', () => {
     const a = { open: 21, listed: 3, at: NOW - 5 * 60_000 };
     expect(answerTier(a)).toBe('good');
     expect(answerText(a)).toBe('21 seats · 3 listed');
-    expect(requestDetail({ ...req, answer: a }, NOW)).toBe('21 seats · 3 listed · answered 5m ago');
-    expect(requestDetail({ ...req, answer: { ...a, byYou: true } }, NOW)).toBe('21 seats · 3 listed · you answered 5m ago');
+    // Round 217: no "answered 5m ago"; the numbers, then when the flight leaves.
+    expect(requestDetail({ ...req, answer: a }, NOW)).toMatch(/^21 seats · 3 listed · Departs .*\d+:\d\d\s?[AP]M$/);
+    expect(requestDetail({ ...req, answer: { ...a, byYou: true } }, NOW)).not.toContain('answered');
   });
 
   it('seats after the standby list', () => {

@@ -1,6 +1,6 @@
-# OutBound
+# Jaunt (repo name: OutBound)
 
-An iOS/Android app for airline employees who fly standby (nonrev): find routes home or out, see seat availability, and check real-time flight status, airport delays and weather. Personal/friends project, iPhone first.
+An iOS/Android app for airline employees who fly standby (nonrev): find routes home or out, see seat availability, and check real-time flight status, airport delays and weather. Personal/friends project, iPhone first. Renamed from OutBound to Jaunt on 2026-11-14; the Expo project, bundle IDs and repo keep the old name.
 
 Two people build it now: John (owner) and a friend, each working with their own Claude. Read this whole file before you change anything. Expo-specific rules are in `AGENTS.md` (imported at the end).
 
@@ -38,19 +38,32 @@ Full history in `design/DECISIONS.md`; these are the ones that come up most.
 - Text: read text black, secondary text gray. **Blue (boarding blue) only for tappable things**, plus the current route dot and the picked card outline. **Amber means "you"** (your airports, your stuff).
 - Buttons must look like buttons, not tappable words. One filled main button style, one light tint for secondary.
 - Consistent formats and font sizes everywhere. Cards can be taller and text bigger if it helps.
-- One font family (round 200, John picked Sora): Sora for all text and titles, Geist Mono only for times, flight numbers and other figures that must line up, Big Shoulders only for the OutBound wordmark. Weights come from `src/theme/fonts.ts`; don't add another family. Manrope (round 199) was dropped because it looked almost the same as Geist.
+- One font family (round 200, John picked Sora): Sora for all text and titles, Geist Mono only for times, flight numbers and other figures that must line up. The Jaunt wordmark is a drawing, not text: use `JauntWordmark` (`src/brand/`), never type the name in a brand font. Weights come from `src/theme/fonts.ts`; don't add another family. Manrope (round 199) was dropped because it looked almost the same as Geist.
 - Animations must mean something (round 198): they show what just changed or where something went, never decoration. Use `src/ui/motion.ts` (useChangePop, useCountRoll, glideNextLayout) or `Pop`. Never on first show, sway toned down, transitions glide not cut, and Reduce Motion means fade only, nothing moves.
+- One loader everywhere (round 223, John: "streamline the animation of the T across the app... For anything loading"): `TrailLoader` (`src/ui/TrailLoader.tsx`), the wordmark's t with the plane drawing its contrail crossbar, then taking off. Never use `ActivityIndicator` or another spinner (a test checks). Pass `size`; `color` on filled buttons; `decorative` when words beside it already say what's loading. `Button` takes `busy`. Pictures come from design/assets/make-loader.py.
 - One corner radius everywhere (round 198): `radius.all` (14) for every card, ticket, leg box, button, field, sheet, banner, popup, tile and checkbox, nested ones too. Only pills (`radius.pill`) and circles (logo badges, dots, round icons) stay fully round. No other radius numbers.
 - Sounds are subtle and only on key moments (round 197): a soft two-note chime when your load request is answered, one light tap when a request goes out, and a three-note falling chime when Leave by turns to Leave now on screen. Nothing jokey, nothing on ordinary taps. All behind Settings > Display > Sound effects. New sounds are original (design/chimes-synth.py), mixed quiet.
 - **No middle dots (·) anywhere.** No "~" on estimates. Don't use the word "open".
 - No "follow the rules for sharing loads" footer.
+- Results tickets keep a plain faint paper grain and nothing else (round 222, John: "Keep the grain"). No destination colors or stripes (taken back in round 220) and no landmark sketches or other destination art (taken back in round 222).
 
 **Times and status**
 
 - New time big; old time small and struck through, only in the header.
 - Time colors by lateness: green early, neutral on time, then yellow, orange, red as it gets later.
 - Durations always `5h 0m` style.
-- Departed and Arrived pills are sky cyan. On a results ticket they sit at the top, right of the times (the new time when it moved). In the opened route, each leg keeps its own pill over its route line.
+- Departed pills are solid boarding blue with white words (round 208, John asked), Arrived pills are graphite (round 201). On a results ticket the pill sits just left of Save at the top right, on the same line as the new times (a moved ticket's struck schedule sits above that line, round 202), so pills line up down the list whatever the times' length. A ticket whose flight has arrived is grayed out: its times, stops and route line fade, the pill and Save stay full strength. In the opened route, each leg keeps its own pill over its route line.
+- Anywhere a route shows between airport codes, the Jaunt plane and a level contrail sit between them, not an arrow (round 208; level and everywhere since round 209): the results title, the open route's bar, saved routes, requests, My Trips route headings, the logbook and sheet subtitles. Use `RouteText` or `trails()` from src/ui/TrailMark.tsx, which tint assets/images/trail-mark.png boarding blue, size it to the text and keep VoiceOver reading "DAL to LAX". Code, mark, code never wrap apart (no-break joins, round 210), the trail is shorter than the logo's, and the mark sits on the middle of the codes' capitals. The logo and wordmark keep their slanted contrail t. System alerts can't show pictures, so they keep the arrow.
+- Requests (round 216): plain rows (`ListGroup plain`), a soft Answer `PillButton`, and every request names its day (`departDay`: Today, Tomorrow, Tue, Nov 17) with when it was asked on the same line.
+- Request rows (round 217): a canceled ask keeps its normal day and time (`liveRequestDetail` returns null for canceled); answered asks show no answered time and put `SeatCountPill` over the Answered badge; the title is `numberOfLines={1}` with `adjustsFontSizeToFit` so flight and market never wrap.
+- Opened route (round 218): `MAX_ESTIMATE_KM` (100) caps the rough Leave by guess (live drive times keep `MAX_DRIVE_KM`); nonstops show no `LegCreditCheck` and no `leg-length`; the leg box has no fill and codes no bubble; an unreported leg shows `dotPlain` (seat icon over a dash); `RequestLoadsBar` has no top line.
+- Round 219: Leave by titles are short and the inline line is `numberOfLines={1}` + `adjustsFontSizeToFit` (min 0.85). The round 219 destination stripe was removed in round 220 (John didn't like it).
+- Sounds (round 220): `tear` joins the chimes (design/tear-synth.py, data URI in soundData.ts); it plays from `SaveRouteButton` when a save tears and from `TearSwipe` on a committed swipe, only when Settings > Sound effects is on.
+- Ticket paper (round 221, trimmed in 222): `TicketPaper.tsx` draws a results ticket's grain; ResultRow adds the warmer stub (`ticketStub`) from the perforation's onLayout. The landmark sketches and their draw-in were removed in round 222 (John: "Get rid of the backgrounds on the tickets I don't like it", "The landmark work"). Don't bring destination art back unasked.
+- Results page (round 215): only the picked day is filled; Back (arrow only), Filters, day arrows and credits are `tone="plain"` blue with no tint; the sheet is solid page color when it holds results or a route; every route with a stop shows its tightest connection; ticket edges are a hairline.
+- Airport picker (round 214): plain rows (no card), the airport's own name (`airportName`) over the city and state, blue mono codes with no bubble, headed sections (Your airports, Recent, All airports), and the centered `SheetHeader` with a grabber.
+- Places in From and To (round 224, John: browse by "country... state... city"): All airports lists countries (`src/search/places.ts`), the US first. US and Canada go country, state, city; elsewhere country, city. A level with one place is skipped and a one-airport place picks that airport. Each opened place starts with an "All of X" row that picks the whole place (`PlaceRef` on `SearchRequest.originGroup`/`destinationGroup`); a place search never connects through another airport in the same place. The card shows the place's name big (shrinks, never wraps) and its codes under it. Group picks aren't added to Recent.
+- Glass where a box stays (round 211, John: "Less containers where you think it's necessary. More glassy look where containers exist"): use `Glass` / `GlassBackdrop` from src/ui/Glass.tsx, which draw iOS Liquid Glass (expo-glass-effect) when the phone has it, a see-through card without it, and a solid card with Reduce Transparency on. Tickets stay solid paper (their torn edges need it), and pills and buttons keep their own fills. Glass bars get a neutral veil so they read as one even gray, and boxes on a glass sheet use `useGlassWell()` (round 213). A Skia `<Canvas>` drawn in theme colors must be keyed on those colors, or it keeps the first scheme's colors (round 213).
 - Boarding time = departure minus 40 min domestic, minus 50 min international or widebody.
 
 **Availability**
@@ -60,9 +73,15 @@ Full history in `design/DECISIONS.md`; these are the ones that come up most.
 
 **Routes and map**
 
-- **Route lines stay straight.** Curved and flowing lines were tried and rejected.
-- Map: no key or legend, no dotted lines, no direction arrows. Plain straight lines in seat colors. A canceled leg (round 199) is a red line with a small X at its middle and a red Canceled pill just above the X in place of its flight time; on a connection only that leg changes.
-- Route line spans the full card width, an even share per leg for 0 to 3 stops. Canceled leg: red line with an X and a small red Canceled pill. At risk pill sits on the connecting stop. Late pills only on opened route or flight details, not on result tickets; Diverted stays on tickets.
+- **Route lines stay straight** on searched routes. Curved and flowing lines were tried and rejected there. The one exception is the home preview before a search (round 224, John: "I don't like straight lines.." with a hub map): thin boarding-blue great-circle arcs bowed only a little (`PREVIEW.lift`), a small dot at each airport, no arrows, at most `PREVIEW_MAX` (8) lines spread across a picked place (`src/map/previewLines.ts`).
+- Map: no key or legend, no dotted lines, no direction arrows. Plain straight lines in seat colors. A canceled leg (round 199) is a red line with a small X at its middle (in a small light red circle with a red ring, like the cards' X, round 205) and a red Canceled pill just above the X; on a connection only that leg changes. No flight time pills on the map (round 212, John: "Remove the block time on the route map").
+- Results header (round 202): a searched area shows as a plane icon and its airport codes only, no city words, so it stays on one line beside the route count pills. Filters is the same pill capsule as Search.
+- A canceled flight's time is crossed out by a bold red bar (StrikeOver, 2.5pt, round 203), not text's hairline strike-through. A moved (late) time's struck schedule keeps the normal thin strike.
+- The Now line in today's results is a solid boarding-blue capsule (white words) on a 1.5pt blue rule, the same blue as the picked day, so it stands out while scrolling (rounds 203 and 204; John asked for blue here, the one non-tappable use).
+- No commentary lines (round 205): the Request Loads bar shows a line over its button only when credits run short; Leave by and Leave now show just the time (VoiceOver still hears the arrive-by line).
+- Not too descriptive (round 206): no footers that explain a setting, no helper lines under filters, short empty states. Keep attributions, the independence line, privacy and error lines. Captions (textStyles.small) are regular weight; headings track -0.3.
+- Fewer containers (round 207): neutral grays (page #f5f5f7), no outline on grouped cards in light mode, plain icons with no tinted tiles or circles, no box around banners or empty states. Keep a container only when it does a job (a ticket, a tappable leg, Leave By, the main button, the canceled nonstop card, count pills, area code chips). The first tab is Home (house icon).
+- Route line spans the full card width, an even share per leg for 0 to 3 stops. Canceled leg: red line with an X and a small red Canceled pill. At risk pill is gold (its own color, not the violet of delays or the amber of "you", round 202) and sits on the connecting stop, just over its dot on a 1-stop route. Late pills only on opened route or flight details, not on result tickets; Diverted stays on tickets.
 - Stops line under the times: `2 stops | 11h 30m | 35m connection at MIA`.
 - Each flight leg is its own tappable box.
 
@@ -84,6 +103,10 @@ Full history in `design/DECISIONS.md`; these are the ones that come up most.
 - No scraping airline websites or employee portals.
 - Airline logos come only from Logo.dev with the publishable key from `LOGO_DEV_KEY`; keep the Logo.dev credit in Settings.
 - Membership is a demo only: no real payments.
+
+**Brand**
+
+- The app is Jaunt. Wordmark: lowercase "jaunt" with the t's crossbar as a contrail rising into a small plane (`src/brand/jauntMark.ts`, made by `design/assets/make-jaunt.py`; don't hand-edit). App icon: white tall t with the contrail and plane on boarding blue. The launch intro draws the same wordmark.
 
 ## Agent team
 

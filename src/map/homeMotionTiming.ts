@@ -16,8 +16,12 @@ export function rippleAt(ms: number): { grow: number; alpha: number } | null {
   return { grow: out * RIPPLE.spread, alpha: RIPPLE.startAlpha * (1 - t) };
 }
 
-/** The preview arc draws itself from From to To over this long, then stays. */
-export const PREVIEW = { drawMs: 900, alpha: 0.6, width: 2, frameMs: 16 } as const;
+/**
+ * The preview arcs draw themselves from From to To over this long, then stay. Since round 224 they're thin
+ * boarding-blue lines with a small dot at each airport, bowed only a little (`lift` times a flown route's
+ * lift), after the hub map John sent: "Like this for example.. on how curved I'd want it".
+ */
+export const PREVIEW = { drawMs: 900, alpha: 0.9, width: 1.6, frameMs: 16, lift: 0.3, dot: 2.6, ring: 1.2 } as const;
 
 /** How much of the preview arc shows `ms` after the pair was set (0 to 1, eased). */
 export function drawProgress(ms: number): number {

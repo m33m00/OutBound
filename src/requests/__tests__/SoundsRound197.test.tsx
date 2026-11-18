@@ -4,7 +4,7 @@ import { createAudioPlayer, setAudioModeAsync } from 'expo-audio';
 
 import { SettingsProvider, useSettings } from '@/settings/SettingsProvider';
 import { DEFAULT_SETTINGS, parseSettings } from '@/settings/settings';
-import { resetSounds } from '@/ui/sounds';
+import { resetSounds, SOUND_NAMES } from '@/ui/sounds';
 
 import { newlyAnswered, sampleMine } from '../requests';
 import { RequestsProvider, useRequests } from '../RequestsProvider';
@@ -54,8 +54,8 @@ describe('the answered chime when a request is answered (round 181; soft chimes 
       await flush();
     });
     // Loaded ahead of time (round 182) but not played.
-    // One player per chime (round 197): answered, sent, leave.
-    expect(created).toHaveBeenCalledTimes(3);
+    // One player per sound (round 197): answered, sent, leave, and the tear since round 220.
+    expect(created).toHaveBeenCalledTimes(SOUND_NAMES.length);
     const player = created.mock.results[0].value;
     expect(player.play).not.toHaveBeenCalled();
     const waiting = req.mine.find((m) => !m.answer)!;
@@ -63,7 +63,7 @@ describe('the answered chime when a request is answered (round 181; soft chimes 
       req.addAnswered(waiting.flight, { open: 20, listed: 3, at: Date.now() });
       await flush();
     });
-    expect(created).toHaveBeenCalledTimes(3);
+    expect(created).toHaveBeenCalledTimes(SOUND_NAMES.length);
     expect(player.play).toHaveBeenCalledTimes(1);
     // Only the answered chime; the others stay quiet.
     expect(created.mock.results[1].value.play).not.toHaveBeenCalled();
@@ -107,7 +107,7 @@ describe('the chime players (rounds 182 to 184, and the round 197 set)', () => {
     jest.spyOn(Date, 'now').mockImplementation(() => clock);
   });
   afterEach(() => jest.restoreAllMocks());
-  const player = (name: 'answered' | 'sent' | 'leave') => created.mock.results[sounds.SOUND_NAMES.indexOf(name)].value;
+  const player = (name: 'answered' | 'sent' | 'leave' | 'tear') => created.mock.results[sounds.SOUND_NAMES.indexOf(name)].value;
 
   it('sets the audio mode (plays on silent too, mixed with music) before it makes the players', async () => {
     const order: string[] = [];
@@ -127,7 +127,7 @@ describe('the chime players (rounds 182 to 184, and the round 197 set)', () => {
   it('loads every chime once ahead of time and plays a fresh player without rewinding it', async () => {
     sounds.preloadSounds();
     await sounds.playSound('answered');
-    expect(created).toHaveBeenCalledTimes(3);
+    expect(created).toHaveBeenCalledTimes(sounds.SOUND_NAMES.length);
     expect(created.mock.calls.map((c) => c[0])).toEqual(sounds.SOUND_NAMES.map((n) => sounds.soundSource(n)));
     expect(player('answered').seekTo).not.toHaveBeenCalled();
     expect(player('answered').play).toHaveBeenCalledTimes(1);
@@ -174,10 +174,11 @@ describe('the chime players (rounds 182 to 184, and the round 197 set)', () => {
     }
   });
 
-  it('is three soft chimes now, no fart or moan (round 197, John: "remove the current sound effects ... keep it subtle")', () => {
-    expect(sounds.SOUND_NAMES).toEqual(['answered', 'sent', 'leave']);
+  it('is three soft chimes and the paper tear, no fart or moan (round 197, John: "keep it subtle"; tear round 220)', () => {
+    // Round 220 (John: "when I save a ticket and it tears can you have a sound effect for that").
+    expect(sounds.SOUND_NAMES).toEqual(['answered', 'sent', 'leave', 'tear']);
     const uris = sounds.SOUND_NAMES.map((n) => (sounds.soundSource(n, 'ios') as { uri: string }).uri);
-    expect(new Set(uris).size).toBe(3);
+    expect(new Set(uris).size).toBe(4);
     expect(Object.keys(sounds)).not.toEqual(expect.arrayContaining(['moanSource']));
     expect(Object.keys(sounds)).not.toEqual(expect.arrayContaining(['answerSoundSource']));
   });

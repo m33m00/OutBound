@@ -42,7 +42,7 @@ export default function NewPasswordScreen() {
         autoFocus
       />
       <ErrorLine text={error} />
-      <Button label={busy ? 'Saving' : 'Save Password'} onPress={submit} disabled={busy || !password} haptic="success" />
+      <Button label={busy ? 'Saving' : 'Save Password'} onPress={submit} disabled={!password} busy={busy} haptic="success" />
       <PillButton label="Cancel" quiet onPress={() => account.logOut()} style={{ alignSelf: 'center' }} />
     </AuthScreen>
   );

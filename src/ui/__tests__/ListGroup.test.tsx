@@ -23,7 +23,7 @@ describe('ListGroup and ListRow', () => {
     mockFontScale = 1;
   });
 
-  it('groups, empty states and the logbook totals share one card look: card edge, lifted in light (round 163)', () => {
+  it('groups and the logbook totals share one card look, lifted in light with no edge; empty states sit on the page (rounds 163, 207)', () => {
     act(() => {
       r = create(
         <>
@@ -45,8 +45,17 @@ describe('ListGroup and ListRow', () => {
     expect(cards).toHaveLength(3);
     for (const card of cards) {
       const st = StyleSheet.flatten(card.props.style);
-      expect(st.borderColor).toBe(c.cardEdge);
-      expect(st.backgroundColor).toBe(c.surface);
+      if (card.props.testID === 'empty-state') {
+        // Round 207 (John: "Less containers"): no card behind an empty state.
+        expect(st.backgroundColor).toBeUndefined();
+        expect(st.borderWidth ?? 0).toBe(0);
+        continue;
+      }
+      expect(st.borderWidth).toBe(0);
+      // Round 211 (John: "More glassy look where containers exist"): without Liquid Glass the card is see-through
+      // white, not solid.
+      expect(st.backgroundColor).toBe('rgba(255,255,255,0.78)');
+      expect(st.backgroundColor).not.toBe(c.surface);
       expect(st.shadowOpacity).toBeGreaterThan(0);
     }
     // Highlights are rows now: label left, answer right.
@@ -54,7 +63,10 @@ describe('ListGroup and ListRow', () => {
     const words = row
       .findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string')
       .map((n) => n.props.children);
-    expect(words).toEqual(['Longest', 'DFW → LAX', '1,235 mi']);
+    expect(words).toEqual(['Longest', '1,235 mi']);
+    // The route shows the plane and contrail between the codes and still reads as words (round 209, John).
+    const route = row.find((n) => typeof n.type === 'string' && n.props.accessibilityLabel === 'DFW to LAX');
+    expect(route.findAll((n) => n.props.testID === 'route-trail-mark' && typeof n.type === 'string')).toHaveLength(1);
   });
 
   it('a row can lead with an icon tile, and the hairline under it starts at the text (round 166)', () => {

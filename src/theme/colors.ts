@@ -12,19 +12,25 @@ export const colors = {
     // Surfaces
     // The Clean look (round 120, John picked look B on 2026-11-03): a pale page, white floating
     // cards, quiet tinted boxes inside them and one accent: boarding blue since round 139.
-    bg: '#f4f6f9',
+    // Round 207 (John: "look like an app Apple, Anthropic or OpenAI made", "Less containers"): the blue-gray
+    // grays turned true neutral, like a first-party app, so the boarding blue is the only color with a hue.
+    bg: '#f5f5f7',
     surface: '#ffffff',
-    surface2: '#f3f6fa',
-    line: '#dfe5ec',
-    line2: '#cbd4de',
-    // A result card's own edge, darker than the lines inside it so each ticket stands apart (round 150, John).
-    cardEdge: '#bfcad6',
+    surface2: '#f2f2f5',
+    line: '#e6e6eb',
+    line2: '#d4d4da',
+    // A result card's own edge, a touch darker than the lines inside it so each ticket stands apart (round 150,
+    // John). Soft since round 207: the shadow and the page gray do most of the separating now.
+    cardEdge: '#dcdce2',
+    // A results ticket's stub under the perforation, a shade warmer than the paper above it (round 221, John
+    // picked the paper grain look).
+    ticketStub: '#faf9f7',
 
     // Text
-    text: '#101824',
-    muted: '#56657a',
-    // Darker than the prototype #66758a to meet 4.5:1 (Q-006).
-    faint: '#5f6e83',
+    text: '#1c1c1f',
+    muted: '#6b6b72',
+    // Meets 4.5:1 on white and on the page gray (Q-006).
+    faint: '#6b6b72',
 
     // A card's header panel: the same white as the card in the Clean look.
     ink: '#ffffff',
@@ -83,6 +89,16 @@ export const colors = {
     // a sky cyan no other meaning uses (blue is for things you tap, green to red for seats and lateness).
     done: '#0b6782',
     doneBg: '#dcf1f7',
+    // Arrived gets its own graphite pill (round 201, John: "Different colors for departed and arrived"):
+    // a finished flight reads quiet, next to the gray of a card that has landed. Cyan stays for Departed.
+    landed: '#384250',
+    landedBg: '#dfe4eb',
+
+    // A tight connection, At risk or Missed (round 202, John: "Can we also make it a different color? Like
+    // yellow/gold?"): a gold of its own, yellower than the amber that means "you" and the amber seat tier.
+    risk: '#a88300',
+    riskBg: '#fbf1c7',
+    riskFg: '#6b5300',
 
     // A time that moved, tinted by how far (John, 2026-11-02): early green; late yellow, orange, red.
     // Text colors, kept soft so they tint the number rather than shout.
@@ -92,19 +108,21 @@ export const colors = {
     timeVeryLate: '#c0262b',
   },
   dark: {
-    bg: '#0b1119',
-    surface: '#111a25',
-    surface2: '#172231',
-    line: '#1f2c3b',
-    line2: '#2a3a4d',
-    cardEdge: '#3a4e66',
+    // Neutral since round 207, like the light grays: near-black page, raised gray cards.
+    bg: '#0b0b0c',
+    surface: '#1b1b1e',
+    surface2: '#242428',
+    line: '#2a2a2f',
+    line2: '#38383e',
+    cardEdge: '#34343a',
+    ticketStub: '#1f1f22',
 
-    text: '#e8eef5',
-    muted: '#9cadc0',
-    faint: '#8d9db0',
+    text: '#f2f2f4',
+    muted: '#a1a1a8',
+    faint: '#95959c',
 
     // A card's header panel: the same as the card in the Clean look (round 120).
-    ink: '#111a25',
+    ink: '#1b1b1e',
 
     accent: '#7aa7ff',
     onAccent: '#0a1530',
@@ -146,6 +164,11 @@ export const colors = {
 
     done: '#8adcf0',
     doneBg: '#0e2a33',
+    landed: '#cbd3de',
+    landedBg: '#29323e',
+    risk: '#e5c03a',
+    riskBg: '#2f2608',
+    riskFg: '#f3d76b',
 
     timeEarly: '#7fdca6',
     timeSlight: '#e8d27a',

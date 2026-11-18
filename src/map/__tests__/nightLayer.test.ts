@@ -43,8 +43,8 @@ describe('night layer', () => {
     expect(u[3]).toBeCloseTo(0, 9);
     expect(u[4]).toBeCloseTo(0, 9);
     expect(u[5]).toBeCloseTo(1, 9);
-    expect(u.slice(6, 9)).toEqual([12 / 255, 20 / 255, 44 / 255]);
-    expect(u[12]).toBeCloseTo(0.42 * 1.08, 9);
+    expect(u.slice(6, 9)).toEqual([70 / 255, 90 / 255, 130 / 255]);
+    expect(u[12]).toBeCloseTo(0.16 * 1.08, 9);
   });
 
   it('draws the sun highlight then one shaded disk when the sun faces us', () => {

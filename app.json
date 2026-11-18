@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "OutBound",
+    "name": "Jaunt",
     "slug": "outbound",
     "version": "1.0.0",
     "runtimeVersion": {
@@ -48,7 +48,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#1D3D84",
+        "backgroundColor": "#1C5FD4",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
@@ -65,33 +65,33 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#1D3D84",
-          "image": "./assets/images/splash-dot.png",
-          "imageWidth": 40,
+          "backgroundColor": "#1C5FD4",
+          "image": "./assets/images/splash.png",
+          "imageWidth": 32,
           "dark": {
-            "backgroundColor": "#1D3D84",
-            "image": "./assets/images/splash-dot.png"
+            "backgroundColor": "#1C5FD4",
+            "image": "./assets/images/splash.png"
           }
         }
       ],
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "OutBound uses your location to start searches from the nearest airport and to estimate when to leave for it."
+          "locationWhenInUsePermission": "Jaunt uses your location to start searches from the nearest airport and to estimate when to leave for it."
         }
       ],
       "@react-native-community/datetimepicker",
       [
         "expo-camera",
         {
-          "cameraPermission": "OutBound uses the camera to read the barcode on your boarding pass so you can log the flight.",
+          "cameraPermission": "Jaunt uses the camera to read the barcode on your boarding pass so you can log the flight.",
           "recordAudioAndroid": false
         }
       ],
       [
         "expo-image-picker",
         {
-          "photosPermission": "OutBound reads the barcode in a screenshot of your boarding pass so you can log the flight.",
+          "photosPermission": "Jaunt reads the barcode in a screenshot of your boarding pass so you can log the flight.",
           "cameraPermission": false,
           "microphonePermission": false
         }

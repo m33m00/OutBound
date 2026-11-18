@@ -38,7 +38,8 @@ describe('request loads from the pass (round 190, John)', () => {
   });
 
   it('the note says the price, and what to do when credits run short', () => {
-    expect(requestNote(2, 2)).toBe('Seats are hidden. Loads are 1 credit per leg. 2 credits remaining.');
+    // Enough credits: no line at all (round 205, John: "We don't need the commentary"); the button says the cost.
+    expect(requestNote(2, 2)).toBeNull();
     expect(requestNote(2, 1)).toBe('1 credit remaining, enough for 1 leg. Uncheck the rest.');
     expect(requestNote(1, 0)).toContain('out of credits');
   });
@@ -97,6 +98,8 @@ describe('request loads from the pass (round 190, John)', () => {
     });
     act(() => btn('Request All Legs for 2 credits').props.onPress());
     expect(onRequest).toHaveBeenCalledTimes(1);
+    // No line over the button when the request can go ahead (round 205, John).
+    expect(r!.root.findAll((n) => n.props.testID === 'request-loads-note')).toHaveLength(0);
     act(() => r!.update(<RequestLoadsBar picked={0} locked={2} credits={3} onRequest={onRequest} onAnswerLoads={jest.fn()} />));
     expect(btn('Check a Leg to Request').props.disabled).toBe(true);
     act(() => r!.update(<RequestLoadsBar picked={2} locked={2} credits={1} onRequest={onRequest} onAnswerLoads={jest.fn()} />));
@@ -108,7 +111,8 @@ describe('round 191 (John): the note lines up with the button', () => {
   it('centres the line over the request button', () => {
     let r!: ReactTestRenderer;
     act(() => {
-      r = create(<RequestLoadsBar picked={2} locked={2} credits={3} onRequest={jest.fn()} onAnswerLoads={jest.fn()} />);
+      // Short on credits, so the line shows (round 205: only then).
+      r = create(<RequestLoadsBar picked={2} locked={2} credits={1} onRequest={jest.fn()} onAnswerLoads={jest.fn()} />);
     });
     const note = r.root.findAll((n) => n.props.testID === 'request-loads-note' && typeof n.type === 'string')[0];
     const flat = Object.assign({}, ...[note.props.style].flat(3).filter(Boolean));

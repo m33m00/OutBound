@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAccount } from '@/account/AccountProvider';
@@ -12,6 +12,7 @@ import { BackButton } from '@/ui/BackButton';
 import { Button } from '@/ui/Buttons';
 import { ListGroup, ListRow, SectionFooter } from '@/ui/ListGroup';
 import { TITLE_MAX_SCALE } from '@/ui/SheetHeader';
+import { TrailLoader } from '@/ui/TrailLoader';
 
 /**
  * Account (App Store round 2): who's signed in, Log Out, and Delete Account, which Apple requires
@@ -50,7 +51,7 @@ export default function AccountScreen() {
         {preview ? (
           <>
             <ListGroup>
-              <ListRow label="Looking around" detail="This preview build lets you use OutBound without an account." />
+              <ListRow label="Looking around" detail="This preview build lets you use Jaunt without an account." />
             </ListGroup>
             <Button label="Create Account or Log In" onPress={() => account.logOut()} />
           </>
@@ -72,7 +73,7 @@ export default function AccountScreen() {
                   styles.deleteRow,
                   { backgroundColor: pressed ? c.surface2 : c.surface, borderColor: c.line, opacity: busy ? 0.6 : 1 },
                 ]}>
-                {busy ? <ActivityIndicator color={c.canceled} /> : null}
+                {busy ? <TrailLoader size={18} color={c.canceled} decorative /> : null}
                 <Text style={[textStyles.button, { color: c.canceled }]}>{busy ? 'Deleting Account' : 'Delete Account'}</Text>
               </Pressable>
               <SectionFooter>Deletes your account and everything you’ve shared, right away. It can’t be undone.</SectionFooter>

@@ -16,8 +16,14 @@ export interface PhoneLocation {
 
 /** A location older than this isn't used (prototype: 20 min). */
 export const LOCATION_FRESH_MS = 20 * 60_000;
-/** Drive estimates only within this distance. */
+/** Drive times from a maps service only within this distance. */
 export const MAX_DRIVE_KM = 400;
+/**
+ * The rough straight-line guess only this close (about a 2h 30m drive). Farther out it guessed things like an 8 hour
+ * drive, so the card says when to be at the airport instead until a maps service answers (round 218, John: "Fix all
+ * of them").
+ */
+export const MAX_ESTIMATE_KM = 100;
 /** Closer than this counts as being at the airport. */
 export const AT_AIRPORT_KM = 3;
 
@@ -92,8 +98,8 @@ export function computeLeaveBy(input: {
       const boardUtc = departUtc - (input.boardingMin ?? BOARDING_DOMESTIC_MIN) * 60_000;
       return { kind: 'atAirport', airport: airport.code, departUtc, boardUtc };
     }
-    if (km <= MAX_DRIVE_KM) {
-      const live = input.liveDriveMin != null && input.liveDriveMin > 0;
+    const live = input.liveDriveMin != null && input.liveDriveMin > 0;
+    if (km <= (live ? MAX_DRIVE_KM : MAX_ESTIMATE_KM)) {
       const driveMin = live ? Math.round(input.liveDriveMin!) : driveMinutes(km);
       const leaveUtc = beAtUtc - driveMin * 60_000;
       if (leaveUtc <= now) return { kind: 'leaveNow', airport: airport.code, beAtUtc, driveMin };
@@ -126,12 +132,6 @@ export function driveQuery(input: {
   return { from: { lat: loc.lat, lon: loc.lon }, to: { lat: airport.lat, lon: airport.lon }, departMs };
 }
 
-/** "You’re at DAL (Dallas Love Field)". */
-function youreAt(code: string): string {
-  const name = AIRPORTS[code]?.name;
-  return name ? `You’re at ${code} (${name})` : `You’re at ${code}`;
-}
-
 /** "Arrive at DFW by 10:10 AM to begin boarding" (round 159, John). */
 function arriveBy(code: string, time: string): string {
   return `Arrive at ${code} by ${time} to begin boarding`;
@@ -154,8 +154,12 @@ export function leaveByText(r: LeaveBy, tz: string): LeaveByText {
     case 'departed':
       return { title: 'Departed', sub: `This flight has left ${r.airport}. Pick a later route.` };
     case 'atAirport':
-      // The airport's name too (John, 2026-11-02), and boarding in his words (round 159, John).
-      return { title: youreAt(r.airport), sub: boardingAt(t(r.boardUtc)) };
+      // One short line on screen (round 219, John: "I dont like the text wraps here"); VoiceOver still hears the
+      // airport's name (John, 2026-11-02) and boarding in his words (round 159).
+      return {
+        title: `You’re at ${r.airport}`,
+        sub: [AIRPORTS[r.airport]?.name, boardingAt(t(r.boardUtc))].filter(Boolean).join('. '),
+      };
     case 'leaveBy':
       // No "~" on the guess (round 138, John); a maps-service time adds "with traffic".
       return {
@@ -165,9 +169,10 @@ export function leaveByText(r: LeaveBy, tz: string): LeaveByText {
     case 'leaveNow':
       return { title: 'Leave now', sub: arriveBy(r.airport, t(r.beAtUtc)) };
     case 'beAt':
-      // John's words (round 159): "Arrive at DFW by 10:10 AM to begin boarding".
+      // "Arrive at DFW by 10:10 AM" (round 159), boarding left implied so it fits one line (round 219, John: "I
+      // dont like the text wraps here").
       return {
-        title: arriveBy(r.airport, t(r.beAtUtc)),
+        title: `Arrive at ${r.airport} by ${t(r.beAtUtc)}`,
         sub: `${formatDuration(r.bufferMin)} early to list and clear security`,
       };
   }
@@ -194,15 +199,14 @@ export function leaveByShort(r: LeaveBy, tz: string): string {
     case 'departed':
       return 'Pick a later route';
     case 'atAirport':
-      return boardingAt(t(r.boardUtc));
+      // Short, so "You’re at DAL | Boarding at 8:20 AM" stays one line (round 219).
+      return `Boarding at ${t(r.boardUtc)}`;
     case 'leaveBy':
-      // The drive time sits by the car on the directions button (round 169, John); the boarding line stays, the
-      // same as under Leave now (round 193, John: "Why do some have the Leave By time but no description about
-      // the arrival time to boarding and some do?").
-      return arriveBy(r.airport, t(r.beAtUtc));
     case 'leaveNow':
-      // Spelled out (John, 2026-11-03), ending "to begin boarding" (round 159, John).
-      return arriveBy(r.airport, t(r.beAtUtc));
+      // No line under the time (round 205, John: "We don't need the commentary ... below the Leave Now at the
+      // top"): the drive time sits by the car on the button (round 169), and VoiceOver still hears the arrive-by
+      // line with the title. Leave by and Leave now stay alike (round 193).
+      return '';
     case 'beAt':
       // The title already says it all (round 159), so no second detail beside it.
       return '';
